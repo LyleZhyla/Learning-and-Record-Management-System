@@ -53,3 +53,19 @@ For a fresh environment, copy `.env.example` to `.env`, set `SUPER_ADMIN_EMAIL` 
 php artisan key:generate
 php artisan migrate --seed
 ```
+
+## Temporary sample accounts
+
+Populate one temporary account for each non-Super-Admin role with:
+
+```powershell
+php artisan db:seed --class=SampleAccountsSeeder
+```
+
+These demo accounts use the password `Demo!Account2026` and require a password change at first login. Do not run this seeder in production.
+
+Remove only these temporary demo accounts later with:
+
+```powershell
+php artisan demo:remove-accounts
+```
