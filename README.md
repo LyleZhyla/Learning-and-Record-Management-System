@@ -14,6 +14,8 @@ Laravel 12 and MySQL/MariaDB foundation for the Smart NSTP platform.
 - User account creation and editing across five roles
 - Account search, role/status filtering, activation, deactivation, and password reset
 - Protection against self-deactivation and removal of the last active Super Admin
+- Role-aware login for Super Admin and NSTP Admin accounts
+- Protected NSTP Admin dashboard with operational metrics and profile security
 
 ## Local requirements
 

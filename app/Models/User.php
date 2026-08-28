@@ -70,6 +70,11 @@ class User extends Authenticatable
         return $this->role === 'super_admin';
     }
 
+    public function isNstpAdmin(): bool
+    {
+        return $this->role === 'nstp_admin';
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';
@@ -83,5 +88,14 @@ class User extends Authenticatable
     public function statusLabel(): string
     {
         return self::STATUS_LABELS[$this->status] ?? str($this->status)->headline()->toString();
+    }
+
+    public function dashboardRouteName(): ?string
+    {
+        return match ($this->role) {
+            'super_admin' => 'admin.dashboard',
+            'nstp_admin' => 'nstp_admin.dashboard',
+            default => null,
+        };
     }
 }

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Super Admin Sign In · {{ config('app.name') }}</title>
+    <title>Account Sign In · {{ config('app.name') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -20,9 +20,9 @@
                 </a>
 
                 <div class="auth-heading">
-                    <span class="eyebrow">Secure administration portal</span>
+                    <span class="eyebrow">Secure NSTP portal</span>
                     <h1>Welcome back</h1>
-                    <p>Sign in using your authorized Super Administrator account.</p>
+                    <p>Sign in using your authorized Smart NSTP account.</p>
                 </div>
 
                 @if (session('status'))
@@ -36,7 +36,7 @@
                 <form method="POST" action="{{ route('login.store') }}" class="auth-form">
                     @csrf
                     <label for="email">Email address</label>
-                    <input id="email" name="email" type="email" value="{{ old('email') }}" autocomplete="username" autofocus required placeholder="superadmin@smartnstp.local">
+                    <input id="email" name="email" type="email" value="{{ old('email') }}" autocomplete="username" autofocus required placeholder="name@smartnstp.local">
 
                     <div class="label-row">
                         <label for="password">Password</label>

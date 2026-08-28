@@ -4,12 +4,27 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\NstpAdmin\DashboardController as NstpAdminDashboardController;
+use App\Http\Controllers\NstpAdmin\ProfileController as NstpAdminProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('admin.dashboard')
-        : redirect()->route('login');
+    if (! auth()->check()) {
+        return redirect()->route('login');
+    }
+
+    $routeName = auth()->user()->dashboardRouteName();
+
+    abort_unless($routeName, 403, 'Hindi pa available ang dashboard para sa account role na ito.');
+
+    return redirect()->route($routeName);
+});
+
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () {
+    Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
+    Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [NstpAdminProfileController::class, 'update'])->name('profile.update');
+    Route::put('/password', [NstpAdminProfileController::class, 'updatePassword'])->name('password.update');
 });
 
 Route::middleware('guest')->group(function () {

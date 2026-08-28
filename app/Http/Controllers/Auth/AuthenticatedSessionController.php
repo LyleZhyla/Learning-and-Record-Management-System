@@ -45,9 +45,9 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        if (! $user->isSuperAdmin()) {
+        if (! $user->dashboardRouteName()) {
             throw ValidationException::withMessages([
-                'email' => 'Ang portal na ito ay para lamang sa Super Administrator.',
+                'email' => 'Hindi pa available ang dashboard para sa account role na ito.',
             ]);
         }
 
@@ -62,7 +62,7 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
         $user->forceFill(['last_login_at' => now()])->save();
 
-        return redirect()->intended(route('admin.dashboard'));
+        return redirect()->route($user->dashboardRouteName());
     }
 
     public function destroy(Request $request): RedirectResponse
