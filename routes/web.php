@@ -4,11 +4,19 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
+use App\Http\Controllers\Learning\AssessmentController;
+use App\Http\Controllers\Learning\AttendanceController as ManagementAttendanceController;
+use App\Http\Controllers\Learning\MaterialController;
 use App\Http\Controllers\NstpAdmin\DashboardController as NstpAdminDashboardController;
 use App\Http\Controllers\NstpAdmin\ProfileController as NstpAdminProfileController;
 use App\Http\Controllers\NstpAdmin\ComponentController as NstpAdminComponentController;
 use App\Http\Controllers\NstpAdmin\SectionController as NstpAdminSectionController;
 use App\Http\Controllers\NstpAdmin\SectioningController as NstpAdminSectioningController;
+use App\Http\Controllers\Portal\ProfileController as PortalProfileController;
+use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
+use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Student\LearningController as StudentLearningController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -23,7 +31,27 @@ Route::get('/', function () {
     return redirect()->route($routeName);
 });
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () {
+$learningManagementRoutes = function (): void {
+    Route::get('/attendance', [ManagementAttendanceController::class, 'index'])->name('attendance.index');
+    Route::get('/attendance/create', [ManagementAttendanceController::class, 'create'])->name('attendance.create');
+    Route::post('/attendance', [ManagementAttendanceController::class, 'store'])->name('attendance.store');
+    Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');
+    Route::get('/attendance/{attendance}/qr', [ManagementAttendanceController::class, 'qr'])->name('attendance.qr');
+    Route::post('/attendance/{attendance}/mark', [ManagementAttendanceController::class, 'mark'])->name('attendance.mark');
+    Route::patch('/attendance/{attendance}/close', [ManagementAttendanceController::class, 'close'])->name('attendance.close');
+    Route::get('/materials', [MaterialController::class, 'index'])->name('materials.index');
+    Route::get('/materials/create', [MaterialController::class, 'create'])->name('materials.create');
+    Route::post('/materials', [MaterialController::class, 'store'])->name('materials.store');
+    Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
+    Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
+    Route::get('/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
+    Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store');
+    Route::get('/assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');
+    Route::put('/assessments/{assessment}/submissions/{submission}', [AssessmentController::class, 'grade'])->name('assessments.grade');
+    Route::get('/grades', [AssessmentController::class, 'grades'])->name('grades.index');
+};
+
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [NstpAdminProfileController::class, 'update'])->name('profile.update');
@@ -40,6 +68,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::post('/sectioning/enroll', [NstpAdminSectioningController::class, 'enroll'])->name('sectioning.enroll');
     Route::post('/sectioning/automate', [NstpAdminSectioningController::class, 'automate'])->name('sectioning.automate');
     Route::delete('/sectioning/enrollments/{enrollment}', [NstpAdminSectioningController::class, 'destroy'])->name('sectioning.destroy');
+    $learningManagementRoutes();
 });
 
 Route::middleware('guest')->group(function () {
@@ -51,7 +80,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -75,4 +104,28 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::post('/sectioning/enroll', [NstpAdminSectioningController::class, 'enroll'])->name('sectioning.enroll');
     Route::post('/sectioning/automate', [NstpAdminSectioningController::class, 'automate'])->name('sectioning.automate');
     Route::delete('/sectioning/enrollments/{enrollment}', [NstpAdminSectioningController::class, 'destroy'])->name('sectioning.destroy');
+    $learningManagementRoutes();
+});
+
+Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes) {
+    Route::get('/dashboard', FacilitatorDashboardController::class)->name('dashboard');
+    Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
+    Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
+    $learningManagementRoutes();
+});
+
+Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () {
+    Route::get('/dashboard', StudentDashboardController::class)->name('dashboard');
+    Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
+    Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
+    Route::get('/attendance', [StudentAttendanceController::class, 'index'])->name('attendance.index');
+    Route::get('/attendance/check-in/{token}', [StudentAttendanceController::class, 'checkIn'])->name('attendance.checkin');
+    Route::get('/materials', [StudentLearningController::class, 'materials'])->name('materials.index');
+    Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
+    Route::get('/assessments', [StudentLearningController::class, 'assessments'])->name('assessments.index');
+    Route::get('/assessments/{assessment}', [StudentLearningController::class, 'show'])->name('assessments.show');
+    Route::post('/assessments/{assessment}/submit', [StudentLearningController::class, 'submit'])->name('assessments.submit');
+    Route::get('/grades', [StudentLearningController::class, 'grades'])->name('grades.index');
 });

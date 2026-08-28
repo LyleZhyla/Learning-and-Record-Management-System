@@ -32,7 +32,7 @@ class SuperAdminAuthenticationTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
-    public function test_non_super_admin_cannot_use_the_admin_portal(): void
+    public function test_student_signs_in_to_the_student_portal(): void
     {
         $user = User::factory()->create([
             'password' => Hash::make('Secure!Password2026'),
@@ -43,9 +43,9 @@ class SuperAdminAuthenticationTest extends TestCase
         $this->post('/login', [
             'email' => $user->email,
             'password' => 'Secure!Password2026',
-        ])->assertSessionHasErrors('email');
+        ])->assertRedirect('/student/dashboard');
 
-        $this->assertGuest();
+        $this->assertAuthenticatedAs($user);
     }
 
     public function test_inactive_super_admin_cannot_sign_in(): void

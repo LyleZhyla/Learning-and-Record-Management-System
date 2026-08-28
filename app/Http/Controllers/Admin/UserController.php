@@ -31,7 +31,7 @@ class UserController extends Controller
             })
             ->when($filters['role'] ?? null, fn ($query, string $role) => $query->where('role', $role))
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
-            ->orderByRaw("FIELD(role, 'super_admin', 'nstp_admin', 'coordinator', 'facilitator', 'student')")
+            ->orderByRaw("CASE role WHEN 'super_admin' THEN 1 WHEN 'nstp_admin' THEN 2 WHEN 'coordinator' THEN 3 WHEN 'facilitator' THEN 4 WHEN 'student' THEN 5 ELSE 6 END")
             ->orderBy('name')
             ->paginate(10)
             ->withQueryString();

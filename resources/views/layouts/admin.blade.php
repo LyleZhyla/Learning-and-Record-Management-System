@@ -35,6 +35,11 @@
                 <a class="nav-link {{ request()->routeIs('admin.components.*') ? 'active' : '' }}" href="{{ route('admin.components.index') }}"><span class="nav-icon">◉</span> NSTP Components</a>
                 <a class="nav-link {{ request()->routeIs('admin.sections.*') ? 'active' : '' }}" href="{{ route('admin.sections.index') }}"><span class="nav-icon">▦</span> Sections</a>
                 <a class="nav-link {{ request()->routeIs('admin.sectioning.*') ? 'active' : '' }}" href="{{ route('admin.sectioning.index') }}"><span class="nav-icon">♙</span> Student Sectioning</a>
+                <p class="nav-label">Attendance & Learning</p>
+                <a class="nav-link {{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}" href="{{ route('admin.attendance.index') }}"><span class="nav-icon">▣</span> Attendance</a>
+                <a class="nav-link {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('admin.materials.index') }}"><span class="nav-icon">▤</span> Learning Materials</a>
+                <a class="nav-link {{ request()->routeIs('admin.assessments.*') ? 'active' : '' }}" href="{{ route('admin.assessments.index') }}"><span class="nav-icon">✓</span> Assessments</a>
+                <a class="nav-link {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}" href="{{ route('admin.grades.index') }}"><span class="nav-icon">◎</span> Grades</a>
                 <span class="nav-link disabled"><span class="nav-icon">◫</span> Reports <em>Soon</em></span>
                 <p class="nav-label">Account</p>
                 <a class="nav-link {{ request()->routeIs('admin.profile.*') ? 'active' : '' }}" href="{{ route('admin.profile.edit') }}">
@@ -60,6 +65,10 @@
 
             @if (session('status'))
                 <div class="alert success" role="status">{{ session('status') }}</div>
+            @endif
+
+            @if ($errors->any())
+                <div class="alert danger" role="alert">{{ $errors->first() }}</div>
             @endif
 
             @if (auth()->user()->must_change_password)

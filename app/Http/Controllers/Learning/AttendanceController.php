@@ -1,0 +1,152 @@
+<?php
+
+namespace App\Http\Controllers\Learning;
+
+use App\Http\Controllers\Controller;
+use App\Models\AttendanceRecord;
+use App\Models\AttendanceSession;
+use App\Models\NstpEnrollment;
+use App\Models\NstpSection;
+use App\Services\PortalAccessService;
+use App\Services\QrCodeService;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
+
+class AttendanceController extends Controller
+{
+    public function __construct(private PortalAccessService $access) {}
+
+    public function index(Request $request): View
+    {
+        $sectionId = $request->integer('section') ?: null;
+        $sections = $this->access->manageableSections($request->user())->with('component')->orderBy('code')->get();
+        $sessions = AttendanceSession::with(['section.component', 'creator'])
+            ->withCount([
+                'records',
+                'records as present_count' => fn ($query) => $query->where('status', 'present'),
+                'records as late_count' => fn ($query) => $query->where('status', 'late'),
+                'records as absent_count' => fn ($query) => $query->where('status', 'absent'),
+            ])
+            ->whereIn('section_id', $sections->pluck('id'))
+            ->when($sectionId, fn ($query) => $query->where('section_id', $sectionId))
+            ->latest('starts_at')
+            ->paginate(12)
+            ->withQueryString();
+
+        return view('learning.attendance.index', $this->context($request) + compact('sections', 'sessions', 'sectionId'));
+    }
+
+    public function create(Request $request): View
+    {
+        return view('learning.attendance.create', $this->context($request) + [
+            'sections' => $this->access->manageableSections($request->user())->with('component')->where('status', 'active')->orderBy('code')->get(),
+            'selectedSection' => $request->integer('section') ?: null,
+        ]);
+    }
+
+    public function store(Request $request, QrCodeService $qrCode): RedirectResponse
+    {
+        $validated = $request->validate([
+            'section_id' => ['required', 'integer', 'exists:nstp_sections,id'],
+            'title' => ['required', 'string', 'max:150'],
+            'starts_at' => ['required', 'date'],
+            'late_after' => ['nullable', 'date', 'after_or_equal:starts_at'],
+            'ends_at' => ['required', 'date', 'after:starts_at'],
+        ]);
+        $section = NstpSection::findOrFail($validated['section_id']);
+        $this->access->ensureCanManageSection($request->user(), $section);
+
+        if (($validated['late_after'] ?? null) && Carbon::parse($validated['late_after'])->gt(Carbon::parse($validated['ends_at']))) {
+            throw ValidationException::withMessages(['late_after' => 'The late threshold must be before the session end time.']);
+        }
+
+        $token = Str::random(48);
+        $payload = route('student.attendance.checkin', ['token' => $token]);
+        $session = AttendanceSession::create([
+            ...$validated,
+            'created_by' => $request->user()->id,
+            'token' => $token,
+            'qr_payload' => $payload,
+            'qr_svg' => $qrCode->generateSvg($payload),
+            'status' => 'open',
+        ]);
+
+        return redirect()->route($this->access->routePrefix($request->user()).'.attendance.show', $session)
+            ->with('status', 'Attendance session created and QR code generated automatically.');
+    }
+
+    public function show(Request $request, AttendanceSession $attendance): View
+    {
+        $attendance->load(['section.component', 'creator', 'records.student']);
+        $this->access->ensureCanManageSection($request->user(), $attendance->section);
+        $enrolledStudents = NstpEnrollment::with('student')
+            ->where('section_id', $attendance->section_id)
+            ->get()
+            ->sortBy(fn ($enrollment) => $enrollment->student->name);
+
+        return view('learning.attendance.show', $this->context($request) + compact('attendance', 'enrolledStudents'));
+    }
+
+    public function qr(Request $request, AttendanceSession $attendance)
+    {
+        $this->access->ensureCanManageSection($request->user(), $attendance->section);
+
+        return response($attendance->qr_svg, 200, [
+            'Content-Type' => 'image/svg+xml',
+            'Content-Disposition' => 'attachment; filename="'.str($attendance->title)->slug().'-qr.svg"',
+        ]);
+    }
+
+    public function mark(Request $request, AttendanceSession $attendance): RedirectResponse
+    {
+        $this->access->ensureCanManageSection($request->user(), $attendance->section);
+        $validated = $request->validate([
+            'student_id' => ['required', 'integer', Rule::exists('nstp_enrollments', 'student_id')->where('section_id', $attendance->section_id)],
+            'status' => ['required', Rule::in(['present', 'late', 'absent'])],
+        ]);
+
+        AttendanceRecord::updateOrCreate(
+            ['attendance_session_id' => $attendance->id, 'student_id' => $validated['student_id']],
+            [
+                'status' => $validated['status'],
+                'checked_in_at' => in_array($validated['status'], ['present', 'late']) ? now() : null,
+                'source' => 'manual',
+                'recorded_by' => $request->user()->id,
+            ],
+        );
+
+        return back()->with('status', 'Attendance record updated successfully.');
+    }
+
+    public function close(Request $request, AttendanceSession $attendance): RedirectResponse
+    {
+        $this->access->ensureCanManageSection($request->user(), $attendance->section);
+
+        DB::transaction(function () use ($attendance, $request): void {
+            $studentIds = NstpEnrollment::where('section_id', $attendance->section_id)->pluck('student_id');
+            foreach ($studentIds as $studentId) {
+                AttendanceRecord::firstOrCreate(
+                    ['attendance_session_id' => $attendance->id, 'student_id' => $studentId],
+                    ['status' => 'absent', 'source' => 'system', 'recorded_by' => $request->user()->id],
+                );
+            }
+            $attendance->update(['status' => 'closed']);
+        });
+
+        return back()->with('status', 'Attendance session closed. Missing students were marked absent automatically.');
+    }
+
+    private function context(Request $request): array
+    {
+        return [
+            'layout' => $this->access->layout($request->user()),
+            'routePrefix' => $this->access->routePrefix($request->user()),
+        ];
+    }
+}

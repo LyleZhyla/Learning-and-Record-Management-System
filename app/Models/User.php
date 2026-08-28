@@ -76,6 +76,16 @@ class User extends Authenticatable
         return $this->role === 'nstp_admin';
     }
 
+    public function isFacilitator(): bool
+    {
+        return $this->role === 'facilitator';
+    }
+
+    public function isStudent(): bool
+    {
+        return $this->role === 'student';
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';
@@ -96,6 +106,8 @@ class User extends Authenticatable
         return match ($this->role) {
             'super_admin' => 'admin.dashboard',
             'nstp_admin' => 'nstp_admin.dashboard',
+            'facilitator' => 'facilitator.dashboard',
+            'student' => 'student.dashboard',
             default => null,
         };
     }
@@ -108,5 +120,15 @@ class User extends Authenticatable
     public function facilitatedSections(): HasMany
     {
         return $this->hasMany(NstpSection::class, 'facilitator_id');
+    }
+
+    public function attendanceRecords(): HasMany
+    {
+        return $this->hasMany(AttendanceRecord::class, 'student_id');
+    }
+
+    public function assessmentSubmissions(): HasMany
+    {
+        return $this->hasMany(AssessmentSubmission::class, 'student_id');
     }
 }

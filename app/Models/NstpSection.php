@@ -43,6 +43,21 @@ class NstpSection extends Model
         return $this->hasMany(NstpEnrollment::class, 'section_id');
     }
 
+    public function attendanceSessions(): HasMany
+    {
+        return $this->hasMany(AttendanceSession::class, 'section_id');
+    }
+
+    public function learningMaterials(): HasMany
+    {
+        return $this->hasMany(LearningMaterial::class, 'section_id');
+    }
+
+    public function assessments(): HasMany
+    {
+        return $this->hasMany(Assessment::class, 'section_id');
+    }
+
     public function semesterLabel(): string
     {
         return self::SEMESTERS[$this->semester] ?? str($this->semester)->headline()->toString();

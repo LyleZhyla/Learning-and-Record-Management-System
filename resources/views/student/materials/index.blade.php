@@ -1,0 +1,5 @@
+@extends('layouts.student')
+@section('title','Materials') @section('page-title','Learning Materials')
+@section('content')
+<div class="page-actions"><div><h2>Your materials</h2><p>Resources published for your NSTP component and section.</p></div></div><div class="resource-grid">@forelse($materials as $material)<article class="card resource-card"><span class="component-code-mark">{{ $material->component->code }}</span><div><small>{{ $material->section?->code ?? 'All component sections' }}</small><h3>{{ $material->title }}</h3><p>{{ $material->description ?: 'No description provided.' }}</p></div>@if($material->file_path)<a class="secondary-outline-button" href="{{ route('student.materials.download',$material) }}">Download {{ $material->original_filename }}</a>@elseif($material->external_url)<a class="secondary-outline-button" target="_blank" rel="noopener" href="{{ $material->external_url }}">Open resource</a>@endif</article>@empty<section class="card empty-state"><strong>No published materials yet</strong><span>Materials for your component and section will appear here.</span></section>@endforelse</div>
+@endsection

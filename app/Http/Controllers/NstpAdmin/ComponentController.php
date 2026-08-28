@@ -13,7 +13,7 @@ class ComponentController extends Controller
     public function index(Request $request): View
     {
         $components = NstpComponent::withCount(['sections', 'enrollments'])
-            ->orderByRaw("FIELD(code, 'CWTS', 'LTS', 'ROTC')")
+            ->orderByRaw("CASE code WHEN 'CWTS' THEN 1 WHEN 'LTS' THEN 2 WHEN 'ROTC' THEN 3 ELSE 4 END")
             ->get();
 
         return view('nstp_admin.components.index', [
