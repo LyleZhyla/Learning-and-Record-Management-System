@@ -11,6 +11,9 @@ Laravel 12 and MySQL/MariaDB foundation for the Smart NSTP platform.
 - Secure password change with current-password verification
 - Session invalidation on logout
 - Environment-driven Super Administrator seeder
+- User account creation and editing across five roles
+- Account search, role/status filtering, activation, deactivation, and password reset
+- Protection against self-deactivation and removal of the last active Super Admin
 
 ## Local requirements
 
@@ -27,10 +30,18 @@ powershell -ExecutionPolicy Bypass -File scripts/start-local-mysql.ps1
 Then run the application:
 
 ```powershell
-php artisan serve
+php artisan serve --port=8765
 ```
 
-Open `http://127.0.0.1:8000`.
+Open `http://127.0.0.1:8765/login`.
+
+Before shutting down Windows or when development is finished, stop the isolated database cleanly with:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/stop-local-mysql.ps1
+```
+
+Use `Ctrl+C` separately to stop the Laravel development server.
 
 ## Initial Super Administrator
 

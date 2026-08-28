@@ -29,7 +29,9 @@
                     <span class="nav-icon">⌂</span> Dashboard
                 </a>
                 <p class="nav-label">Administration</p>
-                <span class="nav-link disabled"><span class="nav-icon">♙</span> User Accounts <em>Soon</em></span>
+                <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
+                    <span class="nav-icon">♙</span> User Accounts
+                </a>
                 <span class="nav-link disabled"><span class="nav-icon">▦</span> NSTP Components <em>Soon</em></span>
                 <span class="nav-link disabled"><span class="nav-icon">▤</span> Sections <em>Soon</em></span>
                 <span class="nav-link disabled"><span class="nav-icon">◫</span> Reports <em>Soon</em></span>

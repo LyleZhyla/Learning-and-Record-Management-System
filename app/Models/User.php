@@ -12,6 +12,19 @@ class User extends Authenticatable
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
 
+    public const ROLE_LABELS = [
+        'student' => 'Student',
+        'facilitator' => 'Facilitator',
+        'coordinator' => 'Coordinator',
+        'nstp_admin' => 'NSTP Admin',
+        'super_admin' => 'Super Admin',
+    ];
+
+    public const STATUS_LABELS = [
+        'active' => 'Active',
+        'inactive' => 'Inactive',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -60,5 +73,15 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    public function roleLabel(): string
+    {
+        return self::ROLE_LABELS[$this->role] ?? str($this->role)->headline()->toString();
+    }
+
+    public function statusLabel(): string
+    {
+        return self::STATUS_LABELS[$this->status] ?? str($this->status)->headline()->toString();
     }
 }
