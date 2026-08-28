@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Account Sign In · {{ config('app.name') }}</title>
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('images/smart-nstp-logo-64.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -15,7 +16,7 @@
         <section class="auth-panel">
             <div class="auth-form-wrap">
                 <a class="brand auth-brand" href="{{ url('/') }}">
-                    <span class="brand-mark">SN</span>
+                    <img class="brand-logo" src="{{ asset('images/smart-nstp-logo-160.png') }}" alt="Smart NSTP logo">
                     <span><strong>Smart NSTP</strong><small>Management Platform</small></span>
                 </a>
 
