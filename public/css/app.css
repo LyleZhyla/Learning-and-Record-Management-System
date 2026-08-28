@@ -15,3 +15,6 @@ select{font:inherit}.page-actions{display:flex;align-items:center;justify-conten
 
 /* Shared Smart NSTP brand palette */
 .nstp-sidebar{background:linear-gradient(180deg,#10264b,#0c203f)}.nstp-sidebar .nav-link.active{background:rgba(52,125,215,.22)}.nstp-sidebar .nav-link.active:after{background:#55a0ff}.nstp-avatar{background:#2b6ebc}.nstp-welcome{background:linear-gradient(125deg,#153966,#1d5e9d)}.nstp-welcome .eyebrow{color:#8fc8ff}.workspace-date{color:#c7daed}.component-card.cwts,.component-card.lts,.component-card.rotc{--component-color:#2674ce;--component-soft:#eaf3ff}.readiness-list .check.ready{background:#e9f4ff;color:#2468ca}
+
+/* Refined sidebar navigation scrollbar */
+.main-nav{padding-right:4px;scrollbar-width:thin;scrollbar-color:rgba(143,200,255,.38) transparent;scrollbar-gutter:stable}.main-nav::-webkit-scrollbar{width:6px}.main-nav::-webkit-scrollbar-track{background:transparent}.main-nav::-webkit-scrollbar-thumb{border:1px solid transparent;border-radius:999px;background:rgba(143,200,255,.38);background-clip:padding-box}.main-nav:hover::-webkit-scrollbar-thumb{background:rgba(143,200,255,.62);background-clip:padding-box}.main-nav::-webkit-scrollbar-button,.main-nav::-webkit-scrollbar-corner{display:none;background:transparent}
