@@ -1,0 +1,28 @@
+@extends('layouts.nstp-admin')
+@section('title','Automated Sectioning')
+@section('page-title','Automated Student Sectioning')
+@section('content')
+<section class="page-actions"><div><span class="eyebrow">Enrollment and placement</span><h2>Assign components and generate sections</h2><p>Select a term, enroll students in an NSTP component, then automatically distribute unsectioned students by capacity.</p></div><a class="secondary-outline-button" href="{{ route('nstp_admin.sections.index') }}">View all sections</a></section>
+
+<section class="card term-panel"><form method="GET" action="{{ route('nstp_admin.sectioning.index') }}" class="term-form"><label class="field-group"><span>Component</span><select name="component_id"><option value="">All components</option>@foreach($components as $component)<option value="{{ $component->id }}" @selected($componentId === $component->id)>{{ $component->code }}</option>@endforeach</select></label><label class="field-group"><span>Academic year</span><input name="academic_year" value="{{ $academicYear }}" pattern="\d{4}-\d{4}" required></label><label class="field-group"><span>Semester</span><select name="semester" required>@foreach(\App\Models\NstpSection::SEMESTERS as $value=>$label)<option value="{{ $value }}" @selected($semester === $value)>{{ $label }}</option>@endforeach</select></label><button class="filter-button" type="submit">Load term</button></form></section>
+
+<section class="section-summary-grid">@forelse($sections as $section)<article class="section-summary-card"><div><span class="role-badge role-student">{{ $section->component->code }}</span><span class="status-badge {{ $section->status }}"><i></i>{{ ucfirst($section->status) }}</span></div><h3>{{ $section->code }}</h3><p>{{ $section->name }}</p><div class="occupancy-track"><span style="width:{{ min(100,$section->capacity ? $section->enrollments_count/$section->capacity*100 : 0) }}%"></span></div><small>{{ $section->enrollments_count }} of {{ $section->capacity }} seats</small></article>@empty<article class="section-summary-card empty-summary"><strong>No sections for this selection</strong><span>Automated sectioning will create them when needed.</span></article>@endforelse</section>
+
+<section class="card user-table-card">
+<div class="sectioning-toolbar"><div><span class="eyebrow">Active student accounts</span><h3>Component enrollment</h3></div>@if($componentId)<form method="POST" action="{{ route('nstp_admin.sectioning.automate') }}">@csrf<input type="hidden" name="component_id" value="{{ $componentId }}"><input type="hidden" name="academic_year" value="{{ $academicYear }}"><input type="hidden" name="semester" value="{{ $semester }}"><button class="primary-button compact" type="submit">Run automated sectioning</button></form>@else<span class="form-help">Select a component above to run automation.</span>@endif</div>
+<form method="POST" action="{{ route('nstp_admin.sectioning.enroll') }}" id="enrollment-form">@csrf<input type="hidden" name="academic_year" value="{{ $academicYear }}"><input type="hidden" name="semester" value="{{ $semester }}"><div class="enrollment-action-bar"><label class="field-group"><span>Assign selected students to</span><select name="component_id" required><option value="">Choose a component</option>@foreach($components as $component)<option value="{{ $component->id }}" @selected($componentId === $component->id)>{{ $component->code }}</option>@endforeach</select></label><button class="filter-button" type="submit">Save component enrollment</button></div>
+<div class="table-wrap"><table class="data-table"><thead><tr><th class="check-column"><input type="checkbox" aria-label="Select all students" onclick="document.querySelectorAll('.student-check').forEach(box => box.checked = this.checked)"></th><th>Student</th><th>Component</th><th>Section</th><th>Term</th><th class="align-right">Action</th></tr></thead><tbody>
+@forelse($students as $student)@php($enrollment=$student->nstpEnrollments->first())<tr><td class="check-column"><input class="student-check" type="checkbox" name="student_ids[]" value="{{ $student->id }}"></td><td><div class="user-cell"><span class="table-avatar">{{ strtoupper(substr($student->name,0,1)) }}</span><div><strong>{{ $student->name }}</strong><small>{{ $student->email }}</small></div></div></td><td>@if($enrollment)<span class="role-badge role-student">{{ $enrollment->component->code }}</span>@else<span class="muted-cell">Not enrolled</span>@endif</td><td>@if($enrollment?->section)<strong>{{ $enrollment->section->code }}</strong>@elseif($enrollment)<span class="status-badge inactive"><i></i>Awaiting section</span>@else<span class="muted-cell">—</span>@endif</td><td><strong>{{ $academicYear }}</strong><div class="muted-cell">{{ \App\Models\NstpSection::SEMESTERS[$semester] }}</div></td><td class="align-right">@if($enrollment)<button class="link-danger" type="submit" form="remove-enrollment-{{ $enrollment->id }}">Remove</button>@else<span class="muted-cell">—</span>@endif</td></tr>
+@empty<tr><td colspan="6"><div class="empty-state"><strong>No active student accounts</strong><span>Create student accounts in User Management before enrollment.</span></div></td></tr>@endforelse
+</tbody></table></div></form>
+@foreach($students as $student)
+    @php($enrollment = $student->nstpEnrollments->first())
+    @if($enrollment)
+        <form id="remove-enrollment-{{ $enrollment->id }}" method="POST" action="{{ route('nstp_admin.sectioning.destroy', $enrollment) }}">
+            @csrf
+            @method('DELETE')
+        </form>
+    @endif
+@endforeach
+</section>
+@endsection

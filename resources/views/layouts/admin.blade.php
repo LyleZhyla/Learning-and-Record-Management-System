@@ -63,7 +63,7 @@
 
             @if (auth()->user()->must_change_password)
                 <div class="alert warning">
-                    Temporary password ang gamit ng account na ito. <a href="{{ route('admin.profile.edit') }}#password">Palitan ito ngayon</a>.
+                    This account is using a temporary password. <a href="{{ route('admin.profile.edit') }}#password">Change it now</a>.
                 </div>
             @endif
 

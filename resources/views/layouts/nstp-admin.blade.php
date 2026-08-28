@@ -29,9 +29,9 @@
                     <span class="nav-icon">⌂</span> Dashboard
                 </a>
                 <p class="nav-label">NSTP Operations</p>
-                <span class="nav-link disabled"><span class="nav-icon">◉</span> Components <em>Soon</em></span>
-                <span class="nav-link disabled"><span class="nav-icon">▦</span> Sections <em>Soon</em></span>
-                <span class="nav-link disabled"><span class="nav-icon">♙</span> Students <em>Soon</em></span>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.components.*') ? 'active' : '' }}" href="{{ route('nstp_admin.components.index') }}"><span class="nav-icon">◉</span> Components</a>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.sections.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sections.index') }}"><span class="nav-icon">▦</span> Sections</a>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.sectioning.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sectioning.index') }}"><span class="nav-icon">♙</span> Student Sectioning</a>
                 <span class="nav-link disabled"><span class="nav-icon">◎</span> Facilitators <em>Soon</em></span>
                 <span class="nav-link disabled"><span class="nav-icon">▤</span> Reports <em>Soon</em></span>
                 <p class="nav-label">Communication</p>
@@ -68,7 +68,7 @@
 
             @if (auth()->user()->must_change_password)
                 <div class="alert warning">
-                    Temporary password ang gamit ng account na ito. <a href="{{ route('nstp_admin.profile.edit') }}#password">Palitan ito ngayon</a>.
+                    This account is using a temporary password. <a href="{{ route('nstp_admin.profile.edit') }}#password">Change it now</a>.
                 </div>
             @endif
 

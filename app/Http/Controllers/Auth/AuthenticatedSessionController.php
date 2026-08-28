@@ -31,7 +31,7 @@ class AuthenticatedSessionController extends Controller
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             throw ValidationException::withMessages([
-                'email' => 'Masyadong maraming login attempts. Subukan muli pagkalipas ng '.RateLimiter::availableIn($key).' segundo.',
+                'email' => 'Too many login attempts. Please try again in '.RateLimiter::availableIn($key).' seconds.',
             ]);
         }
 
@@ -41,19 +41,19 @@ class AuthenticatedSessionController extends Controller
             RateLimiter::hit($key, 60);
 
             throw ValidationException::withMessages([
-                'email' => 'Hindi tugma ang email o password.',
+                'email' => 'The email address or password is incorrect.',
             ]);
         }
 
         if (! $user->dashboardRouteName()) {
             throw ValidationException::withMessages([
-                'email' => 'Hindi pa available ang dashboard para sa account role na ito.',
+                'email' => 'A dashboard is not yet available for this account role.',
             ]);
         }
 
         if (! $user->isActive()) {
             throw ValidationException::withMessages([
-                'email' => 'Deactivated ang account na ito. Makipag-ugnayan sa system owner.',
+                'email' => 'This account is inactive. Please contact the system administrator.',
             ]);
         }
 
@@ -71,6 +71,6 @@ class AuthenticatedSessionController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect()->route('login')->with('status', 'Matagumpay kang naka-log out.');
+        return redirect()->route('login')->with('status', 'You have signed out successfully.');
     }
 }

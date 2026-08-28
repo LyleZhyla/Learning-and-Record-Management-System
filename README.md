@@ -16,6 +16,10 @@ Laravel 12 and MySQL/MariaDB foundation for the Smart NSTP platform.
 - Protection against self-deactivation and removal of the last active Super Admin
 - Role-aware login for Super Admin and NSTP Admin accounts
 - Protected NSTP Admin dashboard with operational metrics and profile security
+- Configurable CWTS, LTS, and ROTC component records
+- Term-based section management with capacity and facilitator assignments
+- Student component enrollment and automated capacity-based section generation
+- English-only user interface, feedback, warnings, and validation messages
 
 ## Local requirements
 

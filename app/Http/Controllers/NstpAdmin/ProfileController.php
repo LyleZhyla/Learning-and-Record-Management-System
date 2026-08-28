@@ -33,7 +33,7 @@ class ProfileController extends Controller
 
         $user->save();
 
-        return back()->with('status', 'Na-update ang profile information.');
+        return back()->with('status', 'Profile information updated successfully.');
     }
 
     public function updatePassword(Request $request): RedirectResponse
@@ -48,6 +48,6 @@ class ProfileController extends Controller
             'must_change_password' => false,
         ])->save();
 
-        return back()->with('status', 'Napaltan na ang iyong password.');
+        return back()->with('status', 'Your password has been changed successfully.');
     }
 }

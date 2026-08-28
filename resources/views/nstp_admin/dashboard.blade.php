@@ -21,9 +21,9 @@
     </section>
 
     <section class="component-overview" aria-label="NSTP components">
-        <article class="component-card cwts"><div class="component-symbol">C</div><div><span>Civic Welfare Training Service</span><h3>CWTS</h3><p>Component setup and section assignment will be available in the next module.</p></div><span class="component-state">Setup pending</span></article>
-        <article class="component-card lts"><div class="component-symbol">L</div><div><span>Literacy Training Service</span><h3>LTS</h3><p>Component setup and section assignment will be available in the next module.</p></div><span class="component-state">Setup pending</span></article>
-        <article class="component-card rotc"><div class="component-symbol">R</div><div><span>Reserve Officers' Training Corps</span><h3>ROTC</h3><p>Component setup and section assignment will be available in the next module.</p></div><span class="component-state">Setup pending</span></article>
+        <a class="component-card cwts" href="{{ route('nstp_admin.components.index') }}"><div class="component-symbol">C</div><div><span>Civic Welfare Training Service</span><h3>CWTS</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Manage component →</span></a>
+        <a class="component-card lts" href="{{ route('nstp_admin.components.index') }}"><div class="component-symbol">L</div><div><span>Literacy Training Service</span><h3>LTS</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Manage component →</span></a>
+        <a class="component-card rotc" href="{{ route('nstp_admin.components.index') }}"><div class="component-symbol">R</div><div><span>Reserve Officers' Training Corps</span><h3>ROTC</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Manage component →</span></a>
     </section>
 
     <div class="content-grid nstp-content-grid">
@@ -47,8 +47,8 @@
             <div class="card-heading"><div><span class="eyebrow">Module readiness</span><h3>Operations checklist</h3></div></div>
             <div class="readiness-list">
                 <div><span class="check ready">✓</span><p><strong>NSTP Admin access</strong><small>Secure role-based dashboard</small></p></div>
-                <div><span class="check">2</span><p><strong>Components & sections</strong><small>CWTS, LTS, and ROTC configuration</small></p></div>
-                <div><span class="check">3</span><p><strong>Student assignment</strong><small>Component and section placement</small></p></div>
+                <div><span class="check ready">✓</span><p><strong>Components & sections</strong><small>CWTS, LTS, and ROTC configuration</small></p></div>
+                <div><span class="check ready">✓</span><p><strong>Student assignment</strong><small>Automated component and section placement</small></p></div>
                 <div><span class="check">4</span><p><strong>Operational reports</strong><small>Masterlists and summaries</small></p></div>
             </div>
         </aside>

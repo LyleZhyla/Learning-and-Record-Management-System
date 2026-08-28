@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable
 {
@@ -97,5 +98,15 @@ class User extends Authenticatable
             'nstp_admin' => 'nstp_admin.dashboard',
             default => null,
         };
+    }
+
+    public function nstpEnrollments(): HasMany
+    {
+        return $this->hasMany(NstpEnrollment::class, 'student_id');
+    }
+
+    public function facilitatedSections(): HasMany
+    {
+        return $this->hasMany(NstpSection::class, 'facilitator_id');
     }
 }

@@ -31,7 +31,7 @@
                         <button class="{{ $user->isActive() ? 'danger-button' : 'success-button' }}" type="submit" @disabled(auth()->user()->is($user))>{{ $user->isActive() ? 'Deactivate account' : 'Activate account' }}</button>
                     </form>
                 </div>
-                @if (auth()->user()->is($user)) <p class="form-help">Hindi mo maaaring i-deactivate ang kasalukuyan mong account.</p> @endif
+                @if (auth()->user()->is($user)) <p class="form-help">You cannot deactivate the account you are currently using.</p> @endif
             </section>
 
             <section class="card">

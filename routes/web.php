@@ -6,6 +6,9 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\NstpAdmin\DashboardController as NstpAdminDashboardController;
 use App\Http\Controllers\NstpAdmin\ProfileController as NstpAdminProfileController;
+use App\Http\Controllers\NstpAdmin\ComponentController as NstpAdminComponentController;
+use App\Http\Controllers\NstpAdmin\SectionController as NstpAdminSectionController;
+use App\Http\Controllers\NstpAdmin\SectioningController as NstpAdminSectioningController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -15,7 +18,7 @@ Route::get('/', function () {
 
     $routeName = auth()->user()->dashboardRouteName();
 
-    abort_unless($routeName, 403, 'Hindi pa available ang dashboard para sa account role na ito.');
+    abort_unless($routeName, 403, 'A dashboard is not yet available for this account role.');
 
     return redirect()->route($routeName);
 });
@@ -25,6 +28,18 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [NstpAdminProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [NstpAdminProfileController::class, 'updatePassword'])->name('password.update');
+    Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
+    Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
+    Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
+    Route::get('/sections', [NstpAdminSectionController::class, 'index'])->name('sections.index');
+    Route::get('/sections/create', [NstpAdminSectionController::class, 'create'])->name('sections.create');
+    Route::post('/sections', [NstpAdminSectionController::class, 'store'])->name('sections.store');
+    Route::get('/sections/{section}/edit', [NstpAdminSectionController::class, 'edit'])->name('sections.edit');
+    Route::put('/sections/{section}', [NstpAdminSectionController::class, 'update'])->name('sections.update');
+    Route::get('/sectioning', [NstpAdminSectioningController::class, 'index'])->name('sectioning.index');
+    Route::post('/sectioning/enroll', [NstpAdminSectioningController::class, 'enroll'])->name('sectioning.enroll');
+    Route::post('/sectioning/automate', [NstpAdminSectioningController::class, 'automate'])->name('sectioning.automate');
+    Route::delete('/sectioning/enrollments/{enrollment}', [NstpAdminSectioningController::class, 'destroy'])->name('sectioning.destroy');
 });
 
 Route::middleware('guest')->group(function () {

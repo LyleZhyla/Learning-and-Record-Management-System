@@ -42,6 +42,6 @@
             <span>Confirm temporary password</span>
             <input type="password" name="password_confirmation" autocomplete="new-password" required>
         </label>
-        <p class="form-help full">At least 12 characters with uppercase, lowercase, number, and symbol. Required itong palitan ng user sa unang login.</p>
+        <p class="form-help full">Use at least 12 characters with uppercase and lowercase letters, a number, and a symbol. The user must change this temporary password at the next login.</p>
     @endif
 </div>

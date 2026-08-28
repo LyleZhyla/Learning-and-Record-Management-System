@@ -1,0 +1,8 @@
+@extends('layouts.nstp-admin')
+@section('title','Manage '.$section->code)
+@section('page-title','Manage NSTP Section')
+@section('content')
+<div class="back-row"><a href="{{ route('nstp_admin.sections.index') }}">← Back to sections</a></div>
+<div class="editor-grid"><section class="card"><div class="account-heading"><span class="large-avatar small">{{ substr($section->component->code,0,1) }}</span><div><span class="eyebrow">{{ $section->component->code }} section</span><h2>{{ $section->code }}</h2><p>{{ $section->name }}</p></div></div><form method="POST" action="{{ route('nstp_admin.sections.update',$section) }}" class="account-form">@csrf @method('PUT') @include('nstp_admin.sections._form')<div class="form-actions"><button class="primary-button compact" type="submit">Save section</button></div></form></section>
+<aside class="card account-summary"><div class="card-heading"><div><span class="eyebrow">Enrollment</span><h3>Section occupancy</h3></div></div><div class="occupancy-number">{{ $section->enrollments_count }}<small>of {{ $section->capacity }} seats used</small></div><div class="occupancy-track"><span style="width:{{ min(100, $section->capacity ? ($section->enrollments_count / $section->capacity * 100) : 0) }}%"></span></div><p class="form-help">Capacity cannot be reduced below the current number of assigned students.</p><a class="text-link" href="{{ route('nstp_admin.sectioning.index',['component_id'=>$section->component_id,'academic_year'=>$section->academic_year,'semester'=>$section->semester]) }}">Open student sectioning →</a></aside></div>
+@endsection

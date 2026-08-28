@@ -63,7 +63,7 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('admin.users.edit', $user)
-            ->with('status', "Nagawa na ang {$user->roleLabel()} account ni {$user->name}.");
+            ->with('status', "The {$user->roleLabel()} account for {$user->name} was created successfully.");
     }
 
     public function edit(User $user): View
@@ -76,11 +76,11 @@ class UserController extends Controller
         $validated = $request->validate($this->accountRules($user, false));
 
         if ($request->user()->is($user) && $validated['role'] !== 'super_admin') {
-            throw ValidationException::withMessages(['role' => 'Hindi mo maaaring palitan ang sarili mong Super Admin role.']);
+            throw ValidationException::withMessages(['role' => 'You cannot change your own Super Admin role.']);
         }
 
         if ($request->user()->is($user) && $validated['status'] !== 'active') {
-            throw ValidationException::withMessages(['status' => 'Hindi mo maaaring i-deactivate ang sarili mong account.']);
+            throw ValidationException::withMessages(['status' => 'You cannot deactivate your own account.']);
         }
 
         $this->ensureActiveSuperAdminRemains($user, $validated['role'], $validated['status']);
@@ -98,13 +98,13 @@ class UserController extends Controller
 
         $user->save();
 
-        return back()->with('status', 'Na-update ang user account.');
+        return back()->with('status', 'The user account was updated successfully.');
     }
 
     public function toggleStatus(Request $request, User $user): RedirectResponse
     {
         if ($request->user()->is($user)) {
-            return back()->withErrors(['status' => 'Hindi mo maaaring i-deactivate ang sarili mong account.']);
+            return back()->withErrors(['status' => 'You cannot deactivate your own account.']);
         }
 
         $newStatus = $user->isActive() ? 'inactive' : 'active';
@@ -131,7 +131,7 @@ class UserController extends Controller
 
         DB::table('sessions')->where('user_id', $user->id)->delete();
 
-        return back()->with('status', "Na-reset ang password ni {$user->name}. Temporary password na ito at kailangang palitan sa unang login.");
+        return back()->with('status', "The password for {$user->name} was reset. This is a temporary password and must be changed at the next login.");
     }
 
     private function accountRules(?User $user = null, bool $includePassword = true): array
@@ -158,7 +158,7 @@ class UserController extends Controller
 
         if ($removesActiveSuperAdmin && User::where('role', 'super_admin')->where('status', 'active')->count() <= 1) {
             throw ValidationException::withMessages([
-                'role' => 'Kailangang may matirang kahit isang active Super Admin account.',
+                'role' => 'At least one active Super Admin account must remain in the system.',
             ]);
         }
     }
