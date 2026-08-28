@@ -1,4 +1,4 @@
-@extends('layouts.nstp-admin')
+@extends($routePrefix === 'admin' ? 'layouts.admin' : 'layouts.nstp-admin')
 
 @section('title', 'NSTP Components')
 @section('page-title', 'NSTP Components')
@@ -6,7 +6,7 @@
 @section('content')
     <section class="page-actions">
         <div><span class="eyebrow">Program configuration</span><h2>Configure CWTS, LTS, and ROTC</h2><p>Manage component availability, descriptions, and the default capacity used by automated sectioning.</p></div>
-        <a class="primary-button compact" href="{{ route('nstp_admin.sectioning.index') }}">Open automated sectioning</a>
+        <a class="primary-button compact" href="{{ route($routePrefix.'.sectioning.index') }}">Open automated sectioning</a>
     </section>
 
     <section class="management-component-grid">
@@ -25,8 +25,8 @@
                     <div><dt>Enrollments</dt><dd>{{ $component->enrollments_count }}</dd></div>
                 </dl>
                 <div class="component-actions">
-                    <a class="secondary-outline-button" href="{{ route('nstp_admin.components.edit', $component) }}">Configure</a>
-                    <a class="table-action" href="{{ route('nstp_admin.sections.index', ['component' => $component->id]) }}">View sections →</a>
+                    <a class="secondary-outline-button" href="{{ route($routePrefix.'.components.edit', $component) }}">Configure</a>
+                    <a class="table-action" href="{{ route($routePrefix.'.sections.index', ['component' => $component->id]) }}">View sections →</a>
                 </div>
             </article>
         @endforeach

@@ -20,6 +20,7 @@ Laravel 12 and MySQL/MariaDB foundation for the Smart NSTP platform.
 - Term-based section management with capacity and facilitator assignments
 - Student component enrollment and automated capacity-based section generation
 - English-only user interface, feedback, warnings, and validation messages
+- Shared NSTP structure management access for Super Admin and NSTP Admin
 
 ## Local requirements
 

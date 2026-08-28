@@ -39,6 +39,7 @@ class SectionController extends Controller
             'sections' => $sections,
             'components' => NstpComponent::orderBy('code')->get(),
             'filters' => $filters,
+            'routePrefix' => $this->routePrefix($request),
         ]);
     }
 
@@ -50,6 +51,7 @@ class SectionController extends Controller
             'facilitators' => $this->facilitators(),
             'selectedComponent' => $request->integer('component') ?: null,
             'defaultAcademicYear' => $this->currentAcademicYear(),
+            'routePrefix' => $this->routePrefix($request),
         ]);
     }
 
@@ -59,11 +61,11 @@ class SectionController extends Controller
 
         $section = NstpSection::create($validated);
 
-        return redirect()->route('nstp_admin.sections.edit', $section)
+        return redirect()->route($this->routePrefix($request).'.sections.edit', $section)
             ->with('status', "Section {$section->code} created successfully.");
     }
 
-    public function edit(NstpSection $section): View
+    public function edit(Request $request, NstpSection $section): View
     {
         $section->loadCount('enrollments');
 
@@ -73,6 +75,7 @@ class SectionController extends Controller
             'facilitators' => $this->facilitators(),
             'selectedComponent' => $section->component_id,
             'defaultAcademicYear' => $section->academic_year,
+            'routePrefix' => $this->routePrefix($request),
         ]);
     }
 
@@ -148,5 +151,10 @@ class SectionController extends Controller
         $start = now()->month >= 6 ? $year : $year - 1;
 
         return $start.'-'.($start + 1);
+    }
+
+    private function routePrefix(Request $request): string
+    {
+        return $request->user()->isSuperAdmin() ? 'admin' : 'nstp_admin';
     }
 }

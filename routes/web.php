@@ -63,4 +63,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])->name('users.status');
     Route::put('/users/{user}/password', [UserController::class, 'resetPassword'])->name('users.password');
+    Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
+    Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
+    Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
+    Route::get('/sections', [NstpAdminSectionController::class, 'index'])->name('sections.index');
+    Route::get('/sections/create', [NstpAdminSectionController::class, 'create'])->name('sections.create');
+    Route::post('/sections', [NstpAdminSectionController::class, 'store'])->name('sections.store');
+    Route::get('/sections/{section}/edit', [NstpAdminSectionController::class, 'edit'])->name('sections.edit');
+    Route::put('/sections/{section}', [NstpAdminSectionController::class, 'update'])->name('sections.update');
+    Route::get('/sectioning', [NstpAdminSectioningController::class, 'index'])->name('sectioning.index');
+    Route::post('/sectioning/enroll', [NstpAdminSectioningController::class, 'enroll'])->name('sectioning.enroll');
+    Route::post('/sectioning/automate', [NstpAdminSectioningController::class, 'automate'])->name('sectioning.automate');
+    Route::delete('/sectioning/enrollments/{enrollment}', [NstpAdminSectioningController::class, 'destroy'])->name('sectioning.destroy');
 });

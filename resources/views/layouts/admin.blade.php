@@ -32,8 +32,9 @@
                 <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
                     <span class="nav-icon">♙</span> User Accounts
                 </a>
-                <span class="nav-link disabled"><span class="nav-icon">▦</span> NSTP Components <em>Soon</em></span>
-                <span class="nav-link disabled"><span class="nav-icon">▤</span> Sections <em>Soon</em></span>
+                <a class="nav-link {{ request()->routeIs('admin.components.*') ? 'active' : '' }}" href="{{ route('admin.components.index') }}"><span class="nav-icon">◉</span> NSTP Components</a>
+                <a class="nav-link {{ request()->routeIs('admin.sections.*') ? 'active' : '' }}" href="{{ route('admin.sections.index') }}"><span class="nav-icon">▦</span> Sections</a>
+                <a class="nav-link {{ request()->routeIs('admin.sectioning.*') ? 'active' : '' }}" href="{{ route('admin.sectioning.index') }}"><span class="nav-icon">♙</span> Student Sectioning</a>
                 <span class="nav-link disabled"><span class="nav-icon">◫</span> Reports <em>Soon</em></span>
                 <p class="nav-label">Account</p>
                 <a class="nav-link {{ request()->routeIs('admin.profile.*') ? 'active' : '' }}" href="{{ route('admin.profile.edit') }}">

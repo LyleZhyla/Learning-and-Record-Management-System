@@ -30,6 +30,21 @@ class NstpStructureManagementTest extends TestCase
             ->assertSeeTextInOrder(['CWTS', 'LTS', 'ROTC']);
     }
 
+    public function test_super_admin_can_manage_the_same_nstp_structure_records(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($admin)
+            ->get('/admin/components')
+            ->assertOk()
+            ->assertSeeTextInOrder(['CWTS', 'LTS', 'ROTC']);
+
+        $this->actingAs($admin)
+            ->get('/admin/sectioning')
+            ->assertOk()
+            ->assertSee('Automated Student Sectioning');
+    }
+
     public function test_nstp_admin_can_create_a_section_with_a_facilitator(): void
     {
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);

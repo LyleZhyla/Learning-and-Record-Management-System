@@ -1,14 +1,14 @@
-@extends('layouts.nstp-admin')
+@extends($routePrefix === 'admin' ? 'layouts.admin' : 'layouts.nstp-admin')
 
 @section('title', 'Configure '.$component->code)
 @section('page-title', 'Configure '.$component->code)
 
 @section('content')
-    <div class="back-row"><a href="{{ route('nstp_admin.components.index') }}">← Back to NSTP components</a></div>
+    <div class="back-row"><a href="{{ route($routePrefix.'.components.index') }}">← Back to NSTP components</a></div>
     <div class="editor-grid">
         <section class="card">
             <div class="account-heading"><span class="large-avatar small">{{ substr($component->code, 0, 1) }}</span><div><span class="eyebrow">NSTP component</span><h2>{{ $component->code }}</h2><p>{{ $component->name }}</p></div></div>
-            <form method="POST" action="{{ route('nstp_admin.components.update', $component) }}" class="account-form">
+            <form method="POST" action="{{ route($routePrefix.'.components.update', $component) }}" class="account-form">
                 @csrf @method('PUT')
                 <div class="form-grid">
                     <label class="field-group full"><span>Official component name</span><input name="name" value="{{ old('name', $component->name) }}" maxlength="150" required>@error('name')<small class="field-error">{{ $message }}</small>@enderror</label>
@@ -22,7 +22,7 @@
         <aside class="card account-summary">
             <div class="card-heading"><div><span class="eyebrow">Current usage</span><h3>{{ $component->code }} overview</h3></div></div>
             <dl><div><dt>Existing sections</dt><dd>{{ $component->sections_count }}</dd></div><div><dt>Student enrollments</dt><dd>{{ $component->enrollments_count }}</dd></div><div><dt>Component code</dt><dd>{{ $component->code }}</dd></div></dl>
-            <a class="text-link" href="{{ route('nstp_admin.sections.create', ['component' => $component->id]) }}">Create a {{ $component->code }} section →</a>
+            <a class="text-link" href="{{ route($routePrefix.'.sections.create', ['component' => $component->id]) }}">Create a {{ $component->code }} section →</a>
         </aside>
     </div>
 @endsection

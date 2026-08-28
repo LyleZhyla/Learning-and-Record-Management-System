@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\NstpSection;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -13,7 +14,7 @@ class DashboardController extends Controller
         return view('admin.dashboard', [
             'studentCount' => User::where('role', 'student')->count(),
             'facilitatorCount' => User::where('role', 'facilitator')->count(),
-            'userCount' => User::count(),
+            'activeSectionCount' => NstpSection::where('status', 'active')->count(),
         ]);
     }
 }

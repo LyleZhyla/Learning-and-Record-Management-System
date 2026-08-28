@@ -46,6 +46,7 @@ class SectioningController extends Controller
             'academicYear' => $academicYear,
             'semester' => $semester,
             'componentId' => $componentId,
+            'routePrefix' => $this->routePrefix($request),
         ]);
     }
 
@@ -78,7 +79,7 @@ class SectioningController extends Controller
             }
         });
 
-        return redirect()->route('nstp_admin.sectioning.index', $this->termQuery($validated))
+        return redirect()->route($this->routePrefix($request).'.sectioning.index', $this->termQuery($validated))
             ->with('status', count(array_unique($validated['student_ids'])).' student enrollment(s) saved successfully.');
     }
 
@@ -152,17 +153,17 @@ class SectioningController extends Controller
             ? "Automated sectioning assigned {$assignedCount} student(s) and created {$createdCount} new section(s)."
             : 'No unsectioned students were found for the selected component and term.';
 
-        return redirect()->route('nstp_admin.sectioning.index', $this->termQuery($validated))
+        return redirect()->route($this->routePrefix($request).'.sectioning.index', $this->termQuery($validated))
             ->with('status', $message);
     }
 
-    public function destroy(NstpEnrollment $enrollment): RedirectResponse
+    public function destroy(Request $request, NstpEnrollment $enrollment): RedirectResponse
     {
         $query = $this->termQuery($enrollment->toArray());
         $studentName = $enrollment->student->name;
         $enrollment->delete();
 
-        return redirect()->route('nstp_admin.sectioning.index', $query)
+        return redirect()->route($this->routePrefix($request).'.sectioning.index', $query)
             ->with('status', "{$studentName} was removed from the selected NSTP term.");
     }
 
@@ -211,5 +212,10 @@ class SectioningController extends Controller
     private function currentSemester(): string
     {
         return now()->month >= 6 ? 'first' : 'second';
+    }
+
+    private function routePrefix(Request $request): string
+    {
+        return $request->user()->isSuperAdmin() ? 'admin' : 'nstp_admin';
     }
 }

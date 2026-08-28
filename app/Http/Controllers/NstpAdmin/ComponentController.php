@@ -10,20 +10,26 @@ use Illuminate\View\View;
 
 class ComponentController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $components = NstpComponent::withCount(['sections', 'enrollments'])
             ->orderByRaw("FIELD(code, 'CWTS', 'LTS', 'ROTC')")
             ->get();
 
-        return view('nstp_admin.components.index', compact('components'));
+        return view('nstp_admin.components.index', [
+            'components' => $components,
+            'routePrefix' => $this->routePrefix($request),
+        ]);
     }
 
-    public function edit(NstpComponent $component): View
+    public function edit(Request $request, NstpComponent $component): View
     {
         $component->loadCount(['sections', 'enrollments']);
 
-        return view('nstp_admin.components.edit', compact('component'));
+        return view('nstp_admin.components.edit', [
+            'component' => $component,
+            'routePrefix' => $this->routePrefix($request),
+        ]);
     }
 
     public function update(Request $request, NstpComponent $component): RedirectResponse
@@ -37,7 +43,12 @@ class ComponentController extends Controller
 
         $component->update($validated);
 
-        return redirect()->route('nstp_admin.components.index')
+        return redirect()->route($this->routePrefix($request).'.components.index')
             ->with('status', "{$component->code} configuration updated successfully.");
+    }
+
+    private function routePrefix(Request $request): string
+    {
+        return $request->user()->isSuperAdmin() ? 'admin' : 'nstp_admin';
     }
 }
