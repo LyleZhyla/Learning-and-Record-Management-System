@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
@@ -92,6 +93,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])->name('users.status');
     Route::put('/users/{user}/password', [UserController::class, 'resetPassword'])->name('users.password');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');

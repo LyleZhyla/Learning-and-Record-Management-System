@@ -27,7 +27,8 @@
                 <div class="module-item"><span class="step done">1</span><div><strong>Super Admin account</strong><p>Secure login, role protection, profile, password change, and logout</p></div><span class="state done">Complete</span></div>
                 <div class="module-item"><span class="step done">2</span><div><strong>User and role management</strong><p>Manage Student, Facilitator, Coordinator, NSTP Admin, and Super Admin accounts</p></div><span class="state done">Complete</span></div>
                 <div class="module-item"><span class="step done">3</span><div><strong>NSTP components and sections</strong><p>Configure CWTS, LTS, ROTC, and automated sectioning</p></div><span class="state done">Complete</span></div>
-                <div class="module-item"><span class="step">4</span><div><strong>Attendance and learning</strong><p>QR monitoring, materials, assessments, and grades</p></div><span class="state">Planned</span></div>
+                <div class="module-item"><span class="step done">4</span><div><strong>Attendance and learning</strong><p>QR monitoring, materials, assessments, and grades</p></div><span class="state done">Complete</span></div>
+                <div class="module-item"><span class="step done">5</span><div><strong>Operational reports</strong><p>Student, attendance, grade, component, and section reports</p></div><span class="state done">Complete</span></div>
             </div>
         </section>
 

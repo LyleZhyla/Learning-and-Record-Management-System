@@ -40,7 +40,7 @@
                 <a class="nav-link {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('admin.materials.index') }}"><span class="nav-icon">▤</span> Learning Materials</a>
                 <a class="nav-link {{ request()->routeIs('admin.assessments.*') ? 'active' : '' }}" href="{{ route('admin.assessments.index') }}"><span class="nav-icon">✓</span> Assessments</a>
                 <a class="nav-link {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}" href="{{ route('admin.grades.index') }}"><span class="nav-icon">◎</span> Grades</a>
-                <span class="nav-link disabled"><span class="nav-icon">◫</span> Reports <em>Soon</em></span>
+                <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}"><span class="nav-icon">◫</span> Reports</a>
                 <p class="nav-label">Account</p>
                 <a class="nav-link {{ request()->routeIs('admin.profile.*') ? 'active' : '' }}" href="{{ route('admin.profile.edit') }}">
                     <span class="nav-icon">⚙</span> Profile & Security
