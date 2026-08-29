@@ -31,8 +31,12 @@ class ReportController extends Controller
     {
         $filters = $this->filters($request);
         $report = $this->buildReport($filters);
+        $routePrefix = $request->user()->isNstpAdmin() ? 'nstp_admin' : 'admin';
+        $layout = $request->user()->isNstpAdmin() ? 'layouts.nstp-admin' : 'layouts.admin';
 
         return view('admin.reports.index', [
+            'layout' => $layout,
+            'routePrefix' => $routePrefix,
             'filters' => $filters,
             'report' => $report,
             'reportTypes' => self::TYPES,

@@ -17,11 +17,13 @@ use App\Http\Controllers\Learning\AttendanceController as ManagementAttendanceCo
 use App\Http\Controllers\Learning\MaterialController;
 use App\Http\Controllers\Learning\OmrScannerController;
 use App\Http\Controllers\NstpAdmin\AccountController as NstpAdminAccountController;
+use App\Http\Controllers\NstpAdmin\AnnouncementController as NstpAdminAnnouncementController;
 use App\Http\Controllers\NstpAdmin\ComponentController as NstpAdminComponentController;
 use App\Http\Controllers\NstpAdmin\DashboardController as NstpAdminDashboardController;
 use App\Http\Controllers\NstpAdmin\ProfileController as NstpAdminProfileController;
 use App\Http\Controllers\NstpAdmin\SectionController as NstpAdminSectionController;
 use App\Http\Controllers\NstpAdmin\SectioningController as NstpAdminSectioningController;
+use App\Http\Controllers\Portal\AnnouncementController as PortalAnnouncementController;
 use App\Http\Controllers\Portal\ProfileController as PortalProfileController;
 use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
@@ -82,6 +84,10 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::put('/password', [NstpAdminProfileController::class, 'updatePassword'])->name('password.update');
     Route::get('/accounts', [NstpAdminAccountController::class, 'index'])->name('accounts.index');
     Route::get('/accounts/{user}', [NstpAdminAccountController::class, 'show'])->name('accounts.show');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
+    Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
@@ -146,6 +152,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
 
 Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes) {
     Route::get('/dashboard', FacilitatorDashboardController::class)->name('dashboard');
+    Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/students', [FacilitatorStudentController::class, 'index'])->name('students.index');
     Route::get('/students/{student}', [FacilitatorStudentController::class, 'show'])->name('students.show');
     Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
@@ -157,6 +164,7 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
 
 Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
+    Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/components', [CoordinatorMonitoringController::class, 'components'])->name('components.index');
     Route::get('/accounts', [CoordinatorAccountController::class, 'index'])->name('accounts.index');
     Route::get('/accounts/{user}', [CoordinatorAccountController::class, 'show'])->name('accounts.show');
@@ -182,6 +190,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
 
 Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () {
     Route::get('/dashboard', StudentDashboardController::class)->name('dashboard');
+    Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');

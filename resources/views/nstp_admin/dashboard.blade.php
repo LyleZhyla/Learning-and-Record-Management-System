@@ -49,7 +49,8 @@
                 <div><span class="check ready">✓</span><p><strong>NSTP Admin access</strong><small>Secure role-based dashboard</small></p></div>
                 <div><span class="check ready">✓</span><p><strong>Components & sections</strong><small>CWTS, LTS, and ROTC configuration</small></p></div>
                 <div><span class="check ready">✓</span><p><strong>Student assignment</strong><small>Automated component and section placement</small></p></div>
-                <div><span class="check">4</span><p><strong>Operational reports</strong><small>Masterlists and summaries</small></p></div>
+                <div><span class="check ready">✓</span><p><strong>Operational reports</strong><small>Masterlists, summaries, CSV, and print output</small></p></div>
+                <div><span class="check ready">✓</span><p><strong>Announcements</strong><small>Targeted messages by audience and component</small></p></div>
             </div>
         </aside>
     </div>

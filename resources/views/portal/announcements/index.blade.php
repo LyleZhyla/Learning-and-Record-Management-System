@@ -1,0 +1,6 @@
+@extends($layout)
+@section('title', 'Announcements') @section('page-title', 'Announcements')
+@section('content')
+<section class="page-actions"><div><span class="eyebrow">NSTP communication center</span><h2>Latest announcements</h2><p>Published updates intended for your role and NSTP component.</p></div></section>
+<div class="management-component-grid">@forelse($announcements as $announcement)<article class="card"><div class="card-heading"><div><span class="eyebrow">{{ $announcement->component?->code ?? 'All components' }} · {{ $announcement->audienceLabel() }}</span><h3>{{ $announcement->title }}</h3><p>{{ $announcement->published_at?->format('M d, Y h:i A') }} · {{ $announcement->author?->name }}</p></div></div><div class="announcement-body">{!! nl2br(e($announcement->body)) !!}</div>@if($announcement->expires_at)<p class="muted-cell">Available until {{ $announcement->expires_at->format('M d, Y h:i A') }}</p>@endif</article>@empty<div class="empty-state"><strong>No announcements</strong><span>Published announcements for your role and component will appear here.</span></div>@endforelse</div>@if($announcements->hasPages())<div class="pagination-row">{{ $announcements->links() }}</div>@endif
+@endsection

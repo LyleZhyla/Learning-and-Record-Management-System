@@ -35,15 +35,15 @@
                 <a class="nav-link {{ request()->routeIs('nstp_admin.components.*') ? 'active' : '' }}" href="{{ route('nstp_admin.components.index') }}"><span class="nav-icon">◉</span> Components</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.sections.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sections.index') }}"><span class="nav-icon">▦</span> Sections</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.sectioning.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sectioning.index') }}"><span class="nav-icon">♙</span> Student Sectioning</a>
-                <span class="nav-link disabled"><span class="nav-icon">◎</span> Facilitators <em>Soon</em></span>
+                <a class="nav-link {{ request('role') === 'facilitator' && request()->routeIs('nstp_admin.accounts.*') ? 'active' : '' }}" href="{{ route('nstp_admin.accounts.index', ['role' => 'facilitator']) }}"><span class="nav-icon">◎</span> Facilitators</a>
                 <p class="nav-label">Attendance & Learning</p>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.attendance.*') ? 'active' : '' }}" href="{{ route('nstp_admin.attendance.index') }}"><span class="nav-icon">▣</span> Attendance</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.materials.*') ? 'active' : '' }}" href="{{ route('nstp_admin.materials.index') }}"><span class="nav-icon">▤</span> Learning Materials</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.assessments.*') ? 'active' : '' }}" href="{{ route('nstp_admin.assessments.index') }}"><span class="nav-icon">✓</span> Assessments</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.grades.*') ? 'active' : '' }}" href="{{ route('nstp_admin.grades.index') }}"><span class="nav-icon">◎</span> Grades</a>
-                <span class="nav-link disabled"><span class="nav-icon">▤</span> Reports <em>Soon</em></span>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.reports.*') ? 'active' : '' }}" href="{{ route('nstp_admin.reports.index') }}"><span class="nav-icon">▤</span> Reports</a>
                 <p class="nav-label">Communication</p>
-                <span class="nav-link disabled"><span class="nav-icon">◫</span> Announcements <em>Soon</em></span>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.announcements.*') ? 'active' : '' }}" href="{{ route('nstp_admin.announcements.index') }}"><span class="nav-icon">◫</span> Announcements</a>
                 <p class="nav-label">Account</p>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.profile.*') ? 'active' : '' }}" href="{{ route('nstp_admin.profile.edit') }}">
                     <span class="nav-icon">⚙</span> Profile & Security

@@ -1,4 +1,4 @@
-@extends('layouts.admin')
+@extends($layout)
 
 @section('title', 'Reports')
 @section('page-title', 'Reports')
@@ -22,12 +22,12 @@
 
     <nav class="report-tabs" aria-label="Report types">
         @foreach ($reportTypes as $type => $label)
-            <a class="{{ $filters['type'] === $type ? 'active' : '' }}" href="{{ route('admin.reports.index', array_merge(collect($filters)->except('type')->all(), ['type' => $type])) }}">{{ $label }}</a>
+            <a class="{{ $filters['type'] === $type ? 'active' : '' }}" href="{{ route($routePrefix.'.reports.index', array_merge(collect($filters)->except('type')->all(), ['type' => $type])) }}">{{ $label }}</a>
         @endforeach
     </nav>
 
     <section class="card report-filter-card">
-        <form method="GET" action="{{ route('admin.reports.index') }}" class="report-filter-grid">
+        <form method="GET" action="{{ route($routePrefix.'.reports.index') }}" class="report-filter-grid">
             <input type="hidden" name="type" value="{{ $filters['type'] }}">
             <label class="field-group"><span>Academic year</span><select name="academic_year"><option value="">All academic years</option>@foreach($academicYears as $year)<option value="{{ $year }}" @selected(($filters['academic_year'] ?? '') === $year)>{{ $year }}</option>@endforeach</select></label>
             <label class="field-group"><span>Semester</span><select name="semester"><option value="">All semesters</option>@foreach(\App\Models\NstpSection::SEMESTERS as $value => $label)<option value="{{ $value }}" @selected(($filters['semester'] ?? '') === $value)>{{ $label }}</option>@endforeach</select></label>
@@ -37,7 +37,7 @@
                 <label class="field-group"><span>Date from</span><input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"></label>
                 <label class="field-group"><span>Date to</span><input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"></label>
             @endif
-            <div class="report-filter-actions"><button class="filter-button" type="submit">Generate report</button><a class="clear-filter" href="{{ route('admin.reports.index', ['type' => $filters['type']]) }}">Clear filters</a></div>
+            <div class="report-filter-actions"><button class="filter-button" type="submit">Generate report</button><a class="clear-filter" href="{{ route($routePrefix.'.reports.index', ['type' => $filters['type']]) }}">Clear filters</a></div>
         </form>
     </section>
 
@@ -45,8 +45,8 @@
         <div class="report-result-heading">
             <div><span class="eyebrow">Generated report</span><h3>{{ $report['title'] }}</h3><p>{{ $report['rows']->count() }} record{{ $report['rows']->count() === 1 ? '' : 's' }} matched the selected filters.</p></div>
             <div class="report-output-actions">
-                <a class="secondary-outline-button" target="_blank" href="{{ route('admin.reports.print', array_merge(['type' => $filters['type']], collect($filters)->except('type')->all())) }}">Print report</a>
-                <a class="primary-button compact" href="{{ route('admin.reports.export', array_merge(['type' => $filters['type']], collect($filters)->except('type')->all())) }}">Download CSV</a>
+                <a class="secondary-outline-button" target="_blank" href="{{ route($routePrefix.'.reports.print', array_merge(['type' => $filters['type']], collect($filters)->except('type')->all())) }}">Print report</a>
+                <a class="primary-button compact" href="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($filters)->except('type')->all())) }}">Download CSV</a>
             </div>
         </div>
         <div class="table-wrap"><table class="data-table report-table"><thead><tr>@foreach($report['headers'] as $header)<th>{{ $header }}</th>@endforeach</tr></thead><tbody>@forelse($report['rows'] as $row)<tr>@foreach($row as $value)<td>{{ $value }}</td>@endforeach</tr>@empty<tr><td colspan="{{ count($report['headers']) }}"><div class="empty-state"><strong>No records found</strong><span>Try removing one or more report filters.</span></div></td></tr>@endforelse</tbody></table></div>
