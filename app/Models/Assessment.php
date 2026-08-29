@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Assessment extends Model
 {
-    protected $fillable = ['section_id', 'created_by', 'title', 'type', 'instructions', 'max_score', 'weight', 'due_at', 'published_at', 'status'];
+    protected $fillable = ['section_id', 'grading_category_id', 'created_by', 'title', 'type', 'instructions', 'max_score', 'weight', 'sort_order', 'due_at', 'published_at', 'status'];
 
     protected function casts(): array
     {
@@ -19,6 +19,11 @@ class Assessment extends Model
     public function section(): BelongsTo
     {
         return $this->belongsTo(NstpSection::class, 'section_id');
+    }
+
+    public function gradingCategory(): BelongsTo
+    {
+        return $this->belongsTo(GradingCategory::class);
     }
 
     public function creator(): BelongsTo

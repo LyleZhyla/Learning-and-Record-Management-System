@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AssessmentSubmission;
 use App\Models\AttendanceRecord;
-use App\Models\AttendanceSession;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
@@ -118,6 +117,7 @@ class ReportController extends Controller
             ->when($hasEnrollmentFilters, fn ($query) => $query->whereHas('nstpEnrollments', $enrollmentFilter))
             ->orderBy('name')->get()->map(function ($student) {
                 $enrollment = $student->nstpEnrollments->first();
+
                 return [
                     'student' => $student->name,
                     'email' => $student->email,
@@ -141,6 +141,7 @@ class ReportController extends Controller
                     ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('starts_at', '<=', $date));
             })->latest('checked_in_at')->get()->map(function ($item) {
                 $session = $item->attendanceSession;
+
                 return [
                     'student' => $item->student->name, 'component' => $session->section->component->code,
                     'section' => $session->section->code, 'session' => $session->title,
@@ -158,15 +159,18 @@ class ReportController extends Controller
             ->whereNotNull('section_id')->whereHas('section', fn ($q) => $this->applySectionFilters($q, $filters))
             ->get()->sortBy(fn ($item) => $item->student->name)->map(function ($item) {
                 $summary = $this->grades->summary($item->student, $item->section_id);
+
                 return [
                     'student' => $item->student->name, 'component' => $item->component->code, 'section' => $item->section->code,
-                    'graded' => $summary['graded_count'].' of '.$summary['total_count'], 'weight' => number_format($summary['total_weight'], 2).'%',
-                    'grade' => $summary['grade'] === null ? '—' : number_format($summary['grade'], 2).'%',
+                    'graded' => $summary['graded_count'].' of '.$summary['total_count'],
+                    'raw_score_rate' => $summary['raw_percentage'] === null ? '—' : number_format($summary['raw_percentage'], 2).'%',
+                    'percentage' => $summary['percentage'] === null ? '—' : number_format($summary['percentage'], 2).'%',
+                    'grade' => $summary['grade'] === null ? '—' : number_format($summary['grade'], 2),
                     'status' => $summary['total_count'] > 0 && $summary['graded_count'] === $summary['total_count'] ? 'Complete' : 'In progress',
                 ];
             })->values();
 
-        return $this->report('Grade Report', ['Student', 'Component', 'Section', 'Graded Assessments', 'Configured Weight', 'Computed Grade', 'Status'], $rows);
+        return $this->report('Grade Report', ['Student', 'Component', 'Section', 'Graded Score Items', 'Raw Score Rate', 'Weighted Total', 'Final Grade', 'Status'], $rows);
     }
 
     private function sectionReport(array $filters): array
@@ -175,13 +179,14 @@ class ReportController extends Controller
         $this->applySectionFilters($sections, $filters);
         $rows = $sections->orderBy('code')->get()->map(function ($section) {
             $grades = $section->enrollments->map(fn ($item) => $this->grades->summary($item->student, $section->id)['grade'])->filter(fn ($grade) => $grade !== null);
+
             return [
                 'component' => $section->component->code, 'section' => $section->code,
                 'term' => $section->semesterLabel().' '.$section->academic_year, 'facilitator' => $section->facilitator?->name ?? 'Unassigned',
                 'enrollment' => $section->enrollments_count.' / '.$section->capacity,
                 'utilization' => $section->capacity ? number_format(($section->enrollments_count / $section->capacity) * 100, 1).'%' : '0%',
                 'sessions' => $section->attendance_sessions_count, 'assessments' => $section->assessments_count,
-                'average_grade' => $grades->isEmpty() ? '—' : number_format($grades->average(), 2).'%',
+                'average_grade' => $grades->isEmpty() ? '—' : number_format($grades->average(), 2),
             ];
         });
 
@@ -204,6 +209,7 @@ class ReportController extends Controller
     private function attendanceRate(): float
     {
         $total = AttendanceRecord::count();
+
         return $total ? round((AttendanceRecord::whereIn('status', ['present', 'late'])->count() / $total) * 100, 1) : 0;
     }
 }

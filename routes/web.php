@@ -56,6 +56,12 @@ $learningManagementRoutes = function (): void {
     Route::get('/assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');
     Route::put('/assessments/{assessment}/submissions/{submission}', [AssessmentController::class, 'grade'])->name('assessments.grade');
     Route::get('/grades', [AssessmentController::class, 'grades'])->name('grades.index');
+    Route::put('/grades/{section}/structure', [AssessmentController::class, 'updateGradeStructure'])->name('grades.structure');
+    Route::delete('/grades/categories/{category}', [AssessmentController::class, 'destroyGradeCategory'])->name('grades.categories.destroy');
+    Route::post('/grades/{section}/items', [AssessmentController::class, 'storeGradeItem'])->name('grades.items.store');
+    Route::put('/grades/items/{assessment}', [AssessmentController::class, 'updateGradeItem'])->name('grades.items.update');
+    Route::delete('/grades/items/{assessment}', [AssessmentController::class, 'destroyGradeItem'])->name('grades.items.destroy');
+    Route::put('/grades/{section}/scores', [AssessmentController::class, 'updateGradeScore'])->name('grades.scores.update');
 };
 
 $omrScannerRoutes = function (): void {

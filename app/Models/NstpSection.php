@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class NstpSection extends Model
 {
@@ -56,6 +57,16 @@ class NstpSection extends Model
     public function assessments(): HasMany
     {
         return $this->hasMany(Assessment::class, 'section_id');
+    }
+
+    public function gradingCategories(): HasMany
+    {
+        return $this->hasMany(GradingCategory::class, 'section_id')->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function gradingSetting(): HasOne
+    {
+        return $this->hasOne(GradingSetting::class, 'section_id');
     }
 
     public function semesterLabel(): string
