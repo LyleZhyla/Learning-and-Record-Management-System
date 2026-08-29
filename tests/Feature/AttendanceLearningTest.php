@@ -60,6 +60,30 @@ class AttendanceLearningTest extends TestCase
         $this->actingAs($this->student)->get('/student/grades')->assertOk()->assertSee('90.00%');
     }
 
+    public function test_student_can_open_classroom_style_assessment_and_keep_attachment_when_resubmitting_text(): void
+    {
+        $assessment = Assessment::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'Community Reflection', 'type' => 'activity', 'instructions' => 'Upload your reflection.', 'max_score' => 100, 'weight' => 20, 'status' => 'published', 'published_at' => now()]);
+        AssessmentSubmission::create(['assessment_id' => $assessment->id, 'student_id' => $this->student->id, 'answer_text' => 'First response', 'file_path' => 'assessment-submissions/reflection.pdf', 'original_filename' => 'reflection.pdf', 'submitted_at' => now()]);
+
+        $this->actingAs($this->student)
+            ->get('/student/assessments/'.$assessment->id)
+            ->assertOk()
+            ->assertSee('Your work')
+            ->assertSee('reflection.pdf');
+
+        $this->actingAs($this->student)
+            ->post('/student/assessments/'.$assessment->id.'/submit', ['answer_text' => 'Updated response'])
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('assessment_submissions', [
+            'assessment_id' => $assessment->id,
+            'student_id' => $this->student->id,
+            'answer_text' => 'Updated response',
+            'file_path' => 'assessment-submissions/reflection.pdf',
+            'original_filename' => 'reflection.pdf',
+        ]);
+    }
+
     public function test_facilitator_cannot_manage_another_facilitators_section(): void
     {
         $other = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);

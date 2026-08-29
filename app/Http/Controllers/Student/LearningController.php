@@ -57,12 +57,15 @@ class LearningController extends Controller
             'file' => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,jpg,jpeg,png', 'max:10240', 'required_without:answer_text'],
         ]);
         $file = $request->file('file');
+        $existingSubmission = AssessmentSubmission::where('assessment_id', $assessment->id)
+            ->where('student_id', $request->user()->id)
+            ->first();
         AssessmentSubmission::updateOrCreate(
             ['assessment_id' => $assessment->id, 'student_id' => $request->user()->id],
             [
                 'answer_text' => $validated['answer_text'] ?? null,
-                'file_path' => $file?->store('assessment-submissions'),
-                'original_filename' => $file?->getClientOriginalName(),
+                'file_path' => $file?->store('assessment-submissions') ?? $existingSubmission?->file_path,
+                'original_filename' => $file?->getClientOriginalName() ?? $existingSubmission?->original_filename,
                 'submitted_at' => now(), 'score' => null, 'feedback' => null, 'graded_by' => null, 'graded_at' => null,
             ],
         );
