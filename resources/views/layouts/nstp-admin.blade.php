@@ -14,6 +14,7 @@
 <body class="admin-body">
     <div class="app-shell">
         <aside class="sidebar nstp-sidebar" id="sidebar">
+            <button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">‹</button>
             <a class="brand" href="{{ route('nstp_admin.dashboard') }}">
                 <img class="brand-logo" src="{{ asset('images/snapie-logo-160.png') }}" alt="SNAPIE logo">
                 <span><strong>Smart NSTP</strong><small>Management Platform</small></span>
@@ -56,7 +57,7 @@
 
         <main class="main-content">
             <header class="topbar">
-                <button class="menu-button" type="button" aria-label="Toggle navigation" onclick="document.getElementById('sidebar').classList.toggle('open')">☰</button>
+                <button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button>
                 <div>
                     <small>Smart NSTP / NSTP Admin</small>
                     <h1>@yield('page-title', 'Dashboard')</h1>
@@ -83,5 +84,6 @@
             <footer class="app-footer">© {{ date('Y') }} Smart NSTP Management and AI-Integrated Platform</footer>
         </main>
     </div>
+    <script src="{{ asset('js/sidebar.js') }}"></script>
 </body>
 </html>
