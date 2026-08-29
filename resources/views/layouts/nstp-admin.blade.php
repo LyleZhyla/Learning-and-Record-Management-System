@@ -31,6 +31,7 @@
                     <span class="nav-icon">⌂</span> Dashboard
                 </a>
                 <p class="nav-label">NSTP Operations</p>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.accounts.*') ? 'active' : '' }}" href="{{ route('nstp_admin.accounts.index') }}"><span class="nav-icon">♙</span> Account Directory</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.components.*') ? 'active' : '' }}" href="{{ route('nstp_admin.components.index') }}"><span class="nav-icon">◉</span> Components</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.sections.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sections.index') }}"><span class="nav-icon">▦</span> Sections</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.sectioning.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sectioning.index') }}"><span class="nav-icon">♙</span> Student Sectioning</a>
