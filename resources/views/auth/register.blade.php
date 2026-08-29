@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
 </head>
 <body class="auth-body">
     <main class="auth-shell auth-animated auth-register">
@@ -68,6 +68,6 @@
             </div>
         </section>
     </main>
-    <script src="{{ asset('js/auth-transition.js') }}"></script>
+    <script src="{{ asset('js/auth-transition.js') }}?v={{ filemtime(public_path('js/auth-transition.js')) }}"></script>
 </body>
 </html>

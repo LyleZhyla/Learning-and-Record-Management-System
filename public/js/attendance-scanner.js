@@ -26,7 +26,7 @@
         video.srcObject = null;
         video.classList.remove('active');
         placeholder.hidden = false;
-        startButton.textContent = 'Start camera scanner';
+        startButton.textContent = 'Open camera';
     }
 
     async function submitCode(code) {
@@ -84,8 +84,14 @@
             return;
         }
 
+        if (!navigator.mediaDevices?.getUserMedia) {
+            setMessage('Camera access requires HTTPS or localhost. Open SNAPIE through a secure connection, or enter the QR code manually.', 'error');
+            input.focus();
+            return;
+        }
+
         if (!('BarcodeDetector' in window)) {
-            setMessage('QR camera scanning is not supported by this browser. Use Chrome or enter the QR code manually.', 'error');
+            setMessage('QR camera scanning is not supported by this browser. Open this page in an updated Chrome, Edge, or Android browser, or enter the code manually.', 'error');
             input.focus();
             return;
         }
@@ -101,7 +107,7 @@
             scanning = true;
             placeholder.hidden = true;
             video.classList.add('active');
-            startButton.textContent = 'Stop camera';
+            startButton.textContent = 'Close camera';
             setMessage('Camera active. Hold the student QR inside the frame.', 'working');
             scanFrame();
         } catch (_) {

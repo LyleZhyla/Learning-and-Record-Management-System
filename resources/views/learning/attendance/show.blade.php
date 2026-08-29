@@ -29,7 +29,7 @@
             <div class="card-heading">
                 <div>
                     <span class="eyebrow">Student QR scanner</span>
-                    <h3>Scan student ID</h3>
+                    <h3>Scan with device camera</h3>
                     <p>Point the camera at the permanent SNAPIE QR shown on the student’s account.</p>
                 </div>
             </div>
@@ -44,7 +44,7 @@
                         <small>Allow camera access to scan a student QR.</small>
                     </div>
                 </div>
-                <button class="primary-button scanner-start-button" type="button" data-scanner-start>Start camera scanner</button>
+                <button class="primary-button scanner-start-button" type="button" data-scanner-start>Open camera</button>
                 <p class="scanner-message" data-scanner-message role="status">Ready to scan.</p>
 
                 <div class="scanner-divider"><span>or enter the QR code manually</span></div>
@@ -89,6 +89,6 @@
 </div>
 
 @if ($canScan && $attendance->status === 'open')
-    <script src="{{ asset('js/attendance-scanner.js') }}"></script>
+    <script src="{{ asset('js/attendance-scanner.js') }}?v={{ filemtime(public_path('js/attendance-scanner.js')) }}"></script>
 @endif
 @endsection

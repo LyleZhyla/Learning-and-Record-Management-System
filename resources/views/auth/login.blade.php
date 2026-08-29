@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
 </head>
 <body class="auth-body">
     <main class="auth-shell auth-animated">
@@ -56,7 +56,6 @@
                     <button class="primary-button" type="submit">Sign in to dashboard <span>→</span></button>
                 </form>
 
-                <p class="auth-switch">New student? <a href="{{ route('register') }}" data-auth-direction="register">Create an account</a></p>
                 <p class="security-note">Protected by server-side sessions, CSRF validation, password hashing, and login rate limiting.</p>
             </div>
         </section>
@@ -78,6 +77,5 @@
             </div>
         </section>
     </main>
-    <script src="{{ asset('js/auth-transition.js') }}"></script>
 </body>
 </html>

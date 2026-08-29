@@ -77,9 +77,9 @@ class AttendanceController extends Controller
             'status' => 'open',
         ]);
 
-        $message = $request->user()->isFacilitator()
-            ? 'Attendance session created. You can now scan enrolled students’ QR codes.'
-            : 'Attendance session created. An authorized facilitator or coordinator can scan student QR codes.';
+        $message = $request->user()->isSuperAdmin()
+            ? 'Attendance session created. An authorized NSTP Administrator, facilitator, or coordinator can scan student QR codes.'
+            : 'Attendance session created. You can now open the camera scanner for enrolled students’ QR codes.';
 
         return redirect()->route($this->access->routePrefix($request->user()).'.attendance.show', $session)
             ->with('status', $message);
@@ -101,7 +101,9 @@ class AttendanceController extends Controller
         return view('learning.attendance.show', $this->context($request) + [
             'attendance' => $attendance,
             'enrolledStudents' => $enrolledStudents,
-            'canScan' => $request->user()->isFacilitator() || $request->user()->isCoordinator(),
+            'canScan' => $request->user()->isFacilitator()
+                || $request->user()->isNstpAdmin()
+                || $request->user()->isCoordinator(),
             'canManage' => ! $request->user()->isCoordinator(),
         ]);
     }

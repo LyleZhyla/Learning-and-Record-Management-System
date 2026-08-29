@@ -64,16 +64,18 @@ class AttendanceLearningTest extends TestCase
         $this->assertSame(1, AttendanceRecord::where('attendance_session_id', $session->id)->where('student_id', $this->student->id)->count());
     }
 
-    public function test_coordinator_can_scan_but_administrators_cannot(): void
+    public function test_facilitator_coordinator_and_nstp_admin_have_camera_scanner_access(): void
     {
         $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active']);
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $session = AttendanceSession::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'QR Session', 'starts_at' => now()->subMinute(), 'ends_at' => now()->addHour(), 'token' => str()->random(48), 'qr_payload' => '', 'qr_svg' => '', 'status' => 'open']);
         $payload = $this->student->fresh()->studentQrPayload();
 
-        $this->actingAs($coordinator)->get('/coordinator/attendance/'.$session->id)->assertOk()->assertSee('Scan student ID');
+        $this->actingAs($this->facilitator)->get('/facilitator/attendance/'.$session->id)->assertOk()->assertSee('data-scanner-video', false);
+        $this->actingAs($coordinator)->get('/coordinator/attendance/'.$session->id)->assertOk()->assertSee('data-scanner-video', false);
+        $this->actingAs($this->admin)->get('/nstp-admin/attendance/'.$session->id)->assertOk()->assertSee('data-scanner-video', false);
         $this->actingAs($coordinator)->postJson('/coordinator/attendance/'.$session->id.'/scan', ['qr_code' => $payload])->assertOk();
-        $this->actingAs($this->admin)->postJson('/nstp-admin/attendance/'.$session->id.'/scan', ['qr_code' => $payload])->assertForbidden();
+        $this->actingAs($this->admin)->postJson('/nstp-admin/attendance/'.$session->id.'/scan', ['qr_code' => $payload])->assertOk();
         $this->actingAs($superAdmin)->postJson('/admin/attendance/'.$session->id.'/scan', ['qr_code' => $payload])->assertForbidden();
     }
 
