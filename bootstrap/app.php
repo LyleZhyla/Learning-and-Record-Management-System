@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\AuditUserActivity;
+use App\Http\Middleware\EnforceInactivityTimeout;
 use App\Http\Middleware\EnsureUserIsCoordinator;
 use App\Http\Middleware\EnsureUserIsFacilitator;
 use App\Http\Middleware\EnsureUserIsNstpAdmin;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             AuditUserActivity::class,
+            EnforceInactivityTimeout::class,
         ]);
 
         $middleware->alias([

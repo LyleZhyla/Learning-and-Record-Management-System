@@ -29,6 +29,10 @@
                     <div class="alert success" role="status">{{ session('status') }}</div>
                 @endif
 
+                @if (session('inactivity_timeout'))
+                    <div class="alert warning" role="status">{{ session('inactivity_timeout') }}</div>
+                @endif
+
                 @if ($errors->any())
                     <div class="alert danger" role="alert">{{ $errors->first() }}</div>
                 @endif

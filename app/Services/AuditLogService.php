@@ -11,6 +11,31 @@ use Throwable;
 
 class AuditLogService
 {
+    public function recordInactivityLogout(Request $request, User $actor, int $timeoutMinutes): void
+    {
+        try {
+            AuditLog::create([
+                'user_id' => $actor->id,
+                'actor_name' => $actor->name,
+                'actor_email' => $actor->email,
+                'actor_role' => $actor->role,
+                'action' => 'inactivity_logout',
+                'description' => "Automatically signed out after {$timeoutMinutes} minutes of inactivity",
+                'method' => $request->method(),
+                'route_name' => $request->route()?->getName(),
+                'path' => '/'.$request->path(),
+                'ip_address' => $request->ip(),
+                'user_agent' => Str::limit((string) $request->userAgent(), 1000, ''),
+                'status_code' => 401,
+                'duration_ms' => 0,
+                'metadata' => ['timeout_minutes' => $timeoutMinutes],
+                'created_at' => now(),
+            ]);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
+    }
+
     public function record(Request $request, User $actor, int $statusCode, int $durationMs): void
     {
         try {

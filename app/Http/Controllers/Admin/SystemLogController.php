@@ -17,7 +17,7 @@ class SystemLogController extends Controller
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'role' => ['nullable', Rule::in(array_keys(User::ROLE_LABELS))],
-            'action' => ['nullable', Rule::in($availableActions->all())],
+            'action' => ['nullable', 'string', 'max:60'],
             'status' => ['nullable', Rule::in(['success', 'error'])],
             'date_from' => ['nullable', 'date'],
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],

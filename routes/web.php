@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SystemLogController;
+use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
@@ -105,6 +106,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/system-logs', [SystemLogController::class, 'index'])->name('system-logs.index');
+    Route::get('/settings', [SystemSettingController::class, 'edit'])->name('settings.edit');
+    Route::put('/settings', [SystemSettingController::class, 'update'])->name('settings.update');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');

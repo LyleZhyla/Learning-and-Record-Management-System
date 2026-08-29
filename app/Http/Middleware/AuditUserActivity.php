@@ -39,7 +39,7 @@ class AuditUserActivity
 
     private function record(Request $request, mixed $actor, int $statusCode, int $startedAt): void
     {
-        if (! $actor || $request->routeIs('profile.photo')) {
+        if (! $actor || $request->routeIs('profile.photo') || $request->attributes->get('inactivity_timeout_triggered')) {
             return;
         }
 
