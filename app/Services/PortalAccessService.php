@@ -56,6 +56,11 @@ class PortalAccessService
         );
     }
 
+    public function ensureCanConfigureGrades(User $user): void
+    {
+        abort_unless($user->isSuperAdmin() || $user->isNstpAdmin(), 403);
+    }
+
     public function ensureCanScanSection(User $user, NstpSection $section): void
     {
         abort_unless(

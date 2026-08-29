@@ -3,7 +3,7 @@
 @section('page-title', 'Dynamic Grading Sheet')
 @section('content')
 <div class="page-actions">
-    <div><h2>Excel-style class record</h2><p>Edit raw scores directly. Category totals, weighted percentages, and the 1.00–5.00 grade are computed automatically.</p></div>
+    <div><h2>Excel-style class record</h2><p>@if(auth()->user()->isFacilitator())Enter scores for the students assigned to your section. Grading categories and formulas are managed by administrators.@else Edit raw scores and configure categories. Weighted percentages and the 1.00–5.00 grade are computed automatically.@endif</p></div>
 </div>
 
 <section class="card term-panel">
@@ -14,6 +14,7 @@
 </section>
 
 @if($section)
+@if(! auth()->user()->isFacilitator())
 <details class="card grade-settings-card">
     <summary><span><strong>Grading setup</strong><small>Edit category percentages and the transmutation scale</small></span><span class="settings-chevron">⌄</span></summary>
     <form method="POST" action="{{ route($routePrefix.'.grades.structure', $section) }}">@csrf @method('PUT')
@@ -80,6 +81,7 @@
     <form id="delete-item-{{ $assessment->id }}" method="POST" action="{{ route($routePrefix.'.grades.items.destroy', $assessment) }}" onsubmit="return confirm('Delete this score item and all recorded scores?')">@csrf @method('DELETE')</form>
     @endforeach @endforeach
 </details>
+@endif
 
 <section class="card gradebook-card">
     <div class="gradebook-toolbar"><div><h3>{{ $section->code }} class record</h3><p>Click a score cell, type the raw score, then press Enter or click outside to save.</p></div><span id="grade-save-status" class="autosave-status">Ready</span></div>

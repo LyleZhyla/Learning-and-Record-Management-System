@@ -64,6 +64,30 @@ class DynamicGradingTest extends TestCase
         ]);
     }
 
+    public function test_facilitator_cannot_change_the_grading_configuration(): void
+    {
+        [$facilitator, $student, $section] = $this->records();
+        app(GradeService::class)->summary($student, $section->id);
+        $category = $section->gradingCategories()->firstOrFail();
+        $assessment = Assessment::create([
+            'section_id' => $section->id, 'grading_category_id' => $category->id,
+            'created_by' => $facilitator->id, 'title' => 'Locked Item', 'type' => 'activity',
+            'max_score' => 50, 'weight' => 20, 'status' => 'published', 'published_at' => now(),
+        ]);
+
+        $this->actingAs($facilitator)->get('/facilitator/grades')
+            ->assertOk()
+            ->assertSee('Enter scores for the students assigned to your section')
+            ->assertDontSee('Grading setup')
+            ->assertDontSee('Score items');
+
+        $this->actingAs($facilitator)->put('/facilitator/grades/'.$section->id.'/structure')->assertForbidden();
+        $this->actingAs($facilitator)->post('/facilitator/grades/'.$section->id.'/items')->assertForbidden();
+        $this->actingAs($facilitator)->put('/facilitator/grades/items/'.$assessment->id)->assertForbidden();
+        $this->actingAs($facilitator)->delete('/facilitator/grades/items/'.$assessment->id)->assertForbidden();
+        $this->actingAs($facilitator)->delete('/facilitator/grades/categories/'.$category->id)->assertForbidden();
+    }
+
     public function test_student_sees_only_their_own_transparent_grade_breakdown(): void
     {
         [$facilitator, $student, $section] = $this->records();
