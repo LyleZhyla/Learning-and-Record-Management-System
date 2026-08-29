@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -132,6 +133,34 @@ class UserController extends Controller
         DB::table('sessions')->where('user_id', $user->id)->delete();
 
         return back()->with('status', "The password for {$user->name} was reset. This is a temporary password and must be changed at the next login.");
+    }
+
+    public function destroy(Request $request, User $user): RedirectResponse
+    {
+        if ($request->user()->is($user)) {
+            return back()->withErrors(['user' => 'You cannot delete the account you are currently using.']);
+        }
+
+        $this->ensureActiveSuperAdminRemains($user, 'deleted', 'inactive');
+        $actor = $request->user();
+        $photoPath = $user->profile_photo_path;
+        $deletedName = $user->name;
+
+        DB::transaction(function () use ($actor, $user): void {
+            DB::table('attendance_sessions')->where('created_by', $user->id)->update(['created_by' => $actor->id]);
+            DB::table('learning_materials')->where('created_by', $user->id)->update(['created_by' => $actor->id]);
+            DB::table('assessments')->where('created_by', $user->id)->update(['created_by' => $actor->id]);
+            DB::table('omr_sheets')->where('created_by', $user->id)->update(['created_by' => $actor->id]);
+            DB::table('omr_scan_results')->where('scanned_by', $user->id)->update(['scanned_by' => $actor->id]);
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+            $user->delete();
+        });
+
+        if ($photoPath) {
+            Storage::disk('local')->delete($photoPath);
+        }
+
+        return redirect()->route('admin.users.index')->with('status', "The account for {$deletedName} was permanently deleted. Existing institutional records were preserved.");
     }
 
     private function accountRules(?User $user = null, bool $includePassword = true): array

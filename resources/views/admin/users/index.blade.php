@@ -65,7 +65,7 @@
                             <td><span class="role-badge role-{{ $user->role }}">{{ $user->roleLabel() }}</span></td>
                             <td><span class="status-badge {{ $user->status }}"><i></i>{{ $user->statusLabel() }}</span></td>
                             <td class="muted-cell">{{ $user->last_login_at?->format('M d, Y · h:i A') ?? 'Never' }}</td>
-                            <td class="align-right"><a class="table-action" href="{{ route('admin.users.edit', $user) }}">Manage →</a></td>
+                            <td class="align-right"><div class="account-row-actions"><a class="table-action" href="{{ route('admin.users.edit', $user) }}">Edit</a>@unless(auth()->user()->is($user))<form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Permanently delete {{ addslashes($user->name) }}? Their login and personal records will be removed. This cannot be undone.')">@csrf @method('DELETE')<button class="link-danger" type="submit">Delete</button></form>@endunless</div></td>
                         </tr>
                     @empty
                         <tr><td colspan="5"><div class="empty-state"><strong>No accounts found</strong><span>Try changing the filters or create a new account.</span></div></td></tr>

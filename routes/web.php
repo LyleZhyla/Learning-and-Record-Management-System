@@ -117,6 +117,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
     Route::patch('/users/{user}/status', [UserController::class, 'toggleStatus'])->name('users.status');
     Route::put('/users/{user}/password', [UserController::class, 'resetPassword'])->name('users.password');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');

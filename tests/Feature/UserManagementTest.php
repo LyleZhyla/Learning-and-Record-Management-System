@@ -2,6 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assessment;
+use App\Models\NstpComponent;
+use App\Models\NstpSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -14,11 +17,14 @@ class UserManagementTest extends TestCase
     public function test_super_admin_can_view_user_management(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        User::factory()->create(['role' => 'student', 'status' => 'active']);
 
         $this->actingAs($admin)
             ->get('/admin/users')
             ->assertOk()
-            ->assertSee('User and Role Management');
+            ->assertSee('User and Role Management')
+            ->assertSee('Edit')
+            ->assertSee('Delete');
     }
 
     public function test_super_admin_can_create_each_supported_role(): void
@@ -77,5 +83,37 @@ class UserManagementTest extends TestCase
         $student->refresh();
         $this->assertTrue(Hash::check('New!Password2026', $student->password));
         $this->assertTrue($student->must_change_password);
+    }
+
+    public function test_super_admin_can_delete_an_account_without_deleting_institutional_content(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
+        $section = NstpSection::create(['component_id' => $component->id, 'facilitator_id' => $facilitator->id, 'code' => 'CWTS-01', 'name' => 'Section 1', 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);
+        $assessment = Assessment::create(['section_id' => $section->id, 'created_by' => $facilitator->id, 'title' => 'Preserved Assessment', 'type' => 'activity', 'max_score' => 100, 'weight' => 20, 'status' => 'published']);
+
+        $this->actingAs($admin)->delete('/admin/users/'.$facilitator->id)
+            ->assertRedirect('/admin/users')
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('users', ['id' => $facilitator->id]);
+        $this->assertDatabaseHas('assessments', ['id' => $assessment->id, 'created_by' => $admin->id]);
+        $this->assertDatabaseHas('nstp_sections', ['id' => $section->id, 'facilitator_id' => null]);
+    }
+
+    public function test_super_admin_cannot_delete_self_or_the_last_active_super_admin(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $otherAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($admin)->delete('/admin/users/'.$admin->id)->assertSessionHasErrors('user');
+        $this->actingAs($admin)->delete('/admin/users/'.$otherAdmin->id)->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
+        $this->assertDatabaseMissing('users', ['id' => $otherAdmin->id]);
+
+        $thirdAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'inactive']);
+        $this->actingAs($admin)->delete('/admin/users/'.$thirdAdmin->id)->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
     }
 }
