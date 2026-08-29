@@ -16,6 +16,13 @@ class SuperAdminAuthenticationTest extends TestCase
         $this->get('/admin/dashboard')->assertRedirect('/login');
     }
 
+    public function test_public_registration_is_not_available(): void
+    {
+        $this->get('/register')->assertNotFound();
+        $this->post('/register')->assertNotFound();
+        $this->get('/login')->assertOk()->assertDontSee('Create an account');
+    }
+
     public function test_super_admin_can_sign_in(): void
     {
         $user = User::factory()->create([
