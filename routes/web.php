@@ -11,6 +11,7 @@ use App\Http\Controllers\Coordinator\AccountController as CoordinatorAccountCont
 use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
 use App\Http\Controllers\Coordinator\MonitoringController as CoordinatorMonitoringController;
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
+use App\Http\Controllers\Facilitator\StudentController as FacilitatorStudentController;
 use App\Http\Controllers\Learning\AssessmentController;
 use App\Http\Controllers\Learning\AttendanceController as ManagementAttendanceController;
 use App\Http\Controllers\Learning\MaterialController;
@@ -145,6 +146,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
 
 Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes) {
     Route::get('/dashboard', FacilitatorDashboardController::class)->name('dashboard');
+    Route::get('/students', [FacilitatorStudentController::class, 'index'])->name('students.index');
+    Route::get('/students/{student}', [FacilitatorStudentController::class, 'show'])->name('students.show');
     Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');

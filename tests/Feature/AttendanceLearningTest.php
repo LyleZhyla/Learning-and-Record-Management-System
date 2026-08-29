@@ -116,6 +116,33 @@ class AttendanceLearningTest extends TestCase
         $this->actingAs($other)->post('/facilitator/attendance', ['section_id' => $this->section->id, 'title' => 'Unauthorized', 'starts_at' => now(), 'ends_at' => now()->addHour()])->assertForbidden();
     }
 
+    public function test_facilitator_only_sees_students_assigned_to_their_sections(): void
+    {
+        $otherFacilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $otherStudent = User::factory()->create(['name' => 'Hidden Student', 'role' => 'student', 'status' => 'active']);
+        $otherSection = NstpSection::create([
+            'component_id' => $this->section->component_id,
+            'facilitator_id' => $otherFacilitator->id,
+            'code' => 'CWTS-02',
+            'name' => 'Other Section',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'capacity' => 40,
+            'status' => 'active',
+        ]);
+        NstpEnrollment::create(['student_id' => $otherStudent->id, 'component_id' => $otherSection->component_id, 'section_id' => $otherSection->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
+
+        $this->actingAs($this->facilitator)->get('/facilitator/students')
+            ->assertOk()
+            ->assertSee($this->student->name)
+            ->assertDontSee($otherStudent->name)
+            ->assertDontSee('CWTS-02');
+        $this->actingAs($this->facilitator)->get('/facilitator/students/'.$this->student->id)
+            ->assertOk()
+            ->assertSee($this->section->code);
+        $this->actingAs($this->facilitator)->get('/facilitator/students/'.$otherStudent->id)->assertNotFound();
+    }
+
     public function test_each_authorized_portal_can_open_its_attendance_and_learning_pages(): void
     {
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
@@ -123,7 +150,7 @@ class AttendanceLearningTest extends TestCase
         foreach ([
             [$superAdmin, '/admin/attendance', '/admin/materials/create', '/admin/assessments', '/admin/grades'],
             [$this->admin, '/nstp-admin/attendance', '/nstp-admin/materials/create', '/nstp-admin/assessments', '/nstp-admin/grades'],
-            [$this->facilitator, '/facilitator/attendance', '/facilitator/materials/create', '/facilitator/assessments', '/facilitator/grades'],
+            [$this->facilitator, '/facilitator/students', '/facilitator/attendance', '/facilitator/materials/create', '/facilitator/assessments', '/facilitator/grades'],
             [$this->student, '/student/attendance', '/student/materials', '/student/assessments', '/student/grades'],
         ] as $portal) {
             $user = array_shift($portal);

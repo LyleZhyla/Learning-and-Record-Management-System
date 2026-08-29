@@ -1,0 +1,16 @@
+@extends('layouts.facilitator')
+@section('title', 'Student Record') @section('page-title', 'Student Record')
+@section('content')
+<div class="back-row"><a href="{{ route('facilitator.students.index') }}">← Back to my students</a></div>
+
+<section class="card student-record-header">
+    <div><span class="eyebrow">Assigned student</span><h2>{{ $student->name }}</h2><p>{{ $student->email }}</p></div>
+    <div><small>Status</small><strong>{{ $student->statusLabel() }}</strong></div><div><small>Attendance QR</small><strong>{{ $student->student_qr_token ? 'Issued' : 'Not issued' }}</strong></div>
+</section>
+
+<section class="card user-table-card student-data-section"><div class="sectioning-toolbar"><div><span class="eyebrow">Your sections only</span><h3>Enrollment</h3></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Component</th><th>Section</th><th>Academic year</th><th>Semester</th><th>Status</th></tr></thead><tbody>@forelse($student->nstpEnrollments as $enrollment)<tr><td>{{ $enrollment->component?->code ?? '—' }}</td><td>{{ $enrollment->section?->code ?? 'Unassigned' }}</td><td>{{ $enrollment->academic_year }}</td><td>{{ $enrollment->section?->semesterLabel() ?? ucfirst($enrollment->semester) }}</td><td>{{ ucfirst($enrollment->status) }}</td></tr>@empty<tr><td colspan="5" class="muted-cell">No assigned enrollment.</td></tr>@endforelse</tbody></table></div></section>
+
+<section class="card user-table-card student-data-section"><div class="sectioning-toolbar"><div><h3>Attendance records</h3><p class="muted-cell">Only sessions from your assigned sections.</p></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Session</th><th>Section</th><th>Status</th><th>Check-in</th><th>Source</th></tr></thead><tbody>@forelse($student->attendanceRecords as $record)<tr><td>{{ $record->attendanceSession?->title ?? '—' }}</td><td>{{ $record->attendanceSession?->section?->code ?? '—' }}</td><td>{{ ucfirst($record->status) }}</td><td>{{ $record->checked_in_at?->format('M d, Y h:i A') ?? '—' }}</td><td>{{ strtoupper($record->source) }}</td></tr>@empty<tr><td colspan="5" class="muted-cell">No attendance records in your sections.</td></tr>@endforelse</tbody></table></div></section>
+
+<section class="card user-table-card student-data-section"><div class="sectioning-toolbar"><div><h3>Assessment records</h3><p class="muted-cell">Only assessments from your assigned sections.</p></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Assessment</th><th>Section</th><th>Submitted</th><th>Score</th><th>Feedback</th></tr></thead><tbody>@forelse($student->assessmentSubmissions as $submission)<tr><td>{{ $submission->assessment?->title ?? '—' }}</td><td>{{ $submission->assessment?->section?->code ?? '—' }}</td><td>{{ $submission->submitted_at?->format('M d, Y h:i A') ?? '—' }}</td><td>{{ $submission->score === null ? 'Pending' : number_format($submission->score,2).' / '.number_format($submission->assessment?->max_score ?? 0,2) }}</td><td>{{ $submission->feedback ?: '—' }}</td></tr>@empty<tr><td colspan="5" class="muted-cell">No assessment records in your sections.</td></tr>@endforelse</tbody></table></div></section>
+@endsection
