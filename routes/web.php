@@ -5,6 +5,8 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
+use App\Http\Controllers\Coordinator\MonitoringController as CoordinatorMonitoringController;
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
 use App\Http\Controllers\Learning\AssessmentController;
 use App\Http\Controllers\Learning\AttendanceController as ManagementAttendanceController;
@@ -117,6 +119,17 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
     $learningManagementRoutes();
+});
+
+Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () {
+    Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
+    Route::get('/components', [CoordinatorMonitoringController::class, 'components'])->name('components.index');
+    Route::get('/sections', [CoordinatorMonitoringController::class, 'sections'])->name('sections.index');
+    Route::get('/attendance', [CoordinatorMonitoringController::class, 'attendance'])->name('attendance.index');
+    Route::get('/performance', [CoordinatorMonitoringController::class, 'performance'])->name('performance.index');
+    Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
+    Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
 });
 
 Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () {

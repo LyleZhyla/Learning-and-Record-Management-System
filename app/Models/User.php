@@ -81,6 +81,11 @@ class User extends Authenticatable
         return $this->role === 'facilitator';
     }
 
+    public function isCoordinator(): bool
+    {
+        return $this->role === 'coordinator';
+    }
+
     public function isStudent(): bool
     {
         return $this->role === 'student';
@@ -106,6 +111,7 @@ class User extends Authenticatable
         return match ($this->role) {
             'super_admin' => 'admin.dashboard',
             'nstp_admin' => 'nstp_admin.dashboard',
+            'coordinator' => 'coordinator.dashboard',
             'facilitator' => 'facilitator.dashboard',
             'student' => 'student.dashboard',
             default => null,

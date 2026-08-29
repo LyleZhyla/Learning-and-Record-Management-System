@@ -36,3 +36,6 @@ select{font:inherit}.page-actions{display:flex;align-items:center;justify-conten
 
 /* Official Smart NSTP logo */
 .brand-logo{display:block;width:52px;height:52px;flex:none;border-radius:13px;object-fit:contain;box-shadow:0 7px 18px rgba(7,31,72,.18)}.auth-brand .brand-logo{width:64px;height:64px;border-radius:17px}.sidebar .brand-logo{width:50px;height:50px}
+
+/* Coordinator read-only workspace */
+.coordinator-section-list{margin-top:18px;border-top:1px solid var(--line)}.coordinator-section-list>div{display:flex;align-items:center;justify-content:space-between;gap:15px;padding:12px 0;border-bottom:1px solid var(--line)}.coordinator-section-list span strong,.coordinator-section-list span small{display:block}.coordinator-section-list span strong{font-size:10px}.coordinator-section-list span small{margin-top:3px;color:var(--muted);font-size:8px}.coordinator-section-list b{color:#2468ca;font-size:10px}.coordinator-section-list>p{color:var(--muted);font-size:9px}

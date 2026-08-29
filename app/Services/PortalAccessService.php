@@ -14,6 +14,7 @@ class PortalAccessService
         return match ($user->role) {
             'super_admin' => 'admin',
             'nstp_admin' => 'nstp_admin',
+            'coordinator' => 'coordinator',
             'facilitator' => 'facilitator',
             'student' => 'student',
             default => abort(403),
@@ -25,6 +26,7 @@ class PortalAccessService
         return match ($user->role) {
             'super_admin' => 'layouts.admin',
             'nstp_admin' => 'layouts.nstp-admin',
+            'coordinator' => 'layouts.coordinator',
             'facilitator' => 'layouts.facilitator',
             'student' => 'layouts.student',
             default => abort(403),
