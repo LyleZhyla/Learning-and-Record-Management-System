@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Coordinator') · {{ config('app.name') }}</title>
-    <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('images/smart-nstp-logo-64.png') }}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('images/snapie-logo-64.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
 <body class="admin-body"><div class="app-shell">
     <aside class="sidebar" id="sidebar">
-        <a class="brand" href="{{ route('coordinator.dashboard') }}"><img class="brand-logo" src="{{ asset('images/smart-nstp-logo-160.png') }}" alt="Smart NSTP logo"><span><strong>Smart NSTP</strong><small>Coordinator Portal</small></span></a>
+        <a class="brand" href="{{ route('coordinator.dashboard') }}"><img class="brand-logo" src="{{ asset('images/snapie-logo-160.png') }}" alt="SNAPIE logo"><span><strong>Smart NSTP</strong><small>Coordinator Portal</small></span></a>
         <div class="role-card"><span class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span><span><strong>{{ auth()->user()->name }}</strong><small>NSTP Coordinator</small></span></div>
         <nav class="main-nav" aria-label="Coordinator navigation">
             <p class="nav-label">Overview</p>
