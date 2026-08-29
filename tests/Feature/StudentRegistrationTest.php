@@ -12,7 +12,12 @@ class StudentRegistrationTest extends TestCase
 
     public function test_guest_can_register_a_student_account_with_a_unique_qr(): void
     {
-        $this->get('/register')->assertOk()->assertSee('Create your account')->assertSee('auth-animated', false);
+        $this->get('/register')
+            ->assertOk()
+            ->assertSee('Create your account')
+            ->assertSee('auth-animated', false)
+            ->assertSee('auth-register', false)
+            ->assertSee('data-auth-direction="login"', false);
 
         $this->post('/register', [
             'name' => 'New NSTP Student',
@@ -46,6 +51,9 @@ class StudentRegistrationTest extends TestCase
 
     public function test_login_page_links_to_student_registration(): void
     {
-        $this->get('/login')->assertOk()->assertSee(route('register'));
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee(route('register'))
+            ->assertSee('data-auth-direction="register"', false);
     }
 }

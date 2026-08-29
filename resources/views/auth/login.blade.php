@@ -56,7 +56,7 @@
                     <button class="primary-button" type="submit">Sign in to dashboard <span>→</span></button>
                 </form>
 
-                <p class="auth-switch">New student? <a href="{{ route('register') }}">Create an account</a></p>
+                <p class="auth-switch">New student? <a href="{{ route('register') }}" data-auth-direction="register">Create an account</a></p>
                 <p class="security-note">Protected by server-side sessions, CSRF validation, password hashing, and login rate limiting.</p>
             </div>
         </section>
@@ -78,5 +78,6 @@
             </div>
         </section>
     </main>
+    <script src="{{ asset('js/auth-transition.js') }}"></script>
 </body>
 </html>

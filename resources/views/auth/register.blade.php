@@ -15,7 +15,7 @@
     <main class="auth-shell auth-animated auth-register">
         <section class="auth-panel">
             <div class="auth-form-wrap register-form-wrap">
-                <a class="brand auth-brand" href="{{ route('login') }}">
+                <a class="brand auth-brand" href="{{ route('login') }}" data-auth-direction="login">
                     <img class="brand-landscape" src="{{ asset('images/snapie-landscape.png') }}" alt="SNAPIE — Smart NSTP Management and AI-Integrated Platform">
                 </a>
 
@@ -47,7 +47,7 @@
                     <button class="primary-button" type="submit">Create student account <span>→</span></button>
                 </form>
 
-                <p class="auth-switch">Already registered? <a href="{{ route('login') }}">Sign in to SNAPIE</a></p>
+                <p class="auth-switch">Already registered? <a href="{{ route('login') }}" data-auth-direction="login">Sign in to SNAPIE</a></p>
             </div>
         </section>
 
@@ -68,5 +68,6 @@
             </div>
         </section>
     </main>
+    <script src="{{ asset('js/auth-transition.js') }}"></script>
 </body>
 </html>
