@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Services\ProfilePhotoService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -17,21 +18,25 @@ class ProfileController extends Controller
         return view('admin.profile', ['user' => $request->user()]);
     }
 
-    public function update(Request $request): RedirectResponse
+    public function update(Request $request, ProfilePhotoService $photos): RedirectResponse
     {
         $user = $request->user();
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
+            'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120', 'dimensions:max_width=4096,max_height=4096'],
         ]);
 
-        $user->fill($validated);
+        $user->fill(['name' => $validated['name'], 'email' => $validated['email']]);
 
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
         }
 
         $user->save();
+        if ($request->hasFile('profile_photo')) {
+            $photos->replace($user, $request->file('profile_photo'));
+        }
 
         return back()->with('status', 'Profile information updated successfully.');
     }

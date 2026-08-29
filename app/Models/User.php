@@ -3,14 +3,16 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
     public const ROLE_LABELS = [
@@ -36,6 +38,8 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'student_qr_token',
+        'profile_photo_path',
         'status',
         'must_change_password',
         'last_login_at',
@@ -49,6 +53,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'student_qr_token',
     ];
 
     /**
@@ -64,6 +69,22 @@ class User extends Authenticatable
             'must_change_password' => 'boolean',
             'last_login_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (User $user): void {
+            if ($user->role === 'student' && blank($user->student_qr_token)) {
+                $user->student_qr_token = Str::random(48);
+            }
+        });
+    }
+
+    public function studentQrPayload(): string
+    {
+        abort_unless($this->isStudent() && filled($this->student_qr_token), 404);
+
+        return 'SNAPIE:STUDENT:'.$this->student_qr_token;
     }
 
     public function isSuperAdmin(): bool

@@ -21,7 +21,7 @@
             </a>
 
             <div class="role-card">
-                <span class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                <x-user-avatar :user="auth()->user()" />
                 <span><strong>{{ auth()->user()->name }}</strong><small>Super Administrator</small></span>
             </div>
 

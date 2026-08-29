@@ -18,8 +18,11 @@ class AttendanceLearningTest extends TestCase
     use RefreshDatabase;
 
     private User $admin;
+
     private User $facilitator;
+
     private User $student;
+
     private NstpSection $section;
 
     protected function setUp(): void
@@ -33,24 +36,45 @@ class AttendanceLearningTest extends TestCase
         NstpEnrollment::create(['student_id' => $this->student->id, 'component_id' => $component->id, 'section_id' => $this->section->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
     }
 
-    public function test_attendance_session_generates_a_unique_qr_code_automatically(): void
+    public function test_student_account_receives_a_unique_permanent_qr_code(): void
     {
-        $this->actingAs($this->facilitator)->post('/facilitator/attendance', [
-            'section_id' => $this->section->id, 'title' => 'Orientation Attendance',
-            'starts_at' => now()->subMinute()->format('Y-m-d H:i:s'), 'late_after' => now()->addMinutes(10)->format('Y-m-d H:i:s'), 'ends_at' => now()->addHour()->format('Y-m-d H:i:s'),
-        ])->assertSessionHasNoErrors();
+        $secondStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
 
-        $session = AttendanceSession::firstOrFail();
-        $this->assertNotEmpty($session->token);
-        $this->assertStringContainsString('/student/attendance/check-in/', $session->qr_payload);
-        $this->assertStringContainsString('<svg', $session->qr_svg);
+        $this->assertNotEmpty($this->student->fresh()->student_qr_token);
+        $this->assertNotEmpty($secondStudent->student_qr_token);
+        $this->assertNotSame($this->student->fresh()->student_qr_token, $secondStudent->student_qr_token);
+        $this->actingAs($this->student)->get('/student/attendance')->assertOk()->assertSee('Your permanent attendance QR');
     }
 
-    public function test_student_qr_check_in_records_attendance_automatically(): void
+    public function test_facilitator_scans_student_qr_to_record_attendance(): void
     {
         $session = AttendanceSession::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'QR Session', 'starts_at' => now()->subMinute(), 'late_after' => now()->addMinute(), 'ends_at' => now()->addHour(), 'token' => str()->random(48), 'qr_payload' => 'test', 'qr_svg' => '<svg></svg>', 'status' => 'open']);
-        $this->actingAs($this->student)->get('/student/attendance/check-in/'.$session->token)->assertOk()->assertSee('Check-in successful');
-        $this->assertDatabaseHas('attendance_records', ['attendance_session_id' => $session->id, 'student_id' => $this->student->id, 'status' => 'present', 'source' => 'qr']);
+        $payload = $this->student->fresh()->studentQrPayload();
+
+        $this->actingAs($this->facilitator)
+            ->postJson('/facilitator/attendance/'.$session->id.'/scan', ['qr_code' => $payload])
+            ->assertOk()
+            ->assertJsonPath('status', 'present');
+        $this->actingAs($this->facilitator)
+            ->postJson('/facilitator/attendance/'.$session->id.'/scan', ['qr_code' => $payload])
+            ->assertOk()
+            ->assertJsonPath('recorded', false);
+
+        $this->assertDatabaseHas('attendance_records', ['attendance_session_id' => $session->id, 'student_id' => $this->student->id, 'status' => 'present', 'source' => 'qr', 'recorded_by' => $this->facilitator->id]);
+        $this->assertSame(1, AttendanceRecord::where('attendance_session_id', $session->id)->where('student_id', $this->student->id)->count());
+    }
+
+    public function test_coordinator_can_scan_but_administrators_cannot(): void
+    {
+        $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active']);
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $session = AttendanceSession::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'QR Session', 'starts_at' => now()->subMinute(), 'ends_at' => now()->addHour(), 'token' => str()->random(48), 'qr_payload' => '', 'qr_svg' => '', 'status' => 'open']);
+        $payload = $this->student->fresh()->studentQrPayload();
+
+        $this->actingAs($coordinator)->get('/coordinator/attendance/'.$session->id)->assertOk()->assertSee('Scan student ID');
+        $this->actingAs($coordinator)->postJson('/coordinator/attendance/'.$session->id.'/scan', ['qr_code' => $payload])->assertOk();
+        $this->actingAs($this->admin)->postJson('/nstp-admin/attendance/'.$session->id.'/scan', ['qr_code' => $payload])->assertForbidden();
+        $this->actingAs($superAdmin)->postJson('/admin/attendance/'.$session->id.'/scan', ['qr_code' => $payload])->assertForbidden();
     }
 
     public function test_published_assessment_score_is_included_in_student_grade(): void

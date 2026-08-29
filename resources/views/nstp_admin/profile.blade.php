@@ -7,8 +7,9 @@
     <div class="profile-grid">
         <section class="card">
             <div class="card-heading"><div><span class="eyebrow">Account information</span><h3>NSTP Admin profile</h3><p>Keep the account owner details current and recognizable.</p></div></div>
-            <form method="POST" action="{{ route('nstp_admin.profile.update') }}" class="settings-form">
+            <form method="POST" action="{{ route('nstp_admin.profile.update') }}" class="settings-form" enctype="multipart/form-data">
                 @csrf @method('PUT')
+                <x-profile-photo-field :user="$user" />
                 <label for="name">Full name</label>
                 <input id="name" name="name" value="{{ old('name', $user->name) }}" required maxlength="100">
                 @error('name')<small class="field-error">{{ $message }}</small>@enderror

@@ -7,13 +7,14 @@ use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Models\User;
 use App\Services\PortalAccessService;
-use App\Services\QrCodeService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -50,7 +51,7 @@ class AttendanceController extends Controller
         ]);
     }
 
-    public function store(Request $request, QrCodeService $qrCode): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'section_id' => ['required', 'integer', 'exists:nstp_sections,id'],
@@ -67,39 +68,96 @@ class AttendanceController extends Controller
         }
 
         $token = Str::random(48);
-        $payload = route('student.attendance.checkin', ['token' => $token]);
         $session = AttendanceSession::create([
             ...$validated,
             'created_by' => $request->user()->id,
             'token' => $token,
-            'qr_payload' => $payload,
-            'qr_svg' => $qrCode->generateSvg($payload),
+            'qr_payload' => '',
+            'qr_svg' => '',
             'status' => 'open',
         ]);
 
+        $message = $request->user()->isFacilitator()
+            ? 'Attendance session created. You can now scan enrolled students’ QR codes.'
+            : 'Attendance session created. An authorized facilitator or coordinator can scan student QR codes.';
+
         return redirect()->route($this->access->routePrefix($request->user()).'.attendance.show', $session)
-            ->with('status', 'Attendance session created and QR code generated automatically.');
+            ->with('status', $message);
     }
 
     public function show(Request $request, AttendanceSession $attendance): View
     {
         $attendance->load(['section.component', 'creator', 'records.student']);
-        $this->access->ensureCanManageSection($request->user(), $attendance->section);
+        if ($request->user()->isCoordinator()) {
+            $this->access->ensureCanScanSection($request->user(), $attendance->section);
+        } else {
+            $this->access->ensureCanManageSection($request->user(), $attendance->section);
+        }
         $enrolledStudents = NstpEnrollment::with('student')
             ->where('section_id', $attendance->section_id)
             ->get()
             ->sortBy(fn ($enrollment) => $enrollment->student->name);
 
-        return view('learning.attendance.show', $this->context($request) + compact('attendance', 'enrolledStudents'));
+        return view('learning.attendance.show', $this->context($request) + [
+            'attendance' => $attendance,
+            'enrolledStudents' => $enrolledStudents,
+            'canScan' => $request->user()->isFacilitator() || $request->user()->isCoordinator(),
+            'canManage' => ! $request->user()->isCoordinator(),
+        ]);
     }
 
-    public function qr(Request $request, AttendanceSession $attendance)
+    public function scan(Request $request, AttendanceSession $attendance): JsonResponse
     {
-        $this->access->ensureCanManageSection($request->user(), $attendance->section);
+        $attendance->loadMissing('section');
+        $this->access->ensureCanScanSection($request->user(), $attendance->section);
+        $validated = $request->validate(['qr_code' => ['required', 'string', 'max:200']]);
 
-        return response($attendance->qr_svg, 200, [
-            'Content-Type' => 'image/svg+xml',
-            'Content-Disposition' => 'attachment; filename="'.str($attendance->title)->slug().'-qr.svg"',
+        if ($attendance->status !== 'open') {
+            throw ValidationException::withMessages(['qr_code' => 'This attendance session is already closed.']);
+        }
+        if (now()->lt($attendance->starts_at)) {
+            throw ValidationException::withMessages(['qr_code' => 'This attendance session has not started yet.']);
+        }
+        if (now()->gt($attendance->ends_at)) {
+            throw ValidationException::withMessages(['qr_code' => 'The attendance session has ended.']);
+        }
+
+        $rawCode = trim($validated['qr_code']);
+        $token = Str::startsWith($rawCode, 'SNAPIE:STUDENT:')
+            ? Str::after($rawCode, 'SNAPIE:STUDENT:')
+            : $rawCode;
+
+        $student = User::where('role', 'student')
+            ->where('status', 'active')
+            ->where('student_qr_token', $token)
+            ->first();
+
+        if (! $student) {
+            throw ValidationException::withMessages(['qr_code' => 'Student QR code is invalid or inactive.']);
+        }
+
+        $isEnrolled = NstpEnrollment::where('section_id', $attendance->section_id)
+            ->where('student_id', $student->id)
+            ->where('status', 'enrolled')
+            ->exists();
+
+        if (! $isEnrolled) {
+            throw ValidationException::withMessages(['qr_code' => 'This student is not enrolled in the session’s section.']);
+        }
+
+        $status = $attendance->late_after && now()->gt($attendance->late_after) ? 'late' : 'present';
+        $record = AttendanceRecord::firstOrCreate(
+            ['attendance_session_id' => $attendance->id, 'student_id' => $student->id],
+            ['status' => $status, 'checked_in_at' => now(), 'source' => 'qr', 'recorded_by' => $request->user()->id],
+        );
+
+        return response()->json([
+            'message' => $record->wasRecentlyCreated
+                ? "{$student->name} was marked {$record->status}."
+                : "{$student->name} is already recorded as {$record->status}.",
+            'student' => $student->name,
+            'status' => $record->status,
+            'recorded' => $record->wasRecentlyCreated,
         ]);
     }
 

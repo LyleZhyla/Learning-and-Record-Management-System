@@ -56,6 +56,15 @@ class PortalAccessService
         );
     }
 
+    public function ensureCanScanSection(User $user, NstpSection $section): void
+    {
+        abort_unless(
+            $user->isCoordinator()
+            || ($user->isFacilitator() && $section->facilitator_id === $user->id),
+            403,
+        );
+    }
+
     public function currentEnrollment(User $student): ?NstpEnrollment
     {
         return NstpEnrollment::with(['component', 'section'])

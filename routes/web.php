@@ -11,12 +11,13 @@ use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboard
 use App\Http\Controllers\Learning\AssessmentController;
 use App\Http\Controllers\Learning\AttendanceController as ManagementAttendanceController;
 use App\Http\Controllers\Learning\MaterialController;
+use App\Http\Controllers\NstpAdmin\ComponentController as NstpAdminComponentController;
 use App\Http\Controllers\NstpAdmin\DashboardController as NstpAdminDashboardController;
 use App\Http\Controllers\NstpAdmin\ProfileController as NstpAdminProfileController;
-use App\Http\Controllers\NstpAdmin\ComponentController as NstpAdminComponentController;
 use App\Http\Controllers\NstpAdmin\SectionController as NstpAdminSectionController;
 use App\Http\Controllers\NstpAdmin\SectioningController as NstpAdminSectioningController;
 use App\Http\Controllers\Portal\ProfileController as PortalProfileController;
+use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\LearningController as StudentLearningController;
@@ -39,7 +40,7 @@ $learningManagementRoutes = function (): void {
     Route::get('/attendance/create', [ManagementAttendanceController::class, 'create'])->name('attendance.create');
     Route::post('/attendance', [ManagementAttendanceController::class, 'store'])->name('attendance.store');
     Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');
-    Route::get('/attendance/{attendance}/qr', [ManagementAttendanceController::class, 'qr'])->name('attendance.qr');
+    Route::post('/attendance/{attendance}/scan', [ManagementAttendanceController::class, 'scan'])->name('attendance.scan');
     Route::post('/attendance/{attendance}/mark', [ManagementAttendanceController::class, 'mark'])->name('attendance.mark');
     Route::patch('/attendance/{attendance}/close', [ManagementAttendanceController::class, 'close'])->name('attendance.close');
     Route::get('/materials', [MaterialController::class, 'index'])->name('materials.index');
@@ -82,6 +83,10 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
+
+Route::get('/profile-photo', ProfilePhotoController::class)
+    ->middleware('auth')
+    ->name('profile.photo');
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
@@ -126,6 +131,8 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/components', [CoordinatorMonitoringController::class, 'components'])->name('components.index');
     Route::get('/sections', [CoordinatorMonitoringController::class, 'sections'])->name('sections.index');
     Route::get('/attendance', [CoordinatorMonitoringController::class, 'attendance'])->name('attendance.index');
+    Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');
+    Route::post('/attendance/{attendance}/scan', [ManagementAttendanceController::class, 'scan'])->name('attendance.scan');
     Route::get('/performance', [CoordinatorMonitoringController::class, 'performance'])->name('performance.index');
     Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
@@ -138,7 +145,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
     Route::get('/attendance', [StudentAttendanceController::class, 'index'])->name('attendance.index');
-    Route::get('/attendance/check-in/{token}', [StudentAttendanceController::class, 'checkIn'])->name('attendance.checkin');
+    Route::get('/attendance/qr', [StudentAttendanceController::class, 'qr'])->name('attendance.qr');
     Route::get('/materials', [StudentLearningController::class, 'materials'])->name('materials.index');
     Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
     Route::get('/assessments', [StudentLearningController::class, 'assessments'])->name('assessments.index');

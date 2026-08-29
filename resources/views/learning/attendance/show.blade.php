@@ -1,5 +1,94 @@
 @extends($layout)
-@section('title',$attendance->title) @section('page-title','Attendance Session')
+@section('title', $attendance->title)
+@section('page-title', 'Attendance Session')
+
 @section('content')
-<div class="back-row"><a href="{{ route($routePrefix.'.attendance.index') }}">← Back to attendance</a></div><div class="attendance-detail-grid"><section class="card qr-card"><span class="status-badge {{ $attendance->status==='open'?'active':'inactive' }}"><i></i>{{ ucfirst($attendance->status) }}</span><h2>{{ $attendance->title }}</h2><p>{{ $attendance->section->code }} · {{ $attendance->section->component->code }}</p><div class="qr-frame">{!! $attendance->qr_svg !!}</div><p class="qr-note">Students must sign in and scan this unique QR code during the active time window.</p><a class="secondary-outline-button" href="{{ route($routePrefix.'.attendance.qr',$attendance) }}">Download QR code</a>@if($attendance->status==='open')<form method="POST" action="{{ route($routePrefix.'.attendance.close',$attendance) }}" onsubmit="return confirm('Close this session and mark missing students absent?')">@csrf @method('PATCH')<button class="danger-button wide-button">Close attendance session</button></form>@endif</section><section class="card"><div class="card-heading"><div><h3>Attendance records</h3><p>{{ $attendance->starts_at->format('M d, Y g:i A') }} – {{ $attendance->ends_at->format('g:i A') }}</p></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Student</th><th>Status</th><th>Check-in</th><th>Record manually</th></tr></thead><tbody>@forelse($enrolledStudents as $enrollment) @php($record=$attendance->records->firstWhere('student_id',$enrollment->student_id))<tr><td>{{ $enrollment->student->name }}<br><small class="muted-cell">{{ $enrollment->student->email }}</small></td><td>{{ $record ? ucfirst($record->status) : 'Not recorded' }}</td><td>{{ $record?->checked_in_at?->format('g:i:s A') ?? '—' }} @if($record)<small class="muted-cell">({{ strtoupper($record->source) }})</small>@endif</td><td><form class="inline-record-form" method="POST" action="{{ route($routePrefix.'.attendance.mark',$attendance) }}">@csrf<input type="hidden" name="student_id" value="{{ $enrollment->student_id }}"><select name="status"><option value="present">Present</option><option value="late">Late</option><option value="absent">Absent</option></select><button class="filter-button">Save</button></form></td></tr>@empty<tr><td colspan="4">No students are enrolled in this section.</td></tr>@endforelse</tbody></table></div></section></div>
+<div class="back-row"><a href="{{ route($routePrefix.'.attendance.index') }}">← Back to attendance</a></div>
+
+<section class="card scanner-session-header">
+    <div>
+        <span class="eyebrow">{{ $attendance->section->component->code }} · {{ $attendance->section->code }}</span>
+        <h2>{{ $attendance->title }}</h2>
+        <p>{{ $attendance->starts_at->format('M d, Y · g:i A') }} – {{ $attendance->ends_at->format('g:i A') }}</p>
+    </div>
+    <div class="scanner-session-actions">
+        <span class="status-badge {{ $attendance->status === 'open' ? 'active' : 'inactive' }}"><i></i>{{ ucfirst($attendance->status) }}</span>
+        @if ($canManage && $attendance->status === 'open')
+            <form method="POST" action="{{ route($routePrefix.'.attendance.close', $attendance) }}" onsubmit="return confirm('Close this session and mark missing students absent?')">
+                @csrf
+                @method('PATCH')
+                <button class="danger-button">Close session</button>
+            </form>
+        @endif
+    </div>
+</section>
+
+<div class="attendance-scanner-layout">
+    @if ($canScan)
+        <section class="card student-qr-scanner" data-attendance-scanner data-endpoint="{{ route($routePrefix.'.attendance.scan', $attendance) }}">
+            <div class="card-heading">
+                <div>
+                    <span class="eyebrow">Student QR scanner</span>
+                    <h3>Scan student ID</h3>
+                    <p>Point the camera at the permanent SNAPIE QR shown on the student’s account.</p>
+                </div>
+            </div>
+
+            @if ($attendance->status === 'open')
+                <div class="scanner-viewport">
+                    <video data-scanner-video playsinline muted></video>
+                    <div class="scanner-guide" aria-hidden="true"></div>
+                    <div class="scanner-placeholder" data-scanner-placeholder>
+                        <span>▣</span>
+                        <strong>Camera is off</strong>
+                        <small>Allow camera access to scan a student QR.</small>
+                    </div>
+                </div>
+                <button class="primary-button scanner-start-button" type="button" data-scanner-start>Start camera scanner</button>
+                <p class="scanner-message" data-scanner-message role="status">Ready to scan.</p>
+
+                <div class="scanner-divider"><span>or enter the QR code manually</span></div>
+                <form class="scanner-manual-form" data-scanner-form>
+                    <input name="qr_code" data-scanner-input autocomplete="off" placeholder="SNAPIE student QR code" required>
+                    <button class="filter-button" type="submit">Record attendance</button>
+                </form>
+            @else
+                <div class="scanner-closed-state"><span>✓</span><strong>Session closed</strong><p>Scanning is no longer available for this session.</p></div>
+            @endif
+
+        </section>
+    @endif
+
+    <section class="card attendance-record-panel {{ $canScan ? '' : 'full-width' }}">
+        <div class="card-heading">
+            <div><h3>Attendance records</h3><p>Scanned students appear here. Duplicate scans do not create duplicate records.</p></div>
+            <span class="pill">{{ $attendance->records->count() }} recorded</span>
+        </div>
+        <div class="table-wrap">
+            <table class="data-table">
+                <thead><tr><th>Student</th><th>Status</th><th>Check-in</th><th>Source</th>@if($canManage)<th>Manual update</th>@endif</tr></thead>
+                <tbody>
+                    @forelse ($enrolledStudents as $enrollment)
+                        @php($record = $attendance->records->firstWhere('student_id', $enrollment->student_id))
+                        <tr>
+                            <td><strong>{{ $enrollment->student->name }}</strong><br><small class="muted-cell">{{ $enrollment->student->email }}</small></td>
+                            <td><span class="status-badge {{ $record && in_array($record->status, ['present','late']) ? 'active' : 'inactive' }}"><i></i>{{ $record ? ucfirst($record->status) : 'Not recorded' }}</span></td>
+                            <td>{{ $record?->checked_in_at?->format('g:i:s A') ?? '—' }}</td>
+                            <td>{{ $record ? strtoupper($record->source) : '—' }}</td>
+                            @if ($canManage)
+                                <td><form class="inline-record-form" method="POST" action="{{ route($routePrefix.'.attendance.mark', $attendance) }}">@csrf<input type="hidden" name="student_id" value="{{ $enrollment->student_id }}"><select name="status"><option value="present">Present</option><option value="late">Late</option><option value="absent">Absent</option></select><button class="filter-button">Save</button></form></td>
+                            @endif
+                        </tr>
+                    @empty
+                        <tr><td colspan="{{ $canManage ? 5 : 4 }}"><div class="empty-state"><strong>No enrolled students</strong><span>Assign students to this section before recording attendance.</span></div></td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+@if ($canScan && $attendance->status === 'open')
+    <script src="{{ asset('js/attendance-scanner.js') }}"></script>
+@endif
 @endsection

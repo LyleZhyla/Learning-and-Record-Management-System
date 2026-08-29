@@ -9,7 +9,7 @@
 <body class="admin-body"><div class="app-shell">
     <aside class="sidebar" id="sidebar"><button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">‹</button>
         <a class="brand" href="{{ route('coordinator.dashboard') }}"><img class="brand-logo" src="{{ asset('images/snapie-logo-160.png') }}" alt="SNAPIE logo"><span><strong>Smart NSTP</strong><small>Coordinator Portal</small></span></a>
-        <div class="role-card"><span class="avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span><span><strong>{{ auth()->user()->name }}</strong><small>NSTP Coordinator</small></span></div>
+        <div class="role-card"><x-user-avatar :user="auth()->user()" /><span><strong>{{ auth()->user()->name }}</strong><small>NSTP Coordinator</small></span></div>
         <nav class="main-nav" aria-label="Coordinator navigation">
             <p class="nav-label">Overview</p>
             <a class="nav-link {{ request()->routeIs('coordinator.dashboard') ? 'active' : '' }}" href="{{ route('coordinator.dashboard') }}"><span class="nav-icon">⌂</span> Dashboard</a>
@@ -23,5 +23,5 @@
         </nav>
         <form method="POST" action="{{ route('logout') }}" class="logout-form">@csrf<button type="submit" class="nav-link logout"><span class="nav-icon">↪</span> Sign out</button></form>
     </aside>
-    <main class="main-content"><header class="topbar"><button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button><div><small>Smart NSTP / Coordinator</small><h1>@yield('page-title', 'Dashboard')</h1></div><div class="topbar-status"><span></span> Read-only monitoring</div></header>@if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif @if($errors->any())<div class="alert danger">{{ $errors->first() }}</div>@endif @yield('content')<footer class="app-footer">© {{ date('Y') }} Smart NSTP Management and AI-Integrated Platform</footer></main>
+    <main class="main-content"><header class="topbar"><button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button><div><small>Smart NSTP / Coordinator</small><h1>@yield('page-title', 'Dashboard')</h1></div><div class="topbar-status"><span></span> Monitoring & QR scanning</div></header>@if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif @if($errors->any())<div class="alert danger">{{ $errors->first() }}</div>@endif @yield('content')<footer class="app-footer">© {{ date('Y') }} Smart NSTP Management and AI-Integrated Platform</footer></main>
 </div><script src="{{ asset('js/sidebar.js') }}"></script></body></html>
