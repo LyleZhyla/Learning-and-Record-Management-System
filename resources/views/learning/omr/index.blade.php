@@ -14,7 +14,7 @@
 
 <div class="omr-index-layout">
     <section class="card omr-key-card">
-        <div class="card-heading"><div><span class="eyebrow">New scanner setup</span><h3>Create answer key</h3><p>Supports 1–30 questions and 2–5 choices.</p></div></div>
+        <div class="card-heading"><div><span class="eyebrow">New scanner setup</span><h3>Create answer key</h3><p>Supports 1–30 questions and 2–5 choices.</p></div><a class="secondary-outline-button" href="{{ route($routePrefix.'.assessments.create') }}">Create assessment + sheet</a></div>
         @if($assessments->isEmpty())
             <div class="empty-state"><strong>No available assessments</strong><span>Create an assessment first, or open an existing scanner below.</span></div>
         @else

@@ -9,6 +9,7 @@ use App\Models\GradingCategory;
 use App\Models\GradingSetting;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Models\OmrSheet;
 use App\Services\GradeService;
 use App\Services\PortalAccessService;
 use Illuminate\Http\JsonResponse;
@@ -34,7 +35,8 @@ class AssessmentController extends Controller
 
     public function create(Request $request): View
     {
-        $sections = $this->access->manageableSections($request->user())->with('component')->where('status', 'active')->orderBy('code')->get();
+        $sections = ($request->user()->isCoordinator() ? $this->access->gradebookSections($request->user()) : $this->access->manageableSections($request->user()))
+            ->with('component')->where('status', 'active')->orderBy('code')->get();
         $sections->each(fn ($section) => $this->ensureGradingStructure($section));
         $sections->load('gradingCategories');
 
@@ -45,6 +47,7 @@ class AssessmentController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge(['create_answer_sheet' => $request->boolean('create_answer_sheet')]);
         $validated = $request->validate([
             'section_id' => ['required', 'exists:nstp_sections,id'],
             'grading_category_id' => ['nullable', 'integer', 'exists:grading_categories,id'],
@@ -55,9 +58,14 @@ class AssessmentController extends Controller
             'weight' => ['nullable', 'numeric', 'min:0.01', 'max:100'],
             'due_at' => ['nullable', 'date'],
             'status' => ['required', Rule::in(['draft', 'published'])],
+            'create_answer_sheet' => ['required', 'boolean'],
+            'item_count' => ['nullable', 'required_if:create_answer_sheet,1', 'integer', 'min:1', 'max:30'],
+            'choice_count' => ['nullable', 'required_if:create_answer_sheet,1', 'integer', 'min:2', 'max:5'],
+            'answers' => ['nullable', 'required_if:create_answer_sheet,1', 'array'],
+            'answers.*' => ['required', Rule::in(['A', 'B', 'C', 'D', 'E'])],
         ]);
         $section = NstpSection::findOrFail($validated['section_id']);
-        $this->access->ensureCanManageSection($request->user(), $section);
+        $this->access->ensureCanAccessGradebookSection($request->user(), $section);
         $this->ensureGradingStructure($section);
         $category = isset($validated['grading_category_id'])
             ? GradingCategory::where('section_id', $section->id)->findOrFail($validated['grading_category_id'])
@@ -66,7 +74,48 @@ class AssessmentController extends Controller
             })->first();
         $validated['grading_category_id'] = $category?->id;
         $validated['weight'] = $category?->weight ?? ($validated['weight'] ?? 10);
-        $assessment = Assessment::create([...$validated, 'created_by' => $request->user()->id, 'published_at' => $validated['status'] === 'published' ? now() : null]);
+        $createAnswerSheet = (bool) $validated['create_answer_sheet'];
+
+        if ($createAnswerSheet) {
+            abort_unless($request->user()->isFacilitator() || $request->user()->isCoordinator(), 403);
+        }
+        if ($createAnswerSheet && ! in_array($validated['type'], ['quiz', 'exam'], true)) {
+            throw ValidationException::withMessages(['create_answer_sheet' => 'Answer sheets are available only for quiz and exam assessments.']);
+        }
+
+        $answers = array_values($validated['answers'] ?? []);
+        if ($createAnswerSheet && count($answers) !== (int) $validated['item_count']) {
+            throw ValidationException::withMessages(['answers' => 'Provide one correct answer for every item.']);
+        }
+        if ($createAnswerSheet) {
+            $allowed = array_slice(['A', 'B', 'C', 'D', 'E'], 0, (int) $validated['choice_count']);
+            if (collect($answers)->contains(fn ($answer) => ! in_array($answer, $allowed, true))) {
+                throw ValidationException::withMessages(['answers' => 'The answer key contains a choice outside the configured range.']);
+            }
+        }
+
+        [$assessment, $sheet] = DB::transaction(function () use ($request, $validated, $createAnswerSheet, $answers) {
+            $assessmentData = collect($validated)->except(['create_answer_sheet', 'item_count', 'choice_count', 'answers'])->all();
+            $assessment = Assessment::create([...$assessmentData, 'created_by' => $request->user()->id, 'published_at' => $validated['status'] === 'published' ? now() : null]);
+            $sheet = $createAnswerSheet ? OmrSheet::create([
+                'assessment_id' => $assessment->id,
+                'created_by' => $request->user()->id,
+                'item_count' => $validated['item_count'],
+                'choice_count' => $validated['choice_count'],
+                'answer_key' => $answers,
+            ]) : null;
+
+            return [$assessment, $sheet];
+        });
+
+        if ($sheet) {
+            return redirect()->route($this->access->routePrefix($request->user()).'.omr.show', $sheet)
+                ->with('status', 'Assessment and answer sheet created successfully.');
+        }
+
+        if ($request->user()->isCoordinator()) {
+            return redirect()->route('coordinator.omr.index')->with('status', 'Assessment created without an answer sheet.');
+        }
 
         return redirect()->route($this->access->routePrefix($request->user()).'.assessments.show', $assessment)
             ->with('status', 'Assessment created successfully.');

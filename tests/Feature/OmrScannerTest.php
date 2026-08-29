@@ -16,9 +16,13 @@ class OmrScannerTest extends TestCase
     use RefreshDatabase;
 
     private User $facilitator;
+
     private User $coordinator;
+
     private User $student;
+
     private NstpSection $section;
+
     private Assessment $assessment;
 
     protected function setUp(): void
@@ -48,6 +52,48 @@ class OmrScannerTest extends TestCase
             ->assertOk()->assertSee('data-omr-video', false)->assertSee('Capture & read', false);
         $this->actingAs($this->facilitator)->get('/facilitator/answer-sheet-scanner/'.$sheet->id.'/print')
             ->assertOk()->assertSee('SNAPIE ANSWER SHEET')->assertSee('<svg', false);
+    }
+
+    public function test_facilitator_can_create_a_quiz_and_answer_sheet_together(): void
+    {
+        $this->actingAs($this->facilitator)->get('/facilitator/assessments/create')
+            ->assertOk()->assertSee('Create an answer sheet?');
+
+        $response = $this->actingAs($this->facilitator)->post('/facilitator/assessments', [
+            'section_id' => $this->section->id,
+            'title' => 'Integrated Quiz',
+            'type' => 'quiz',
+            'max_score' => 20,
+            'status' => 'published',
+            'create_answer_sheet' => 1,
+            'item_count' => 5,
+            'choice_count' => 4,
+            'answers' => ['A', 'B', 'C', 'D', 'A'],
+        ]);
+
+        $assessment = Assessment::where('title', 'Integrated Quiz')->firstOrFail();
+        $sheet = OmrSheet::where('assessment_id', $assessment->id)->firstOrFail();
+        $response->assertRedirect('/facilitator/answer-sheet-scanner/'.$sheet->id);
+        $this->assertSame(['A', 'B', 'C', 'D', 'A'], $sheet->answer_key);
+    }
+
+    public function test_coordinator_can_choose_to_create_an_exam_without_an_answer_sheet(): void
+    {
+        $this->actingAs($this->coordinator)->get('/coordinator/assessments/create')
+            ->assertOk()->assertSee('Create an answer sheet?');
+
+        $response = $this->actingAs($this->coordinator)->post('/coordinator/assessments', [
+            'section_id' => $this->section->id,
+            'title' => 'Exam Without Sheet',
+            'type' => 'exam',
+            'max_score' => 50,
+            'status' => 'draft',
+            'create_answer_sheet' => 0,
+        ]);
+
+        $assessment = Assessment::where('title', 'Exam Without Sheet')->firstOrFail();
+        $response->assertRedirect('/coordinator/answer-sheet-scanner');
+        $this->assertDatabaseMissing('omr_sheets', ['assessment_id' => $assessment->id]);
     }
 
     public function test_coordinator_can_scan_and_score_student_answer_sheet(): void
