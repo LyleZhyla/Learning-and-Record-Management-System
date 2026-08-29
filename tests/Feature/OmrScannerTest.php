@@ -32,6 +32,7 @@ class OmrScannerTest extends TestCase
         $this->coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active']);
         $this->student = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
+        $this->coordinator->update(['nstp_component_id' => $component->id]);
         $this->section = NstpSection::create(['component_id' => $component->id, 'facilitator_id' => $this->facilitator->id, 'code' => 'CWTS-01', 'name' => 'Section 1', 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);
         NstpEnrollment::create(['student_id' => $this->student->id, 'component_id' => $component->id, 'section_id' => $this->section->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
         $this->assessment = Assessment::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'Paper Quiz', 'type' => 'quiz', 'max_score' => 100, 'weight' => 20, 'status' => 'published', 'published_at' => now()]);

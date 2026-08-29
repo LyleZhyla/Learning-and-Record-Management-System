@@ -66,7 +66,7 @@ class AttendanceLearningTest extends TestCase
 
     public function test_facilitator_coordinator_and_nstp_admin_have_camera_scanner_access(): void
     {
-        $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active']);
+        $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active', 'nstp_component_id' => $this->section->component_id]);
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $session = AttendanceSession::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'QR Session', 'starts_at' => now()->subMinute(), 'ends_at' => now()->addHour(), 'token' => str()->random(48), 'qr_payload' => '', 'qr_svg' => '', 'status' => 'open']);
         $payload = $this->student->fresh()->studentQrPayload();

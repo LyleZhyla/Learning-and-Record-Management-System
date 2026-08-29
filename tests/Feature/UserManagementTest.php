@@ -30,6 +30,7 @@ class UserManagementTest extends TestCase
     public function test_super_admin_can_create_each_supported_role(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
 
         foreach (array_keys(User::ROLE_LABELS) as $index => $role) {
             $this->actingAs($admin)->post('/admin/users', [
@@ -37,6 +38,7 @@ class UserManagementTest extends TestCase
                 'email' => "role{$index}@example.test",
                 'role' => $role,
                 'status' => 'active',
+                'nstp_component_id' => $role === 'coordinator' ? $component->id : null,
                 'password' => 'Secure!Password2026',
                 'password_confirmation' => 'Secure!Password2026',
             ])->assertSessionHasNoErrors();

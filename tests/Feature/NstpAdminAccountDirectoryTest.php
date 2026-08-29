@@ -45,7 +45,7 @@ class NstpAdminAccountDirectoryTest extends TestCase
             ->assertDontSee('Reset password')->assertDontSee('Last sign in');
 
         $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts/'.$coordinator->id)
-            ->assertOk()->assertSee('System-wide')->assertSee('CWTS');
+            ->assertOk()->assertDontSee('System-wide')->assertSee('CWTS');
     }
 
     public function test_all_current_student_records_are_visible_without_password_controls(): void
@@ -82,6 +82,7 @@ class NstpAdminAccountDirectoryTest extends TestCase
         $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
+        $coordinator->update(['nstp_component_id' => $component->id]);
         $section = NstpSection::create(['component_id' => $component->id, 'facilitator_id' => $facilitator->id, 'code' => 'CWTS-01', 'name' => 'Section 1', 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);
         NstpEnrollment::create(['student_id' => $student->id, 'component_id' => $component->id, 'section_id' => $section->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
 

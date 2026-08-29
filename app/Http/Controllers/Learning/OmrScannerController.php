@@ -144,7 +144,7 @@ class OmrScannerController extends Controller
     private function scopeAssessments(Builder $query, User $user): Builder
     {
         if ($user->isCoordinator()) {
-            return $query;
+            return $query->whereHas('section', fn (Builder $section) => $section->where('component_id', $user->nstp_component_id ?? 0));
         }
 
         return $query->whereHas('section', fn (Builder $section) => $section->where('facilitator_id', $user->id));
@@ -152,7 +152,11 @@ class OmrScannerController extends Controller
 
     private function ensureCanUse(User $user, Assessment $assessment): void
     {
-        abort_unless($user->isCoordinator() || ($user->isFacilitator() && $assessment->section->facilitator_id === $user->id), 403);
+        abort_unless(
+            ($user->isCoordinator() && $assessment->section->component_id === $user->nstp_component_id)
+            || ($user->isFacilitator() && $assessment->section->facilitator_id === $user->id),
+            403,
+        );
     }
 
     private function routePrefix(Request $request): string

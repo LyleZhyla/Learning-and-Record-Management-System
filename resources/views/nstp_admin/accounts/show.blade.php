@@ -6,7 +6,7 @@
 @if(!$user->isStudent())
 <section class="card restricted-account-profile">
     <div class="account-heading"><span class="large-avatar small">{{ strtoupper(substr($user->name,0,1)) }}</span><div><span class="eyebrow">{{ $user->roleLabel() }}</span><h2>{{ $user->name }}</h2><p>{{ $user->email }}</p></div></div>
-    <div class="visible-data-grid"><div><small>Name</small><strong>{{ $user->name }}</strong></div><div><small>Email</small><strong>{{ $user->email }}</strong></div><div class="full"><small>Component handled</small><p>@forelse($components as $component)<span class="component-mini-badge">{{ $component->code }} · {{ $component->name }}</span>@empty<span class="muted-cell">No component assignment</span>@endforelse @if($user->isCoordinator())<span class="muted-cell">System-wide coordinator coverage under the current setup.</span>@endif</p></div></div>
+    <div class="visible-data-grid"><div><small>Name</small><strong>{{ $user->name }}</strong></div><div><small>Email</small><strong>{{ $user->email }}</strong></div><div class="full"><small>Component handled</small><p>@forelse($components as $component)<span class="component-mini-badge">{{ $component->code }} · {{ $component->name }}</span>@empty<span class="muted-cell">No component assignment</span>@endforelse</p></div></div>
 </section>
 <section class="card password-boundary-note"><span>🔒</span><div><strong>Limited account details</strong><p>Only the name, email, and component coverage are available to NSTP Admin. Contact the Super Admin for password or account recovery concerns.</p></div></section>
 @else

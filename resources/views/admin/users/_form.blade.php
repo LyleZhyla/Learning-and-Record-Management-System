@@ -31,6 +31,18 @@
         @error('status') <small class="field-error">{{ $message }}</small> @enderror
     </label>
 
+    <label class="field-group full">
+        <span>Coordinator component</span>
+        <select name="nstp_component_id">
+            <option value="">Not applicable</option>
+            @foreach ($components as $component)
+                <option value="{{ $component->id }}" @selected((int) old('nstp_component_id', $user?->nstp_component_id) === $component->id)>{{ $component->code }} — {{ $component->name }}</option>
+            @endforeach
+        </select>
+        <small class="form-help">Required for Coordinator accounts. Their entire portal will be restricted to this component.</small>
+        @error('nstp_component_id') <small class="field-error">{{ $message }}</small> @enderror
+    </label>
+
     @if (! $user)
         <label class="field-group">
             <span>Temporary password</span>

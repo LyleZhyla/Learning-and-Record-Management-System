@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\SystemLogController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Coordinator\AccountController as CoordinatorAccountController;
 use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
 use App\Http\Controllers\Coordinator\MonitoringController as CoordinatorMonitoringController;
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
@@ -154,6 +155,8 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
 Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     Route::get('/components', [CoordinatorMonitoringController::class, 'components'])->name('components.index');
+    Route::get('/accounts', [CoordinatorAccountController::class, 'index'])->name('accounts.index');
+    Route::get('/accounts/{user}', [CoordinatorAccountController::class, 'show'])->name('accounts.show');
     Route::get('/sections', [CoordinatorMonitoringController::class, 'sections'])->name('sections.index');
     Route::get('/attendance', [CoordinatorMonitoringController::class, 'attendance'])->name('attendance.index');
     Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');

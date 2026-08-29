@@ -52,6 +52,8 @@ class PortalAccessService
 
         if ($user->isFacilitator()) {
             $query->where('facilitator_id', $user->id);
+        } elseif ($user->isCoordinator()) {
+            $query->where('component_id', $user->nstp_component_id ?? 0);
         } elseif (! $user->isSuperAdmin() && ! $user->isNstpAdmin() && ! $user->isCoordinator()) {
             $query->whereRaw('1 = 0');
         }
@@ -79,7 +81,7 @@ class PortalAccessService
         abort_unless(
             $user->isSuperAdmin()
             || $user->isNstpAdmin()
-            || $user->isCoordinator()
+            || ($user->isCoordinator() && $section->component_id === $user->nstp_component_id)
             || ($user->isFacilitator() && $section->facilitator_id === $user->id),
             403,
         );
@@ -89,7 +91,7 @@ class PortalAccessService
     {
         abort_unless(
             $user->isNstpAdmin()
-            || $user->isCoordinator()
+            || ($user->isCoordinator() && $section->component_id === $user->nstp_component_id)
             || ($user->isFacilitator() && $section->facilitator_id === $user->id),
             403,
         );

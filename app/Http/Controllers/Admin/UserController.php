@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\NstpComponent;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -47,7 +48,7 @@ class UserController extends Controller
 
     public function create(): View
     {
-        return view('admin.users.create');
+        return view('admin.users.create', ['components' => NstpComponent::where('is_active', true)->orderBy('code')->get()]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -60,6 +61,7 @@ class UserController extends Controller
             'password' => $validated['password'],
             'role' => $validated['role'],
             'status' => $validated['status'],
+            'nstp_component_id' => $validated['role'] === 'coordinator' ? $validated['nstp_component_id'] : null,
             'must_change_password' => true,
         ]);
 
@@ -69,7 +71,7 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
-        return view('admin.users.edit', compact('user'));
+        return view('admin.users.edit', ['user' => $user, 'components' => NstpComponent::where('is_active', true)->orderBy('code')->get()]);
     }
 
     public function update(Request $request, User $user): RedirectResponse
@@ -91,6 +93,7 @@ class UserController extends Controller
             'email' => str($validated['email'])->lower()->toString(),
             'role' => $validated['role'],
             'status' => $validated['status'],
+            'nstp_component_id' => $validated['role'] === 'coordinator' ? $validated['nstp_component_id'] : null,
         ]);
 
         if ($user->isDirty('email')) {
@@ -170,6 +173,7 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user?->id)],
             'role' => ['required', Rule::in(array_keys(User::ROLE_LABELS))],
             'status' => ['required', Rule::in(array_keys(User::STATUS_LABELS))],
+            'nstp_component_id' => ['nullable', 'required_if:role,coordinator', 'integer', Rule::exists('nstp_components', 'id')->where('is_active', true)],
         ];
 
         if ($includePassword) {

@@ -28,6 +28,7 @@ class CoordinatorPortalTest extends TestCase
         $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
+        $this->coordinator->update(['nstp_component_id' => $component->id]);
         $section = NstpSection::create(['component_id' => $component->id, 'facilitator_id' => $facilitator->id, 'code' => 'CWTS-01', 'name' => 'Section 1', 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);
         NstpEnrollment::create(['student_id' => $student->id, 'component_id' => $component->id, 'section_id' => $section->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
         $session = AttendanceSession::create(['section_id' => $section->id, 'created_by' => $facilitator->id, 'title' => 'Coordinator Demo Attendance', 'starts_at' => now()->subHour(), 'ends_at' => now()->addHour(), 'token' => str()->random(48), 'qr_payload' => 'test', 'qr_svg' => '<svg></svg>', 'status' => 'open']);
@@ -45,7 +46,7 @@ class CoordinatorPortalTest extends TestCase
 
     public function test_coordinator_can_open_all_read_only_monitoring_pages(): void
     {
-        foreach (['/coordinator/dashboard', '/coordinator/components', '/coordinator/sections', '/coordinator/attendance', '/coordinator/performance', '/coordinator/profile'] as $path) {
+        foreach (['/coordinator/dashboard', '/coordinator/components', '/coordinator/accounts', '/coordinator/sections', '/coordinator/attendance', '/coordinator/performance', '/coordinator/profile'] as $path) {
             $this->actingAs($this->coordinator)->get($path)->assertOk();
         }
     }
@@ -84,5 +85,25 @@ class CoordinatorPortalTest extends TestCase
         $this->actingAs($this->coordinator)->get('/admin/users')->assertForbidden();
         $this->actingAs($this->coordinator)->get('/nstp-admin/sections')->assertForbidden();
         $this->actingAs($this->coordinator)->get('/facilitator/attendance')->assertForbidden();
+    }
+
+    public function test_coordinator_only_sees_accounts_and_records_from_assigned_component(): void
+    {
+        $otherFacilitator = User::factory()->create(['name' => 'Hidden ROTC Facilitator', 'role' => 'facilitator', 'status' => 'active']);
+        $otherStudent = User::factory()->create(['name' => 'Hidden ROTC Student', 'role' => 'student', 'status' => 'active']);
+        $otherComponent = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
+        $otherSection = NstpSection::create(['component_id' => $otherComponent->id, 'facilitator_id' => $otherFacilitator->id, 'code' => 'ROTC-01', 'name' => 'ROTC Section', 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);
+        NstpEnrollment::create(['student_id' => $otherStudent->id, 'component_id' => $otherComponent->id, 'section_id' => $otherSection->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
+        $otherSession = AttendanceSession::create(['section_id' => $otherSection->id, 'created_by' => $otherFacilitator->id, 'title' => 'Hidden ROTC Attendance', 'starts_at' => now(), 'ends_at' => now()->addHour(), 'token' => str()->random(48), 'qr_payload' => 'hidden', 'qr_svg' => '', 'status' => 'open']);
+
+        $this->actingAs($this->coordinator)->get('/coordinator/accounts')
+            ->assertOk()
+            ->assertDontSee($otherFacilitator->name)
+            ->assertDontSee($otherStudent->name);
+        $this->actingAs($this->coordinator)->get('/coordinator/sections')->assertDontSee('ROTC-01');
+        $this->actingAs($this->coordinator)->get('/coordinator/attendance')->assertDontSee('Hidden ROTC Attendance');
+        $this->actingAs($this->coordinator)->get('/coordinator/accounts/'.$otherStudent->id)->assertNotFound();
+        $this->actingAs($this->coordinator)->get('/coordinator/attendance/'.$otherSession->id)->assertForbidden();
+        $this->actingAs($this->coordinator)->put('/coordinator/grades/'.$otherSection->id.'/structure', [])->assertForbidden();
     }
 }

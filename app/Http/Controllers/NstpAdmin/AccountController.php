@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\NstpAdmin;
 
 use App\Http\Controllers\Controller;
-use App\Models\NstpComponent;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -24,6 +23,7 @@ class AccountController extends Controller
             ->whereIn('role', self::VISIBLE_ROLES)
             ->with([
                 'facilitatedSections.component',
+                'nstpComponent',
                 'nstpEnrollments' => fn ($query) => $query->with(['component', 'section'])->latest('academic_year')->latest('semester'),
             ])
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(fn ($nested) => $nested
@@ -37,9 +37,8 @@ class AccountController extends Controller
 
         $roleCounts = User::whereIn('role', self::VISIBLE_ROLES)
             ->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
-        $allComponents = NstpComponent::orderBy('code')->get();
 
-        return view('nstp_admin.accounts.index', compact('accounts', 'roleCounts', 'filters', 'allComponents'));
+        return view('nstp_admin.accounts.index', compact('accounts', 'roleCounts', 'filters'));
     }
 
     public function show(User $user): View
@@ -54,11 +53,11 @@ class AccountController extends Controller
                 'assessmentSubmissions' => fn ($query) => $query->with('assessment.section.component')->latest('submitted_at'),
             ]);
         } else {
-            $user->load('facilitatedSections.component');
+            $user->load(['facilitatedSections.component', 'nstpComponent']);
         }
 
         $components = $user->isCoordinator()
-            ? NstpComponent::orderBy('code')->get()
+            ? collect([$user->nstpComponent])->filter()
             : $user->facilitatedSections->pluck('component')->filter()->unique('id')->values();
 
         return view('nstp_admin.accounts.show', compact('user', 'components'));

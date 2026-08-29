@@ -19,6 +19,7 @@ class MonitoringController extends Controller
     {
         $components = NstpComponent::withCount(['sections', 'enrollments'])
             ->with(['sections' => fn ($query) => $query->with(['facilitator'])->withCount('enrollments')->orderBy('code')])
+            ->whereKey(request()->user()->nstp_component_id ?? 0)
             ->orderBy('code')->get();
 
         return view('coordinator.components', compact('components'));
@@ -27,7 +28,9 @@ class MonitoringController extends Controller
     public function sections(Request $request): View
     {
         $filters = $this->filters($request);
+        $componentId = $request->user()->nstp_component_id ?? 0;
         $sections = NstpSection::with(['component', 'facilitator'])->withCount(['enrollments', 'attendanceSessions', 'assessments'])
+            ->where('component_id', $componentId)
             ->when($filters['component_id'] ?? null, fn ($query, $value) => $query->where('component_id', $value))
             ->when($filters['academic_year'] ?? null, fn ($query, $value) => $query->where('academic_year', $value))
             ->when($filters['semester'] ?? null, fn ($query, $value) => $query->where('semester', $value))
@@ -39,6 +42,7 @@ class MonitoringController extends Controller
     public function attendance(Request $request): View
     {
         $filters = $this->filters($request, true);
+        $componentId = $request->user()->nstp_component_id ?? 0;
         $sessions = AttendanceSession::with(['section.component', 'creator'])
             ->withCount([
                 'records',
@@ -46,6 +50,7 @@ class MonitoringController extends Controller
                 'records as late_count' => fn ($query) => $query->where('status', 'late'),
                 'records as absent_count' => fn ($query) => $query->where('status', 'absent'),
             ])
+            ->whereHas('section', fn ($query) => $query->where('component_id', $componentId))
             ->when($filters['component_id'] ?? null, fn ($query, $value) => $query->whereHas('section', fn ($q) => $q->where('component_id', $value)))
             ->when($filters['section_id'] ?? null, fn ($query, $value) => $query->where('section_id', $value))
             ->when($filters['date_from'] ?? null, fn ($query, $value) => $query->whereDate('starts_at', '>=', $value))
@@ -58,7 +63,7 @@ class MonitoringController extends Controller
     public function performance(Request $request): View
     {
         $filters = $this->filters($request);
-        $sections = NstpSection::with('component')->orderByDesc('academic_year')->orderBy('code')->get();
+        $sections = NstpSection::with('component')->where('component_id', $request->user()->nstp_component_id ?? 0)->orderByDesc('academic_year')->orderBy('code')->get();
         $section = $sections->firstWhere('id', (int) ($filters['section_id'] ?? 0)) ?? $sections->first();
         $summaries = collect();
 
@@ -87,10 +92,12 @@ class MonitoringController extends Controller
 
     private function filterOptions(): array
     {
+        $componentId = request()->user()->nstp_component_id ?? 0;
+
         return [
-            'components' => NstpComponent::orderBy('code')->get(),
-            'allSections' => NstpSection::with('component')->orderBy('code')->get(),
-            'academicYears' => NstpSection::distinct()->orderByDesc('academic_year')->pluck('academic_year'),
+            'components' => NstpComponent::whereKey($componentId)->orderBy('code')->get(),
+            'allSections' => NstpSection::with('component')->where('component_id', $componentId)->orderBy('code')->get(),
+            'academicYears' => NstpSection::where('component_id', $componentId)->distinct()->orderByDesc('academic_year')->pluck('academic_year'),
         ];
     }
 }

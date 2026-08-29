@@ -17,12 +17,12 @@
     @forelse($accounts as $account)
         @php
             $accountComponents = $account->isCoordinator()
-                ? $allComponents
+                ? collect([$account->nstpComponent])->filter()
                 : ($account->isFacilitator()
                     ? $account->facilitatedSections->pluck('component')->filter()->unique('id')
                     : $account->nstpEnrollments->pluck('component')->filter()->unique('id'));
         @endphp
-        <tr><td><div class="user-cell"><span class="table-avatar">{{ strtoupper(substr($account->name,0,1)) }}</span><div><strong>{{ $account->name }}</strong><small>{{ $account->email }}</small></div></div></td><td><span class="role-badge role-{{ $account->role }}">{{ $account->roleLabel() }}</span></td><td>@forelse($accountComponents as $component)<span class="component-mini-badge">{{ $component->code }}</span>@empty<span class="muted-cell">Not assigned</span>@endforelse @if($account->isCoordinator())<small class="muted-cell">System-wide</small>@endif</td><td class="align-right"><a class="table-action" href="{{ route('nstp_admin.accounts.show',$account) }}">View →</a></td></tr>
+        <tr><td><div class="user-cell"><span class="table-avatar">{{ strtoupper(substr($account->name,0,1)) }}</span><div><strong>{{ $account->name }}</strong><small>{{ $account->email }}</small></div></div></td><td><span class="role-badge role-{{ $account->role }}">{{ $account->roleLabel() }}</span></td><td>@forelse($accountComponents as $component)<span class="component-mini-badge">{{ $component->code }}</span>@empty<span class="muted-cell">Not assigned</span>@endforelse</td><td class="align-right"><a class="table-action" href="{{ route('nstp_admin.accounts.show',$account) }}">View →</a></td></tr>
     @empty<tr><td colspan="4"><div class="empty-state"><strong>No matching accounts</strong><span>Try changing the role or search filter.</span></div></td></tr>@endforelse
     </tbody></table></div>
     @if($accounts->hasPages())<div class="pagination-row"><span>Showing {{ $accounts->firstItem() }}–{{ $accounts->lastItem() }} of {{ $accounts->total() }}</span>{{ $accounts->links() }}</div>@endif
