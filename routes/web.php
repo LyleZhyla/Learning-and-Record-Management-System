@@ -155,6 +155,13 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');
     Route::post('/attendance/{attendance}/scan', [ManagementAttendanceController::class, 'scan'])->name('attendance.scan');
     Route::get('/performance', [CoordinatorMonitoringController::class, 'performance'])->name('performance.index');
+    Route::get('/grades', [AssessmentController::class, 'grades'])->name('grades.index');
+    Route::put('/grades/{section}/structure', [AssessmentController::class, 'updateGradeStructure'])->name('grades.structure');
+    Route::delete('/grades/categories/{category}', [AssessmentController::class, 'destroyGradeCategory'])->name('grades.categories.destroy');
+    Route::post('/grades/{section}/items', [AssessmentController::class, 'storeGradeItem'])->name('grades.items.store');
+    Route::put('/grades/items/{assessment}', [AssessmentController::class, 'updateGradeItem'])->name('grades.items.update');
+    Route::delete('/grades/items/{assessment}', [AssessmentController::class, 'destroyGradeItem'])->name('grades.items.destroy');
+    Route::put('/grades/{section}/scores', [AssessmentController::class, 'updateGradeScore'])->name('grades.scores.update');
     Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');

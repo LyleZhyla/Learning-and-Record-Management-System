@@ -46,6 +46,19 @@ class PortalAccessService
         return $query;
     }
 
+    public function gradebookSections(User $user): Builder
+    {
+        $query = NstpSection::query();
+
+        if ($user->isFacilitator()) {
+            $query->where('facilitator_id', $user->id);
+        } elseif (! $user->isSuperAdmin() && ! $user->isNstpAdmin() && ! $user->isCoordinator()) {
+            $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
     public function ensureCanManageSection(User $user, NstpSection $section): void
     {
         abort_unless(
@@ -58,7 +71,18 @@ class PortalAccessService
 
     public function ensureCanConfigureGrades(User $user): void
     {
-        abort_unless($user->isSuperAdmin() || $user->isNstpAdmin(), 403);
+        abort_unless($user->isSuperAdmin() || $user->isNstpAdmin() || $user->isCoordinator(), 403);
+    }
+
+    public function ensureCanAccessGradebookSection(User $user, NstpSection $section): void
+    {
+        abort_unless(
+            $user->isSuperAdmin()
+            || $user->isNstpAdmin()
+            || $user->isCoordinator()
+            || ($user->isFacilitator() && $section->facilitator_id === $user->id),
+            403,
+        );
     }
 
     public function ensureCanScanSection(User $user, NstpSection $section): void

@@ -93,7 +93,7 @@ class AssessmentController extends Controller
 
     public function grades(Request $request): View
     {
-        $sections = $this->access->manageableSections($request->user())->with(['component', 'enrollments.student'])->orderBy('code')->get();
+        $sections = $this->access->gradebookSections($request->user())->with(['component', 'enrollments.student'])->orderBy('code')->get();
         $section = $sections->firstWhere('id', $request->integer('section')) ?? $sections->first();
         $summaries = collect();
         $categories = collect();
@@ -114,7 +114,7 @@ class AssessmentController extends Controller
 
     public function updateGradeStructure(Request $request, NstpSection $section): RedirectResponse
     {
-        $this->access->ensureCanManageSection($request->user(), $section);
+        $this->access->ensureCanAccessGradebookSection($request->user(), $section);
         $this->access->ensureCanConfigureGrades($request->user());
         $this->ensureGradingStructure($section);
         $validated = $request->validate([
@@ -174,7 +174,7 @@ class AssessmentController extends Controller
 
     public function destroyGradeCategory(Request $request, GradingCategory $category): RedirectResponse
     {
-        $this->access->ensureCanManageSection($request->user(), $category->section);
+        $this->access->ensureCanAccessGradebookSection($request->user(), $category->section);
         $this->access->ensureCanConfigureGrades($request->user());
         if ($category->assessments()->exists()) {
             return back()->withErrors(['category' => 'Move or delete the score items in this category first.']);
@@ -189,7 +189,7 @@ class AssessmentController extends Controller
 
     public function storeGradeItem(Request $request, NstpSection $section): RedirectResponse
     {
-        $this->access->ensureCanManageSection($request->user(), $section);
+        $this->access->ensureCanAccessGradebookSection($request->user(), $section);
         $this->access->ensureCanConfigureGrades($request->user());
         $validated = $request->validate([
             'grading_category_id' => ['required', 'integer', 'exists:grading_categories,id'],
@@ -213,7 +213,7 @@ class AssessmentController extends Controller
 
     public function updateGradeItem(Request $request, Assessment $assessment): RedirectResponse
     {
-        $this->access->ensureCanManageSection($request->user(), $assessment->section);
+        $this->access->ensureCanAccessGradebookSection($request->user(), $assessment->section);
         $this->access->ensureCanConfigureGrades($request->user());
         $validated = $request->validate([
             'grading_category_id' => ['required', 'integer', 'exists:grading_categories,id'],
@@ -228,7 +228,7 @@ class AssessmentController extends Controller
 
     public function destroyGradeItem(Request $request, Assessment $assessment): RedirectResponse
     {
-        $this->access->ensureCanManageSection($request->user(), $assessment->section);
+        $this->access->ensureCanAccessGradebookSection($request->user(), $assessment->section);
         $this->access->ensureCanConfigureGrades($request->user());
         $assessment->delete();
 
@@ -237,7 +237,7 @@ class AssessmentController extends Controller
 
     public function updateGradeScore(Request $request, NstpSection $section): JsonResponse
     {
-        $this->access->ensureCanManageSection($request->user(), $section);
+        $this->access->ensureCanAccessGradebookSection($request->user(), $section);
         $validated = $request->validate([
             'assessment_id' => ['required', 'integer', 'exists:assessments,id'],
             'student_id' => ['required', 'integer', 'exists:users,id'],

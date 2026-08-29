@@ -6,6 +6,7 @@ use App\Models\Assessment;
 use App\Models\AssessmentSubmission;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
+use App\Models\GradingCategory;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
@@ -47,6 +48,35 @@ class CoordinatorPortalTest extends TestCase
         foreach (['/coordinator/dashboard', '/coordinator/components', '/coordinator/sections', '/coordinator/attendance', '/coordinator/performance', '/coordinator/profile'] as $path) {
             $this->actingAs($this->coordinator)->get($path)->assertOk();
         }
+    }
+
+    public function test_coordinator_can_edit_the_grading_configuration(): void
+    {
+        $section = NstpSection::firstOrFail();
+        $this->actingAs($this->coordinator)->get('/coordinator/grades')
+            ->assertOk()
+            ->assertSee('Grading setup')
+            ->assertSee('Score items');
+
+        $categories = GradingCategory::where('section_id', $section->id)->orderBy('sort_order')->get();
+        $payload = $categories->mapWithKeys(fn ($category) => [$category->id => [
+            'name' => $category->name === 'Class Standing' ? 'Participation' : $category->name,
+            'weight' => $category->weight,
+            'color' => $category->color,
+        ]])->all();
+
+        $this->actingAs($this->coordinator)->put('/coordinator/grades/'.$section->id.'/structure', [
+            'categories' => $payload,
+            'passing_percentage' => 75,
+            'highest_grade' => 1,
+            'passing_grade' => 3,
+            'failing_grade' => 5,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('grading_categories', [
+            'section_id' => $section->id,
+            'name' => 'Participation',
+        ]);
     }
 
     public function test_coordinator_cannot_access_management_routes(): void
