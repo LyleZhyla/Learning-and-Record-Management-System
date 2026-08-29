@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </head>
 <body class="auth-body">
-    <main class="auth-shell">
+    <main class="auth-shell auth-animated">
         <section class="auth-panel">
             <div class="auth-form-wrap">
                 <a class="brand auth-brand" href="{{ url('/') }}">
@@ -56,6 +56,7 @@
                     <button class="primary-button" type="submit">Sign in to dashboard <span>→</span></button>
                 </form>
 
+                <p class="auth-switch">New student? <a href="{{ route('register') }}">Create an account</a></p>
                 <p class="security-note">Protected by server-side sessions, CSRF validation, password hashing, and login rate limiting.</p>
             </div>
         </section>
@@ -63,6 +64,8 @@
         <section class="auth-visual" aria-label="Smart NSTP system introduction">
             <div class="visual-glow glow-one"></div>
             <div class="visual-glow glow-two"></div>
+            <div class="auth-orbit orbit-one"></div>
+            <div class="auth-orbit orbit-two"></div>
             <div class="visual-content">
                 <span class="visual-kicker">One connected NSTP ecosystem</span>
                 <h2>Lead every component from one secure workspace.</h2>
