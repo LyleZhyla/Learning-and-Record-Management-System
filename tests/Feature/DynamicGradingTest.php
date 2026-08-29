@@ -64,6 +64,29 @@ class DynamicGradingTest extends TestCase
         ]);
     }
 
+    public function test_student_sees_only_their_own_transparent_grade_breakdown(): void
+    {
+        [$facilitator, $student, $section] = $this->records();
+        $otherStudent = User::factory()->create(['name' => 'Private Other Student', 'role' => 'student', 'status' => 'active']);
+        NstpEnrollment::create(['student_id' => $otherStudent->id, 'component_id' => $section->component_id, 'section_id' => $section->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
+        app(GradeService::class)->summary($student, $section->id);
+        $category = $section->gradingCategories()->where('name', 'Quizzes')->firstOrFail();
+        $assessment = Assessment::create([
+            'section_id' => $section->id, 'grading_category_id' => $category->id,
+            'created_by' => $facilitator->id, 'title' => 'Transparency Quiz', 'type' => 'quiz',
+            'max_score' => 50, 'weight' => 20, 'status' => 'published', 'published_at' => now(),
+        ]);
+        AssessmentSubmission::create(['assessment_id' => $assessment->id, 'student_id' => $student->id, 'submitted_at' => now(), 'score' => 40]);
+        AssessmentSubmission::create(['assessment_id' => $assessment->id, 'student_id' => $otherStudent->id, 'submitted_at' => now(), 'score' => 17]);
+
+        $this->actingAs($student)->get('/student/grades')
+            ->assertOk()
+            ->assertSee('Your grade records')
+            ->assertSee('40.00 / 50.00')
+            ->assertDontSee('Private Other Student')
+            ->assertDontSee('17.00 / 50.00');
+    }
+
     private function records(): array
     {
         $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
