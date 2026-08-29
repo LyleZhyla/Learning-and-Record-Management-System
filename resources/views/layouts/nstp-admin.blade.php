@@ -35,7 +35,6 @@
                 <a class="nav-link {{ request()->routeIs('nstp_admin.components.*') ? 'active' : '' }}" href="{{ route('nstp_admin.components.index') }}"><span class="nav-icon">◉</span> Components</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.sections.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sections.index') }}"><span class="nav-icon">▦</span> Sections</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.sectioning.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sectioning.index') }}"><span class="nav-icon">♙</span> Student Sectioning</a>
-                <a class="nav-link {{ request('role') === 'facilitator' && request()->routeIs('nstp_admin.accounts.*') ? 'active' : '' }}" href="{{ route('nstp_admin.accounts.index', ['role' => 'facilitator']) }}"><span class="nav-icon">◎</span> Facilitators</a>
                 <p class="nav-label">Attendance & Learning</p>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.attendance.*') ? 'active' : '' }}" href="{{ route('nstp_admin.attendance.index') }}"><span class="nav-icon">▣</span> Attendance</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.materials.*') ? 'active' : '' }}" href="{{ route('nstp_admin.materials.index') }}"><span class="nav-icon">▤</span> Learning Materials</a>
