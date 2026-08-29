@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Announcement extends Model
 {
@@ -34,6 +35,11 @@ class Announcement extends Model
     public function component(): BelongsTo
     {
         return $this->belongsTo(NstpComponent::class, 'component_id');
+    }
+
+    public function readers(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'announcement_reads')->withPivot('read_at');
     }
 
     public function audienceLabel(): string

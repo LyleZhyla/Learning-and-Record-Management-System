@@ -16,6 +16,7 @@ use App\Http\Controllers\Learning\AssessmentController;
 use App\Http\Controllers\Learning\AttendanceController as ManagementAttendanceController;
 use App\Http\Controllers\Learning\MaterialController;
 use App\Http\Controllers\Learning\OmrScannerController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NstpAdmin\AccountController as NstpAdminAccountController;
 use App\Http\Controllers\NstpAdmin\AnnouncementController as NstpAdminAnnouncementController;
 use App\Http\Controllers\NstpAdmin\ComponentController as NstpAdminComponentController;
@@ -111,6 +112,11 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->middleware('auth')
     ->name('logout');
+
+Route::middleware('auth')->group(function () {
+    Route::post('/notifications/{announcement}/read', [NotificationController::class, 'read'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+});
 
 Route::get('/profile-photo', ProfilePhotoController::class)
     ->middleware('auth')

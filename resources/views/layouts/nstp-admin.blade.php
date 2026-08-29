@@ -62,6 +62,7 @@
                     <small>Smart NSTP / NSTP Admin</small>
                     <h1>@yield('page-title', 'Dashboard')</h1>
                 </div>
+                <x-notification-bell />
                 <div class="topbar-status"><span></span> System online</div>
             </header>
 
