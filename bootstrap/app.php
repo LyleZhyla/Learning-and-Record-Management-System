@@ -1,5 +1,11 @@
 <?php
 
+use App\Http\Middleware\AuditUserActivity;
+use App\Http\Middleware\EnsureUserIsCoordinator;
+use App\Http\Middleware\EnsureUserIsFacilitator;
+use App\Http\Middleware\EnsureUserIsNstpAdmin;
+use App\Http\Middleware\EnsureUserIsStudent;
+use App\Http\Middleware\EnsureUserIsSuperAdmin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -11,12 +17,16 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->web(append: [
+            AuditUserActivity::class,
+        ]);
+
         $middleware->alias([
-            'super_admin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
-            'nstp_admin' => \App\Http\Middleware\EnsureUserIsNstpAdmin::class,
-            'coordinator' => \App\Http\Middleware\EnsureUserIsCoordinator::class,
-            'facilitator' => \App\Http\Middleware\EnsureUserIsFacilitator::class,
-            'student' => \App\Http\Middleware\EnsureUserIsStudent::class,
+            'super_admin' => EnsureUserIsSuperAdmin::class,
+            'nstp_admin' => EnsureUserIsNstpAdmin::class,
+            'coordinator' => EnsureUserIsCoordinator::class,
+            'facilitator' => EnsureUserIsFacilitator::class,
+            'student' => EnsureUserIsStudent::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
