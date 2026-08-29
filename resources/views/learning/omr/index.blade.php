@@ -25,7 +25,7 @@
                     <label class="field-group"><span>Number of items</span><input type="number" name="item_count" min="1" max="30" value="{{ old('item_count', 20) }}" required data-item-count></label>
                     <label class="field-group"><span>Choices per item</span><select name="choice_count" data-choice-count><option value="2">A–B</option><option value="3">A–C</option><option value="4" @selected(old('choice_count',4)==4)>A–D</option><option value="5" @selected(old('choice_count')==5)>A–E</option></select></label>
                 </div>
-                <div class="answer-key-heading"><strong>Correct answers</strong><small>Choose one answer for every question.</small></div>
+                <div class="answer-key-heading"><strong>Correct answers</strong><small>Click a letter for every question.</small></div>
                 <div class="answer-key-grid" data-answer-key-grid></div>
                 <script type="application/json" data-old-answer-key>@json(array_values(old('answers', [])))</script>
                 <div class="form-actions"><button class="primary-button compact">Create scanner & answer sheet</button></div>
