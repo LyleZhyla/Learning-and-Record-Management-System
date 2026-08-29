@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Assessment extends Model
 {
@@ -28,5 +29,10 @@ class Assessment extends Model
     public function submissions(): HasMany
     {
         return $this->hasMany(AssessmentSubmission::class);
+    }
+
+    public function omrSheet(): HasOne
+    {
+        return $this->hasOne(OmrSheet::class);
     }
 }

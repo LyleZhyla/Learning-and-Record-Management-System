@@ -4,7 +4,7 @@
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Coordinator') · {{ config('app.name') }}</title>
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('images/snapie-logo-64.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
 </head>
 <body class="admin-body"><div class="app-shell">
     <aside class="sidebar" id="sidebar"><button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">‹</button>
@@ -17,6 +17,7 @@
             <a class="nav-link {{ request()->routeIs('coordinator.components.*') ? 'active' : '' }}" href="{{ route('coordinator.components.index') }}"><span class="nav-icon">◉</span> Components</a>
             <a class="nav-link {{ request()->routeIs('coordinator.sections.*') ? 'active' : '' }}" href="{{ route('coordinator.sections.index') }}"><span class="nav-icon">▦</span> Sections & Facilitators</a>
             <a class="nav-link {{ request()->routeIs('coordinator.attendance.*') ? 'active' : '' }}" href="{{ route('coordinator.attendance.index') }}"><span class="nav-icon">▣</span> Attendance</a>
+            <a class="nav-link {{ request()->routeIs('coordinator.omr.*') ? 'active' : '' }}" href="{{ route('coordinator.omr.index') }}"><span class="nav-icon">▦</span> Answer Sheet Scanner</a>
             <a class="nav-link {{ request()->routeIs('coordinator.performance.*') ? 'active' : '' }}" href="{{ route('coordinator.performance.index') }}"><span class="nav-icon">◎</span> Performance & Grades</a>
             <p class="nav-label">Account</p>
             <a class="nav-link {{ request()->routeIs('coordinator.profile.*') ? 'active' : '' }}" href="{{ route('coordinator.profile.edit') }}"><span class="nav-icon">⚙</span> Profile & Security</a>

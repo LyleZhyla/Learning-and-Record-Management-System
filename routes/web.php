@@ -13,6 +13,7 @@ use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboard
 use App\Http\Controllers\Learning\AssessmentController;
 use App\Http\Controllers\Learning\AttendanceController as ManagementAttendanceController;
 use App\Http\Controllers\Learning\MaterialController;
+use App\Http\Controllers\Learning\OmrScannerController;
 use App\Http\Controllers\NstpAdmin\ComponentController as NstpAdminComponentController;
 use App\Http\Controllers\NstpAdmin\DashboardController as NstpAdminDashboardController;
 use App\Http\Controllers\NstpAdmin\ProfileController as NstpAdminProfileController;
@@ -55,6 +56,14 @@ $learningManagementRoutes = function (): void {
     Route::get('/assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');
     Route::put('/assessments/{assessment}/submissions/{submission}', [AssessmentController::class, 'grade'])->name('assessments.grade');
     Route::get('/grades', [AssessmentController::class, 'grades'])->name('grades.index');
+};
+
+$omrScannerRoutes = function (): void {
+    Route::get('/answer-sheet-scanner', [OmrScannerController::class, 'index'])->name('omr.index');
+    Route::post('/answer-sheet-scanner', [OmrScannerController::class, 'store'])->name('omr.store');
+    Route::get('/answer-sheet-scanner/{sheet}', [OmrScannerController::class, 'show'])->name('omr.show');
+    Route::get('/answer-sheet-scanner/{sheet}/print', [OmrScannerController::class, 'printable'])->name('omr.print');
+    Route::post('/answer-sheet-scanner/{sheet}/grade', [OmrScannerController::class, 'grade'])->name('omr.grade');
 };
 
 Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes) {
@@ -123,15 +132,16 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $learningManagementRoutes();
 });
 
-Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes) {
+Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes) {
     Route::get('/dashboard', FacilitatorDashboardController::class)->name('dashboard');
     Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
     $learningManagementRoutes();
+    $omrScannerRoutes();
 });
 
-Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () {
+Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     Route::get('/components', [CoordinatorMonitoringController::class, 'components'])->name('components.index');
     Route::get('/sections', [CoordinatorMonitoringController::class, 'sections'])->name('sections.index');
@@ -142,6 +152,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
+    $omrScannerRoutes();
 });
 
 Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () {
