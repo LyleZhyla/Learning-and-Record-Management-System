@@ -23,17 +23,18 @@
 
         <section class="card" id="password">
             <div class="card-heading"><div><span class="eyebrow">Authentication</span><h3>Change password</h3><p>Use at least 12 characters with uppercase, lowercase, number, and symbol.</p></div></div>
-            <form method="POST" action="{{ route('nstp_admin.password.update') }}" class="settings-form">
+            <form method="POST" action="{{ route('nstp_admin.password.update') }}" class="settings-form" data-password-rules>
                 @csrf @method('PUT')
                 <label for="current_password">Current password</label>
                 <input id="current_password" name="current_password" type="password" autocomplete="current-password" required>
                 @error('current_password')<small class="field-error">{{ $message }}</small>@enderror
-                <label for="password">New password</label>
-                <input id="password" name="password" type="password" autocomplete="new-password" required>
+                <label for="new_password">New password</label>
+                <input id="new_password" name="password" type="password" autocomplete="new-password" minlength="12" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,}" required>
                 @error('password')<small class="field-error">{{ $message }}</small>@enderror
                 <label for="password_confirmation">Confirm new password</label>
                 <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" required>
-                <div class="form-actions"><button class="primary-button compact" type="submit">Update password</button></div>
+                <x-password-requirements />
+                <div class="form-actions"><button class="primary-button compact" type="submit" disabled>Update password</button></div>
             </form>
         </section>
     </div>

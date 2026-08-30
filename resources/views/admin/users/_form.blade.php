@@ -32,21 +32,21 @@
     </label>
 
     <label class="field-group full">
-        <span>Coordinator component</span>
+        <span>Staff component</span>
         <select name="nstp_component_id">
             <option value="">Not applicable</option>
             @foreach ($components as $component)
                 <option value="{{ $component->id }}" @selected((int) old('nstp_component_id', $user?->nstp_component_id) === $component->id)>{{ $component->code }} — {{ $component->name }}</option>
             @endforeach
         </select>
-        <small class="form-help">Required for Coordinator accounts. Their entire portal will be restricted to this component.</small>
+        <small class="form-help">Required for Coordinators and optional for Facilitators. Coordinator access is restricted to the selected component.</small>
         @error('nstp_component_id') <small class="field-error">{{ $message }}</small> @enderror
     </label>
 
     @if (! $user)
         <label class="field-group">
             <span>Temporary password</span>
-            <input type="password" name="password" autocomplete="new-password" required>
+            <input type="password" name="password" autocomplete="new-password" minlength="12" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,}" required>
             @error('password') <small class="field-error">{{ $message }}</small> @enderror
         </label>
 
@@ -54,6 +54,7 @@
             <span>Confirm temporary password</span>
             <input type="password" name="password_confirmation" autocomplete="new-password" required>
         </label>
-        <p class="form-help full">Use at least 12 characters with uppercase and lowercase letters, a number, and a symbol. The user must change this temporary password at the next login.</p>
+        <x-password-requirements />
+        <p class="form-help full">The user must change this temporary password at the next login.</p>
     @endif
 </div>

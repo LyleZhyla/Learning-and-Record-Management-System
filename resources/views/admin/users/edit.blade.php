@@ -36,12 +36,12 @@
 
             <section class="card">
                 <div class="card-heading"><div><span class="eyebrow">Security</span><h3>Reset password</h3><p>This ends the user's active sessions and requires a password change on next login.</p></div></div>
-                <form method="POST" action="{{ route('admin.users.password', $user) }}" class="account-form compact-form">
+                <form method="POST" action="{{ route('admin.users.password', $user) }}" class="account-form compact-form" data-password-rules>
                     @csrf @method('PUT')
-                    <label class="field-group"><span>New temporary password</span><input type="password" name="password" autocomplete="new-password" required></label>
+                    <label class="field-group"><span>New temporary password</span><input type="password" name="password" autocomplete="new-password" minlength="12" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,}" required></label>
                     <label class="field-group"><span>Confirm password</span><input type="password" name="password_confirmation" autocomplete="new-password" required></label>
-                    <p class="form-help">Minimum 12 characters with uppercase, lowercase, number, and symbol.</p>
-                    <div class="form-actions"><button class="secondary-outline-button" type="submit">Reset password</button></div>
+                    <x-password-requirements />
+                    <div class="form-actions"><button class="secondary-outline-button" type="submit" disabled>Reset password</button></div>
                 </form>
             </section>
 

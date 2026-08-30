@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\NstpAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\NstpComponent;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -56,10 +58,36 @@ class AccountController extends Controller
             $user->load(['facilitatedSections.component', 'nstpComponent']);
         }
 
-        $components = $user->isCoordinator()
-            ? collect([$user->nstpComponent])->filter()
-            : $user->facilitatedSections->pluck('component')->filter()->unique('id')->values();
+        $components = collect([$user->nstpComponent])->filter();
 
-        return view('nstp_admin.accounts.show', compact('user', 'components'));
+        if ($user->isFacilitator() && $components->isEmpty()) {
+            $components = $user->facilitatedSections->pluck('component')->filter()->unique('id')->values();
+        }
+
+        $currentComponentId = $user->nstp_component_id ?? $components->first()?->id;
+        $availableComponents = NstpComponent::query()->where('is_active', true)->orderBy('code')->get();
+
+        return view('nstp_admin.accounts.show', compact('user', 'components', 'currentComponentId', 'availableComponents'));
+    }
+
+    public function updateComponent(Request $request, User $user): RedirectResponse
+    {
+        abort_unless($user->isCoordinator() || $user->isFacilitator(), 404);
+
+        $validated = $request->validate([
+            'nstp_component_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('nstp_components', 'id')->where('is_active', true),
+            ],
+        ]);
+
+        $user->update(['nstp_component_id' => $validated['nstp_component_id'] ?? null]);
+
+        $message = $user->nstp_component_id
+            ? "{$user->name}'s NSTP component assignment was updated."
+            : "{$user->name}'s NSTP component assignment was removed.";
+
+        return back()->with('status', $message);
     }
 }

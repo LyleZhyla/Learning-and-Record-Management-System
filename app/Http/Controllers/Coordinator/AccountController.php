@@ -71,7 +71,9 @@ class AccountController extends Controller
             ->where(fn ($query) => $query
                 ->where(fn ($facilitators) => $facilitators
                     ->where('role', 'facilitator')
-                    ->whereHas('facilitatedSections', fn ($sections) => $sections->where('component_id', $componentId)))
+                    ->where(fn ($assignment) => $assignment
+                        ->where('nstp_component_id', $componentId)
+                        ->orWhereHas('facilitatedSections', fn ($sections) => $sections->where('component_id', $componentId))))
                 ->orWhere(fn ($students) => $students
                     ->where('role', 'student')
                     ->whereHas('nstpEnrollments', fn ($enrollments) => $enrollments->where('component_id', $componentId))));

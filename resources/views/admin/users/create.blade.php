@@ -8,12 +8,12 @@
     <div class="editor-grid">
         <section class="card">
             <div class="card-heading"><div><span class="eyebrow">New system user</span><h3>Account information</h3><p>Assign the correct role based on the user's NSTP responsibility.</p></div></div>
-            <form method="POST" action="{{ route('admin.users.store') }}" class="account-form">
+            <form method="POST" action="{{ route('admin.users.store') }}" class="account-form" data-password-rules>
                 @csrf
                 @include('admin.users._form', ['user' => null])
                 <div class="form-actions split-actions">
                     <a class="cancel-button" href="{{ route('admin.users.index') }}">Cancel</a>
-                    <button class="primary-button compact" type="submit">Create account</button>
+                    <button class="primary-button compact" type="submit" disabled>Create account</button>
                 </div>
             </form>
         </section>

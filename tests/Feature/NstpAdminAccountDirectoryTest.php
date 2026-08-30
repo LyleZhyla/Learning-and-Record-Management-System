@@ -41,11 +41,48 @@ class NstpAdminAccountDirectoryTest extends TestCase
 
         $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts/'.$facilitator->id)
             ->assertOk()->assertSee($facilitator->name)->assertSee($facilitator->email)
-            ->assertSee('CWTS')->assertSee('Limited account details')
+            ->assertSee('CWTS')->assertSee('Component assignment enabled')
             ->assertDontSee('Reset password')->assertDontSee('Last sign in');
 
         $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts/'.$coordinator->id)
-            ->assertOk()->assertDontSee('System-wide')->assertSee('CWTS');
+            ->assertOk()->assertDontSee('System-wide')->assertSee('CWTS')
+            ->assertSee('Assign NSTP component')->assertSee('Save component assignment');
+    }
+
+    public function test_nstp_admin_can_assign_components_to_coordinators_and_facilitators(): void
+    {
+        [$nstpAdmin, $coordinator, $facilitator] = $this->records();
+        $rotc = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
+
+        foreach ([$coordinator, $facilitator] as $account) {
+            $this->actingAs($nstpAdmin)
+                ->patch('/nstp-admin/accounts/'.$account->id.'/component', ['nstp_component_id' => $rotc->id])
+                ->assertRedirect()
+                ->assertSessionHasNoErrors();
+
+            $this->assertDatabaseHas('users', [
+                'id' => $account->id,
+                'nstp_component_id' => $rotc->id,
+            ]);
+        }
+    }
+
+    public function test_component_assignment_rejects_students_inactive_components_and_non_nstp_admins(): void
+    {
+        [$nstpAdmin, $coordinator, , $student] = $this->records();
+        $inactive = NstpComponent::create(['code' => 'LTS', 'name' => 'Literacy Training Service', 'default_section_capacity' => 40, 'is_active' => false]);
+
+        $this->actingAs($nstpAdmin)
+            ->patch('/nstp-admin/accounts/'.$student->id.'/component', ['nstp_component_id' => $inactive->id])
+            ->assertNotFound();
+
+        $this->actingAs($nstpAdmin)
+            ->patch('/nstp-admin/accounts/'.$coordinator->id.'/component', ['nstp_component_id' => $inactive->id])
+            ->assertSessionHasErrors('nstp_component_id');
+
+        $this->actingAs($coordinator)
+            ->patch('/nstp-admin/accounts/'.$coordinator->id.'/component', ['nstp_component_id' => null])
+            ->assertForbidden();
     }
 
     public function test_all_current_student_records_are_visible_without_password_controls(): void

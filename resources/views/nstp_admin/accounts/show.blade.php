@@ -7,8 +7,14 @@
 <section class="card restricted-account-profile">
     <div class="account-heading"><span class="large-avatar small">{{ strtoupper(substr($user->name,0,1)) }}</span><div><span class="eyebrow">{{ $user->roleLabel() }}</span><h2>{{ $user->name }}</h2><p>{{ $user->email }}</p></div></div>
     <div class="visible-data-grid"><div><small>Name</small><strong>{{ $user->name }}</strong></div><div><small>Email</small><strong>{{ $user->email }}</strong></div><div class="full"><small>Component handled</small><p>@forelse($components as $component)<span class="component-mini-badge">{{ $component->code }} · {{ $component->name }}</span>@empty<span class="muted-cell">No component assignment</span>@endforelse</p></div></div>
+    <form class="component-assignment-form" method="POST" action="{{ route('nstp_admin.accounts.component.update', $user) }}">
+        @csrf @method('PATCH')
+        <label class="field-group"><span>Assign NSTP component</span><select name="nstp_component_id"><option value="">No component assigned</option>@foreach($availableComponents as $component)<option value="{{ $component->id }}" @selected((int) old('nstp_component_id', $currentComponentId) === $component->id)>{{ $component->code }} — {{ $component->name }}</option>@endforeach</select>@error('nstp_component_id')<small class="field-error">{{ $message }}</small>@enderror</label>
+        <button class="primary-button compact" type="submit">Save component assignment</button>
+    </form>
+    @if($user->isFacilitator())<p class="component-assignment-note">Changing this assignment does not move existing sections, enrollments, attendance records, or grades.</p>@endif
 </section>
-<section class="card password-boundary-note"><span>🔒</span><div><strong>Limited account details</strong><p>Only the name, email, and component coverage are available to NSTP Admin. Contact the Super Admin for password or account recovery concerns.</p></div></section>
+<section class="card password-boundary-note"><span>🔒</span><div><strong>Component assignment enabled</strong><p>NSTP Admin may update component assignments, but passwords and account recovery remain restricted to the Super Admin.</p></div></section>
 @else
 <section class="card student-record-header">
     <div><span class="eyebrow">Student account</span><h2>{{ $user->name }}</h2><p>{{ $user->email }}</p></div>

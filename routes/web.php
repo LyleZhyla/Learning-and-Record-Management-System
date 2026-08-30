@@ -84,6 +84,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::put('/profile', [NstpAdminProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [NstpAdminProfileController::class, 'updatePassword'])->name('password.update');
     Route::get('/accounts', [NstpAdminAccountController::class, 'index'])->name('accounts.index');
+    Route::patch('/accounts/{user}/component', [NstpAdminAccountController::class, 'updateComponent'])->name('accounts.component.update');
     Route::get('/accounts/{user}', [NstpAdminAccountController::class, 'show'])->name('accounts.show');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');

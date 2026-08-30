@@ -27,7 +27,7 @@ class NotificationService
         };
         $componentIds = match ($user->role) {
             'student' => $user->nstpEnrollments()->pluck('component_id')->unique()->values()->all(),
-            'facilitator' => $user->facilitatedSections()->pluck('component_id')->unique()->values()->all(),
+            'facilitator' => $user->facilitatedSections()->pluck('component_id')->push($user->nstp_component_id)->filter()->unique()->values()->all(),
             'coordinator' => array_values(array_filter([$user->nstp_component_id])),
             default => [],
         };

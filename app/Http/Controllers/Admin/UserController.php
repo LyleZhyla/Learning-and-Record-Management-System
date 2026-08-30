@@ -61,7 +61,7 @@ class UserController extends Controller
             'password' => $validated['password'],
             'role' => $validated['role'],
             'status' => $validated['status'],
-            'nstp_component_id' => $validated['role'] === 'coordinator' ? $validated['nstp_component_id'] : null,
+            'nstp_component_id' => in_array($validated['role'], ['coordinator', 'facilitator'], true) ? ($validated['nstp_component_id'] ?? null) : null,
             'must_change_password' => true,
         ]);
 
@@ -93,7 +93,7 @@ class UserController extends Controller
             'email' => str($validated['email'])->lower()->toString(),
             'role' => $validated['role'],
             'status' => $validated['status'],
-            'nstp_component_id' => $validated['role'] === 'coordinator' ? $validated['nstp_component_id'] : null,
+            'nstp_component_id' => in_array($validated['role'], ['coordinator', 'facilitator'], true) ? ($validated['nstp_component_id'] ?? null) : null,
         ]);
 
         if ($user->isDirty('email')) {
