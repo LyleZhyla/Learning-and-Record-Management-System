@@ -21,14 +21,30 @@
     </section>
 
     <div class="content-grid">
-        <section class="card">
-            <div class="card-heading"><div><span class="eyebrow">Development roadmap</span><h3>Core management modules</h3></div><span class="pill">Foundation complete</span></div>
-            <div class="module-list">
-                <div class="module-item"><span class="step done">1</span><div><strong>Super Admin account</strong><p>Secure login, role protection, profile, password change, and logout</p></div><span class="state done">Complete</span></div>
-                <div class="module-item"><span class="step done">2</span><div><strong>User and role management</strong><p>Manage Student, Facilitator, Coordinator, NSTP Admin, and Super Admin accounts</p></div><span class="state done">Complete</span></div>
-                <div class="module-item"><span class="step done">3</span><div><strong>NSTP components and sections</strong><p>Configure CWTS, LTS, ROTC, and automated sectioning</p></div><span class="state done">Complete</span></div>
-                <div class="module-item"><span class="step done">4</span><div><strong>Attendance and learning</strong><p>QR monitoring, materials, assessments, and grades</p></div><span class="state done">Complete</span></div>
-                <div class="module-item"><span class="step done">5</span><div><strong>Operational reports</strong><p>Student, attendance, grade, component, and section reports</p></div><span class="state done">Complete</span></div>
+        <section class="card enrollee-chart-card">
+            @php
+                $largestComponentCount = max(1, (int) $componentEnrollments->max('count'));
+                $totalComponentEnrollees = (int) $componentEnrollments->sum('count');
+            @endphp
+            <div class="card-heading">
+                <div><span class="eyebrow">Enrollment overview</span><h3>Enrollees per NSTP component</h3><p>Unique students with active enrolled status.</p></div>
+                <span class="enrollee-total"><strong>{{ number_format($totalComponentEnrollees) }}</strong><small>Total enrollees</small></span>
+            </div>
+            <div class="enrollee-chart" role="img" aria-label="Bar graph of enrollees per NSTP component">
+                @forelse ($componentEnrollments as $component)
+                    @php($barWidth = $component['count'] > 0 ? max(8, ($component['count'] / $largestComponentCount) * 100) : 0)
+                    <div class="enrollee-bar-row">
+                        <div class="enrollee-bar-label">
+                            <span><strong>{{ $component['code'] }}</strong><small>{{ $component['name'] }}</small></span>
+                            <b>{{ number_format($component['count']) }}</b>
+                        </div>
+                        <div class="enrollee-bar-track" aria-hidden="true">
+                            <span class="component-{{ strtolower($component['code']) }}" style="width: {{ $barWidth }}%"></span>
+                        </div>
+                    </div>
+                @empty
+                    <div class="empty-state"><strong>No NSTP components available</strong><span>Component enrollment data will appear here once configured.</span></div>
+                @endforelse
             </div>
         </section>
 
