@@ -29,6 +29,7 @@ use App\Http\Controllers\Portal\AnnouncementController as PortalAnnouncementCont
 use App\Http\Controllers\Portal\ProfileController as PortalProfileController;
 use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
+use App\Http\Controllers\Student\ComponentController as StudentComponentController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\LearningController as StudentLearningController;
 use App\Http\Controllers\StudentImportController;
@@ -215,6 +216,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
+    Route::put('/component', [StudentComponentController::class, 'update'])->name('component.update');
     Route::get('/attendance', [StudentAttendanceController::class, 'index'])->name('attendance.index');
     Route::get('/attendance/qr', [StudentAttendanceController::class, 'qr'])->name('attendance.qr');
     Route::get('/materials', [StudentLearningController::class, 'materials'])->name('materials.index');
