@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Archivable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AuditLog extends Model
 {
+    use Archivable;
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -20,6 +23,7 @@ class AuditLog extends Model
         return [
             'metadata' => 'array',
             'created_at' => 'datetime',
+            'archived_at' => 'datetime',
         ];
     }
 

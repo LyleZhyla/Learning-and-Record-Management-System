@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\ArchiveController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SystemLogController;
@@ -140,6 +141,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/system-logs', [SystemLogController::class, 'index'])->name('system-logs.index');
+    Route::get('/archives', [ArchiveController::class, 'index'])->name('archives.index');
+    Route::post('/archives/{type}', [ArchiveController::class, 'archiveAll'])->name('archives.archive');
+    Route::patch('/archives/{type}/restore', [ArchiveController::class, 'restoreAll'])->name('archives.restore');
     Route::get('/settings', [SystemSettingController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SystemSettingController::class, 'update'])->name('settings.update');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');

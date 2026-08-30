@@ -2,16 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Archivable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AttendanceRecord extends Model
 {
-    protected $fillable = ['attendance_session_id', 'student_id', 'status', 'checked_in_at', 'source', 'recorded_by'];
+    use Archivable;
+
+    protected $fillable = ['attendance_session_id', 'student_id', 'status', 'checked_in_at', 'source', 'recorded_by', 'archived_at', 'archived_by'];
 
     protected function casts(): array
     {
-        return ['checked_in_at' => 'datetime'];
+        return ['checked_in_at' => 'datetime', 'archived_at' => 'datetime'];
     }
 
     public function attendanceSession(): BelongsTo

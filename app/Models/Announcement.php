@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\Archivable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -9,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Announcement extends Model
 {
-    use HasFactory;
+    use Archivable, HasFactory;
 
     public const AUDIENCES = [
         'all' => 'All portal users',
@@ -24,7 +25,7 @@ class Announcement extends Model
 
     protected function casts(): array
     {
-        return ['published_at' => 'datetime', 'expires_at' => 'datetime'];
+        return ['published_at' => 'datetime', 'expires_at' => 'datetime', 'archived_at' => 'datetime'];
     }
 
     public function author(): BelongsTo

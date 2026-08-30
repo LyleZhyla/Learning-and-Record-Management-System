@@ -148,18 +148,29 @@ class AttendanceController extends Controller
         }
 
         $status = $attendance->late_after && now()->gt($attendance->late_after) ? 'late' : 'present';
-        $record = AttendanceRecord::firstOrCreate(
+        $record = AttendanceRecord::withArchived()->firstOrCreate(
             ['attendance_session_id' => $attendance->id, 'student_id' => $student->id],
             ['status' => $status, 'checked_in_at' => now(), 'source' => 'qr', 'recorded_by' => $request->user()->id],
         );
+        $wasArchived = filled($record->archived_at);
+        if ($wasArchived) {
+            $record->forceFill([
+                'status' => $status,
+                'checked_in_at' => now(),
+                'source' => 'qr',
+                'recorded_by' => $request->user()->id,
+                'archived_at' => null,
+                'archived_by' => null,
+            ])->save();
+        }
 
         return response()->json([
-            'message' => $record->wasRecentlyCreated
+            'message' => ($record->wasRecentlyCreated || $wasArchived)
                 ? "{$student->name} was marked {$record->status}."
                 : "{$student->name} is already recorded as {$record->status}.",
             'student' => $student->name,
             'status' => $record->status,
-            'recorded' => $record->wasRecentlyCreated,
+            'recorded' => $record->wasRecentlyCreated || $wasArchived,
         ]);
     }
 
@@ -171,13 +182,15 @@ class AttendanceController extends Controller
             'status' => ['required', Rule::in(['present', 'late', 'absent'])],
         ]);
 
-        AttendanceRecord::updateOrCreate(
+        AttendanceRecord::withArchived()->updateOrCreate(
             ['attendance_session_id' => $attendance->id, 'student_id' => $validated['student_id']],
             [
                 'status' => $validated['status'],
                 'checked_in_at' => in_array($validated['status'], ['present', 'late']) ? now() : null,
                 'source' => 'manual',
                 'recorded_by' => $request->user()->id,
+                'archived_at' => null,
+                'archived_by' => null,
             ],
         );
 
@@ -191,10 +204,13 @@ class AttendanceController extends Controller
         DB::transaction(function () use ($attendance, $request): void {
             $studentIds = NstpEnrollment::where('section_id', $attendance->section_id)->pluck('student_id');
             foreach ($studentIds as $studentId) {
-                AttendanceRecord::firstOrCreate(
+                $record = AttendanceRecord::withArchived()->firstOrCreate(
                     ['attendance_session_id' => $attendance->id, 'student_id' => $studentId],
                     ['status' => 'absent', 'source' => 'system', 'recorded_by' => $request->user()->id],
                 );
+                if ($record->archived_at) {
+                    $record->forceFill(['archived_at' => null, 'archived_by' => null])->save();
+                }
             }
             $attendance->update(['status' => 'closed']);
         });
