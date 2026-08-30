@@ -46,7 +46,7 @@ class CoordinatorPortalTest extends TestCase
 
     public function test_coordinator_can_open_all_read_only_monitoring_pages(): void
     {
-        foreach (['/coordinator/dashboard', '/coordinator/components', '/coordinator/accounts', '/coordinator/sections', '/coordinator/attendance', '/coordinator/performance', '/coordinator/profile'] as $path) {
+        foreach (['/coordinator/dashboard', '/coordinator/components', '/coordinator/accounts', '/coordinator/sections', '/coordinator/attendance', '/coordinator/performance', '/coordinator/reports', '/coordinator/profile'] as $path) {
             $this->actingAs($this->coordinator)->get($path)->assertOk();
         }
     }
@@ -105,5 +105,27 @@ class CoordinatorPortalTest extends TestCase
         $this->actingAs($this->coordinator)->get('/coordinator/accounts/'.$otherStudent->id)->assertNotFound();
         $this->actingAs($this->coordinator)->get('/coordinator/attendance/'.$otherSession->id)->assertForbidden();
         $this->actingAs($this->coordinator)->put('/coordinator/grades/'.$otherSection->id.'/structure', [])->assertForbidden();
+    }
+
+    public function test_coordinator_reports_are_limited_to_the_assigned_component(): void
+    {
+        $otherFacilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $hiddenStudent = User::factory()->create(['name' => 'Hidden Report Student', 'role' => 'student', 'status' => 'active']);
+        $otherComponent = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
+        $otherSection = NstpSection::create(['component_id' => $otherComponent->id, 'facilitator_id' => $otherFacilitator->id, 'code' => 'ROTC-RPT', 'name' => 'Hidden Report Section', 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);
+        NstpEnrollment::create(['student_id' => $hiddenStudent->id, 'component_id' => $otherComponent->id, 'section_id' => $otherSection->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
+
+        foreach (['students', 'attendance', 'grades', 'sections'] as $type) {
+            $this->actingAs($this->coordinator)->get('/coordinator/reports?type='.$type.'&component_id='.$otherComponent->id)
+                ->assertOk()
+                ->assertSee('CWTS operational reports')
+                ->assertDontSee('Hidden Report Student')
+                ->assertDontSee('ROTC-RPT');
+        }
+
+        $this->actingAs($this->coordinator)->get('/coordinator/reports/students/export?component_id='.$otherComponent->id)
+            ->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->actingAs($this->coordinator)->get('/coordinator/reports/sections/print?component_id='.$otherComponent->id)
+            ->assertOk()->assertSee('CWTS-01')->assertDontSee('ROTC-RPT');
     }
 }

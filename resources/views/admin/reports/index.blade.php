@@ -6,15 +6,15 @@
 @section('content')
     <section class="welcome-banner report-welcome">
         <div>
-            <span class="eyebrow">Central reporting center</span>
-            <h2>Operational reports, ready when needed.</h2>
-            <p>Review institution-wide student, attendance, grade, component, and section data. Apply filters before printing or downloading a CSV file.</p>
+            <span class="eyebrow">{{ $isCoordinatorReport ? 'Assigned component reporting center' : 'Central reporting center' }}</span>
+            <h2>{{ $isCoordinatorReport ? $reportScope.' operational reports' : 'Operational reports, ready when needed.' }}</h2>
+            <p>{{ $isCoordinatorReport ? 'Review student, attendance, grade, and section data limited to your assigned component.' : 'Review institution-wide student, attendance, grade, component, and section data.' }} Apply filters before printing or downloading a CSV file.</p>
         </div>
         <span class="workspace-date">Last generated<strong>{{ $report['generated_at']->format('M d, Y · h:i A') }}</strong></span>
     </section>
 
     <section class="metric-grid" aria-label="Reporting overview">
-        <article class="metric-card"><span class="metric-icon blue">♙</span><div><small>REGISTERED STUDENTS</small><strong>{{ $metrics['students'] }}</strong><p>System-wide accounts</p></div></article>
+        <article class="metric-card"><span class="metric-icon blue">♙</span><div><small>{{ $isCoordinatorReport ? 'COMPONENT STUDENTS' : 'REGISTERED STUDENTS' }}</small><strong>{{ $metrics['students'] }}</strong><p>{{ $isCoordinatorReport ? $reportScope.' enrolled students' : 'System-wide accounts' }}</p></div></article>
         <article class="metric-card"><span class="metric-icon green">✓</span><div><small>ATTENDANCE RATE</small><strong>{{ number_format($metrics['attendance_rate'], 1) }}%</strong><p>Present and late records</p></div></article>
         <article class="metric-card"><span class="metric-icon orange">◎</span><div><small>GRADED SUBMISSIONS</small><strong>{{ $metrics['graded'] }}</strong><p>Verified assessment results</p></div></article>
         <article class="metric-card"><span class="metric-icon violet">▦</span><div><small>NSTP SECTIONS</small><strong>{{ $metrics['sections'] }}</strong><p>All academic terms</p></div></article>

@@ -21,6 +21,7 @@
             <a class="nav-link {{ request()->routeIs('coordinator.attendance.*') ? 'active' : '' }}" href="{{ route('coordinator.attendance.index') }}"><span class="nav-icon">▣</span> Attendance</a>
             <a class="nav-link {{ request()->routeIs('coordinator.omr.*') ? 'active' : '' }}" href="{{ route('coordinator.omr.index') }}"><span class="nav-icon">▦</span> Answer Sheet Scanner</a>
             <a class="nav-link {{ request()->routeIs('coordinator.performance.*') ? 'active' : '' }}" href="{{ route('coordinator.performance.index') }}"><span class="nav-icon">◎</span> Performance & Grades</a>
+            <a class="nav-link {{ request()->routeIs('coordinator.reports.*') ? 'active' : '' }}" href="{{ route('coordinator.reports.index') }}"><span class="nav-icon">▤</span> Reports</a>
             <a class="nav-link {{ request()->routeIs('coordinator.grades.*') ? 'active' : '' }}" href="{{ route('coordinator.grades.index') }}"><span class="nav-icon">✎</span> Grading Setup</a>
             <p class="nav-label">Communication</p>
             <a class="nav-link {{ request()->routeIs('coordinator.announcements.*') ? 'active' : '' }}" href="{{ route('coordinator.announcements.index') }}"><span class="nav-icon">◫</span> Announcements</a>

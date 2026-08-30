@@ -31,8 +31,14 @@ class ReportController extends Controller
     {
         $filters = $this->filters($request);
         $report = $this->buildReport($filters);
-        $routePrefix = $request->user()->isNstpAdmin() ? 'nstp_admin' : 'admin';
-        $layout = $request->user()->isNstpAdmin() ? 'layouts.nstp-admin' : 'layouts.admin';
+        $isCoordinator = $request->user()->isCoordinator();
+        $componentId = $isCoordinator ? $request->user()->nstp_component_id : null;
+        $routePrefix = $isCoordinator ? 'coordinator' : ($request->user()->isNstpAdmin() ? 'nstp_admin' : 'admin');
+        $layout = $isCoordinator ? 'layouts.coordinator' : ($request->user()->isNstpAdmin() ? 'layouts.nstp-admin' : 'layouts.admin');
+        $components = NstpComponent::query()->when($isCoordinator, fn ($query) => $query->whereKey($componentId ?? 0))->orderBy('code')->get();
+        $sections = NstpSection::with('component')->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))->orderBy('code')->get();
+        $academicYears = NstpSection::query()->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))
+            ->distinct()->orderByDesc('academic_year')->pluck('academic_year');
 
         return view('admin.reports.index', [
             'layout' => $layout,
@@ -40,14 +46,20 @@ class ReportController extends Controller
             'filters' => $filters,
             'report' => $report,
             'reportTypes' => self::TYPES,
-            'components' => NstpComponent::orderBy('code')->get(),
-            'sections' => NstpSection::with('component')->orderBy('code')->get(),
-            'academicYears' => NstpSection::query()->distinct()->orderByDesc('academic_year')->pluck('academic_year'),
+            'components' => $components,
+            'sections' => $sections,
+            'academicYears' => $academicYears,
+            'isCoordinatorReport' => $isCoordinator,
+            'reportScope' => $isCoordinator ? ($request->user()->nstpComponent?->code ?? 'Unassigned component') : 'Institution-wide',
             'metrics' => [
-                'students' => User::where('role', 'student')->count(),
-                'attendance_rate' => $this->attendanceRate(),
-                'graded' => AssessmentSubmission::whereNotNull('score')->count(),
-                'sections' => NstpSection::count(),
+                'students' => $isCoordinator
+                    ? NstpEnrollment::where('component_id', $componentId ?? 0)->where('status', 'enrolled')->distinct()->count('student_id')
+                    : User::where('role', 'student')->count(),
+                'attendance_rate' => $this->attendanceRate($isCoordinator ? ($componentId ?? 0) : null),
+                'graded' => AssessmentSubmission::whereNotNull('score')
+                    ->when($isCoordinator, fn ($query) => $query->whereHas('assessment.section', fn ($section) => $section->where('component_id', $componentId ?? 0)))
+                    ->count(),
+                'sections' => NstpSection::query()->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))->count(),
             ],
         ]);
     }
@@ -93,6 +105,10 @@ class ReportController extends Controller
             'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
         ]);
         $validated['type'] = $forcedType ?? ($validated['type'] ?? 'students');
+
+        if ($request->user()->isCoordinator()) {
+            $validated['component_id'] = $request->user()->nstp_component_id ?? 0;
+        }
 
         return $validated;
     }
@@ -210,10 +226,12 @@ class ReportController extends Controller
         return compact('title', 'headers', 'rows') + ['generated_at' => now()];
     }
 
-    private function attendanceRate(): float
+    private function attendanceRate(?int $componentId = null): float
     {
-        $total = AttendanceRecord::count();
+        $records = AttendanceRecord::query()
+            ->when($componentId !== null, fn ($query) => $query->whereHas('attendanceSession.section', fn ($section) => $section->where('component_id', $componentId)));
+        $total = (clone $records)->count();
 
-        return $total ? round((AttendanceRecord::whereIn('status', ['present', 'late'])->count() / $total) * 100, 1) : 0;
+        return $total ? round(((clone $records)->whereIn('status', ['present', 'late'])->count() / $total) * 100, 1) : 0;
     }
 }
