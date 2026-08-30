@@ -86,6 +86,29 @@ class AttendanceLearningTest extends TestCase
         $this->actingAs($this->student)->get('/student/grades')->assertOk()->assertSee('90.00%');
     }
 
+    public function test_student_sidebar_shows_the_number_of_unsubmitted_assessments(): void
+    {
+        $assessments = collect([
+            Assessment::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'Pending Activity 1', 'type' => 'activity', 'max_score' => 20, 'weight' => 10, 'status' => 'published', 'published_at' => now()]),
+            Assessment::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'Pending Activity 2', 'type' => 'activity', 'max_score' => 20, 'weight' => 10, 'status' => 'published', 'published_at' => now()]),
+            Assessment::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'Completed Activity', 'type' => 'activity', 'max_score' => 20, 'weight' => 10, 'status' => 'published', 'published_at' => now()]),
+        ]);
+        AssessmentSubmission::create(['assessment_id' => $assessments[2]->id, 'student_id' => $this->student->id, 'answer_text' => 'Done', 'submitted_at' => now()]);
+
+        $this->actingAs($this->student)->get('/student/dashboard')
+            ->assertOk()
+            ->assertSee('data-pending-assessment-count="2"', false)
+            ->assertSee('2 pending assessments');
+
+        $this->actingAs($this->student)->post('/student/assessments/'.$assessments[0]->id.'/submit', [
+            'answer_text' => 'Submitted now',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->actingAs($this->student)->get('/student/assessments')
+            ->assertOk()
+            ->assertSee('data-pending-assessment-count="1"', false);
+    }
+
     public function test_student_can_open_classroom_style_assessment_and_keep_attachment_when_resubmitting_text(): void
     {
         $assessment = Assessment::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'Community Reflection', 'type' => 'activity', 'instructions' => 'Upload your reflection.', 'max_score' => 100, 'weight' => 20, 'status' => 'published', 'published_at' => now()]);
