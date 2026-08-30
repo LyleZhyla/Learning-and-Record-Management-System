@@ -13,6 +13,7 @@ class DashboardController extends Controller
 {
     public function __invoke(): View
     {
+        [$academicYear, $semester] = $this->currentTerm();
         $enrolleeCounts = NstpEnrollment::query()
             ->where('status', 'enrolled')
             ->selectRaw('component_id, COUNT(DISTINCT student_id) as total')
@@ -32,7 +33,22 @@ class DashboardController extends Controller
             'studentCount' => User::where('role', 'student')->count(),
             'facilitatorCount' => User::where('role', 'facilitator')->count(),
             'activeSectionCount' => NstpSection::where('status', 'active')->count(),
+            'unassignedStudentCount' => User::query()
+                ->where('role', 'student')
+                ->where('status', 'active')
+                ->whereDoesntHave('nstpEnrollments', fn ($query) => $query
+                    ->where('academic_year', $academicYear)
+                    ->where('semester', $semester))
+                ->count(),
             'componentEnrollments' => $componentEnrollments,
         ]);
+    }
+
+    private function currentTerm(): array
+    {
+        $year = now()->year;
+        $start = now()->month >= 6 ? $year : $year - 1;
+
+        return [$start.'-'.($start + 1), now()->month >= 6 ? 'first' : 'second'];
     }
 }

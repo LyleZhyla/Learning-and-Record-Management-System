@@ -17,7 +17,7 @@
         <article class="metric-card"><span class="metric-icon blue">♙</span><div><small>Active students</small><strong>{{ $studentCount }}</strong><p>Registered student accounts</p></div></article>
         <article class="metric-card"><span class="metric-icon green">◎</span><div><small>Facilitators</small><strong>{{ $facilitatorCount }}</strong><p>Active facilitators</p></div></article>
         <article class="metric-card"><span class="metric-icon orange">◇</span><div><small>Coordinators</small><strong>{{ $coordinatorCount }}</strong><p>Active coordinators</p></div></article>
-        <article class="metric-card"><span class="metric-icon violet">✓</span><div><small>Active accounts</small><strong>{{ $activeUserCount }}</strong><p>Across the platform</p></div></article>
+        <article class="metric-card" data-unassigned-student-count="{{ $unassignedStudentCount }}"><span class="metric-icon violet">!</span><div><small>Without component</small><strong>{{ $unassignedStudentCount }}</strong><p>Active students this term</p></div></article>
     </section>
 
     <section class="component-overview" aria-label="NSTP components">

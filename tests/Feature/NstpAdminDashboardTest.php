@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\NstpComponent;
+use App\Models\NstpEnrollment;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -35,6 +37,31 @@ class NstpAdminDashboardTest extends TestCase
             ->get('/nstp-admin/dashboard')
             ->assertOk()
             ->assertSee('NSTP Admin Dashboard');
+    }
+
+    public function test_nstp_admin_dashboard_shows_active_students_without_a_current_component(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $component = NstpComponent::create(['code' => 'LTS', 'name' => 'Literacy Training Service', 'is_active' => true]);
+        $assignedStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        User::factory()->create(['role' => 'student', 'status' => 'active']);
+        User::factory()->create(['role' => 'student', 'status' => 'inactive']);
+        $year = now()->year;
+        $start = now()->month >= 6 ? $year : $year - 1;
+
+        NstpEnrollment::create([
+            'student_id' => $assignedStudent->id,
+            'component_id' => $component->id,
+            'academic_year' => $start.'-'.($start + 1),
+            'semester' => now()->month >= 6 ? 'first' : 'second',
+            'status' => 'enrolled',
+        ]);
+
+        $this->actingAs($admin)->get('/nstp-admin/dashboard')
+            ->assertOk()
+            ->assertViewHas('unassignedStudentCount', 1)
+            ->assertSee('Without component')
+            ->assertSee('data-unassigned-student-count="1"', false);
     }
 
     public function test_nstp_admin_cannot_access_super_admin_routes(): void

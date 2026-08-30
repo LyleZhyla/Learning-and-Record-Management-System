@@ -17,7 +17,7 @@
         <article class="metric-card"><span class="metric-icon blue">♙</span><div><small>Students</small><strong>{{ $studentCount }}</strong><p>Registered accounts</p></div></article>
         <article class="metric-card"><span class="metric-icon green">◎</span><div><small>Facilitators</small><strong>{{ $facilitatorCount }}</strong><p>Registered accounts</p></div></article>
         <article class="metric-card"><span class="metric-icon orange">▤</span><div><small>Active sections</small><strong>{{ $activeSectionCount }}</strong><p>CWTS, LTS, and ROTC</p></div></article>
-        <article class="metric-card"><span class="metric-icon violet">✓</span><div><small>System status</small><strong class="status-word">Ready</strong><p>User management is active</p></div></article>
+        <article class="metric-card" data-unassigned-student-count="{{ $unassignedStudentCount }}"><span class="metric-icon violet">!</span><div><small>Without component</small><strong>{{ $unassignedStudentCount }}</strong><p>Active students this term</p></div></article>
     </section>
 
     <div class="content-grid">
@@ -30,18 +30,20 @@
                 <div><span class="eyebrow">Enrollment overview</span><h3>Enrollees per NSTP component</h3><p>Unique students with active enrolled status.</p></div>
                 <span class="enrollee-total"><strong>{{ number_format($totalComponentEnrollees) }}</strong><small>Total enrollees</small></span>
             </div>
-            <div class="enrollee-chart" role="img" aria-label="Bar graph of enrollees per NSTP component">
+            <div class="enrollee-chart" role="list" aria-label="Vertical bar graph of enrollees per NSTP component" data-chart-orientation="vertical">
                 @forelse ($componentEnrollments as $component)
-                    @php($barWidth = $component['count'] > 0 ? max(8, ($component['count'] / $largestComponentCount) * 100) : 0)
-                    <div class="enrollee-bar-row">
-                        <div class="enrollee-bar-label">
-                            <span><strong>{{ $component['code'] }}</strong><small>{{ $component['name'] }}</small></span>
-                            <b>{{ number_format($component['count']) }}</b>
+                    @php($barHeight = $component['count'] > 0 ? max(10, ($component['count'] / $largestComponentCount) * 100) : 0)
+                    <article class="enrollee-column" role="listitem" aria-label="{{ $component['code'] }}: {{ number_format($component['count']) }} enrollees">
+                        <div class="enrollee-column-track" aria-hidden="true">
+                            <span class="component-{{ strtolower($component['code']) }}" style="height: {{ $barHeight }}%">
+                                <b>{{ number_format($component['count']) }}</b>
+                            </span>
                         </div>
-                        <div class="enrollee-bar-track" aria-hidden="true">
-                            <span class="component-{{ strtolower($component['code']) }}" style="width: {{ $barWidth }}%"></span>
+                        <div class="enrollee-column-label">
+                            <strong>{{ $component['code'] }}</strong>
+                            <small>{{ $component['name'] }}</small>
                         </div>
-                    </div>
+                    </article>
                 @empty
                     <div class="empty-state"><strong>No NSTP components available</strong><span>Component enrollment data will appear here once configured.</span></div>
                 @endforelse

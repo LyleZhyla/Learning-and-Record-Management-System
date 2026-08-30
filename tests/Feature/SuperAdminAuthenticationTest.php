@@ -88,11 +88,39 @@ class SuperAdminAuthenticationTest extends TestCase
         $this->actingAs($superAdmin)->get('/admin/dashboard')
             ->assertOk()
             ->assertSee('Enrollees per NSTP component')
+            ->assertSee('data-chart-orientation="vertical"', false)
+            ->assertSee('aria-label="CWTS: 2 enrollees"', false)
+            ->assertSee('aria-label="LTS: 1 enrollees"', false)
             ->assertDontSee('Development roadmap')
             ->assertViewHas('componentEnrollments', fn ($components) =>
                 $components->firstWhere('code', 'CWTS')['count'] === 2
                 && $components->firstWhere('code', 'LTS')['count'] === 1
             );
+    }
+
+    public function test_super_admin_dashboard_shows_active_students_without_a_current_component(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'is_active' => true]);
+        $assignedStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        User::factory()->create(['role' => 'student', 'status' => 'active']);
+        User::factory()->create(['role' => 'student', 'status' => 'inactive']);
+        $year = now()->year;
+        $start = now()->month >= 6 ? $year : $year - 1;
+
+        NstpEnrollment::create([
+            'student_id' => $assignedStudent->id,
+            'component_id' => $component->id,
+            'academic_year' => $start.'-'.($start + 1),
+            'semester' => now()->month >= 6 ? 'first' : 'second',
+            'status' => 'enrolled',
+        ]);
+
+        $this->actingAs($superAdmin)->get('/admin/dashboard')
+            ->assertOk()
+            ->assertViewHas('unassignedStudentCount', 1)
+            ->assertSee('Without component')
+            ->assertSee('data-unassigned-student-count="1"', false);
     }
 
     public function test_super_admin_can_change_password(): void
