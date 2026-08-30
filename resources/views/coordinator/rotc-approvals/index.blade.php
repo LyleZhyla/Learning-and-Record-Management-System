@@ -17,7 +17,7 @@
                 <td><span class="role-badge role-student">{{ $enrollment->rotc_category }}</span></td>
                 <td>{{ $enrollment->shirt_size }}</td>
                 <td>{{ ucfirst($enrollment->semester) }} · {{ $enrollment->academic_year }}</td>
-                <td><a class="table-action" href="{{ route('coordinator.rotc-approvals.proof', $enrollment) }}">Download proof</a></td>
+                <td><a class="table-action" href="{{ route('coordinator.rotc-approvals.proof', $enrollment) }}">View proof →</a></td>
                 <td class="align-right"><form method="POST" action="{{ route('coordinator.rotc-approvals.approve', $enrollment) }}">@csrf @method('PATCH')<button class="success-button" type="submit">Approve {{ $enrollment->rotc_category }}</button></form></td>
             </tr>
         @empty

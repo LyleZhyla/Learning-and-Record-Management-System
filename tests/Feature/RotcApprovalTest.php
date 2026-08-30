@@ -44,9 +44,15 @@ class RotcApprovalTest extends TestCase
             ->assertOk()->assertSee('pending ROTC coordinator approval');
 
         $this->actingAs($coordinator)->get('/coordinator/rotc-approvals')
-            ->assertOk()->assertSee($student->name)->assertSee('MS-31')->assertSee('Download proof');
+            ->assertOk()->assertSee($student->name)->assertSee('MS-31')->assertSee('View proof');
 
         $this->actingAs($coordinator)->get('/coordinator/rotc-approvals/'.$enrollment->id.'/proof')
+            ->assertOk()->assertSee('MS-1 completion proof')->assertSee('Download proof');
+
+        $this->actingAs($coordinator)->get('/coordinator/rotc-approvals/'.$enrollment->id.'/proof/file')
+            ->assertOk()->assertHeader('content-disposition', 'inline');
+
+        $this->actingAs($coordinator)->get('/coordinator/rotc-approvals/'.$enrollment->id.'/proof/download')
             ->assertOk()->assertDownload('ms1-completion.pdf');
 
         $this->actingAs($coordinator)->patch('/coordinator/rotc-approvals/'.$enrollment->id.'/approve')

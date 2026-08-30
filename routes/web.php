@@ -192,7 +192,9 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/accounts', [CoordinatorAccountController::class, 'index'])->name('accounts.index');
     Route::get('/accounts/{user}', [CoordinatorAccountController::class, 'show'])->name('accounts.show');
     Route::get('/rotc-approvals', [CoordinatorRotcApprovalController::class, 'index'])->name('rotc-approvals.index');
-    Route::get('/rotc-approvals/{enrollment}/proof', [CoordinatorRotcApprovalController::class, 'downloadProof'])->name('rotc-approvals.proof');
+    Route::get('/rotc-approvals/{enrollment}/proof', [CoordinatorRotcApprovalController::class, 'showProof'])->name('rotc-approvals.proof');
+    Route::get('/rotc-approvals/{enrollment}/proof/file', [CoordinatorRotcApprovalController::class, 'streamProof'])->name('rotc-approvals.proof.file');
+    Route::get('/rotc-approvals/{enrollment}/proof/download', [CoordinatorRotcApprovalController::class, 'downloadProof'])->name('rotc-approvals.proof.download');
     Route::patch('/rotc-approvals/{enrollment}/approve', [CoordinatorRotcApprovalController::class, 'approve'])->name('rotc-approvals.approve');
     Route::get('/sections', [CoordinatorMonitoringController::class, 'sections'])->name('sections.index');
     Route::get('/attendance', [CoordinatorMonitoringController::class, 'attendance'])->name('attendance.index');

@@ -28,6 +28,28 @@ class RotcApprovalController extends Controller
         return view('coordinator.rotc-approvals.index', compact('pendingRequests'));
     }
 
+    public function showProof(Request $request, NstpEnrollment $enrollment): View
+    {
+        $this->ensureRotcCoordinator($request);
+        $this->ensurePendingRotcRequest($enrollment);
+        abort_unless($enrollment->rotc_proof_path && Storage::disk('local')->exists($enrollment->rotc_proof_path), 404);
+
+        return view('coordinator.rotc-approvals.proof', compact('enrollment'));
+    }
+
+    public function streamProof(Request $request, NstpEnrollment $enrollment): StreamedResponse
+    {
+        $this->ensureRotcCoordinator($request);
+        $this->ensurePendingRotcRequest($enrollment);
+        abort_unless($enrollment->rotc_proof_path && Storage::disk('local')->exists($enrollment->rotc_proof_path), 404);
+
+        return Storage::disk('local')->response(
+            $enrollment->rotc_proof_path,
+            $enrollment->rotc_proof_original_name ?? 'ms1-proof',
+            ['Content-Disposition' => 'inline'],
+        );
+    }
+
     public function downloadProof(Request $request, NstpEnrollment $enrollment): StreamedResponse
     {
         $this->ensureRotcCoordinator($request);
