@@ -27,10 +27,10 @@
                 $totalComponentEnrollees = (int) $componentEnrollments->sum('count');
             @endphp
             <div class="card-heading">
-                <div><span class="eyebrow">Enrollment overview</span><h3>Enrollees per NSTP component</h3><p>Unique students with active enrolled status.</p></div>
-                <span class="enrollee-total"><strong>{{ number_format($totalComponentEnrollees) }}</strong><small>Total enrollees</small></span>
+                <div><span class="eyebrow">Enrollment overview</span><h3>Students per component and ROTC category</h3><p>Current-term enrolled students and pending ROTC approvals.</p></div>
+                <span class="enrollee-total"><strong>{{ number_format($totalComponentEnrollees) }}</strong><small>Total selections</small></span>
             </div>
-            <div class="enrollee-chart" role="list" aria-label="Vertical bar graph of enrollees per NSTP component" data-chart-orientation="vertical">
+            <div class="enrollee-chart" role="list" aria-label="Vertical bar graph of students per NSTP component and ROTC category" data-chart-orientation="vertical" style="--chart-columns: {{ max(1, $componentEnrollments->count()) }}">
                 @forelse ($componentEnrollments as $component)
                     @php($barHeight = $component['count'] > 0 ? max(10, ($component['count'] / $largestComponentCount) * 100) : 0)
                     <article class="enrollee-column" role="listitem" aria-label="{{ $component['code'] }}: {{ number_format($component['count']) }} enrollees">

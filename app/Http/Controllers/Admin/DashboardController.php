@@ -14,20 +14,44 @@ class DashboardController extends Controller
     public function __invoke(): View
     {
         [$academicYear, $semester] = $this->currentTerm();
-        $enrolleeCounts = NstpEnrollment::query()
-            ->where('status', 'enrolled')
+        $components = NstpComponent::query()->orderBy('code')->get();
+        $selectionQuery = NstpEnrollment::query()
+            ->whereIn('status', ['enrolled', 'pending_approval'])
+            ->where('academic_year', $academicYear)
+            ->where('semester', $semester);
+        $enrolleeCounts = (clone $selectionQuery)
             ->selectRaw('component_id, COUNT(DISTINCT student_id) as total')
             ->groupBy('component_id')
             ->pluck('total', 'component_id');
+        $rotc = $components->firstWhere('code', 'ROTC');
+        $rotcCategoryCounts = $rotc
+            ? (clone $selectionQuery)->where('component_id', $rotc->id)
+                ->whereNotNull('rotc_category')
+                ->selectRaw('rotc_category, COUNT(DISTINCT student_id) as total')
+                ->groupBy('rotc_category')
+                ->pluck('total', 'rotc_category')
+            : collect();
 
-        $componentEnrollments = NstpComponent::query()
-            ->orderBy('code')
-            ->get()
-            ->map(fn (NstpComponent $component) => [
-                'code' => $component->code,
-                'name' => $component->name,
-                'count' => (int) ($enrolleeCounts[$component->id] ?? 0),
+        $componentEnrollments = $components->flatMap(function (NstpComponent $component) use ($enrolleeCounts, $rotcCategoryCounts) {
+            if ($component->code !== 'ROTC') {
+                return [[
+                    'code' => $component->code,
+                    'name' => $component->name,
+                    'count' => (int) ($enrolleeCounts[$component->id] ?? 0),
+                ]];
+            }
+
+            $categoryRows = collect(NstpEnrollment::ROTC_CATEGORIES)->keys()->map(fn (string $category) => [
+                'code' => $category,
+                'name' => 'ROTC category',
+                'count' => (int) ($rotcCategoryCounts[$category] ?? 0),
             ]);
+            $unspecifiedCount = max(0, (int) ($enrolleeCounts[$component->id] ?? 0) - (int) $rotcCategoryCounts->sum());
+
+            return $unspecifiedCount > 0
+                ? $categoryRows->push(['code' => 'ROTC-Unset', 'name' => 'ROTC category not set', 'count' => $unspecifiedCount])
+                : $categoryRows;
+        })->values();
 
         return view('admin.dashboard', [
             'studentCount' => User::where('role', 'student')->count(),
