@@ -32,12 +32,22 @@ class ReportController extends Controller
         $filters = $this->filters($request);
         $report = $this->buildReport($filters);
         $isCoordinator = $request->user()->isCoordinator();
+        $isFacilitator = $request->user()->isFacilitator();
         $componentId = $isCoordinator ? $request->user()->nstp_component_id : null;
-        $routePrefix = $isCoordinator ? 'coordinator' : ($request->user()->isNstpAdmin() ? 'nstp_admin' : 'admin');
-        $layout = $isCoordinator ? 'layouts.coordinator' : ($request->user()->isNstpAdmin() ? 'layouts.nstp-admin' : 'layouts.admin');
-        $components = NstpComponent::query()->when($isCoordinator, fn ($query) => $query->whereKey($componentId ?? 0))->orderBy('code')->get();
-        $sections = NstpSection::with('component')->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))->orderBy('code')->get();
-        $academicYears = NstpSection::query()->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))
+        $facilitatorId = $isFacilitator ? $request->user()->id : null;
+        $routePrefix = $this->routePrefix($request);
+        $layout = $isCoordinator ? 'layouts.coordinator' : ($isFacilitator ? 'layouts.facilitator' : ($request->user()->isNstpAdmin() ? 'layouts.nstp-admin' : 'layouts.admin'));
+        $components = NstpComponent::query()
+            ->when($isCoordinator, fn ($query) => $query->whereKey($componentId ?? 0))
+            ->when($isFacilitator, fn ($query) => $query->whereHas('sections', fn ($section) => $section->where('facilitator_id', $facilitatorId)))
+            ->orderBy('code')->get();
+        $sections = NstpSection::with('component')
+            ->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))
+            ->when($isFacilitator, fn ($query) => $query->where('facilitator_id', $facilitatorId))
+            ->orderBy('code')->get();
+        $academicYears = NstpSection::query()
+            ->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))
+            ->when($isFacilitator, fn ($query) => $query->where('facilitator_id', $facilitatorId))
             ->distinct()->orderByDesc('academic_year')->pluck('academic_year');
 
         return view('admin.reports.index', [
@@ -50,16 +60,23 @@ class ReportController extends Controller
             'sections' => $sections,
             'academicYears' => $academicYears,
             'isCoordinatorReport' => $isCoordinator,
-            'reportScope' => $isCoordinator ? ($request->user()->nstpComponent?->code ?? 'Unassigned component') : 'Institution-wide',
+            'isFacilitatorReport' => $isFacilitator,
+            'reportScope' => $isCoordinator ? ($request->user()->nstpComponent?->code ?? 'Unassigned component') : ($isFacilitator ? 'Assigned sections' : 'Institution-wide'),
             'metrics' => [
                 'students' => $isCoordinator
                     ? NstpEnrollment::where('component_id', $componentId ?? 0)->where('status', 'enrolled')->distinct()->count('student_id')
-                    : User::where('role', 'student')->count(),
-                'attendance_rate' => $this->attendanceRate($isCoordinator ? ($componentId ?? 0) : null),
+                    : ($isFacilitator
+                        ? NstpEnrollment::whereHas('section', fn ($section) => $section->where('facilitator_id', $facilitatorId))->where('status', 'enrolled')->distinct()->count('student_id')
+                        : User::where('role', 'student')->count()),
+                'attendance_rate' => $this->attendanceRate($isCoordinator ? ($componentId ?? 0) : null, $facilitatorId),
                 'graded' => AssessmentSubmission::whereNotNull('score')
                     ->when($isCoordinator, fn ($query) => $query->whereHas('assessment.section', fn ($section) => $section->where('component_id', $componentId ?? 0)))
+                    ->when($isFacilitator, fn ($query) => $query->whereHas('assessment.section', fn ($section) => $section->where('facilitator_id', $facilitatorId)))
                     ->count(),
-                'sections' => NstpSection::query()->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))->count(),
+                'sections' => NstpSection::query()
+                    ->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))
+                    ->when($isFacilitator, fn ($query) => $query->where('facilitator_id', $facilitatorId))
+                    ->count(),
             ],
         ]);
     }
@@ -90,7 +107,11 @@ class ReportController extends Controller
         abort_unless(array_key_exists($type, self::TYPES), 404);
         $filters = $this->filters($request, $type);
 
-        return view('admin.reports.print', ['report' => $this->buildReport($filters), 'filters' => $filters]);
+        return view('admin.reports.print', [
+            'report' => $this->buildReport($filters),
+            'filters' => $filters,
+            'routePrefix' => $this->routePrefix($request),
+        ]);
     }
 
     private function filters(Request $request, ?string $forcedType = null): array
@@ -109,6 +130,9 @@ class ReportController extends Controller
         if ($request->user()->isCoordinator()) {
             $validated['component_id'] = $request->user()->nstp_component_id ?? 0;
         }
+        if ($request->user()->isFacilitator()) {
+            $validated['facilitator_id'] = $request->user()->id;
+        }
 
         return $validated;
     }
@@ -125,12 +149,13 @@ class ReportController extends Controller
 
     private function studentReport(array $filters): array
     {
-        $hasEnrollmentFilters = collect($filters)->only(['academic_year', 'semester', 'component_id', 'section_id'])->filter()->isNotEmpty();
+        $hasEnrollmentFilters = collect($filters)->only(['academic_year', 'semester', 'component_id', 'section_id', 'facilitator_id'])->filter()->isNotEmpty();
         $enrollmentFilter = function ($query) use ($filters): void {
             $query->when($filters['academic_year'] ?? null, fn ($q, $value) => $q->where('academic_year', $value))
                 ->when($filters['semester'] ?? null, fn ($q, $value) => $q->where('semester', $value))
                 ->when($filters['component_id'] ?? null, fn ($q, $value) => $q->where('component_id', $value))
-                ->when($filters['section_id'] ?? null, fn ($q, $value) => $q->where('section_id', $value));
+                ->when($filters['section_id'] ?? null, fn ($q, $value) => $q->where('section_id', $value))
+                ->when($filters['facilitator_id'] ?? null, fn ($q, $value) => $q->whereHas('section', fn ($section) => $section->where('facilitator_id', $value)));
         };
         $rows = User::where('role', 'student')
             ->with(['nstpEnrollments' => fn ($query) => $enrollmentFilter($query->with(['component', 'section.facilitator'])->latest('academic_year')->latest('semester'))])
@@ -218,7 +243,8 @@ class ReportController extends Controller
         return $query->when($filters['academic_year'] ?? null, fn ($q, $value) => $q->where('academic_year', $value))
             ->when($filters['semester'] ?? null, fn ($q, $value) => $q->where('semester', $value))
             ->when($filters['component_id'] ?? null, fn ($q, $value) => $q->where('component_id', $value))
-            ->when($filters['section_id'] ?? null, fn ($q, $value) => $q->where('id', $value));
+            ->when($filters['section_id'] ?? null, fn ($q, $value) => $q->where('id', $value))
+            ->when($filters['facilitator_id'] ?? null, fn ($q, $value) => $q->where('facilitator_id', $value));
     }
 
     private function report(string $title, array $headers, Collection $rows): array
@@ -226,12 +252,23 @@ class ReportController extends Controller
         return compact('title', 'headers', 'rows') + ['generated_at' => now()];
     }
 
-    private function attendanceRate(?int $componentId = null): float
+    private function attendanceRate(?int $componentId = null, ?int $facilitatorId = null): float
     {
         $records = AttendanceRecord::query()
-            ->when($componentId !== null, fn ($query) => $query->whereHas('attendanceSession.section', fn ($section) => $section->where('component_id', $componentId)));
+            ->when($componentId !== null, fn ($query) => $query->whereHas('attendanceSession.section', fn ($section) => $section->where('component_id', $componentId)))
+            ->when($facilitatorId !== null, fn ($query) => $query->whereHas('attendanceSession.section', fn ($section) => $section->where('facilitator_id', $facilitatorId)));
         $total = (clone $records)->count();
 
         return $total ? round(((clone $records)->whereIn('status', ['present', 'late'])->count() / $total) * 100, 1) : 0;
+    }
+
+    private function routePrefix(Request $request): string
+    {
+        return match (true) {
+            $request->user()->isCoordinator() => 'coordinator',
+            $request->user()->isFacilitator() => 'facilitator',
+            $request->user()->isNstpAdmin() => 'nstp_admin',
+            default => 'admin',
+        };
     }
 }

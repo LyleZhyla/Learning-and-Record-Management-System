@@ -4,25 +4,27 @@
 @section('page-title', 'Reports')
 
 @section('content')
+    @php($isScopedReport = $isCoordinatorReport || $isFacilitatorReport)
+    @php($publicFilters = collect($filters)->except('facilitator_id')->all())
     <section class="welcome-banner report-welcome">
         <div>
-            <span class="eyebrow">{{ $isCoordinatorReport ? 'Assigned component reporting center' : 'Central reporting center' }}</span>
-            <h2>{{ $isCoordinatorReport ? $reportScope.' operational reports' : 'Operational reports, ready when needed.' }}</h2>
-            <p>{{ $isCoordinatorReport ? 'Review student, attendance, grade, and section data limited to your assigned component.' : 'Review institution-wide student, attendance, grade, component, and section data.' }} Apply filters before printing or downloading a CSV file.</p>
+            <span class="eyebrow">{{ $isFacilitatorReport ? 'Assigned section reporting center' : ($isCoordinatorReport ? 'Assigned component reporting center' : 'Central reporting center') }}</span>
+            <h2>{{ $isFacilitatorReport ? 'My section reports' : ($isCoordinatorReport ? $reportScope.' operational reports' : 'Operational reports, ready when needed.') }}</h2>
+            <p>{{ $isFacilitatorReport ? 'Review student, attendance, grade, and section data limited to the sections assigned to you.' : ($isCoordinatorReport ? 'Review student, attendance, grade, and section data limited to your assigned component.' : 'Review institution-wide student, attendance, grade, component, and section data.') }} Apply filters before printing or downloading a CSV file.</p>
         </div>
         <span class="workspace-date">Last generated<strong>{{ $report['generated_at']->format('M d, Y · h:i A') }}</strong></span>
     </section>
 
     <section class="metric-grid" aria-label="Reporting overview">
-        <article class="metric-card"><span class="metric-icon blue">♙</span><div><small>{{ $isCoordinatorReport ? 'COMPONENT STUDENTS' : 'REGISTERED STUDENTS' }}</small><strong>{{ $metrics['students'] }}</strong><p>{{ $isCoordinatorReport ? $reportScope.' enrolled students' : 'System-wide accounts' }}</p></div></article>
+        <article class="metric-card"><span class="metric-icon blue">♙</span><div><small>{{ $isFacilitatorReport ? 'MY STUDENTS' : ($isCoordinatorReport ? 'COMPONENT STUDENTS' : 'REGISTERED STUDENTS') }}</small><strong>{{ $metrics['students'] }}</strong><p>{{ $isFacilitatorReport ? 'Students in assigned sections' : ($isCoordinatorReport ? $reportScope.' enrolled students' : 'System-wide accounts') }}</p></div></article>
         <article class="metric-card"><span class="metric-icon green">✓</span><div><small>ATTENDANCE RATE</small><strong>{{ number_format($metrics['attendance_rate'], 1) }}%</strong><p>Present and late records</p></div></article>
         <article class="metric-card"><span class="metric-icon orange">◎</span><div><small>GRADED SUBMISSIONS</small><strong>{{ $metrics['graded'] }}</strong><p>Verified assessment results</p></div></article>
-        <article class="metric-card"><span class="metric-icon violet">▦</span><div><small>NSTP SECTIONS</small><strong>{{ $metrics['sections'] }}</strong><p>All academic terms</p></div></article>
+        <article class="metric-card"><span class="metric-icon violet">▦</span><div><small>{{ $isFacilitatorReport ? 'MY SECTIONS' : 'NSTP SECTIONS' }}</small><strong>{{ $metrics['sections'] }}</strong><p>{{ $isScopedReport ? 'Assigned academic coverage' : 'All academic terms' }}</p></div></article>
     </section>
 
     <nav class="report-tabs" aria-label="Report types">
         @foreach ($reportTypes as $type => $label)
-            <a class="{{ $filters['type'] === $type ? 'active' : '' }}" href="{{ route($routePrefix.'.reports.index', array_merge(collect($filters)->except('type')->all(), ['type' => $type])) }}">{{ $label }}</a>
+            <a class="{{ $filters['type'] === $type ? 'active' : '' }}" href="{{ route($routePrefix.'.reports.index', array_merge(collect($publicFilters)->except('type')->all(), ['type' => $type])) }}">{{ $label }}</a>
         @endforeach
     </nav>
 
@@ -45,8 +47,8 @@
         <div class="report-result-heading">
             <div><span class="eyebrow">Generated report</span><h3>{{ $report['title'] }}</h3><p>{{ $report['rows']->count() }} record{{ $report['rows']->count() === 1 ? '' : 's' }} matched the selected filters.</p></div>
             <div class="report-output-actions">
-                <a class="secondary-outline-button" target="_blank" href="{{ route($routePrefix.'.reports.print', array_merge(['type' => $filters['type']], collect($filters)->except('type')->all())) }}">Print report</a>
-                <a class="primary-button compact" href="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($filters)->except('type')->all())) }}">Download CSV</a>
+                <a class="secondary-outline-button" target="_blank" href="{{ route($routePrefix.'.reports.print', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Print report</a>
+                <a class="primary-button compact" href="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download CSV</a>
             </div>
         </div>
         <div class="table-wrap"><table class="data-table report-table"><thead><tr>@foreach($report['headers'] as $header)<th>{{ $header }}</th>@endforeach</tr></thead><tbody>@forelse($report['rows'] as $row)<tr>@foreach($row as $value)<td>{{ $value }}</td>@endforeach</tr>@empty<tr><td colspan="{{ count($report['headers']) }}"><div class="empty-state"><strong>No records found</strong><span>Try removing one or more report filters.</span></div></td></tr>@endforelse</tbody></table></div>

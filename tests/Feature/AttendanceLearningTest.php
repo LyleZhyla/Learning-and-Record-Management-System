@@ -166,6 +166,49 @@ class AttendanceLearningTest extends TestCase
         $this->actingAs($this->facilitator)->get('/facilitator/students/'.$otherStudent->id)->assertNotFound();
     }
 
+    public function test_facilitator_reports_are_limited_to_assigned_sections(): void
+    {
+        $otherFacilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $hiddenStudent = User::factory()->create(['name' => 'Hidden Report Student', 'role' => 'student', 'status' => 'active']);
+        $otherSection = NstpSection::create([
+            'component_id' => $this->section->component_id,
+            'facilitator_id' => $otherFacilitator->id,
+            'code' => 'CWTS-HIDDEN',
+            'name' => 'Hidden Report Section',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'capacity' => 40,
+            'status' => 'active',
+        ]);
+        NstpEnrollment::create(['student_id' => $hiddenStudent->id, 'component_id' => $otherSection->component_id, 'section_id' => $otherSection->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
+        $hiddenSession = AttendanceSession::create(['section_id' => $otherSection->id, 'created_by' => $otherFacilitator->id, 'title' => 'Hidden Attendance Session', 'starts_at' => now(), 'ends_at' => now()->addHour(), 'token' => str()->random(48), 'qr_payload' => '', 'qr_svg' => '', 'status' => 'open']);
+        AttendanceRecord::create(['attendance_session_id' => $hiddenSession->id, 'student_id' => $hiddenStudent->id, 'status' => 'present', 'checked_in_at' => now(), 'source' => 'qr']);
+
+        $this->actingAs($this->facilitator)->get('/facilitator/reports')
+            ->assertOk()
+            ->assertSee('My section reports')
+            ->assertSee('Reports Center')
+            ->assertSee($this->student->name)
+            ->assertDontSee($hiddenStudent->name)
+            ->assertDontSee($otherSection->code);
+
+        foreach (['students', 'attendance', 'grades', 'sections'] as $type) {
+            $this->actingAs($this->facilitator)->get('/facilitator/reports?type='.$type.'&section_id='.$otherSection->id)
+                ->assertOk()
+                ->assertDontSee($hiddenStudent->name)
+                ->assertDontSee('Hidden Attendance Session')
+                ->assertDontSee($otherSection->code);
+        }
+
+        $this->actingAs($this->facilitator)->get('/facilitator/reports/students/export?section_id='.$otherSection->id)
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->actingAs($this->facilitator)->get('/facilitator/reports/sections/print?section_id='.$otherSection->id)
+            ->assertOk()
+            ->assertSee('/facilitator/reports', false)
+            ->assertDontSee($otherSection->code);
+    }
+
     public function test_each_authorized_portal_can_open_its_attendance_and_learning_pages(): void
     {
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
@@ -173,7 +216,7 @@ class AttendanceLearningTest extends TestCase
         foreach ([
             [$superAdmin, '/admin/attendance', '/admin/materials/create', '/admin/assessments', '/admin/grades'],
             [$this->admin, '/nstp-admin/attendance', '/nstp-admin/materials/create', '/nstp-admin/assessments', '/nstp-admin/grades'],
-            [$this->facilitator, '/facilitator/students', '/facilitator/attendance', '/facilitator/materials/create', '/facilitator/assessments', '/facilitator/grades'],
+            [$this->facilitator, '/facilitator/students', '/facilitator/attendance', '/facilitator/materials/create', '/facilitator/assessments', '/facilitator/grades', '/facilitator/reports'],
             [$this->student, '/student/attendance', '/student/materials', '/student/assessments', '/student/grades'],
         ] as $portal) {
             $user = array_shift($portal);

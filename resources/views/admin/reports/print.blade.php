@@ -10,7 +10,7 @@
     </style>
 </head>
 <body>
-    <div class="print-toolbar"><a href="{{ route('admin.reports.index', $filters) }}">Back to reports</a><button onclick="window.print()">Print now</button></div>
+    <div class="print-toolbar"><a href="{{ route($routePrefix.'.reports.index', collect($filters)->except('facilitator_id')->all()) }}">Back to reports</a><button onclick="window.print()">Print now</button></div>
     <header class="report-header"><div class="brand"><img class="print-brand-logo" src="{{ asset('images/snapie-logo-160.png') }}" alt="SNAPIE logo"><span><strong>Smart NSTP</strong><small>Management and AI-Integrated Platform</small></span></div><div><h1>{{ $report['title'] }}</h1><p>Generated {{ $report['generated_at']->format('F d, Y · h:i A') }}</p></div></header>
     <div class="filter-summary"><strong>Report filters:</strong> <span>Academic year: {{ $filters['academic_year'] ?? 'All' }}</span><span>Semester: {{ isset($filters['semester']) ? (\App\Models\NstpSection::SEMESTERS[$filters['semester']] ?? $filters['semester']) : 'All' }}</span><span>Component ID: {{ $filters['component_id'] ?? 'All' }}</span><span>Section ID: {{ $filters['section_id'] ?? 'All' }}</span></div>
     <table><thead><tr>@foreach($report['headers'] as $header)<th>{{ $header }}</th>@endforeach</tr></thead><tbody>@forelse($report['rows'] as $row)<tr>@foreach($row as $value)<td>{{ $value }}</td>@endforeach</tr>@empty<tr><td class="empty" colspan="{{ count($report['headers']) }}">No records matched the selected filters.</td></tr>@endforelse</tbody></table>

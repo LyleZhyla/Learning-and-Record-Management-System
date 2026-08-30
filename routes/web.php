@@ -181,6 +181,9 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
+    Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     $learningManagementRoutes();
     $omrScannerRoutes();
 });
