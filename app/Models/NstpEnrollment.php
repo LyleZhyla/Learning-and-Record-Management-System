@@ -20,6 +20,12 @@ class NstpEnrollment extends Model
         '3XL' => '3X Large (3XL)',
     ];
 
+    public const ROTC_CATEGORIES = [
+        'MS-1' => 'MS-1',
+        'MS-31' => 'MS-31',
+        'MS-41' => 'MS-41',
+    ];
+
     protected $fillable = [
         'student_id',
         'component_id',
@@ -27,6 +33,7 @@ class NstpEnrollment extends Model
         'academic_year',
         'semester',
         'shirt_size',
+        'rotc_category',
         'status',
     ];
 

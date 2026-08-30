@@ -19,7 +19,7 @@
                 <div class="component-choice-grid">
                     @foreach($availableComponents as $component)
                         <label class="component-choice-card">
-                            <input type="radio" name="nstp_component_id" value="{{ $component->id }}" @checked((int) old('nstp_component_id', $currentEnrollment?->component_id) === $component->id) required>
+                            <input type="radio" name="nstp_component_id" value="{{ $component->id }}" data-component-code="{{ $component->code }}" @checked((int) old('nstp_component_id', $currentEnrollment?->component_id) === $component->id) required>
                             <span class="component-choice-mark">{{ substr($component->code, 0, 1) }}</span>
                             <strong>{{ $component->code }}</strong>
                             <small>{{ $component->name }}</small>
@@ -28,6 +28,17 @@
                 </div>
             </fieldset>
             @error('nstp_component_id')<small class="field-error">{{ $message }}</small>@enderror
+
+            <div class="rotc-category-panel" data-rotc-category-panel @if(old('rotc_category', $currentEnrollment?->rotc_category) || $currentEnrollment?->component?->code === 'ROTC') data-initially-visible @endif>
+                <label for="rotc_category">ROTC category</label>
+                <select id="rotc_category" name="rotc_category" data-rotc-category-select>
+                    <option value="">Choose MS-1, MS-31, or MS-41</option>
+                    @foreach($rotcCategories as $value => $label)
+                        <option value="{{ $value }}" @selected(old('rotc_category', $currentEnrollment?->rotc_category) === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('rotc_category')<small class="field-error">{{ $message }}</small>@enderror
+            </div>
 
             <label for="shirt_size">Shirt size</label>
             <select id="shirt_size" name="shirt_size" required>
@@ -47,10 +58,28 @@
         <div class="card-heading"><div><span class="eyebrow">Current selection</span><h3>Enrollment summary</h3></div></div>
         <dl>
             <div><dt>Component</dt><dd>{{ $currentEnrollment?->component?->code ?? 'Not selected' }}</dd></div>
+            @if($currentEnrollment?->component?->code === 'ROTC')<div><dt>ROTC category</dt><dd>{{ $currentEnrollment->rotc_category ?? 'Not selected' }}</dd></div>@endif
             <div><dt>Shirt size</dt><dd>{{ $currentEnrollment?->shirt_size ?? 'Not selected' }}</dd></div>
             <div><dt>Section</dt><dd>{{ $currentEnrollment?->section?->code ?? 'Awaiting assignment' }}</dd></div>
             <div><dt>Term</dt><dd>{{ $semesterLabel }} {{ $academicYear }}</dd></div>
         </dl>
     </aside>
 </div>
+
+<script>
+    const componentOptions = [...document.querySelectorAll('[data-component-code]')];
+    const rotcCategoryPanel = document.querySelector('[data-rotc-category-panel]');
+    const rotcCategorySelect = document.querySelector('[data-rotc-category-select]');
+
+    function updateRotcCategory() {
+        const selectedComponent = componentOptions.find((option) => option.checked);
+        const isRotc = selectedComponent?.dataset.componentCode === 'ROTC';
+        rotcCategoryPanel.hidden = !isRotc;
+        rotcCategorySelect.required = isRotc;
+        if (!isRotc) rotcCategorySelect.value = '';
+    }
+
+    componentOptions.forEach((option) => option.addEventListener('change', updateRotcCategory));
+    updateRotcCategory();
+</script>
 @endsection

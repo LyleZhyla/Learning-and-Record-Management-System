@@ -29,11 +29,16 @@ class ComponentController extends Controller
             'academicYear' => $academicYear,
             'semesterLabel' => NstpSection::SEMESTERS[$semester],
             'shirtSizes' => NstpEnrollment::SHIRT_SIZES,
+            'rotcCategories' => NstpEnrollment::ROTC_CATEGORIES,
         ]);
     }
 
     public function update(Request $request): RedirectResponse
     {
+        $selectedComponent = NstpComponent::query()
+            ->where('is_active', true)
+            ->find($request->input('nstp_component_id'));
+
         $validated = $request->validate([
             'nstp_component_id' => [
                 'required',
@@ -41,6 +46,11 @@ class ComponentController extends Controller
                 Rule::exists('nstp_components', 'id')->where('is_active', true),
             ],
             'shirt_size' => ['required', Rule::in(array_keys(NstpEnrollment::SHIRT_SIZES))],
+            'rotc_category' => [
+                Rule::requiredIf(fn () => $selectedComponent?->code === 'ROTC'),
+                'nullable',
+                Rule::in(array_keys(NstpEnrollment::ROTC_CATEGORIES)),
+            ],
         ]);
 
         $componentId = (int) $validated['nstp_component_id'];
@@ -59,10 +69,11 @@ class ComponentController extends Controller
         $enrollment->fill([
             'component_id' => $componentId,
             'shirt_size' => $validated['shirt_size'],
+            'rotc_category' => $selectedComponent?->code === 'ROTC' ? $validated['rotc_category'] : null,
             'status' => 'enrolled',
         ])->save();
 
-        return back()->with('status', 'Your NSTP component and shirt size were updated successfully.');
+        return back()->with('status', 'Your NSTP enrollment preferences were updated successfully.');
     }
 
     private function currentAcademicYear(): string

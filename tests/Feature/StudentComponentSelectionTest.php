@@ -23,6 +23,7 @@ class StudentComponentSelectionTest extends TestCase
             ->assertOk()
             ->assertSee('NSTP Selection')
             ->assertSee('Choose your NSTP component')
+            ->assertSee('ROTC category')
             ->assertSee('Shirt size')
             ->assertSee('Save enrollment preferences')
             ->assertSee('CWTS');
@@ -61,6 +62,44 @@ class StudentComponentSelectionTest extends TestCase
         ])->assertSessionHasErrors('shirt_size');
     }
 
+    public function test_rotc_category_is_required_only_when_rotc_is_selected(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $cwts = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
+        $rotc = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
+
+        $this->actingAs($student)->put('/student/component', [
+            'nstp_component_id' => $rotc->id,
+            'shirt_size' => 'M',
+        ])->assertSessionHasErrors('rotc_category');
+
+        $this->actingAs($student)->put('/student/component', [
+            'nstp_component_id' => $rotc->id,
+            'shirt_size' => 'M',
+            'rotc_category' => 'MS-31',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('nstp_enrollments', [
+            'student_id' => $student->id,
+            'component_id' => $rotc->id,
+            'shirt_size' => 'M',
+            'rotc_category' => 'MS-31',
+        ]);
+
+        $this->actingAs($student)->put('/student/component', [
+            'nstp_component_id' => $cwts->id,
+            'shirt_size' => 'L',
+            'rotc_category' => 'MS-41',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('nstp_enrollments', [
+            'student_id' => $student->id,
+            'component_id' => $cwts->id,
+            'shirt_size' => 'L',
+            'rotc_category' => null,
+        ]);
+    }
+
     public function test_changing_component_clears_section_and_updates_shirt_size(): void
     {
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
@@ -73,12 +112,14 @@ class StudentComponentSelectionTest extends TestCase
         $this->actingAs($student)->put('/student/component', [
             'nstp_component_id' => $rotc->id,
             'shirt_size' => 'L',
+            'rotc_category' => 'MS-41',
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('nstp_enrollments', [
             'id' => $enrollment->id,
             'component_id' => $rotc->id,
             'shirt_size' => 'L',
+            'rotc_category' => 'MS-41',
             'section_id' => null,
         ]);
     }
