@@ -10,12 +10,23 @@ class NstpEnrollment extends Model
 {
     use HasFactory;
 
+    public const SHIRT_SIZES = [
+        'XS' => 'Extra Small (XS)',
+        'S' => 'Small (S)',
+        'M' => 'Medium (M)',
+        'L' => 'Large (L)',
+        'XL' => 'Extra Large (XL)',
+        '2XL' => '2X Large (2XL)',
+        '3XL' => '3X Large (3XL)',
+    ];
+
     protected $fillable = [
         'student_id',
         'component_id',
         'section_id',
         'academic_year',
         'semester',
+        'shirt_size',
         'status',
     ];
 

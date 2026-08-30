@@ -3,13 +3,35 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
+use App\Models\NstpSection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class ComponentController extends Controller
 {
+    public function edit(Request $request): View
+    {
+        $academicYear = $this->currentAcademicYear();
+        $semester = $this->currentSemester();
+
+        return view('student.component', [
+            'availableComponents' => NstpComponent::query()->where('is_active', true)->orderBy('code')->get(),
+            'currentEnrollment' => NstpEnrollment::query()
+                ->where('student_id', $request->user()->id)
+                ->where('academic_year', $academicYear)
+                ->where('semester', $semester)
+                ->with(['component', 'section'])
+                ->first(),
+            'academicYear' => $academicYear,
+            'semesterLabel' => NstpSection::SEMESTERS[$semester],
+            'shirtSizes' => NstpEnrollment::SHIRT_SIZES,
+        ]);
+    }
+
     public function update(Request $request): RedirectResponse
     {
         $validated = $request->validate([
@@ -18,6 +40,7 @@ class ComponentController extends Controller
                 'integer',
                 Rule::exists('nstp_components', 'id')->where('is_active', true),
             ],
+            'shirt_size' => ['required', Rule::in(array_keys(NstpEnrollment::SHIRT_SIZES))],
         ]);
 
         $componentId = (int) $validated['nstp_component_id'];
@@ -35,10 +58,11 @@ class ComponentController extends Controller
 
         $enrollment->fill([
             'component_id' => $componentId,
+            'shirt_size' => $validated['shirt_size'],
             'status' => 'enrolled',
         ])->save();
 
-        return back()->with('status', 'Your NSTP component selection was updated successfully.');
+        return back()->with('status', 'Your NSTP component and shirt size were updated successfully.');
     }
 
     private function currentAcademicYear(): string

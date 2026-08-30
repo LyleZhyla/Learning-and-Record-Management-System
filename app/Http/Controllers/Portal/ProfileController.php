@@ -3,9 +3,6 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
-use App\Models\NstpComponent;
-use App\Models\NstpEnrollment;
-use App\Models\NstpSection;
 use App\Services\PortalAccessService;
 use App\Services\ProfilePhotoService;
 use Illuminate\Http\RedirectResponse;
@@ -21,29 +18,11 @@ class ProfileController extends Controller
 
     public function edit(Request $request): View
     {
-        $data = [
+        return view('portal.profile', [
             'user' => $request->user(),
             'layout' => $this->access->layout($request->user()),
             'routePrefix' => $this->access->routePrefix($request->user()),
-        ];
-
-        if ($request->user()->isStudent()) {
-            $academicYear = $this->currentAcademicYear();
-            $semester = $this->currentSemester();
-            $data += [
-                'availableComponents' => NstpComponent::query()->where('is_active', true)->orderBy('code')->get(),
-                'currentEnrollment' => NstpEnrollment::query()
-                    ->where('student_id', $request->user()->id)
-                    ->where('academic_year', $academicYear)
-                    ->where('semester', $semester)
-                    ->with(['component', 'section'])
-                    ->first(),
-                'academicYear' => $academicYear,
-                'semesterLabel' => NstpSection::SEMESTERS[$semester],
-            ];
-        }
-
-        return view('portal.profile', $data);
+        ]);
     }
 
     public function update(Request $request, ProfilePhotoService $photos): RedirectResponse
@@ -80,16 +59,4 @@ class ProfileController extends Controller
         return back()->with('status', 'Your password has been changed successfully.');
     }
 
-    private function currentAcademicYear(): string
-    {
-        $year = now()->year;
-        $start = now()->month >= 6 ? $year : $year - 1;
-
-        return $start.'-'.($start + 1);
-    }
-
-    private function currentSemester(): string
-    {
-        return now()->month >= 6 ? 'first' : 'second';
-    }
 }

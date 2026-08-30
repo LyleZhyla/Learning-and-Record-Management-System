@@ -13,20 +13,27 @@ class StudentComponentSelectionTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_student_can_choose_an_active_component_from_their_profile(): void
+    public function test_student_has_a_dedicated_page_for_component_and_shirt_size_selection(): void
     {
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
         [$academicYear, $semester] = $this->currentTerm();
 
+        $this->actingAs($student)->get('/student/component')
+            ->assertOk()
+            ->assertSee('NSTP Selection')
+            ->assertSee('Choose your NSTP component')
+            ->assertSee('Shirt size')
+            ->assertSee('Save enrollment preferences')
+            ->assertSee('CWTS');
+
         $this->actingAs($student)->get('/student/profile')
             ->assertOk()
-            ->assertSee('Choose your component')
-            ->assertSee('Save component selection')
-            ->assertSee('CWTS');
+            ->assertDontSee('Choose your component');
 
         $this->actingAs($student)->put('/student/component', [
             'nstp_component_id' => $component->id,
+            'shirt_size' => 'M',
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('nstp_enrollments', [
@@ -34,40 +41,59 @@ class StudentComponentSelectionTest extends TestCase
             'component_id' => $component->id,
             'academic_year' => $academicYear,
             'semester' => $semester,
+            'shirt_size' => 'M',
             'status' => 'enrolled',
         ]);
     }
 
-    public function test_changing_component_clears_the_students_previous_section(): void
+    public function test_component_and_valid_shirt_size_are_both_required(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
+
+        $this->actingAs($student)->put('/student/component', [
+            'nstp_component_id' => $component->id,
+        ])->assertSessionHasErrors('shirt_size');
+
+        $this->actingAs($student)->put('/student/component', [
+            'nstp_component_id' => $component->id,
+            'shirt_size' => 'INVALID',
+        ])->assertSessionHasErrors('shirt_size');
+    }
+
+    public function test_changing_component_clears_section_and_updates_shirt_size(): void
     {
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $cwts = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
         $rotc = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
         [$academicYear, $semester] = $this->currentTerm();
         $section = NstpSection::create(['component_id' => $cwts->id, 'code' => 'CWTS-01', 'name' => 'Section 1', 'academic_year' => $academicYear, 'semester' => $semester, 'capacity' => 40, 'status' => 'active']);
-        $enrollment = NstpEnrollment::create(['student_id' => $student->id, 'component_id' => $cwts->id, 'section_id' => $section->id, 'academic_year' => $academicYear, 'semester' => $semester, 'status' => 'enrolled']);
+        $enrollment = NstpEnrollment::create(['student_id' => $student->id, 'component_id' => $cwts->id, 'section_id' => $section->id, 'academic_year' => $academicYear, 'semester' => $semester, 'shirt_size' => 'S', 'status' => 'enrolled']);
 
         $this->actingAs($student)->put('/student/component', [
             'nstp_component_id' => $rotc->id,
+            'shirt_size' => 'L',
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('nstp_enrollments', [
             'id' => $enrollment->id,
             'component_id' => $rotc->id,
+            'shirt_size' => 'L',
             'section_id' => null,
         ]);
     }
 
-    public function test_inactive_components_and_non_students_cannot_use_student_component_selection(): void
+    public function test_inactive_components_and_non_students_cannot_use_student_selection(): void
     {
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active']);
         $inactive = NstpComponent::create(['code' => 'LTS', 'name' => 'Literacy Training Service', 'default_section_capacity' => 40, 'is_active' => false]);
 
-        $this->actingAs($student)->put('/student/component', ['nstp_component_id' => $inactive->id])
+        $this->actingAs($student)->put('/student/component', ['nstp_component_id' => $inactive->id, 'shirt_size' => 'M'])
             ->assertSessionHasErrors('nstp_component_id');
 
-        $this->actingAs($coordinator)->put('/student/component', ['nstp_component_id' => $inactive->id])
+        $this->actingAs($coordinator)->get('/student/component')->assertForbidden();
+        $this->actingAs($coordinator)->put('/student/component', ['nstp_component_id' => $inactive->id, 'shirt_size' => 'M'])
             ->assertForbidden();
     }
 
