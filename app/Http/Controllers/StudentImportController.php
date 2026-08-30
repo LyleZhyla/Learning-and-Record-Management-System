@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Services\StudentImportService;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -18,18 +17,13 @@ class StudentImportController extends Controller
         return view('student-import.create', $this->viewData($request));
     }
 
-    public function store(Request $request, StudentImportService $importer): RedirectResponse
+    public function store(Request $request, StudentImportService $importer): StreamedResponse
     {
         $request->validate(['file' => ['required', 'file', 'max:5120', 'mimes:xlsx,xls,csv']]);
 
         $result = $importer->import($request->file('file'));
-        $message = "{$result['students']} student account(s) imported successfully.";
 
-        if ($result['enrollments'] > 0) {
-            $message .= " {$result['enrollments']} NSTP enrollment(s) were also created.";
-        }
-
-        return redirect()->route($this->routePrefix($request).'.students.import.create')->with('status', $message);
+        return $this->credentialsDownload($result);
     }
 
     public function template(): StreamedResponse
@@ -39,11 +33,11 @@ class StudentImportController extends Controller
         $sheet->setTitle('Student Import');
         $sheet->fromArray([StudentImportService::HEADERS], null, 'A1');
         $sheet->freezePane('A2');
-        $sheet->getStyle('A1:H1')->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
-        $sheet->getStyle('A1:H1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF174D84');
-        $sheet->getStyle('A1:H1')->getAlignment()->setWrapText(true);
+        $sheet->getStyle('A1:G1')->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+        $sheet->getStyle('A1:G1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF174D84');
+        $sheet->getStyle('A1:G1')->getAlignment()->setWrapText(true);
 
-        foreach (['A' => 28, 'B' => 32, 'C' => 24, 'D' => 14, 'E' => 18, 'F' => 18, 'G' => 16, 'H' => 18] as $column => $width) {
+        foreach (['A' => 28, 'B' => 32, 'C' => 14, 'D' => 18, 'E' => 18, 'F' => 16, 'G' => 18] as $column => $width) {
             $sheet->getColumnDimension($column)->setWidth($width);
         }
 
@@ -53,7 +47,6 @@ class StudentImportController extends Controller
             ['Column', 'Requirement', 'Example'],
             ['full_name', 'Required; maximum 100 characters', 'Juan Dela Cruz'],
             ['email', 'Required; must be unique', 'juan@example.edu.ph'],
-            ['temporary_password', 'Required; 12+ characters with uppercase, lowercase, number, and symbol', 'Student!2026Pass'],
             ['status', 'Optional; active or inactive. Defaults to active', 'active'],
             ['component_code', 'Optional; active component such as CWTS, ROTC, or LTS', 'CWTS'],
             ['academic_year', 'Required when component_code is provided; consecutive years', '2026-2027'],
@@ -71,6 +64,49 @@ class StudentImportController extends Controller
             $spreadsheet->disconnectWorksheets();
         }, 'student-import-template.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    /**
+     * @param  array{
+     *     students: int,
+     *     enrollments: int,
+     *     credentials: array<int, array{name: string, email: string, temporary_password: string, component: string, section: string}>
+     * }  $result
+     */
+    private function credentialsDownload(array $result): StreamedResponse
+    {
+        $spreadsheet = new Spreadsheet;
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Generated Credentials');
+        $sheet->mergeCells('A1:E1')->setCellValue('A1', 'Imported Student Temporary Credentials');
+        $sheet->mergeCells('A2:E2')->setCellValue('A2', "{$result['students']} account(s) imported; {$result['enrollments']} enrollment(s) created. Keep this file secure.");
+        $sheet->fromArray([['Full name', 'Email', 'Temporary password', 'Component', 'Section']], null, 'A4');
+
+        foreach ($result['credentials'] as $index => $credential) {
+            $sheet->fromArray([array_values($credential)], null, 'A'.($index + 5));
+        }
+
+        $lastRow = count($result['credentials']) + 4;
+        $sheet->freezePane('A5');
+        $sheet->setAutoFilter("A4:E{$lastRow}");
+        $sheet->getStyle('A1:E1')->getFont()->setBold(true)->setSize(16)->getColor()->setARGB('FFFFFFFF');
+        $sheet->getStyle('A1:E1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF174D84');
+        $sheet->getStyle('A2:E2')->getFont()->setItalic(true)->getColor()->setARGB('FF4D5D73');
+        $sheet->getStyle('A4:E4')->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+        $sheet->getStyle('A4:E4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF2468CA');
+        $sheet->getStyle("C5:C{$lastRow}")->getNumberFormat()->setFormatCode('@');
+
+        foreach (['A' => 28, 'B' => 34, 'C' => 25, 'D' => 15, 'E' => 18] as $column => $width) {
+            $sheet->getColumnDimension($column)->setWidth($width);
+        }
+
+        return response()->streamDownload(function () use ($spreadsheet): void {
+            (new Xlsx($spreadsheet))->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+        }, 'student-temporary-credentials-'.now()->format('Ymd-His').'.xlsx', [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'X-Imported-Students' => (string) $result['students'],
         ]);
     }
 

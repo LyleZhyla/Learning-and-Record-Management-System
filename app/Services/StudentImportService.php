@@ -10,7 +10,6 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Throwable;
@@ -18,11 +17,17 @@ use Throwable;
 class StudentImportService
 {
     public const HEADERS = [
-        'full_name', 'email', 'temporary_password', 'status',
+        'full_name', 'email', 'status',
         'component_code', 'academic_year', 'semester', 'section_code',
     ];
 
-    /** @return array{students: int, enrollments: int} */
+    /**
+     * @return array{
+     *     students: int,
+     *     enrollments: int,
+     *     credentials: array<int, array{name: string, email: string, temporary_password: string, component: string, section: string}>
+     * }
+     */
     public function import(UploadedFile $file): array
     {
         $rows = $this->readRows($file);
@@ -71,14 +76,12 @@ class StudentImportService
             $validator = Validator::make($data, [
                 'full_name' => ['required', 'string', 'max:100'],
                 'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
-                'temporary_password' => ['required', Password::min(12)->mixedCase()->numbers()->symbols()],
                 'status' => ['required', Rule::in(array_keys(User::STATUS_LABELS))],
                 'component_code' => ['nullable', 'string', 'max:10'],
                 'academic_year' => ['nullable', 'required_with:component_code', 'regex:/^\d{4}-\d{4}$/'],
                 'semester' => ['nullable', 'required_with:component_code', Rule::in(array_keys(NstpSection::SEMESTERS))],
                 'section_code' => ['nullable', 'string', 'max:30'],
             ], [
-                'temporary_password.password' => 'The temporary password must be at least 12 characters and include uppercase, lowercase, number, and symbol.',
                 'academic_year.regex' => 'The academic year must use the format 2026-2027.',
             ]);
 
@@ -147,13 +150,15 @@ class StudentImportService
 
         return DB::transaction(function () use ($prepared): array {
             $enrollmentCount = 0;
+            $credentials = [];
 
             foreach ($prepared as $item) {
                 $data = $item['data'];
+                $temporaryPassword = $this->generateTemporaryPassword();
                 $student = User::create([
                     'name' => $data['full_name'],
                     'email' => $data['email'],
-                    'password' => $data['temporary_password'],
+                    'password' => $temporaryPassword,
                     'role' => 'student',
                     'status' => $data['status'],
                     'must_change_password' => true,
@@ -170,9 +175,17 @@ class StudentImportService
                     ]);
                     $enrollmentCount++;
                 }
+
+                $credentials[] = [
+                    'name' => $student->name,
+                    'email' => $student->email,
+                    'temporary_password' => $temporaryPassword,
+                    'component' => $item['component']?->code ?? '',
+                    'section' => $item['section']?->code ?? '',
+                ];
             }
 
-            return ['students' => count($prepared), 'enrollments' => $enrollmentCount];
+            return ['students' => count($prepared), 'enrollments' => $enrollmentCount, 'credentials' => $credentials];
         });
     }
 
@@ -206,5 +219,31 @@ class StudentImportService
         }
 
         return (int) $matches[2] !== (int) $matches[1] + 1;
+    }
+
+    private function generateTemporaryPassword(): string
+    {
+        $uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $lowercase = 'abcdefghijkmnopqrstuvwxyz';
+        $numbers = '23456789';
+        $symbols = '!@#$%&*?';
+        $pool = $uppercase.$lowercase.$numbers.$symbols;
+        $characters = [
+            $uppercase[random_int(0, strlen($uppercase) - 1)],
+            $lowercase[random_int(0, strlen($lowercase) - 1)],
+            $numbers[random_int(0, strlen($numbers) - 1)],
+            $symbols[random_int(0, strlen($symbols) - 1)],
+        ];
+
+        while (count($characters) < 16) {
+            $characters[] = $pool[random_int(0, strlen($pool) - 1)];
+        }
+
+        for ($index = count($characters) - 1; $index > 0; $index--) {
+            $swap = random_int(0, $index);
+            [$characters[$index], $characters[$swap]] = [$characters[$swap], $characters[$index]];
+        }
+
+        return implode('', $characters);
     }
 }

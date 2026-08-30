@@ -10,6 +10,7 @@ use App\Services\StudentImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Tests\TestCase;
@@ -50,18 +51,24 @@ class StudentImportTest extends TestCase
             $email = str_replace('_', '.', $index).'@import.test';
             $file = $this->excelFile([
                 StudentImportService::HEADERS,
-                ['Imported '.ucwords(str_replace('_', ' ', $index)), $email, 'Student!2026Pass', 'active', 'cwts', '2026-2027', 'First Semester', 'cwts-01'],
+                ['Imported '.ucwords(str_replace('_', ' ', $index)), $email, 'active', 'cwts', '2026-2027', 'First Semester', 'cwts-01'],
             ]);
 
-            $this->actingAs($user)->post($url, ['file' => $file])
-                ->assertRedirect($url)
-                ->assertSessionHas('status', '1 student account(s) imported successfully. 1 NSTP enrollment(s) were also created.');
+            $response = $this->actingAs($user)->post($url, ['file' => $file]);
+            $response->assertOk()
+                ->assertDownload()
+                ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+                ->assertHeader('x-imported-students', '1');
+
+            $credentials = $this->credentialsFromResponse($response->streamedContent());
+            $this->assertSame($email, $credentials['email']);
+            $this->assertMatchesRegularExpression('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/', $credentials['password']);
 
             $student = User::where('email', $email)->firstOrFail();
             $this->assertSame('student', $student->role);
             $this->assertTrue($student->must_change_password);
             $this->assertNotEmpty($student->student_qr_token);
-            $this->assertTrue(Hash::check('Student!2026Pass', $student->password));
+            $this->assertTrue(Hash::check($credentials['password'], $student->password));
             $this->assertDatabaseHas('nstp_enrollments', [
                 'student_id' => $student->id, 'component_id' => $component->id,
                 'section_id' => $section->id, 'academic_year' => '2026-2027', 'semester' => 'first',
@@ -78,8 +85,8 @@ class StudentImportTest extends TestCase
 
         $file = $this->excelFile([
             StudentImportService::HEADERS,
-            ['Valid Student', 'valid@example.test', 'Student!2026Pass', 'active', '', '', '', ''],
-            ['Duplicate Student', 'existing@example.test', 'weak', 'active', '', '', '', ''],
+            ['Valid Student', 'valid@example.test', 'active', '', '', '', ''],
+            ['Duplicate Student', 'existing@example.test', 'active', '', '', '', ''],
         ]);
 
         $this->actingAs($admin)->from('/admin/students/import')->post('/admin/students/import', ['file' => $file])
@@ -116,5 +123,22 @@ class StudentImportTest extends TestCase
             null,
             true,
         );
+    }
+
+    /** @return array{email: string, password: string} */
+    private function credentialsFromResponse(string $content): array
+    {
+        $path = tempnam(sys_get_temp_dir(), 'student-credentials-').'.xlsx';
+        file_put_contents($path, $content);
+        $spreadsheet = IOFactory::load($path);
+        $sheet = $spreadsheet->getActiveSheet();
+        $credentials = [
+            'email' => (string) $sheet->getCell('B5')->getValue(),
+            'password' => (string) $sheet->getCell('C5')->getValue(),
+        ];
+        $spreadsheet->disconnectWorksheets();
+        unlink($path);
+
+        return $credentials;
     }
 }

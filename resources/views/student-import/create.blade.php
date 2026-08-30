@@ -10,7 +10,7 @@
         <div>
             <span class="eyebrow">Bulk student accounts</span>
             <h2>Upload an Excel student list</h2>
-            <p>The entire file is checked first. No account is saved until every row passes validation.</p>
+            <p>The entire file is checked first. Secure temporary passwords are generated automatically after every row passes validation.</p>
         </div>
         <a class="secondary-outline-button" href="{{ route($routePrefix.'.students.import.template') }}">↓ Download Excel template</a>
     </section>
@@ -47,7 +47,7 @@
                     <input type="file" name="file" accept=".xlsx,.xls,.csv" required data-student-import-file>
                     <em data-student-import-name>No file selected</em>
                 </label>
-                <div class="form-actions"><button class="primary-button compact" type="submit">Validate and import students</button></div>
+                <div class="form-actions"><button class="primary-button compact" type="submit">Import and download passwords</button></div>
             </form>
         </section>
 
@@ -56,13 +56,12 @@
             <ol class="import-column-list">
                 <li><strong>full_name</strong><span>Student's complete name</span></li>
                 <li><strong>email</strong><span>Unique login email</span></li>
-                <li><strong>temporary_password</strong><span>12+ characters, mixed case, number, symbol</span></li>
                 <li><strong>status</strong><span>active or inactive</span></li>
                 <li><strong>component_code</strong><span>Optional CWTS, ROTC, or LTS enrollment</span></li>
                 <li><strong>academic_year / semester</strong><span>Required when a component is supplied</span></li>
                 <li><strong>section_code</strong><span>Optional existing section assignment</span></li>
             </ol>
-            <div class="import-security-note"><strong>Temporary password protection</strong><p>Every imported student must change their temporary password on first sign-in.</p></div>
+            <div class="import-security-note"><strong>Passwords are generated automatically</strong><p>After a successful import, an Excel credentials file downloads automatically. Keep it secure—it contains the only plain-text copy of the passwords. Every student must change their password on first sign-in.</p></div>
         </aside>
     </div>
 
