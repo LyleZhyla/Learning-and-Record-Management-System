@@ -31,6 +31,7 @@ use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\LearningController as StudentLearningController;
+use App\Http\Controllers\StudentImportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -85,6 +86,9 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::put('/profile', [NstpAdminProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [NstpAdminProfileController::class, 'updatePassword'])->name('password.update');
     Route::get('/accounts', [NstpAdminAccountController::class, 'index'])->name('accounts.index');
+    Route::get('/students/import', [StudentImportController::class, 'create'])->name('students.import.create');
+    Route::post('/students/import', [StudentImportController::class, 'store'])->name('students.import.store');
+    Route::get('/students/import/template', [StudentImportController::class, 'template'])->name('students.import.template');
     Route::patch('/accounts/{user}/component', [NstpAdminAccountController::class, 'updateComponent'])->name('accounts.component.update');
     Route::get('/accounts/{user}', [NstpAdminAccountController::class, 'show'])->name('accounts.show');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
@@ -130,6 +134,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/students/import', [StudentImportController::class, 'create'])->name('students.import.create');
+    Route::post('/students/import', [StudentImportController::class, 'store'])->name('students.import.store');
+    Route::get('/students/import/template', [StudentImportController::class, 'template'])->name('students.import.template');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');

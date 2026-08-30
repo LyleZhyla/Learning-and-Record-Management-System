@@ -1,7 +1,7 @@
 @extends('layouts.nstp-admin')
 @section('title', 'Account Directory') @section('page-title', 'Account Directory')
 @section('content')
-<section class="page-actions"><div><span class="eyebrow">NSTP account assignments</span><h2>Coordinators, facilitators, and students</h2><p>Assign NSTP components to coordinators and facilitators, and view student records. Password concerns must still be handled by the Super Admin.</p></div></section>
+<section class="page-actions"><div><span class="eyebrow">NSTP account assignments</span><h2>Coordinators, facilitators, and students</h2><p>Assign NSTP components to coordinators and facilitators, import students, and view student records. Password concerns must still be handled by the Super Admin.</p></div><a class="primary-button compact" href="{{ route('nstp_admin.students.import.create') }}">Import students</a></section>
 
 <section class="role-summary-grid nstp-account-role-grid" aria-label="Visible accounts by role">
     @foreach(['coordinator' => 'Coordinators', 'facilitator' => 'Facilitators', 'student' => 'Students'] as $role => $label)

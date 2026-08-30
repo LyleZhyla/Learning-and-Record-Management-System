@@ -10,7 +10,10 @@
             <h2>Manage system users</h2>
             <p>Create accounts, assign roles, monitor access, and control account status.</p>
         </div>
-        <a class="primary-button compact" href="{{ route('admin.users.create') }}">+ Create account</a>
+        <div class="page-action-buttons">
+            <a class="secondary-outline-button" href="{{ route('admin.students.import.create') }}">Import students</a>
+            <a class="primary-button compact" href="{{ route('admin.users.create') }}">+ Create account</a>
+        </div>
     </section>
 
     @if ($errors->any())
