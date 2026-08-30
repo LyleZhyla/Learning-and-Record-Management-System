@@ -51,6 +51,31 @@ class CoordinatorPortalTest extends TestCase
         }
     }
 
+    public function test_coordinator_sidebar_groups_related_pages_together(): void
+    {
+        $this->actingAs($this->coordinator)->get('/coordinator/dashboard')
+            ->assertOk()
+            ->assertSeeInOrder([
+                'Overview',
+                'Dashboard',
+                'NSTP Operations',
+                'Components',
+                'Facilitators & Students',
+                'Sections & Facilitators',
+                'Attendance & Grading',
+                'Attendance',
+                'Answer Sheet Scanner',
+                'Performance & Grades',
+                'Grading Setup',
+                'Reports',
+                'Reports Center',
+                'Communication',
+                'Announcements',
+                'Account',
+                'Profile & Security',
+            ]);
+    }
+
     public function test_coordinator_can_edit_the_grading_configuration(): void
     {
         $section = NstpSection::firstOrFail();

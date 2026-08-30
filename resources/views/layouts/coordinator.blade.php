@@ -13,16 +13,18 @@
         <nav class="main-nav" aria-label="Coordinator navigation">
             <p class="nav-label">Overview</p>
             <a class="nav-link {{ request()->routeIs('coordinator.dashboard') ? 'active' : '' }}" href="{{ route('coordinator.dashboard') }}"><span class="nav-icon">⌂</span> Dashboard</a>
-            <p class="nav-label">Monitoring</p>
+            <p class="nav-label">NSTP Operations</p>
             <a class="nav-link {{ request()->routeIs('coordinator.components.*') ? 'active' : '' }}" href="{{ route('coordinator.components.index') }}"><span class="nav-icon">◉</span> Components</a>
             <a class="nav-link {{ request()->routeIs('coordinator.accounts.*') ? 'active' : '' }}" href="{{ route('coordinator.accounts.index') }}"><span class="nav-icon">♙</span> Facilitators & Students</a>
-            @if(auth()->user()->nstpComponent?->code === 'ROTC')<a class="nav-link {{ request()->routeIs('coordinator.rotc-approvals.*') ? 'active' : '' }}" href="{{ route('coordinator.rotc-approvals.index') }}"><span class="nav-icon">✓</span> ROTC Approvals</a>@endif
             <a class="nav-link {{ request()->routeIs('coordinator.sections.*') ? 'active' : '' }}" href="{{ route('coordinator.sections.index') }}"><span class="nav-icon">▦</span> Sections & Facilitators</a>
+            @if(auth()->user()->nstpComponent?->code === 'ROTC')<a class="nav-link {{ request()->routeIs('coordinator.rotc-approvals.*') ? 'active' : '' }}" href="{{ route('coordinator.rotc-approvals.index') }}"><span class="nav-icon">✓</span> ROTC Approvals</a>@endif
+            <p class="nav-label">Attendance & Grading</p>
             <a class="nav-link {{ request()->routeIs('coordinator.attendance.*') ? 'active' : '' }}" href="{{ route('coordinator.attendance.index') }}"><span class="nav-icon">▣</span> Attendance</a>
             <a class="nav-link {{ request()->routeIs('coordinator.omr.*') ? 'active' : '' }}" href="{{ route('coordinator.omr.index') }}"><span class="nav-icon">▦</span> Answer Sheet Scanner</a>
             <a class="nav-link {{ request()->routeIs('coordinator.performance.*') ? 'active' : '' }}" href="{{ route('coordinator.performance.index') }}"><span class="nav-icon">◎</span> Performance & Grades</a>
-            <a class="nav-link {{ request()->routeIs('coordinator.reports.*') ? 'active' : '' }}" href="{{ route('coordinator.reports.index') }}"><span class="nav-icon">▤</span> Reports</a>
             <a class="nav-link {{ request()->routeIs('coordinator.grades.*') ? 'active' : '' }}" href="{{ route('coordinator.grades.index') }}"><span class="nav-icon">✎</span> Grading Setup</a>
+            <p class="nav-label">Reports</p>
+            <a class="nav-link {{ request()->routeIs('coordinator.reports.*') ? 'active' : '' }}" href="{{ route('coordinator.reports.index') }}"><span class="nav-icon">▤</span> Reports Center</a>
             <p class="nav-label">Communication</p>
             <a class="nav-link {{ request()->routeIs('coordinator.announcements.*') ? 'active' : '' }}" href="{{ route('coordinator.announcements.index') }}"><span class="nav-icon">◫</span> Announcements</a>
             <p class="nav-label">Account</p>
