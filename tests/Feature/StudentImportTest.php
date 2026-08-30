@@ -21,8 +21,17 @@ class StudentImportTest extends TestCase
 
     public function test_super_admin_and_nstp_admin_can_open_import_page_and_download_template(): void
     {
-        foreach (['super_admin' => '/admin/students/import', 'nstp_admin' => '/nstp-admin/students/import'] as $role => $url) {
+        foreach ([
+            'super_admin' => ['/admin/students/import', '/admin/users'],
+            'nstp_admin' => ['/nstp-admin/students/import', '/nstp-admin/accounts'],
+        ] as $role => [$url, $directoryUrl]) {
             $user = User::factory()->create(['role' => $role, 'status' => 'active']);
+
+            $this->actingAs($user)->get($directoryUrl)
+                ->assertOk()
+                ->assertSee('Import Students')
+                ->assertSee('aria-label="Import students from Excel"', false)
+                ->assertSee('href="'.url($url).'"', false);
 
             $this->actingAs($user)->get($url)
                 ->assertOk()
