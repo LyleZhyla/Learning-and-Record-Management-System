@@ -2,9 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Models\NstpComponent;
-use App\Models\NstpEnrollment;
-use App\Models\NstpSection;
 use App\Models\User;
 use App\Services\StudentImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -46,21 +43,12 @@ class StudentImportTest extends TestCase
 
     public function test_both_authorized_roles_can_import_excel_student_accounts(): void
     {
-        $component = NstpComponent::create([
-            'code' => 'CWTS', 'name' => 'Civic Welfare Training Service',
-            'default_section_capacity' => 40, 'is_active' => true,
-        ]);
-        $section = NstpSection::create([
-            'component_id' => $component->id, 'code' => 'CWTS-01', 'name' => 'CWTS Section 1',
-            'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active',
-        ]);
-
         foreach (['super_admin' => '/admin/students/import', 'nstp_admin' => '/nstp-admin/students/import'] as $index => $url) {
             $user = User::factory()->create(['role' => $index, 'status' => 'active']);
             $email = str_replace('_', '.', $index).'@import.test';
             $file = $this->excelFile([
                 StudentImportService::HEADERS,
-                ['Imported '.ucwords(str_replace('_', ' ', $index)), $email, 'active', 'cwts', '2026-2027', 'First Semester', 'cwts-01'],
+                ['Imported '.ucwords(str_replace('_', ' ', $index)), $email],
             ]);
 
             $response = $this->actingAs($user)->post($url, ['file' => $file]);
@@ -75,16 +63,11 @@ class StudentImportTest extends TestCase
 
             $student = User::where('email', $email)->firstOrFail();
             $this->assertSame('student', $student->role);
+            $this->assertSame('active', $student->status);
             $this->assertTrue($student->must_change_password);
             $this->assertNotEmpty($student->student_qr_token);
             $this->assertTrue(Hash::check($credentials['password'], $student->password));
-            $this->assertDatabaseHas('nstp_enrollments', [
-                'student_id' => $student->id, 'component_id' => $component->id,
-                'section_id' => $section->id, 'academic_year' => '2026-2027', 'semester' => 'first',
-            ]);
         }
-
-        $this->assertSame(2, NstpEnrollment::count());
     }
 
     public function test_import_is_all_or_nothing_and_reports_row_errors(): void
@@ -94,8 +77,8 @@ class StudentImportTest extends TestCase
 
         $file = $this->excelFile([
             StudentImportService::HEADERS,
-            ['Valid Student', 'valid@example.test', 'active', '', '', '', ''],
-            ['Duplicate Student', 'existing@example.test', 'active', '', '', '', ''],
+            ['Valid Student', 'valid@example.test'],
+            ['Duplicate Student', 'existing@example.test'],
         ]);
 
         $this->actingAs($admin)->from('/admin/students/import')->post('/admin/students/import', ['file' => $file])

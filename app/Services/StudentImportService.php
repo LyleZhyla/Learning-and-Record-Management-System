@@ -2,9 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\NstpComponent;
-use App\Models\NstpEnrollment;
-use App\Models\NstpSection;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -17,15 +14,13 @@ use Throwable;
 class StudentImportService
 {
     public const HEADERS = [
-        'full_name', 'email', 'status',
-        'component_code', 'academic_year', 'semester', 'section_code',
+        'name', 'email',
     ];
 
     /**
      * @return array{
      *     students: int,
-     *     enrollments: int,
-     *     credentials: array<int, array{name: string, email: string, temporary_password: string, component: string, section: string}>
+     *     credentials: array<int, array{name: string, email: string, temporary_password: string}>
      * }
      */
     public function import(UploadedFile $file): array
@@ -53,7 +48,6 @@ class StudentImportService
         $prepared = [];
         $rowErrors = [];
         $emailsInFile = [];
-        $sectionAssignments = [];
 
         foreach ($rows as $offset => $row) {
             $excelRow = $offset + 2;
@@ -68,21 +62,10 @@ class StudentImportService
             }
 
             $data['email'] = str($data['email'])->lower()->toString();
-            $data['status'] = str($data['status'] ?: 'active')->lower()->toString();
-            $data['component_code'] = str($data['component_code'])->upper()->toString();
-            $data['semester'] = str($data['semester'])->lower()->replace([' semester', ' term'], '')->toString();
-            $data['section_code'] = str($data['section_code'])->upper()->toString();
 
             $validator = Validator::make($data, [
-                'full_name' => ['required', 'string', 'max:100'],
+                'name' => ['required', 'string', 'max:100'],
                 'email' => ['required', 'email', 'max:255', Rule::unique('users', 'email')],
-                'status' => ['required', Rule::in(array_keys(User::STATUS_LABELS))],
-                'component_code' => ['nullable', 'string', 'max:10'],
-                'academic_year' => ['nullable', 'required_with:component_code', 'regex:/^\d{4}-\d{4}$/'],
-                'semester' => ['nullable', 'required_with:component_code', Rule::in(array_keys(NstpSection::SEMESTERS))],
-                'section_code' => ['nullable', 'string', 'max:30'],
-            ], [
-                'academic_year.regex' => 'The academic year must use the format 2026-2027.',
             ]);
 
             $errors = $validator->errors()->all();
@@ -93,42 +76,6 @@ class StudentImportService
                 $emailsInFile[$data['email']] = $excelRow;
             }
 
-            $component = null;
-            $section = null;
-
-            if ($data['component_code'] !== '') {
-                $component = NstpComponent::whereRaw('UPPER(code) = ?', [$data['component_code']])->where('is_active', true)->first();
-
-                if (! $component) {
-                    $errors[] = "Component code {$data['component_code']} is not active or does not exist.";
-                }
-
-                if ($this->hasInvalidAcademicYearSequence($data['academic_year'])) {
-                    $errors[] = 'The academic year must contain consecutive years, for example 2026-2027.';
-                }
-
-                if ($data['section_code'] !== '' && $component && $data['academic_year'] !== '' && $data['semester'] !== '') {
-                    $section = NstpSection::query()
-                        ->where('component_id', $component->id)
-                        ->whereRaw('UPPER(code) = ?', [$data['section_code']])
-                        ->where('academic_year', $data['academic_year'])
-                        ->where('semester', $data['semester'])
-                        ->where('status', 'active')
-                        ->first();
-
-                    if (! $section) {
-                        $errors[] = "Section {$data['section_code']} does not match the selected component and term.";
-                    } else {
-                        $sectionAssignments[$section->id] = ($sectionAssignments[$section->id] ?? 0) + 1;
-                        if ($section->enrollments()->where('status', 'enrolled')->count() + $sectionAssignments[$section->id] > $section->capacity) {
-                            $errors[] = "Section {$section->code} does not have enough remaining capacity.";
-                        }
-                    }
-                }
-            } elseif ($data['academic_year'] !== '' || $data['semester'] !== '' || $data['section_code'] !== '') {
-                $errors[] = 'Component code is required when academic year, semester, or section code is supplied.';
-            }
-
             if ($errors !== []) {
                 foreach ($errors as $error) {
                     $rowErrors[] = "Row {$excelRow}: {$error}";
@@ -137,7 +84,7 @@ class StudentImportService
                 continue;
             }
 
-            $prepared[] = compact('data', 'component', 'section');
+            $prepared[] = $data;
         }
 
         if ($rowErrors !== []) {
@@ -149,43 +96,27 @@ class StudentImportService
         }
 
         return DB::transaction(function () use ($prepared): array {
-            $enrollmentCount = 0;
             $credentials = [];
 
-            foreach ($prepared as $item) {
-                $data = $item['data'];
+            foreach ($prepared as $data) {
                 $temporaryPassword = $this->generateTemporaryPassword();
                 $student = User::create([
-                    'name' => $data['full_name'],
+                    'name' => $data['name'],
                     'email' => $data['email'],
                     'password' => $temporaryPassword,
                     'role' => 'student',
-                    'status' => $data['status'],
+                    'status' => 'active',
                     'must_change_password' => true,
                 ]);
-
-                if ($item['component']) {
-                    NstpEnrollment::create([
-                        'student_id' => $student->id,
-                        'component_id' => $item['component']->id,
-                        'section_id' => $item['section']?->id,
-                        'academic_year' => $data['academic_year'],
-                        'semester' => $data['semester'],
-                        'status' => 'enrolled',
-                    ]);
-                    $enrollmentCount++;
-                }
 
                 $credentials[] = [
                     'name' => $student->name,
                     'email' => $student->email,
                     'temporary_password' => $temporaryPassword,
-                    'component' => $item['component']?->code ?? '',
-                    'section' => $item['section']?->code ?? '',
                 ];
             }
 
-            return ['students' => count($prepared), 'enrollments' => $enrollmentCount, 'credentials' => $credentials];
+            return ['students' => count($prepared), 'credentials' => $credentials];
         });
     }
 
@@ -210,15 +141,6 @@ class StudentImportService
     private function normalizeHeader(mixed $value): string
     {
         return str((string) $value)->trim()->lower()->replaceMatches('/[^a-z0-9]+/', '_')->trim('_')->toString();
-    }
-
-    private function hasInvalidAcademicYearSequence(string $academicYear): bool
-    {
-        if (! preg_match('/^(\d{4})-(\d{4})$/', $academicYear, $matches)) {
-            return false;
-        }
-
-        return (int) $matches[2] !== (int) $matches[1] + 1;
     }
 
     private function generateTemporaryPassword(): string

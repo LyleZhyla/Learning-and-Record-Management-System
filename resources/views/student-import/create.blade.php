@@ -54,12 +54,8 @@
         <aside class="card import-guide-card">
             <div class="card-heading"><div><h3>Required columns</h3><p>Keep the column names from the template unchanged.</p></div></div>
             <ol class="import-column-list">
-                <li><strong>full_name</strong><span>Student's complete name</span></li>
+                <li><strong>name</strong><span>Student's complete name</span></li>
                 <li><strong>email</strong><span>Unique login email</span></li>
-                <li><strong>status</strong><span>active or inactive</span></li>
-                <li><strong>component_code</strong><span>Optional CWTS, ROTC, or LTS enrollment</span></li>
-                <li><strong>academic_year / semester</strong><span>Required when a component is supplied</span></li>
-                <li><strong>section_code</strong><span>Optional existing section assignment</span></li>
             </ol>
             <div class="import-security-note"><strong>Passwords are generated automatically</strong><p>After a successful import, an Excel credentials file downloads automatically. Keep it secure—it contains the only plain-text copy of the passwords. Every student must change their password on first sign-in.</p></div>
         </aside>
