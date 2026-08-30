@@ -20,8 +20,7 @@
         <article class="metric-card" data-unassigned-student-count="{{ $unassignedStudentCount }}"><span class="metric-icon violet">!</span><div><small>Without component</small><strong>{{ $unassignedStudentCount }}</strong><p>Active students this term</p></div></article>
     </section>
 
-    <div class="content-grid">
-        <section class="card enrollee-chart-card">
+    <section class="card enrollee-chart-card">
             @php
                 $largestComponentCount = max(1, (int) $componentEnrollments->max('count'));
                 $totalComponentEnrollees = (int) $componentEnrollments->sum('count');
@@ -48,19 +47,5 @@
                     <div class="empty-state"><strong>No NSTP components available</strong><span>Component enrollment data will appear here once configured.</span></div>
                 @endforelse
             </div>
-        </section>
-
-        <aside class="card account-summary">
-            <div class="card-heading"><div><span class="eyebrow">Current session</span><h3>Account overview</h3></div></div>
-            <div class="large-avatar">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</div>
-            <h4>{{ auth()->user()->name }}</h4>
-            <p>{{ auth()->user()->email }}</p>
-            <dl>
-                <div><dt>Role</dt><dd>Super Administrator</dd></div>
-                <div><dt>Status</dt><dd><span class="online-dot"></span> Active</dd></div>
-                <div><dt>Last sign in</dt><dd>{{ auth()->user()->last_login_at?->format('M d, Y · h:i A') ?? 'First session' }}</dd></div>
-            </dl>
-            <a class="text-link" href="{{ route('admin.profile.edit') }}">Manage profile and security →</a>
-        </aside>
-    </div>
+    </section>
 @endsection

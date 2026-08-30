@@ -100,6 +100,8 @@ class SuperAdminAuthenticationTest extends TestCase
             ->assertSee('aria-label="MS-1: 1 enrollees"', false)
             ->assertSee('aria-label="MS-31: 2 enrollees"', false)
             ->assertSee('aria-label="MS-41: 1 enrollees"', false)
+            ->assertDontSee('Current session')
+            ->assertDontSee('Account overview')
             ->assertDontSee('Development roadmap')
             ->assertViewHas('componentEnrollments', fn ($components) =>
                 $components->firstWhere('code', 'CWTS')['count'] === 2
