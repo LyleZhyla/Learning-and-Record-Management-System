@@ -89,6 +89,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/students/import', [StudentImportController::class, 'create'])->name('students.import.create');
     Route::post('/students/import', [StudentImportController::class, 'store'])->name('students.import.store');
     Route::get('/students/import/template', [StudentImportController::class, 'template'])->name('students.import.template');
+    Route::post('/accounts/students/component', [NstpAdminAccountController::class, 'bulkAssignStudents'])->name('accounts.students.component.bulk');
     Route::patch('/accounts/{user}/component', [NstpAdminAccountController::class, 'updateComponent'])->name('accounts.component.update');
     Route::get('/accounts/{user}', [NstpAdminAccountController::class, 'show'])->name('accounts.show');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

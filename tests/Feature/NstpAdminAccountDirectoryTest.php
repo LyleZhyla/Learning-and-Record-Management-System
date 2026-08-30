@@ -67,6 +67,53 @@ class NstpAdminAccountDirectoryTest extends TestCase
         }
     }
 
+    public function test_nstp_admin_can_select_multiple_students_and_assign_a_component(): void
+    {
+        [$nstpAdmin, , , $student] = $this->records();
+        $secondStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $rotc = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
+        $academicYearStart = now()->month >= 6 ? now()->year : now()->year - 1;
+        $academicYear = $academicYearStart.'-'.($academicYearStart + 1);
+        $semester = now()->month >= 6 ? 'first' : 'second';
+
+        $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts?role=student')
+            ->assertOk()
+            ->assertSee('Bulk student component assignment')
+            ->assertSee('Assign selected students');
+
+        $this->actingAs($nstpAdmin)->post('/nstp-admin/accounts/students/component', [
+            'nstp_component_id' => $rotc->id,
+            'student_ids' => [$student->id, $secondStudent->id],
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        foreach ([$student, $secondStudent] as $assignedStudent) {
+            $this->assertDatabaseHas('nstp_enrollments', [
+                'student_id' => $assignedStudent->id,
+                'component_id' => $rotc->id,
+                'academic_year' => $academicYear,
+                'semester' => $semester,
+                'section_id' => null,
+                'status' => 'enrolled',
+            ]);
+        }
+    }
+
+    public function test_bulk_student_component_assignment_rejects_non_students_and_non_nstp_admins(): void
+    {
+        [$nstpAdmin, $coordinator, , $student] = $this->records();
+        $component = NstpComponent::firstOrFail();
+
+        $this->actingAs($nstpAdmin)->post('/nstp-admin/accounts/students/component', [
+            'nstp_component_id' => $component->id,
+            'student_ids' => [$coordinator->id],
+        ])->assertSessionHasErrors('student_ids.0');
+
+        $this->actingAs($coordinator)->post('/nstp-admin/accounts/students/component', [
+            'nstp_component_id' => $component->id,
+            'student_ids' => [$student->id],
+        ])->assertForbidden();
+    }
+
     public function test_component_assignment_rejects_students_inactive_components_and_non_nstp_admins(): void
     {
         [$nstpAdmin, $coordinator, , $student] = $this->records();

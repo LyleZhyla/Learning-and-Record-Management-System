@@ -123,3 +123,7 @@ label,button,input,select,textarea{font-size:15px!important}
 /* One compact pagination structure across every account portal. */
 .pagination-controls{display:flex;align-items:center;gap:8px;margin-left:auto}
 @media(max-width:760px){.pagination-controls{width:100%;justify-content:space-between;margin-left:0}.pagination-controls .page-current{padding:0}}
+
+.bulk-account-action-bar{display:grid;grid-template-columns:minmax(230px,1fr) minmax(300px,1.25fr) auto;align-items:end;gap:16px;border-bottom:1px solid var(--line)}
+.bulk-account-action-copy strong,.bulk-account-action-copy span{display:block}.bulk-account-action-copy strong{color:var(--navy);font-size:15px}.bulk-account-action-copy span{margin-top:4px;color:var(--muted);font-size:13px}.bulk-account-action-bar .field-group{min-width:0}.bulk-account-action-bar .filter-button{white-space:nowrap}
+@media(max-width:900px){.bulk-account-action-bar{grid-template-columns:1fr;align-items:stretch}.bulk-account-action-bar .filter-button{width:100%}}

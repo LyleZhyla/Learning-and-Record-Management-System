@@ -4,9 +4,12 @@ namespace App\Http\Controllers\NstpAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\NstpComponent;
+use App\Models\NstpEnrollment;
+use App\Models\NstpSection;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -40,7 +43,16 @@ class AccountController extends Controller
         $roleCounts = User::whereIn('role', self::VISIBLE_ROLES)
             ->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
 
-        return view('nstp_admin.accounts.index', compact('accounts', 'roleCounts', 'filters'));
+        $availableComponents = NstpComponent::query()->where('is_active', true)->orderBy('code')->get();
+
+        return view('nstp_admin.accounts.index', [
+            'accounts' => $accounts,
+            'roleCounts' => $roleCounts,
+            'filters' => $filters,
+            'availableComponents' => $availableComponents,
+            'academicYear' => $this->currentAcademicYear(),
+            'semesterLabel' => NstpSection::SEMESTERS[$this->currentSemester()],
+        ]);
     }
 
     public function show(User $user): View
@@ -89,5 +101,63 @@ class AccountController extends Controller
             : "{$user->name}'s NSTP component assignment was removed.";
 
         return back()->with('status', $message);
+    }
+
+    public function bulkAssignStudents(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'nstp_component_id' => [
+                'required',
+                'integer',
+                Rule::exists('nstp_components', 'id')->where('is_active', true),
+            ],
+            'student_ids' => ['required', 'array', 'min:1'],
+            'student_ids.*' => [
+                'integer',
+                'distinct',
+                Rule::exists('users', 'id')->where(fn ($query) => $query
+                    ->where('role', 'student')
+                    ->where('status', 'active')),
+            ],
+        ]);
+
+        $studentIds = array_values(array_unique($validated['student_ids']));
+        $componentId = (int) $validated['nstp_component_id'];
+        $academicYear = $this->currentAcademicYear();
+        $semester = $this->currentSemester();
+
+        DB::transaction(function () use ($studentIds, $componentId, $academicYear, $semester): void {
+            foreach ($studentIds as $studentId) {
+                $enrollment = NstpEnrollment::firstOrNew([
+                    'student_id' => $studentId,
+                    'academic_year' => $academicYear,
+                    'semester' => $semester,
+                ]);
+
+                if ($enrollment->exists && $enrollment->component_id !== $componentId) {
+                    $enrollment->section_id = null;
+                }
+
+                $enrollment->fill([
+                    'component_id' => $componentId,
+                    'status' => 'enrolled',
+                ])->save();
+            }
+        });
+
+        return back()->with('status', count($studentIds).' student(s) assigned to the selected component.');
+    }
+
+    private function currentAcademicYear(): string
+    {
+        $year = now()->year;
+        $start = now()->month >= 6 ? $year : $year - 1;
+
+        return $start.'-'.($start + 1);
+    }
+
+    private function currentSemester(): string
+    {
+        return now()->month >= 6 ? 'first' : 'second';
     }
 }
