@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Coordinator\AccountController as CoordinatorAccountController;
 use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
 use App\Http\Controllers\Coordinator\MonitoringController as CoordinatorMonitoringController;
+use App\Http\Controllers\Coordinator\RotcApprovalController as CoordinatorRotcApprovalController;
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
 use App\Http\Controllers\Facilitator\StudentController as FacilitatorStudentController;
 use App\Http\Controllers\Learning\AssessmentController;
@@ -190,6 +191,9 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/components', [CoordinatorMonitoringController::class, 'components'])->name('components.index');
     Route::get('/accounts', [CoordinatorAccountController::class, 'index'])->name('accounts.index');
     Route::get('/accounts/{user}', [CoordinatorAccountController::class, 'show'])->name('accounts.show');
+    Route::get('/rotc-approvals', [CoordinatorRotcApprovalController::class, 'index'])->name('rotc-approvals.index');
+    Route::get('/rotc-approvals/{enrollment}/proof', [CoordinatorRotcApprovalController::class, 'downloadProof'])->name('rotc-approvals.proof');
+    Route::patch('/rotc-approvals/{enrollment}/approve', [CoordinatorRotcApprovalController::class, 'approve'])->name('rotc-approvals.approve');
     Route::get('/sections', [CoordinatorMonitoringController::class, 'sections'])->name('sections.index');
     Route::get('/attendance', [CoordinatorMonitoringController::class, 'attendance'])->name('attendance.index');
     Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');

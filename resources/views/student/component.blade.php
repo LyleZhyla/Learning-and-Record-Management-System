@@ -10,7 +10,7 @@
 <div class="student-selection-layout">
     <section class="card student-component-card">
         <div class="card-heading"><div><h3>Enrollment preferences</h3><p>Both your NSTP component and shirt size are required.</p></div></div>
-        <form method="POST" action="{{ route('student.component.update') }}" class="settings-form">
+        <form method="POST" action="{{ route('student.component.update') }}" class="settings-form" enctype="multipart/form-data">
             @csrf
             @method('PUT')
 
@@ -40,6 +40,14 @@
                 @error('rotc_category')<small class="field-error">{{ $message }}</small>@enderror
             </div>
 
+            <div class="rotc-proof-panel" data-rotc-proof-panel data-has-existing-proof="{{ $currentEnrollment?->rotc_proof_path ? 'true' : 'false' }}" hidden>
+                <label for="ms1_proof">Proof of completed MS-1</label>
+                <input id="ms1_proof" name="ms1_proof" type="file" accept=".pdf,.jpg,.jpeg,.png" data-rotc-proof-input>
+                <small>Required for MS-31 and MS-41. Upload a PDF, JPG, or PNG up to 5 MB.</small>
+                @if($currentEnrollment?->rotc_proof_path)<small class="existing-proof-note">Existing proof: {{ $currentEnrollment->rotc_proof_original_name }}</small>@endif
+                @error('ms1_proof')<small class="field-error">{{ $message }}</small>@enderror
+            </div>
+
             <label for="shirt_size">Shirt size</label>
             <select id="shirt_size" name="shirt_size" required>
                 <option value="">Choose your shirt size</option>
@@ -59,6 +67,7 @@
         <dl>
             <div><dt>Component</dt><dd>{{ $currentEnrollment?->component?->code ?? 'Not selected' }}</dd></div>
             @if($currentEnrollment?->component?->code === 'ROTC')<div><dt>ROTC category</dt><dd>{{ $currentEnrollment->rotc_category ?? 'Not selected' }}</dd></div>@endif
+            @if(in_array($currentEnrollment?->rotc_category, ['MS-31', 'MS-41'], true))<div><dt>Approval</dt><dd>{{ $currentEnrollment->rotc_approval_status === 'approved' ? 'Approved' : 'Pending coordinator approval' }}</dd></div>@endif
             <div><dt>Shirt size</dt><dd>{{ $currentEnrollment?->shirt_size ?? 'Not selected' }}</dd></div>
             <div><dt>Section</dt><dd>{{ $currentEnrollment?->section?->code ?? 'Awaiting assignment' }}</dd></div>
             <div><dt>Term</dt><dd>{{ $semesterLabel }} {{ $academicYear }}</dd></div>
@@ -70,6 +79,8 @@
     const componentOptions = [...document.querySelectorAll('[data-component-code]')];
     const rotcCategoryPanel = document.querySelector('[data-rotc-category-panel]');
     const rotcCategorySelect = document.querySelector('[data-rotc-category-select]');
+    const rotcProofPanel = document.querySelector('[data-rotc-proof-panel]');
+    const rotcProofInput = document.querySelector('[data-rotc-proof-input]');
 
     function updateRotcCategory() {
         const selectedComponent = componentOptions.find((option) => option.checked);
@@ -77,9 +88,21 @@
         rotcCategoryPanel.hidden = !isRotc;
         rotcCategorySelect.required = isRotc;
         if (!isRotc) rotcCategorySelect.value = '';
+        updateRotcProof();
+    }
+
+    function updateRotcProof() {
+        const selectedComponent = componentOptions.find((option) => option.checked);
+        const isAdvancedRotc = selectedComponent?.dataset.componentCode === 'ROTC'
+            && ['MS-31', 'MS-41'].includes(rotcCategorySelect.value);
+        const hasExistingProof = rotcProofPanel.dataset.hasExistingProof === 'true';
+        rotcProofPanel.hidden = !isAdvancedRotc;
+        rotcProofInput.required = isAdvancedRotc && !hasExistingProof;
+        if (!isAdvancedRotc) rotcProofInput.value = '';
     }
 
     componentOptions.forEach((option) => option.addEventListener('change', updateRotcCategory));
+    rotcCategorySelect.addEventListener('change', updateRotcProof);
     updateRotcCategory();
 </script>
 @endsection

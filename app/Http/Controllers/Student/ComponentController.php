@@ -8,8 +8,10 @@ use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Throwable;
 
 class ComponentController extends Controller
 {
@@ -35,9 +37,18 @@ class ComponentController extends Controller
 
     public function update(Request $request): RedirectResponse
     {
+        $academicYear = $this->currentAcademicYear();
+        $semester = $this->currentSemester();
+        $enrollment = NstpEnrollment::firstOrNew([
+            'student_id' => $request->user()->id,
+            'academic_year' => $academicYear,
+            'semester' => $semester,
+        ]);
         $selectedComponent = NstpComponent::query()
             ->where('is_active', true)
             ->find($request->input('nstp_component_id'));
+        $isAdvancedRotc = $selectedComponent?->code === 'ROTC'
+            && in_array($request->input('rotc_category'), ['MS-31', 'MS-41'], true);
 
         $validated = $request->validate([
             'nstp_component_id' => [
@@ -51,29 +62,62 @@ class ComponentController extends Controller
                 'nullable',
                 Rule::in(array_keys(NstpEnrollment::ROTC_CATEGORIES)),
             ],
+            'ms1_proof' => [
+                Rule::requiredIf(fn () => $isAdvancedRotc && blank($enrollment->rotc_proof_path)),
+                'nullable',
+                'file',
+                'mimes:pdf,jpg,jpeg,png',
+                'max:5120',
+            ],
         ]);
 
         $componentId = (int) $validated['nstp_component_id'];
-        $academicYear = $this->currentAcademicYear();
-        $semester = $this->currentSemester();
-        $enrollment = NstpEnrollment::firstOrNew([
-            'student_id' => $request->user()->id,
-            'academic_year' => $academicYear,
-            'semester' => $semester,
-        ]);
+        $rotcCategory = $selectedComponent?->code === 'ROTC' ? $validated['rotc_category'] : null;
+        $oldProofPath = $enrollment->rotc_proof_path;
+        $newProof = $request->file('ms1_proof');
+        $newProofPath = $newProof?->store('rotc-ms1-proofs');
+        $approvalMustReset = ! $enrollment->exists
+            || $enrollment->component_id !== $componentId
+            || $enrollment->rotc_category !== $rotcCategory
+            || $newProof !== null;
 
         if ($enrollment->exists && $enrollment->component_id !== $componentId) {
             $enrollment->section_id = null;
         }
 
-        $enrollment->fill([
-            'component_id' => $componentId,
-            'shirt_size' => $validated['shirt_size'],
-            'rotc_category' => $selectedComponent?->code === 'ROTC' ? $validated['rotc_category'] : null,
-            'status' => 'enrolled',
-        ])->save();
+        try {
+            $enrollment->fill([
+                'component_id' => $componentId,
+                'shirt_size' => $validated['shirt_size'],
+                'rotc_category' => $rotcCategory,
+                'rotc_proof_path' => $isAdvancedRotc ? ($newProofPath ?? $oldProofPath) : null,
+                'rotc_proof_original_name' => $isAdvancedRotc ? ($newProof?->getClientOriginalName() ?? $enrollment->rotc_proof_original_name) : null,
+                'rotc_approval_status' => $isAdvancedRotc
+                    ? ($approvalMustReset ? 'pending' : $enrollment->rotc_approval_status)
+                    : null,
+                'rotc_approved_by' => $isAdvancedRotc && ! $approvalMustReset ? $enrollment->rotc_approved_by : null,
+                'rotc_approved_at' => $isAdvancedRotc && ! $approvalMustReset ? $enrollment->rotc_approved_at : null,
+                'status' => $isAdvancedRotc && ($approvalMustReset || $enrollment->rotc_approval_status !== 'approved')
+                    ? 'pending_approval'
+                    : 'enrolled',
+            ])->save();
+        } catch (Throwable $exception) {
+            if ($newProofPath) {
+                Storage::disk('local')->delete($newProofPath);
+            }
 
-        return back()->with('status', 'Your NSTP enrollment preferences were updated successfully.');
+            throw $exception;
+        }
+
+        if ($oldProofPath && ($newProofPath || ! $isAdvancedRotc)) {
+            Storage::disk('local')->delete($oldProofPath);
+        }
+
+        $message = $isAdvancedRotc
+            ? 'Your ROTC request was submitted and is waiting for coordinator approval.'
+            : 'Your NSTP enrollment preferences were updated successfully.';
+
+        return back()->with('status', $message);
     }
 
     private function currentAcademicYear(): string

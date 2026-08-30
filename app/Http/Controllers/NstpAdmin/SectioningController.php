@@ -92,6 +92,7 @@ class SectioningController extends Controller
 
         DB::transaction(function () use ($validated, $component, &$assignedCount, &$createdCount): void {
             $unassigned = NstpEnrollment::where('component_id', $component->id)
+                ->where('status', 'enrolled')
                 ->where('academic_year', $validated['academic_year'])
                 ->where('semester', $validated['semester'])
                 ->whereNull('section_id')

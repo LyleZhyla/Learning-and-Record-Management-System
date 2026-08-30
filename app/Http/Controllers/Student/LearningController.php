@@ -75,7 +75,7 @@ class LearningController extends Controller
     public function grades(Request $request): View
     {
         $enrollment = $this->access->currentEnrollment($request->user());
-        $summary = $enrollment ? $this->grades->summary($request->user(), $enrollment->section_id) : null;
+        $summary = $enrollment?->section_id ? $this->grades->summary($request->user(), $enrollment->section_id) : null;
         return view('student.grades.index', compact('enrollment', 'summary'));
     }
 }

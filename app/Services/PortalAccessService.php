@@ -101,6 +101,7 @@ class PortalAccessService
     {
         return NstpEnrollment::with(['component', 'section'])
             ->where('student_id', $student->id)
+            ->where('status', 'enrolled')
             ->latest('academic_year')
             ->latest('semester')
             ->first();

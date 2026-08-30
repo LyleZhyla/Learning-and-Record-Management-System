@@ -34,6 +34,11 @@ class NstpEnrollment extends Model
         'semester',
         'shirt_size',
         'rotc_category',
+        'rotc_proof_path',
+        'rotc_proof_original_name',
+        'rotc_approval_status',
+        'rotc_approved_by',
+        'rotc_approved_at',
         'status',
     ];
 
@@ -50,5 +55,15 @@ class NstpEnrollment extends Model
     public function section(): BelongsTo
     {
         return $this->belongsTo(NstpSection::class, 'section_id');
+    }
+
+    public function rotcApprover(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'rotc_approved_by');
+    }
+
+    protected function casts(): array
+    {
+        return ['rotc_approved_at' => 'datetime'];
     }
 }
