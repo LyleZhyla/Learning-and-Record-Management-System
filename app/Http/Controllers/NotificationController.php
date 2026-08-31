@@ -34,6 +34,10 @@ class NotificationController extends Controller
         if ($rows !== []) {
             DB::table('announcement_reads')->upsert($rows, ['announcement_id', 'user_id'], ['read_at']);
         }
+        DB::table('chat_messages')
+            ->where('recipient_id', $request->user()->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => $now]);
 
         return back();
     }

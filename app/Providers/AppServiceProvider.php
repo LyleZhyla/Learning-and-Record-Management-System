@@ -43,5 +43,12 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('sidebarPendingAssessmentCount', $pendingAssessmentCount);
         });
+
+        View::composer(['layouts.student', 'layouts.facilitator'], function ($view): void {
+            $user = auth()->user();
+            $sidebarUnreadMessageCount = $user?->receivedChatMessages()->whereNull('read_at')->count() ?? 0;
+
+            $view->with('sidebarUnreadMessageCount', $sidebarUnreadMessageCount);
+        });
     }
 }

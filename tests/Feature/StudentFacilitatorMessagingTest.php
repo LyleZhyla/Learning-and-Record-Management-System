@@ -36,11 +36,25 @@ class StudentFacilitatorMessagingTest extends TestCase
         $this->assertSame($facilitator->id, $message->recipient_id);
         $this->assertNull($message->read_at);
 
+        $this->actingAs($facilitator)->get('/facilitator/dashboard')
+            ->assertOk()
+            ->assertSee('New message from '.$student->name)
+            ->assertSee('Good afternoon, may I ask about our activity?')
+            ->assertSee('/facilitator/messages/'.$student->id, false)
+            ->assertSee('data-unread-message-count="1"', false)
+            ->assertSee('1 unread');
+
         $this->actingAs($facilitator)->get('/facilitator/messages/'.$student->id)
             ->assertOk()
             ->assertSee('Good afternoon, may I ask about our activity?');
 
         $this->assertNotNull($message->fresh()->read_at);
+
+        $this->actingAs($facilitator)->get('/facilitator/dashboard')
+            ->assertOk()
+            ->assertDontSee('New message from '.$student->name)
+            ->assertDontSee('data-unread-message-count', false)
+            ->assertSee('0 unread');
 
         $this->actingAs($facilitator)->post('/facilitator/messages/'.$student->id, [
             'body' => 'Yes, please submit it before Friday.',
@@ -78,6 +92,25 @@ class StudentFacilitatorMessagingTest extends TestCase
 
         $this->actingAs($student)->post('/student/messages/'.$facilitator->id, ['body' => str_repeat('a', 2001)])
             ->assertSessionHasErrors('body');
+    }
+
+    public function test_mark_all_notifications_as_read_also_clears_unread_messages(): void
+    {
+        [$student, $facilitator, , $section] = $this->records();
+        $message = ChatMessage::create([
+            'section_id' => $section->id,
+            'sender_id' => $student->id,
+            'recipient_id' => $facilitator->id,
+            'body' => 'Please check this message.',
+        ]);
+
+        $this->actingAs($facilitator)->post('/notifications/read-all')->assertRedirect();
+
+        $this->assertNotNull($message->fresh()->read_at);
+        $this->actingAs($facilitator)->get('/facilitator/dashboard')
+            ->assertOk()
+            ->assertSee('0 unread')
+            ->assertDontSee('data-unread-message-count', false);
     }
 
     private function records(): array
