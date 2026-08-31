@@ -18,7 +18,8 @@
         <section class="auth-panel">
             <div class="auth-form-wrap">
                 <a class="brand auth-brand" href="{{ url('/') }}">
-                    <img class="brand-landscape" src="{{ asset('images/snapie-landscape.png') }}" alt="SNAPIE — Smart NSTP Management and AI-Integrated Platform">
+                    <img class="brand-landscape theme-logo-light" src="{{ asset('images/snapie-landscape.png') }}" alt="SNAPIE — Smart NSTP Management and AI-Integrated Platform">
+                    <img class="brand-landscape theme-logo-dark" src="{{ asset('images/snapie-landscape-dark.png') }}" alt="SNAPIE — Smart NSTP Management and AI-Integrated Platform">
                 </a>
 
                 <div class="auth-heading">
