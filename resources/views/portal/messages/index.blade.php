@@ -26,7 +26,7 @@
                     @if($person->unread_messages_count > 0)<span class="chat-unread" aria-label="{{ $person->unread_messages_count }} unread messages">{{ $person->unread_messages_count > 99 ? '99+' : $person->unread_messages_count }}</span>@endif
                 </a>
             @empty
-                <div class="chat-no-contacts"><strong>No available conversation</strong><span>{{ $routePrefix === 'student' ? 'You need an active section with an assigned facilitator.' : 'Students assigned to your active sections will appear here.' }}</span></div>
+                <div class="chat-no-contacts"><strong>No available conversation</strong><span>{{ $routePrefix === 'student' ? 'You need an active section with an assigned facilitator.' : 'A student will appear here after starting a conversation with you.' }}</span></div>
             @endforelse
         </div>
     </aside>

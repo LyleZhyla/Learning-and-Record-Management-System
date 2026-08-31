@@ -83,6 +83,50 @@ class StudentFacilitatorMessagingTest extends TestCase
         $this->assertDatabaseCount('chat_messages', 0);
     }
 
+    public function test_facilitator_contact_list_only_shows_conversations_with_latest_first(): void
+    {
+        [$student, $facilitator, , $section] = $this->records();
+        $quietStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $latestStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+
+        foreach ([$quietStudent, $latestStudent] as $enrolledStudent) {
+            NstpEnrollment::create([
+                'student_id' => $enrolledStudent->id,
+                'component_id' => $section->component_id,
+                'section_id' => $section->id,
+                'academic_year' => $section->academic_year,
+                'semester' => $section->semester,
+                'status' => 'enrolled',
+            ]);
+        }
+
+        $this->actingAs($facilitator)->get('/facilitator/messages')
+            ->assertOk()
+            ->assertSee('A student will appear here after starting a conversation with you.')
+            ->assertDontSee($student->name)
+            ->assertDontSee($quietStudent->name)
+            ->assertDontSee($latestStudent->name);
+
+        ChatMessage::create([
+            'section_id' => $section->id,
+            'sender_id' => $student->id,
+            'recipient_id' => $facilitator->id,
+            'body' => 'This is the older conversation.',
+        ]);
+        ChatMessage::create([
+            'section_id' => $section->id,
+            'sender_id' => $latestStudent->id,
+            'recipient_id' => $facilitator->id,
+            'body' => 'This is the latest conversation.',
+        ]);
+
+        $this->actingAs($facilitator)->get('/facilitator/messages')
+            ->assertOk()
+            ->assertSeeTextInOrder([$latestStudent->name, $student->name])
+            ->assertSee('This is the latest conversation.')
+            ->assertDontSee($quietStudent->name);
+    }
+
     public function test_message_body_is_required_and_limited(): void
     {
         [$student, $facilitator] = $this->records();

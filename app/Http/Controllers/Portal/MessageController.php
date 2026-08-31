@@ -16,12 +16,31 @@ class MessageController extends Controller
     public function index(Request $request, ?User $contact = null): View
     {
         $actor = $request->user();
-        $contacts = $this->contactQuery($actor)
+        $contactsQuery = $this->contactQuery($actor)
             ->withCount(['sentChatMessages as unread_messages_count' => fn ($query) => $query
                 ->where('recipient_id', $actor->id)
-                ->whereNull('read_at')])
-            ->orderBy('name')
-            ->get();
+                ->whereNull('read_at')]);
+
+        if ($actor->isFacilitator()) {
+            $contactsQuery
+                ->where(fn ($contacts) => $contacts
+                    ->whereHas('sentChatMessages', fn ($messages) => $messages->where('recipient_id', $actor->id))
+                    ->orWhereHas('receivedChatMessages', fn ($messages) => $messages->where('sender_id', $actor->id)))
+                ->addSelect(['latest_chat_message_id' => ChatMessage::query()
+                    ->selectRaw('MAX(chat_messages.id)')
+                    ->where(fn ($messages) => $messages
+                        ->where(fn ($pair) => $pair
+                            ->whereColumn('chat_messages.sender_id', 'users.id')
+                            ->where('chat_messages.recipient_id', $actor->id))
+                        ->orWhere(fn ($pair) => $pair
+                            ->whereColumn('chat_messages.recipient_id', 'users.id')
+                            ->where('chat_messages.sender_id', $actor->id)))])
+                ->orderByDesc('latest_chat_message_id');
+        } else {
+            $contactsQuery->orderBy('name');
+        }
+
+        $contacts = $contactsQuery->get();
 
         $contact ??= $contacts->first();
         $section = null;
