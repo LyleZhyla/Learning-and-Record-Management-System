@@ -98,6 +98,35 @@ class NstpAdminAccountDirectoryTest extends TestCase
         }
     }
 
+    public function test_nstp_admin_can_assign_an_ms_level_to_a_rotc_student(): void
+    {
+        [$nstpAdmin, , , $student] = $this->records();
+        $rotc = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
+        $enrollment = $student->nstpEnrollments()->firstOrFail();
+        $enrollment->update([
+            'component_id' => $rotc->id,
+            'section_id' => null,
+            'rotc_category' => 'MS-1',
+            'status' => 'enrolled',
+        ]);
+
+        $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts/'.$student->id)
+            ->assertOk()->assertSee('MS level')->assertSee('MS-31');
+
+        $this->actingAs($nstpAdmin)
+            ->patch('/nstp-admin/accounts/'.$student->id.'/enrollments/'.$enrollment->id.'/rotc-category', [
+                'rotc_category' => 'MS-31',
+            ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('nstp_enrollments', [
+            'id' => $enrollment->id,
+            'rotc_category' => 'MS-31',
+            'rotc_approval_status' => 'approved',
+            'rotc_approved_by' => $nstpAdmin->id,
+            'status' => 'enrolled',
+        ]);
+    }
+
     public function test_bulk_student_component_assignment_rejects_non_students_and_non_nstp_admins(): void
     {
         [$nstpAdmin, $coordinator, , $student] = $this->records();

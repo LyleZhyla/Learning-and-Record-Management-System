@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Coordinator;
 
 use App\Http\Controllers\Controller;
+use App\Models\NstpEnrollment;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -62,7 +64,38 @@ class AccountController extends Controller
             $user->load(['facilitatedSections' => fn ($query) => $query->where('component_id', $componentId)->with('component')]);
         }
 
-        return view('coordinator.accounts.show', compact('user'));
+        return view('coordinator.accounts.show', [
+            'user' => $user,
+            'rotcCategories' => NstpEnrollment::ROTC_CATEGORIES,
+        ]);
+    }
+
+    public function updateRotcCategory(Request $request, User $user, NstpEnrollment $enrollment): RedirectResponse
+    {
+        $componentId = $request->user()->nstp_component_id ?? 0;
+        abort_unless($request->user()->nstpComponent?->code === 'ROTC', 403);
+        abort_unless(
+            $user->isStudent()
+            && $enrollment->student_id === $user->id
+            && $enrollment->component_id === $componentId
+            && $this->visibleAccounts($componentId)->whereKey($user)->exists(),
+            404,
+        );
+
+        $validated = $request->validate([
+            'rotc_category' => ['required', Rule::in(array_keys(NstpEnrollment::ROTC_CATEGORIES))],
+        ]);
+        $advanced = in_array($validated['rotc_category'], ['MS-31', 'MS-41'], true);
+
+        $enrollment->update([
+            'rotc_category' => $validated['rotc_category'],
+            'rotc_approval_status' => $advanced ? 'approved' : null,
+            'rotc_approved_by' => $advanced ? $request->user()->id : null,
+            'rotc_approved_at' => $advanced ? now() : null,
+            'status' => 'enrolled',
+        ]);
+
+        return back()->with('status', $user->name.' was assigned to '.$validated['rotc_category'].'.');
     }
 
     private function visibleAccounts(int $componentId): Builder

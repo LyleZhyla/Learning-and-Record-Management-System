@@ -97,6 +97,41 @@ class RotcApprovalTest extends TestCase
         $this->actingAs($rotcCoordinator)->get('/coordinator/rotc-approvals')->assertOk();
     }
 
+    public function test_rotc_coordinator_can_assign_ms_levels_but_other_coordinators_cannot(): void
+    {
+        $rotc = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
+        $cwts = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
+        $rotcCoordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active', 'nstp_component_id' => $rotc->id]);
+        $cwtsCoordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active', 'nstp_component_id' => $cwts->id]);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        [$academicYear, $semester] = $this->currentTerm();
+        $enrollment = NstpEnrollment::create([
+            'student_id' => $student->id,
+            'component_id' => $rotc->id,
+            'academic_year' => $academicYear,
+            'semester' => $semester,
+            'rotc_category' => 'MS-1',
+            'status' => 'enrolled',
+        ]);
+        $url = '/coordinator/accounts/'.$student->id.'/enrollments/'.$enrollment->id.'/rotc-category';
+
+        $this->actingAs($rotcCoordinator)->get('/coordinator/accounts/'.$student->id)
+            ->assertOk()->assertSee('MS level')->assertSee('MS-41');
+
+        $this->actingAs($cwtsCoordinator)->patch($url, ['rotc_category' => 'MS-41'])->assertForbidden();
+
+        $this->actingAs($rotcCoordinator)->patch($url, ['rotc_category' => 'MS-41'])
+            ->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('nstp_enrollments', [
+            'id' => $enrollment->id,
+            'rotc_category' => 'MS-41',
+            'rotc_approval_status' => 'approved',
+            'rotc_approved_by' => $rotcCoordinator->id,
+            'status' => 'enrolled',
+        ]);
+    }
+
     /** @return array{string, string} */
     private function currentTerm(): array
     {

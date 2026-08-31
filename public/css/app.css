@@ -152,3 +152,5 @@ label,button,input,select,textarea{font-size:15px!important}
     .sidebar-collapsed .sidebar .logout-form .nav-link{margin:0 auto}
     .sidebar-collapsed .sidebar-toggle{top:33px;right:-13px}
 }
+
+.rotc-level-form{display:flex;min-width:190px;align-items:center;gap:8px}.rotc-level-form select{height:39px;min-width:94px;border:1px solid #dbe2ec;border-radius:9px;background:#fbfcfe;padding:0 10px;color:var(--ink);font:inherit;outline:none}.rotc-level-form select:focus{border-color:#4f83d5;box-shadow:0 0 0 3px rgba(79,131,213,.1);background:white}.rotc-level-form .filter-button{min-height:39px;padding:0 12px}@media(max-width:760px){.rotc-level-form{min-width:175px}}

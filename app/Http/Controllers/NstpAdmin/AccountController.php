@@ -79,7 +79,13 @@ class AccountController extends Controller
         $currentComponentId = $user->nstp_component_id ?? $components->first()?->id;
         $availableComponents = NstpComponent::query()->where('is_active', true)->orderBy('code')->get();
 
-        return view('nstp_admin.accounts.show', compact('user', 'components', 'currentComponentId', 'availableComponents'));
+        return view('nstp_admin.accounts.show', [
+            'user' => $user,
+            'components' => $components,
+            'currentComponentId' => $currentComponentId,
+            'availableComponents' => $availableComponents,
+            'rotcCategories' => NstpEnrollment::ROTC_CATEGORIES,
+        ]);
     }
 
     public function updateComponent(Request $request, User $user): RedirectResponse
@@ -101,6 +107,21 @@ class AccountController extends Controller
             : "{$user->name}'s NSTP component assignment was removed.";
 
         return back()->with('status', $message);
+    }
+
+    public function updateRotcCategory(Request $request, User $user, NstpEnrollment $enrollment): RedirectResponse
+    {
+        abort_unless($user->isStudent() && $enrollment->student_id === $user->id, 404);
+        $enrollment->loadMissing('component');
+        abort_unless($enrollment->component?->code === 'ROTC', 404);
+
+        $validated = $request->validate([
+            'rotc_category' => ['required', Rule::in(array_keys(NstpEnrollment::ROTC_CATEGORIES))],
+        ]);
+
+        $this->assignRotcCategory($enrollment, $validated['rotc_category'], $request->user());
+
+        return back()->with('status', $user->name.' was assigned to '.$validated['rotc_category'].'.');
     }
 
     public function bulkAssignStudents(Request $request): RedirectResponse
@@ -159,5 +180,18 @@ class AccountController extends Controller
     private function currentSemester(): string
     {
         return now()->month >= 6 ? 'first' : 'second';
+    }
+
+    private function assignRotcCategory(NstpEnrollment $enrollment, string $category, User $assignedBy): void
+    {
+        $advanced = in_array($category, ['MS-31', 'MS-41'], true);
+
+        $enrollment->update([
+            'rotc_category' => $category,
+            'rotc_approval_status' => $advanced ? 'approved' : null,
+            'rotc_approved_by' => $advanced ? $assignedBy->id : null,
+            'rotc_approved_at' => $advanced ? now() : null,
+            'status' => 'enrolled',
+        ]);
     }
 }

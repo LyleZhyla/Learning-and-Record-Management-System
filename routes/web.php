@@ -93,6 +93,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/students/import/template', [StudentImportController::class, 'template'])->name('students.import.template');
     Route::post('/accounts/students/component', [NstpAdminAccountController::class, 'bulkAssignStudents'])->name('accounts.students.component.bulk');
     Route::patch('/accounts/{user}/component', [NstpAdminAccountController::class, 'updateComponent'])->name('accounts.component.update');
+    Route::patch('/accounts/{user}/enrollments/{enrollment}/rotc-category', [NstpAdminAccountController::class, 'updateRotcCategory'])->name('accounts.rotc-category.update');
     Route::get('/accounts/{user}', [NstpAdminAccountController::class, 'show'])->name('accounts.show');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
@@ -193,6 +194,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [CoordinatorMonitoringController::class, 'components'])->name('components.index');
     Route::get('/accounts', [CoordinatorAccountController::class, 'index'])->name('accounts.index');
+    Route::patch('/accounts/{user}/enrollments/{enrollment}/rotc-category', [CoordinatorAccountController::class, 'updateRotcCategory'])->name('accounts.rotc-category.update');
     Route::get('/accounts/{user}', [CoordinatorAccountController::class, 'show'])->name('accounts.show');
     Route::get('/rotc-approvals', [CoordinatorRotcApprovalController::class, 'index'])->name('rotc-approvals.index');
     Route::get('/rotc-approvals/{enrollment}/proof', [CoordinatorRotcApprovalController::class, 'showProof'])->name('rotc-approvals.proof');
