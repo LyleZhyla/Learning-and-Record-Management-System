@@ -3,11 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\NstpComponent;
+use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
 use App\Services\QrCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -24,10 +26,7 @@ class StudentAccountController extends Controller
 
         $students = User::query()
             ->where('role', 'student')
-            ->with(['nstpEnrollments' => fn ($query) => $query
-                ->with(['component', 'section'])
-                ->latest('academic_year')
-                ->latest('semester')])
+            ->with(['latestNstpEnrollment.component', 'latestNstpEnrollment.section'])
             ->when($filters['search'] ?? null, fn ($query, string $search) => $query
                 ->where(fn ($nested) => $nested
                     ->where('name', 'like', "%{$search}%")
@@ -47,6 +46,7 @@ class StudentAccountController extends Controller
             'availableComponents' => $prefix === 'nstp_admin'
                 ? NstpComponent::where('is_active', true)->orderBy('code')->get()
                 : collect(),
+            'rotcCategories' => NstpEnrollment::ROTC_CATEGORIES,
             'academicYear' => $this->currentAcademicYear(),
             'semesterLabel' => NstpSection::SEMESTERS[$this->currentSemester()],
         ]);
@@ -56,10 +56,10 @@ class StudentAccountController extends Controller
     {
         $this->ensureStudent($student);
 
-        return response($qrCode->generateSvg($student->studentQrPayload()), 200, [
+        return response($this->cachedQrSvg($student, $qrCode), 200, [
             'Content-Type' => 'image/svg+xml',
             'Content-Disposition' => 'inline; filename="'.Str::slug($student->name).'-attendance-qr.svg"',
-            'Cache-Control' => 'private, no-store',
+            'Cache-Control' => 'private, max-age=86400',
         ]);
     }
 
@@ -67,10 +67,10 @@ class StudentAccountController extends Controller
     {
         $this->ensureStudent($student);
 
-        return response($qrCode->generateSvg($student->studentQrPayload()), 200, [
+        return response($this->cachedQrSvg($student, $qrCode), 200, [
             'Content-Type' => 'image/svg+xml',
             'Content-Disposition' => 'attachment; filename="'.Str::slug($student->name).'-attendance-qr.svg"',
-            'Cache-Control' => 'private, no-store',
+            'Cache-Control' => 'private, max-age=86400',
         ]);
     }
 
@@ -81,6 +81,13 @@ class StudentAccountController extends Controller
         if (blank($student->student_qr_token)) {
             $student->update(['student_qr_token' => Str::random(48)]);
         }
+    }
+
+    private function cachedQrSvg(User $student, QrCodeService $qrCode): string
+    {
+        $cacheKey = 'student-attendance-qr:'.hash('sha256', $student->student_qr_token);
+
+        return Cache::remember($cacheKey, now()->addDays(30), fn () => $qrCode->generateSvg($student->studentQrPayload()));
     }
 
     private function routePrefix(Request $request): string

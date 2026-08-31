@@ -86,10 +86,18 @@ class NstpAdminAccountDirectoryTest extends TestCase
         $this->actingAs($nstpAdmin)->get('/nstp-admin/students')
             ->assertOk()
             ->assertSee('Bulk student component assignment')
+            ->assertSee('ROTC MS level')
+            ->assertSee('MS-31')
             ->assertSee('Assign selected students');
 
         $this->actingAs($nstpAdmin)->post('/nstp-admin/accounts/students/component', [
             'nstp_component_id' => $rotc->id,
+            'student_ids' => [$student->id, $secondStudent->id],
+        ])->assertSessionHasErrors('rotc_category');
+
+        $this->actingAs($nstpAdmin)->post('/nstp-admin/accounts/students/component', [
+            'nstp_component_id' => $rotc->id,
+            'rotc_category' => 'MS-31',
             'student_ids' => [$student->id, $secondStudent->id],
         ])->assertRedirect()->assertSessionHasNoErrors();
 
@@ -100,6 +108,9 @@ class NstpAdminAccountDirectoryTest extends TestCase
                 'academic_year' => $academicYear,
                 'semester' => $semester,
                 'section_id' => null,
+                'rotc_category' => 'MS-31',
+                'rotc_approval_status' => 'approved',
+                'rotc_approved_by' => $nstpAdmin->id,
                 'status' => 'enrolled',
             ]);
         }

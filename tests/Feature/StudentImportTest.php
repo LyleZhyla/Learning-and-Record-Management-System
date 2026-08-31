@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Services\StudentImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -72,9 +73,20 @@ class StudentImportTest extends TestCase
 
             $directory = $index === 'super_admin' ? '/admin/students' : '/nstp-admin/students';
             $this->actingAs($user)->get($directory)
-                ->assertOk()->assertSee($student->name)->assertSee('Download QR');
+                ->assertOk()
+                ->assertSee($student->name)
+                ->assertSee('View QR')
+                ->assertSee('Download QR')
+                ->assertSee('data-qr-url', false)
+                ->assertDontSee('<img src="'.url($directory.'/'.$student->id.'/qr'), false);
+
+            Cache::flush();
             $this->actingAs($user)->get($directory.'/'.$student->id.'/qr')
                 ->assertOk()->assertHeader('content-type', 'image/svg+xml');
+            $this->assertTrue(Cache::has('student-attendance-qr:'.hash('sha256', $student->student_qr_token)));
+            $this->assertDatabaseMissing('audit_logs', [
+                'route_name' => $index === 'super_admin' ? 'admin.students.qr' : 'nstp_admin.students.qr',
+            ]);
             $this->actingAs($user)->get($directory.'/'.$student->id.'/qr/download')
                 ->assertOk()->assertHeader('content-disposition', 'attachment; filename="'.str($student->name)->slug().'-attendance-qr.svg"');
         }

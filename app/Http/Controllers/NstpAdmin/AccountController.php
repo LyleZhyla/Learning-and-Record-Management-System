@@ -120,6 +120,10 @@ class AccountController extends Controller
 
     public function bulkAssignStudents(Request $request): RedirectResponse
     {
+        $selectedComponent = NstpComponent::query()
+            ->where('is_active', true)
+            ->find($request->input('nstp_component_id'));
+
         $validated = $request->validate([
             'nstp_component_id' => [
                 'required',
@@ -134,14 +138,22 @@ class AccountController extends Controller
                     ->where('role', 'student')
                     ->where('status', 'active')),
             ],
+            'rotc_category' => [
+                Rule::requiredIf(fn () => $selectedComponent?->code === 'ROTC'),
+                'nullable',
+                Rule::in(array_keys(NstpEnrollment::ROTC_CATEGORIES)),
+            ],
         ]);
 
         $studentIds = array_values(array_unique($validated['student_ids']));
         $componentId = (int) $validated['nstp_component_id'];
+        $rotcCategory = $selectedComponent?->code === 'ROTC' ? $validated['rotc_category'] : null;
+        $advancedRotc = in_array($rotcCategory, ['MS-31', 'MS-41'], true);
+        $assignedById = $request->user()->id;
         $academicYear = $this->currentAcademicYear();
         $semester = $this->currentSemester();
 
-        DB::transaction(function () use ($studentIds, $componentId, $academicYear, $semester): void {
+        DB::transaction(function () use ($studentIds, $componentId, $rotcCategory, $advancedRotc, $assignedById, $academicYear, $semester): void {
             foreach ($studentIds as $studentId) {
                 $enrollment = NstpEnrollment::firstOrNew([
                     'student_id' => $studentId,
@@ -155,12 +167,18 @@ class AccountController extends Controller
 
                 $enrollment->fill([
                     'component_id' => $componentId,
+                    'rotc_category' => $rotcCategory,
+                    'rotc_approval_status' => $advancedRotc ? 'approved' : null,
+                    'rotc_approved_by' => $advancedRotc ? $assignedById : null,
+                    'rotc_approved_at' => $advancedRotc ? now() : null,
                     'status' => 'enrolled',
                 ])->save();
             }
         });
 
-        return back()->with('status', count($studentIds).' student(s) assigned to the selected component.');
+        $levelMessage = $rotcCategory ? ' at '.$rotcCategory.' level' : '';
+
+        return back()->with('status', count($studentIds).' student(s) assigned to the selected component'.$levelMessage.'.');
     }
 
     private function currentAcademicYear(): string
