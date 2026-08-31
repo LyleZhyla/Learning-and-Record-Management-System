@@ -31,9 +31,11 @@
                     <span class="nav-icon">⌂</span> Dashboard
                 </a>
                 <p class="nav-label">Administration</p>
-                <a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
-                    <span class="nav-icon">♙</span> User Accounts
+                @php($managingStudentAccount = request()->routeIs('admin.students.*') || (request()->routeIs('admin.users.edit') && request()->route('user')?->isStudent()) || (request()->routeIs('admin.users.create') && request('role') === 'student'))
+                <a class="nav-link {{ request()->routeIs('admin.users.*') && !$managingStudentAccount ? 'active' : '' }}" href="{{ route('admin.users.index') }}">
+                    <span class="nav-icon">♙</span> Staff Accounts
                 </a>
+                <a class="nav-link {{ $managingStudentAccount ? 'active' : '' }}" href="{{ route('admin.students.index') }}"><span class="nav-icon">♟</span> Student Accounts</a>
                 <a class="nav-link {{ request()->routeIs('admin.components.*') ? 'active' : '' }}" href="{{ route('admin.components.index') }}"><span class="nav-icon">◉</span> NSTP Components</a>
                 <a class="nav-link {{ request()->routeIs('admin.sections.*') ? 'active' : '' }}" href="{{ route('admin.sections.index') }}"><span class="nav-icon">▦</span> Sections</a>
                 <a class="nav-link {{ request()->routeIs('admin.sectioning.*') ? 'active' : '' }}" href="{{ route('admin.sectioning.index') }}"><span class="nav-icon">♙</span> Student Sectioning</a>

@@ -10,7 +10,7 @@
         <div>
             <span class="eyebrow">Bulk student accounts</span>
             <h2>Upload an Excel student list</h2>
-            <p>The entire file is checked first. Secure temporary passwords are generated automatically after every row passes validation.</p>
+            <p>The entire file is checked first. Temporary passwords and permanent attendance QR codes are generated automatically after validation.</p>
         </div>
         <a class="secondary-outline-button" href="{{ route($routePrefix.'.students.import.template') }}">↓ Download Excel template</a>
     </section>
@@ -47,7 +47,7 @@
                     <input type="file" name="file" accept=".xlsx,.xls,.csv" required data-student-import-file>
                     <em data-student-import-name>No file selected</em>
                 </label>
-                <div class="form-actions"><button class="primary-button compact" type="submit">Import and download passwords</button></div>
+                <div class="form-actions"><button class="primary-button compact" type="submit">Import and download credentials + QR</button></div>
             </form>
         </section>
 
@@ -57,7 +57,7 @@
                 <li><strong>name</strong><span>Student's complete name</span></li>
                 <li><strong>email</strong><span>Unique login email</span></li>
             </ol>
-            <div class="import-security-note"><strong>Passwords are generated automatically</strong><p>After a successful import, an Excel credentials file downloads automatically. Keep it secure—it contains the only plain-text copy of the passwords. Every student must change their password on first sign-in.</p></div>
+            <div class="import-security-note"><strong>Passwords and QR codes are generated automatically</strong><p>After a successful import, Excel downloads with each student's temporary password and attendance QR image. The same QR remains visible and downloadable from Student Accounts.</p></div>
         </aside>
     </div>
 

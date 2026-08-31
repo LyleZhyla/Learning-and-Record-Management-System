@@ -16,15 +16,18 @@ use Illuminate\View\View;
 
 class UserController extends Controller
 {
+    private const STAFF_ROLES = ['super_admin', 'nstp_admin', 'coordinator', 'facilitator'];
+
     public function index(Request $request): View
     {
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
-            'role' => ['nullable', Rule::in(array_keys(User::ROLE_LABELS))],
+            'role' => ['nullable', Rule::in(self::STAFF_ROLES)],
             'status' => ['nullable', Rule::in(array_keys(User::STATUS_LABELS))],
         ]);
 
         $users = User::query()
+            ->whereIn('role', self::STAFF_ROLES)
             ->when($filters['search'] ?? null, function ($query, string $search): void {
                 $query->where(function ($query) use ($search): void {
                     $query->where('name', 'like', "%{$search}%")
@@ -39,6 +42,7 @@ class UserController extends Controller
             ->withQueryString();
 
         $roleCounts = User::query()
+            ->whereIn('role', self::STAFF_ROLES)
             ->select('role', DB::raw('count(*) as total'))
             ->groupBy('role')
             ->pluck('total', 'role');
@@ -46,9 +50,15 @@ class UserController extends Controller
         return view('admin.users.index', compact('users', 'roleCounts', 'filters'));
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('admin.users.create', ['components' => NstpComponent::where('is_active', true)->orderBy('code')->get()]);
+        $initialRole = $request->query('role', 'facilitator');
+        abort_unless(array_key_exists($initialRole, User::ROLE_LABELS), 404);
+
+        return view('admin.users.create', [
+            'components' => NstpComponent::where('is_active', true)->orderBy('code')->get(),
+            'initialRole' => $initialRole,
+        ]);
     }
 
     public function store(Request $request): RedirectResponse
@@ -148,6 +158,7 @@ class UserController extends Controller
         $actor = $request->user();
         $photoPath = $user->profile_photo_path;
         $deletedName = $user->name;
+        $wasStudent = $user->isStudent();
 
         DB::transaction(function () use ($actor, $user): void {
             DB::table('attendance_sessions')->where('created_by', $user->id)->update(['created_by' => $actor->id]);
@@ -163,7 +174,8 @@ class UserController extends Controller
             Storage::disk('local')->delete($photoPath);
         }
 
-        return redirect()->route('admin.users.index')->with('status', "The account for {$deletedName} was permanently deleted. Existing institutional records were preserved.");
+        return redirect()->route($wasStudent ? 'admin.students.index' : 'admin.users.index')
+            ->with('status', "The account for {$deletedName} was permanently deleted. Existing institutional records were preserved.");
     }
 
     private function accountRules(?User $user = null, bool $includePassword = true): array

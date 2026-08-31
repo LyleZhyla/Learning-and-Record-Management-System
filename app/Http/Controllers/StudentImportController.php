@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\QrCodeService;
 use App\Services\StudentImportService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -17,13 +19,13 @@ class StudentImportController extends Controller
         return view('student-import.create', $this->viewData($request));
     }
 
-    public function store(Request $request, StudentImportService $importer): StreamedResponse
+    public function store(Request $request, StudentImportService $importer, QrCodeService $qrCode): StreamedResponse
     {
         $request->validate(['file' => ['required', 'file', 'max:5120', 'mimes:xlsx,xls,csv']]);
 
         $result = $importer->import($request->file('file'));
 
-        return $this->credentialsDownload($result);
+        return $this->credentialsDownload($result, $qrCode);
     }
 
     public function template(): StreamedResponse
@@ -65,33 +67,51 @@ class StudentImportController extends Controller
     /**
      * @param  array{
      *     students: int,
-     *     credentials: array<int, array{name: string, email: string, temporary_password: string}>
+     *     credentials: array<int, array{name: string, email: string, temporary_password: string, qr_payload: string}>
      * }  $result
      */
-    private function credentialsDownload(array $result): StreamedResponse
+    private function credentialsDownload(array $result, QrCodeService $qrCode): StreamedResponse
     {
         $spreadsheet = new Spreadsheet;
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Generated Credentials');
-        $sheet->mergeCells('A1:C1')->setCellValue('A1', 'Imported Student Temporary Credentials');
-        $sheet->mergeCells('A2:C2')->setCellValue('A2', "{$result['students']} account(s) imported. Keep this file secure.");
-        $sheet->fromArray([['Full name', 'Email', 'Temporary password']], null, 'A4');
+        $sheet->mergeCells('A1:D1')->setCellValue('A1', 'Imported Student Credentials and Attendance QR Codes');
+        $sheet->mergeCells('A2:D2')->setCellValue('A2', "{$result['students']} account(s) imported. Keep this file secure.");
+        $sheet->fromArray([['Full name', 'Email', 'Temporary password', 'Attendance QR']], null, 'A4');
 
         foreach ($result['credentials'] as $index => $credential) {
-            $sheet->fromArray([array_values($credential)], null, 'A'.($index + 5));
+            $row = $index + 5;
+            $sheet->fromArray([[$credential['name'], $credential['email'], $credential['temporary_password']]], null, 'A'.$row);
+            $image = imagecreatefromstring($qrCode->generatePng($credential['qr_payload'], 180));
+
+            if ($image !== false) {
+                (new MemoryDrawing)
+                    ->setName($credential['name'].' attendance QR')
+                    ->setDescription('Permanent attendance QR for '.$credential['name'])
+                    ->setImageResource($image)
+                    ->setRenderingFunction(MemoryDrawing::RENDERING_PNG)
+                    ->setMimeType(MemoryDrawing::MIMETYPE_PNG)
+                    ->setHeight(82)
+                    ->setCoordinates('D'.$row)
+                    ->setOffsetX(8)
+                    ->setOffsetY(5)
+                    ->setWorksheet($sheet);
+                $sheet->getRowDimension($row)->setRowHeight(70);
+            }
         }
 
         $lastRow = count($result['credentials']) + 4;
         $sheet->freezePane('A5');
-        $sheet->setAutoFilter("A4:C{$lastRow}");
-        $sheet->getStyle('A1:C1')->getFont()->setBold(true)->setSize(16)->getColor()->setARGB('FFFFFFFF');
-        $sheet->getStyle('A1:C1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF174D84');
-        $sheet->getStyle('A2:C2')->getFont()->setItalic(true)->getColor()->setARGB('FF4D5D73');
-        $sheet->getStyle('A4:C4')->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
-        $sheet->getStyle('A4:C4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF2468CA');
+        $sheet->setAutoFilter("A4:D{$lastRow}");
+        $sheet->getStyle('A1:D1')->getFont()->setBold(true)->setSize(16)->getColor()->setARGB('FFFFFFFF');
+        $sheet->getStyle('A1:D1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF174D84');
+        $sheet->getStyle('A2:D2')->getFont()->setItalic(true)->getColor()->setARGB('FF4D5D73');
+        $sheet->getStyle('A4:D4')->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+        $sheet->getStyle('A4:D4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF2468CA');
         $sheet->getStyle("C5:C{$lastRow}")->getNumberFormat()->setFormatCode('@');
+        $sheet->getStyle("A5:C{$lastRow}")->getAlignment()->setVertical('center');
 
-        foreach (['A' => 28, 'B' => 34, 'C' => 25] as $column => $width) {
+        foreach (['A' => 28, 'B' => 34, 'C' => 25, 'D' => 16] as $column => $width) {
             $sheet->getColumnDimension($column)->setWidth($width);
         }
 
@@ -112,7 +132,7 @@ class StudentImportController extends Controller
         return [
             'layout' => $prefix === 'admin' ? 'layouts.admin' : 'layouts.nstp-admin',
             'routePrefix' => $prefix,
-            'backRoute' => $prefix === 'admin' ? 'admin.users.index' : 'nstp_admin.accounts.index',
+            'backRoute' => $prefix.'.students.index',
         ];
     }
 

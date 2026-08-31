@@ -19,8 +19,8 @@ class StudentImportTest extends TestCase
     public function test_super_admin_and_nstp_admin_can_open_import_page_and_download_template(): void
     {
         foreach ([
-            'super_admin' => ['/admin/students/import', '/admin/users'],
-            'nstp_admin' => ['/nstp-admin/students/import', '/nstp-admin/accounts'],
+            'super_admin' => ['/admin/students/import', '/admin/students'],
+            'nstp_admin' => ['/nstp-admin/students/import', '/nstp-admin/students'],
         ] as $role => [$url, $directoryUrl]) {
             $user = User::factory()->create(['role' => $role, 'status' => 'active']);
 
@@ -60,6 +60,8 @@ class StudentImportTest extends TestCase
             $credentials = $this->credentialsFromResponse($response->streamedContent());
             $this->assertSame($email, $credentials['email']);
             $this->assertMatchesRegularExpression('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/', $credentials['password']);
+            $this->assertSame('Attendance QR', $credentials['qr_heading']);
+            $this->assertSame(1, $credentials['qr_images']);
 
             $student = User::where('email', $email)->firstOrFail();
             $this->assertSame('student', $student->role);
@@ -67,6 +69,14 @@ class StudentImportTest extends TestCase
             $this->assertTrue($student->must_change_password);
             $this->assertNotEmpty($student->student_qr_token);
             $this->assertTrue(Hash::check($credentials['password'], $student->password));
+
+            $directory = $index === 'super_admin' ? '/admin/students' : '/nstp-admin/students';
+            $this->actingAs($user)->get($directory)
+                ->assertOk()->assertSee($student->name)->assertSee('Download QR');
+            $this->actingAs($user)->get($directory.'/'.$student->id.'/qr')
+                ->assertOk()->assertHeader('content-type', 'image/svg+xml');
+            $this->actingAs($user)->get($directory.'/'.$student->id.'/qr/download')
+                ->assertOk()->assertHeader('content-disposition', 'attachment; filename="'.str($student->name)->slug().'-attendance-qr.svg"');
         }
     }
 
@@ -117,7 +127,7 @@ class StudentImportTest extends TestCase
         );
     }
 
-    /** @return array{email: string, password: string} */
+    /** @return array{email: string, password: string, qr_heading: string, qr_images: int} */
     private function credentialsFromResponse(string $content): array
     {
         $path = tempnam(sys_get_temp_dir(), 'student-credentials-').'.xlsx';
@@ -127,6 +137,8 @@ class StudentImportTest extends TestCase
         $credentials = [
             'email' => (string) $sheet->getCell('B5')->getValue(),
             'password' => (string) $sheet->getCell('C5')->getValue(),
+            'qr_heading' => (string) $sheet->getCell('D4')->getValue(),
+            'qr_images' => count($sheet->getDrawingCollection()),
         ];
         $spreadsheet->disconnectWorksheets();
         unlink($path);

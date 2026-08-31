@@ -5,7 +5,6 @@ namespace App\Http\Controllers\NstpAdmin;
 use App\Http\Controllers\Controller;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
-use App\Models\NstpSection;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,17 +14,17 @@ use Illuminate\View\View;
 
 class AccountController extends Controller
 {
-    private const VISIBLE_ROLES = ['coordinator', 'facilitator', 'student'];
+    private const STAFF_ROLES = ['coordinator', 'facilitator'];
 
     public function index(Request $request): View
     {
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
-            'role' => ['nullable', Rule::in(self::VISIBLE_ROLES)],
+            'role' => ['nullable', Rule::in(self::STAFF_ROLES)],
         ]);
 
         $accounts = User::query()
-            ->whereIn('role', self::VISIBLE_ROLES)
+            ->whereIn('role', self::STAFF_ROLES)
             ->with([
                 'facilitatedSections.component',
                 'nstpComponent',
@@ -40,24 +39,19 @@ class AccountController extends Controller
             ->paginate(15)
             ->withQueryString();
 
-        $roleCounts = User::whereIn('role', self::VISIBLE_ROLES)
+        $roleCounts = User::whereIn('role', self::STAFF_ROLES)
             ->selectRaw('role, count(*) as total')->groupBy('role')->pluck('total', 'role');
-
-        $availableComponents = NstpComponent::query()->where('is_active', true)->orderBy('code')->get();
 
         return view('nstp_admin.accounts.index', [
             'accounts' => $accounts,
             'roleCounts' => $roleCounts,
             'filters' => $filters,
-            'availableComponents' => $availableComponents,
-            'academicYear' => $this->currentAcademicYear(),
-            'semesterLabel' => NstpSection::SEMESTERS[$this->currentSemester()],
         ]);
     }
 
     public function show(User $user): View
     {
-        abort_unless(in_array($user->role, self::VISIBLE_ROLES, true), 404);
+        abort_unless(in_array($user->role, [...self::STAFF_ROLES, 'student'], true), 404);
 
         if ($user->isStudent()) {
             $user->load([

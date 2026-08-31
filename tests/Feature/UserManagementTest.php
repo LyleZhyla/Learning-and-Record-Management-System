@@ -17,14 +17,20 @@ class UserManagementTest extends TestCase
     public function test_super_admin_can_view_user_management(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
-        User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $staff = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
 
         $this->actingAs($admin)
             ->get('/admin/users')
             ->assertOk()
-            ->assertSee('User and Role Management')
+            ->assertSee('Staff Account Management')
+            ->assertSee($staff->name)
+            ->assertDontSee($student->name)
             ->assertSee('Edit')
             ->assertSee('Delete');
+
+        $this->actingAs($admin)->get('/admin/students')
+            ->assertOk()->assertSee($student->name)->assertDontSee($staff->name)->assertSee('Download QR');
     }
 
     public function test_super_admin_can_create_each_supported_role(): void

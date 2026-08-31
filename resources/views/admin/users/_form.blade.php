@@ -15,7 +15,7 @@
         <span>Account role</span>
         <select name="role" required>
             @foreach (\App\Models\User::ROLE_LABELS as $value => $label)
-                <option value="{{ $value }}" @selected(old('role', $user?->role ?? 'student') === $value)>{{ $label }}</option>
+                <option value="{{ $value }}" @selected(old('role', $user?->role ?? ($initialRole ?? 'facilitator')) === $value)>{{ $label }}</option>
             @endforeach
         </select>
         @error('role') <small class="field-error">{{ $message }}</small> @enderror

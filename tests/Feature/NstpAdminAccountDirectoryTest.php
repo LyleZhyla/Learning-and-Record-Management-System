@@ -17,7 +17,7 @@ class NstpAdminAccountDirectoryTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_nstp_admin_sees_only_coordinator_facilitator_and_student_accounts(): void
+    public function test_nstp_admin_has_separate_staff_and_student_account_directories(): void
     {
         [$nstpAdmin, $coordinator, $facilitator, $student] = $this->records();
         $superAdmin = User::factory()->create(['name' => 'Hidden Super Admin', 'role' => 'super_admin', 'status' => 'active']);
@@ -27,10 +27,17 @@ class NstpAdminAccountDirectoryTest extends TestCase
             ->assertOk()
             ->assertSee($coordinator->name)
             ->assertSee($facilitator->name)
-            ->assertSee($student->name)
+            ->assertDontSee($student->name)
             ->assertDontSee($superAdmin->name)
             ->assertDontSee($otherNstpAdmin->name)
             ->assertSee('Password access is restricted');
+
+        $this->actingAs($nstpAdmin)->get('/nstp-admin/students')
+            ->assertOk()
+            ->assertSee($student->name)
+            ->assertDontSee($coordinator->name)
+            ->assertDontSee($facilitator->name)
+            ->assertSee('Download QR');
 
         $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts/'.$superAdmin->id)->assertNotFound();
     }
@@ -76,7 +83,7 @@ class NstpAdminAccountDirectoryTest extends TestCase
         $academicYear = $academicYearStart.'-'.($academicYearStart + 1);
         $semester = now()->month >= 6 ? 'first' : 'second';
 
-        $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts?role=student')
+        $this->actingAs($nstpAdmin)->get('/nstp-admin/students')
             ->assertOk()
             ->assertSee('Bulk student component assignment')
             ->assertSee('Assign selected students');

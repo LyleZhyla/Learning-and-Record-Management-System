@@ -1,7 +1,7 @@
 @extends('layouts.nstp-admin')
 @section('title', 'Account Details') @section('page-title', 'Account Details')
 @section('content')
-<div class="back-row"><a href="{{ route('nstp_admin.accounts.index') }}">← Back to account directory</a></div>
+<div class="back-row"><a href="{{ $user->isStudent() ? route('nstp_admin.students.index') : route('nstp_admin.accounts.index') }}">← Back to {{ $user->isStudent() ? 'student' : 'staff' }} accounts</a></div>
 
 @if(!$user->isStudent())
 <section class="card restricted-account-profile">

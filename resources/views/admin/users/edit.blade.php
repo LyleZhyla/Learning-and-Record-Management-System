@@ -4,7 +4,7 @@
 @section('page-title', 'Manage User Account')
 
 @section('content')
-    <div class="back-row"><a href="{{ route('admin.users.index') }}">← Back to user accounts</a></div>
+    <div class="back-row"><a href="{{ $user->isStudent() ? route('admin.students.index') : route('admin.users.index') }}">← Back to {{ $user->isStudent() ? 'student' : 'staff' }} accounts</a></div>
 
     @if ($errors->any())
         <div class="alert danger" role="alert">{{ $errors->first() }}</div>

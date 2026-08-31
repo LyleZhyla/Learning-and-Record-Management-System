@@ -20,7 +20,7 @@ class StudentImportService
     /**
      * @return array{
      *     students: int,
-     *     credentials: array<int, array{name: string, email: string, temporary_password: string}>
+     *     credentials: array<int, array{name: string, email: string, temporary_password: string, qr_payload: string}>
      * }
      */
     public function import(UploadedFile $file): array
@@ -113,6 +113,7 @@ class StudentImportService
                     'name' => $student->name,
                     'email' => $student->email,
                     'temporary_password' => $temporaryPassword,
+                    'qr_payload' => $student->studentQrPayload(),
                 ];
             }
 

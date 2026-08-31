@@ -34,6 +34,7 @@ use App\Http\Controllers\Student\ComponentController as StudentComponentControll
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\LearningController as StudentLearningController;
 use App\Http\Controllers\StudentImportController;
+use App\Http\Controllers\StudentAccountController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -88,9 +89,12 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::put('/profile', [NstpAdminProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [NstpAdminProfileController::class, 'updatePassword'])->name('password.update');
     Route::get('/accounts', [NstpAdminAccountController::class, 'index'])->name('accounts.index');
+    Route::get('/students', [StudentAccountController::class, 'index'])->name('students.index');
     Route::get('/students/import', [StudentImportController::class, 'create'])->name('students.import.create');
     Route::post('/students/import', [StudentImportController::class, 'store'])->name('students.import.store');
     Route::get('/students/import/template', [StudentImportController::class, 'template'])->name('students.import.template');
+    Route::get('/students/{student}/qr', [StudentAccountController::class, 'qr'])->name('students.qr');
+    Route::get('/students/{student}/qr/download', [StudentAccountController::class, 'downloadQr'])->name('students.qr.download');
     Route::post('/accounts/students/component', [NstpAdminAccountController::class, 'bulkAssignStudents'])->name('accounts.students.component.bulk');
     Route::patch('/accounts/{user}/component', [NstpAdminAccountController::class, 'updateComponent'])->name('accounts.component.update');
     Route::patch('/accounts/{user}/enrollments/{enrollment}/rotc-category', [NstpAdminAccountController::class, 'updateRotcCategory'])->name('accounts.rotc-category.update');
@@ -102,7 +106,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
-    Route::get('/sections', [NstpAdminSectionController::class, 'index'])->name('sections.index');
+    Route::get('/sections', [NstpAdminSectioningController::class, 'index'])->name('sections.index');
     Route::get('/sections/create', [NstpAdminSectionController::class, 'create'])->name('sections.create');
     Route::post('/sections', [NstpAdminSectionController::class, 'store'])->name('sections.store');
     Route::get('/sections/{section}/edit', [NstpAdminSectionController::class, 'edit'])->name('sections.edit');
@@ -138,9 +142,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/students', [StudentAccountController::class, 'index'])->name('students.index');
     Route::get('/students/import', [StudentImportController::class, 'create'])->name('students.import.create');
     Route::post('/students/import', [StudentImportController::class, 'store'])->name('students.import.store');
     Route::get('/students/import/template', [StudentImportController::class, 'template'])->name('students.import.template');
+    Route::get('/students/{student}/qr', [StudentAccountController::class, 'qr'])->name('students.qr');
+    Route::get('/students/{student}/qr/download', [StudentAccountController::class, 'downloadQr'])->name('students.qr.download');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
@@ -162,7 +169,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
-    Route::get('/sections', [NstpAdminSectionController::class, 'index'])->name('sections.index');
+    Route::get('/sections', [NstpAdminSectioningController::class, 'index'])->name('sections.index');
     Route::get('/sections/create', [NstpAdminSectionController::class, 'create'])->name('sections.create');
     Route::post('/sections', [NstpAdminSectionController::class, 'store'])->name('sections.store');
     Route::get('/sections/{section}/edit', [NstpAdminSectionController::class, 'edit'])->name('sections.edit');

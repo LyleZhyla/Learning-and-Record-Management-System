@@ -1,20 +1,17 @@
 @extends('layouts.admin')
 
-@section('title', 'User Accounts')
-@section('page-title', 'User and Role Management')
+@section('title', 'Staff Accounts')
+@section('page-title', 'Staff Account Management')
 
 @section('content')
     <section class="page-actions">
         <div>
             <span class="eyebrow">Account administration</span>
-            <h2>Manage system users</h2>
-            <p>Create accounts, assign roles, monitor access, and control account status.</p>
+            <h2>Manage staff and administrator accounts</h2>
+            <p>Create and manage facilitators, coordinators, NSTP Admins, and Super Admins separately from students.</p>
         </div>
         <div class="page-action-buttons">
-            <a class="import-students-button" href="{{ route('admin.students.import.create') }}" aria-label="Import students from Excel">
-                <span aria-hidden="true">⇧</span> Import Students
-            </a>
-            <a class="primary-button compact" href="{{ route('admin.users.create') }}">+ Create account</a>
+            <a class="primary-button compact" href="{{ route('admin.users.create', ['role' => 'facilitator']) }}">+ Create staff account</a>
         </div>
     </section>
 
@@ -23,7 +20,7 @@
     @endif
 
     <section class="role-summary-grid" aria-label="Accounts by role">
-        @foreach (\App\Models\User::ROLE_LABELS as $role => $label)
+        @foreach (['super_admin' => 'Super Administrators', 'nstp_admin' => 'NSTP Administrators', 'coordinator' => 'Coordinators', 'facilitator' => 'Facilitators'] as $role => $label)
             <a class="role-summary {{ request('role') === $role ? 'selected' : '' }}" href="{{ route('admin.users.index', ['role' => $role]) }}">
                 <span class="role-dot role-{{ $role }}"></span>
                 <div><strong>{{ $roleCounts[$role] ?? 0 }}</strong><small>{{ $label }}</small></div>
@@ -39,7 +36,7 @@
             </label>
             <select name="role" aria-label="Filter by role">
                 <option value="">All roles</option>
-                @foreach (\App\Models\User::ROLE_LABELS as $value => $label)
+                @foreach (['super_admin' => 'Super Administrator', 'nstp_admin' => 'NSTP Administrator', 'coordinator' => 'Coordinator', 'facilitator' => 'Facilitator'] as $value => $label)
                     <option value="{{ $value }}" @selected(($filters['role'] ?? '') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
@@ -73,7 +70,7 @@
                             <td class="align-right"><div class="account-row-actions"><a class="table-action" href="{{ route('admin.users.edit', $user) }}">Edit</a>@unless(auth()->user()->is($user))<form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Permanently delete {{ addslashes($user->name) }}? Their login and personal records will be removed. This cannot be undone.')">@csrf @method('DELETE')<button class="link-danger" type="submit">Delete</button></form>@endunless</div></td>
                         </tr>
                     @empty
-                        <tr><td colspan="5"><div class="empty-state"><strong>No accounts found</strong><span>Try changing the filters or create a new account.</span></div></td></tr>
+                        <tr><td colspan="5"><div class="empty-state"><strong>No staff accounts found</strong><span>Try changing the filters or create a staff account.</span></div></td></tr>
                     @endforelse
                 </tbody>
             </table>
