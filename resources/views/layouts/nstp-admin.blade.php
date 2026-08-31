@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     <x-theme-init />
 </head>
 <body class="admin-body">
@@ -45,6 +45,7 @@
                 <a class="nav-link {{ request()->routeIs('nstp_admin.reports.*') ? 'active' : '' }}" href="{{ route('nstp_admin.reports.index') }}"><span class="nav-icon">▤</span> Reports</a>
                 <p class="nav-label">Communication</p>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.announcements.*') ? 'active' : '' }}" href="{{ route('nstp_admin.announcements.index') }}"><span class="nav-icon">◫</span> Announcements</a>
+                <a class="nav-link {{ request()->routeIs('ai-assistant.*') ? 'active' : '' }}" href="{{ route('ai-assistant.index') }}"><span class="nav-icon">✦</span> AI Assistant</a>
                 <p class="nav-label">Account</p>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.profile.*') ? 'active' : '' }}" href="{{ route('nstp_admin.profile.edit') }}">
                     <span class="nav-icon">⚙</span> Profile & Security

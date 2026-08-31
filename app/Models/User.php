@@ -181,4 +181,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(ChatMessage::class, 'recipient_id');
     }
+
+    public function aiChatMessages(): HasMany
+    {
+        return $this->hasMany(AiChatMessage::class);
+    }
 }

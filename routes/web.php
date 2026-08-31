@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ArchiveController;
+use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SystemLogController;
@@ -26,6 +26,7 @@ use App\Http\Controllers\NstpAdmin\DashboardController as NstpAdminDashboardCont
 use App\Http\Controllers\NstpAdmin\ProfileController as NstpAdminProfileController;
 use App\Http\Controllers\NstpAdmin\SectionController as NstpAdminSectionController;
 use App\Http\Controllers\NstpAdmin\SectioningController as NstpAdminSectioningController;
+use App\Http\Controllers\Portal\AiAssistantController as PortalAiAssistantController;
 use App\Http\Controllers\Portal\AnnouncementController as PortalAnnouncementController;
 use App\Http\Controllers\Portal\MessageController as PortalMessageController;
 use App\Http\Controllers\Portal\ProfileController as PortalProfileController;
@@ -34,8 +35,8 @@ use App\Http\Controllers\Student\AttendanceController as StudentAttendanceContro
 use App\Http\Controllers\Student\ComponentController as StudentComponentController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\LearningController as StudentLearningController;
-use App\Http\Controllers\StudentImportController;
 use App\Http\Controllers\StudentAccountController;
+use App\Http\Controllers\StudentImportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -131,6 +132,9 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 Route::middleware('auth')->group(function () {
     Route::post('/notifications/{announcement}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+    Route::get('/ai-assistant', [PortalAiAssistantController::class, 'index'])->name('ai-assistant.index');
+    Route::post('/ai-assistant', [PortalAiAssistantController::class, 'store'])->middleware('throttle:15,1')->name('ai-assistant.store');
+    Route::delete('/ai-assistant', [PortalAiAssistantController::class, 'destroy'])->name('ai-assistant.destroy');
 });
 
 Route::get('/profile-photo', ProfilePhotoController::class)
