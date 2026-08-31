@@ -27,6 +27,7 @@ use App\Http\Controllers\NstpAdmin\ProfileController as NstpAdminProfileControll
 use App\Http\Controllers\NstpAdmin\SectionController as NstpAdminSectionController;
 use App\Http\Controllers\NstpAdmin\SectioningController as NstpAdminSectioningController;
 use App\Http\Controllers\Portal\AnnouncementController as PortalAnnouncementController;
+use App\Http\Controllers\Portal\MessageController as PortalMessageController;
 use App\Http\Controllers\Portal\ProfileController as PortalProfileController;
 use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
@@ -184,6 +185,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
 Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes) {
     Route::get('/dashboard', FacilitatorDashboardController::class)->name('dashboard');
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
+    Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::get('/students', [FacilitatorStudentController::class, 'index'])->name('students.index');
     Route::get('/students/{student}', [FacilitatorStudentController::class, 'show'])->name('students.show');
     Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
@@ -234,6 +237,8 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
 Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () {
     Route::get('/dashboard', StudentDashboardController::class)->name('dashboard');
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
+    Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
