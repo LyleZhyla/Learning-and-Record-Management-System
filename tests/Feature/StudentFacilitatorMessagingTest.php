@@ -60,9 +60,28 @@ class StudentFacilitatorMessagingTest extends TestCase
             'body' => 'Yes, please submit it before Friday.',
         ])->assertRedirect('/facilitator/messages/'.$student->id);
 
+        $facilitatorMessage = ChatMessage::latest('id')->firstOrFail();
+        $this->assertNull($facilitatorMessage->read_at);
+
+        $this->actingAs($student)->get('/student/dashboard')
+            ->assertOk()
+            ->assertSee('New message from '.$facilitator->name)
+            ->assertSee('Yes, please submit it before Friday.')
+            ->assertSee('/student/messages/'.$facilitator->id, false)
+            ->assertSee('data-unread-message-count="1"', false)
+            ->assertSee('1 unread');
+
         $this->actingAs($student)->get('/student/messages/'.$facilitator->id)
             ->assertOk()
             ->assertSee('Yes, please submit it before Friday.');
+
+        $this->assertNotNull($facilitatorMessage->fresh()->read_at);
+
+        $this->actingAs($student)->get('/student/dashboard')
+            ->assertOk()
+            ->assertDontSee('New message from '.$facilitator->name)
+            ->assertDontSee('data-unread-message-count', false)
+            ->assertSee('0 unread');
     }
 
     public function test_messages_are_restricted_to_students_and_facilitators_in_the_same_section(): void
