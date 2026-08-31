@@ -32,7 +32,8 @@ class ThemeModeTest extends TestCase
             $this->actingAs($user)->get($url)
                 ->assertOk()
                 ->assertSee('data-theme-toggle', false)
-                ->assertSee('images/snapie-landscape-light.png', false)
+                ->assertDontSee('images/snapie-landscape-light.png', false)
+                ->assertSee('class="brand-logo-dark"', false)
                 ->assertSee('images/snapie-landscape-dark.png', false)
                 ->assertSee('snapie.theme', false)
                 ->assertSee('js/theme.js', false);
