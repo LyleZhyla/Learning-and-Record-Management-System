@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <x-theme-init />
 </head>
 <body class="admin-body">
     <div class="app-shell">
@@ -68,6 +69,7 @@
                     <h1>@yield('page-title', 'Dashboard')</h1>
                 </div>
                 <x-notification-bell />
+                <x-theme-toggle />
                 <div class="topbar-status"><span></span> System online</div>
             </header>
 
@@ -91,5 +93,6 @@
         </main>
     </div>
     <script src="{{ asset('js/sidebar.js') }}"></script>
+    <script src="{{ asset('js/theme.js') }}"></script>
 </body>
 </html>

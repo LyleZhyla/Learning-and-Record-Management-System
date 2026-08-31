@@ -4,7 +4,7 @@
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Coordinator') · {{ config('app.name') }}</title>
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('images/snapie-logo-64.png') }}">
-    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}"><x-theme-init />
 </head>
 <body class="admin-body"><div class="app-shell">
     <aside class="sidebar" id="sidebar"><button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">‹</button>
@@ -32,5 +32,5 @@
         </nav>
         <form method="POST" action="{{ route('logout') }}" class="logout-form">@csrf<button type="submit" class="nav-link logout"><span class="nav-icon">↪</span> Sign out</button></form>
     </aside>
-    <main class="main-content"><header class="topbar"><button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button><div><small>Smart NSTP / Coordinator</small><h1>@yield('page-title', 'Dashboard')</h1></div><x-notification-bell /><div class="topbar-status"><span></span> Monitoring & QR scanning</div></header>@if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif @if($errors->any())<div class="alert danger">{{ $errors->first() }}</div>@endif @yield('content')<footer class="app-footer">© {{ date('Y') }} Smart NSTP Management and AI-Integrated Platform</footer></main>
-</div><script src="{{ asset('js/sidebar.js') }}"></script></body></html>
+    <main class="main-content"><header class="topbar"><button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button><div><small>Smart NSTP / Coordinator</small><h1>@yield('page-title', 'Dashboard')</h1></div><x-notification-bell /><x-theme-toggle /><div class="topbar-status"><span></span> Monitoring & QR scanning</div></header>@if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif @if($errors->any())<div class="alert danger">{{ $errors->first() }}</div>@endif @yield('content')<footer class="app-footer">© {{ date('Y') }} Smart NSTP Management and AI-Integrated Platform</footer></main>
+</div><script src="{{ asset('js/sidebar.js') }}"></script><script src="{{ asset('js/theme.js') }}"></script></body></html>

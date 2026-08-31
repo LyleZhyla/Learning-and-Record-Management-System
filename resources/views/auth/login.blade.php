@@ -10,8 +10,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
+    <x-theme-init />
 </head>
 <body class="auth-body">
+    <x-theme-toggle />
     <main class="auth-shell auth-animated">
         <section class="auth-panel">
             <div class="auth-form-wrap">
@@ -77,5 +79,6 @@
             </div>
         </section>
     </main>
+    <script src="{{ asset('js/theme.js') }}"></script>
 </body>
 </html>
