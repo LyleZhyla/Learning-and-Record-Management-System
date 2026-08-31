@@ -31,7 +31,7 @@ class SectioningController extends Controller
             ->orderBy('name')
             ->get();
 
-        $sections = NstpSection::with('component')
+        $sections = NstpSection::with(['component', 'facilitator'])
             ->withCount('enrollments')
             ->where('academic_year', $academicYear)
             ->where('semester', $semester)
@@ -79,7 +79,7 @@ class SectioningController extends Controller
             }
         });
 
-        return redirect()->route($this->routePrefix($request).'.sectioning.index', $this->termQuery($validated))
+        return redirect()->route($this->routePrefix($request).'.sections.index', $this->termQuery($validated))
             ->with('status', count(array_unique($validated['student_ids'])).' student enrollment(s) saved successfully.');
     }
 
@@ -154,7 +154,7 @@ class SectioningController extends Controller
             ? "Automated sectioning assigned {$assignedCount} student(s) and created {$createdCount} new section(s)."
             : 'No unsectioned students were found for the selected component and term.';
 
-        return redirect()->route($this->routePrefix($request).'.sectioning.index', $this->termQuery($validated))
+        return redirect()->route($this->routePrefix($request).'.sections.index', $this->termQuery($validated))
             ->with('status', $message);
     }
 
@@ -164,7 +164,7 @@ class SectioningController extends Controller
         $studentName = $enrollment->student->name;
         $enrollment->delete();
 
-        return redirect()->route($this->routePrefix($request).'.sectioning.index', $query)
+        return redirect()->route($this->routePrefix($request).'.sections.index', $query)
             ->with('status', "{$studentName} was removed from the selected NSTP term.");
     }
 

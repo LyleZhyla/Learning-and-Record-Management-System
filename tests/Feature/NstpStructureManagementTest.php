@@ -40,9 +40,15 @@ class NstpStructureManagementTest extends TestCase
             ->assertSeeTextInOrder(['CWTS', 'LTS', 'ROTC']);
 
         $this->actingAs($admin)
-            ->get('/admin/sectioning')
+            ->get('/admin/sections')
             ->assertOk()
-            ->assertSee('Automated Student Sectioning');
+            ->assertSee('Sections & Student Sectioning')
+            ->assertSee('Manage sections and student assignments')
+            ->assertSee('Component enrollment')
+            ->assertSee('Sectioning');
+
+        $this->actingAs($admin)->get('/admin/sectioning')
+            ->assertOk()->assertSee('Sections & Student Sectioning');
     }
 
     public function test_nstp_admin_can_create_a_section_with_a_facilitator(): void
@@ -67,6 +73,9 @@ class NstpStructureManagementTest extends TestCase
             'facilitator_id' => $facilitator->id,
             'capacity' => 40,
         ]);
+
+        $this->actingAs($admin)->get('/nstp-admin/sections?component_id='.$component->id.'&academic_year=2026-2027&semester=first')
+            ->assertOk()->assertSee('CWTS-01')->assertSee('Manage section')->assertSee($facilitator->name);
     }
 
     public function test_automated_sectioning_creates_sections_and_assigns_students(): void
