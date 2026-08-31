@@ -17,7 +17,8 @@
         <aside class="sidebar" id="sidebar">
             <button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">‹</button>
             <a class="brand" href="{{ route('admin.dashboard') }}">
-                <img class="brand-logo theme-logo-light" src="{{ asset('images/snapie-logo-160.png') }}" alt="SNAPIE logo">
+                <img class="brand-logo brand-logo-compact" src="{{ asset('images/snapie-logo-160.png') }}" alt="SNAPIE logo">
+                <img class="brand-logo-light theme-logo-light" src="{{ asset('images/snapie-landscape-light.png') }}" alt="SNAPIE — Smart NSTP Management and AI-Integrated Platform">
                 <img class="brand-logo-dark theme-logo-dark" src="{{ asset('images/snapie-landscape-dark.png') }}" alt="SNAPIE — Smart NSTP Management and AI-Integrated Platform">
                 <span><strong>Smart NSTP</strong><small>Management Platform</small></span>
             </a>
