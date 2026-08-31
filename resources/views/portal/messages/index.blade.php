@@ -12,7 +12,7 @@
     </div>
 </section>
 
-<section class="card chat-shell">
+<section class="card chat-shell chat-shell-{{ $routePrefix }}">
     <aside class="chat-contacts" aria-label="Conversations">
         <div class="chat-contacts-heading">
             <strong>{{ $routePrefix === 'student' ? 'My facilitator' : 'My students' }}</strong>
