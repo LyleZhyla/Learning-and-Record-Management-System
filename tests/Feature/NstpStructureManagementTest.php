@@ -44,6 +44,8 @@ class NstpStructureManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Sections & Student Sectioning')
             ->assertSee('Manage sections and student assignments')
+            ->assertSee('Automatic sectioning')
+            ->assertSee('Run automatic sectioning')
             ->assertSee('Component enrollment')
             ->assertSee('Sectioning');
 
@@ -103,6 +105,54 @@ class NstpStructureManagementTest extends TestCase
 
         $this->assertSame(2, $section->capacity);
         $this->assertSame($section->id, $enrollment->section_id);
+    }
+
+    public function test_nstp_admin_and_super_admin_can_automatically_section_every_component(): void
+    {
+        $roles = [
+            'nstp_admin' => ['prefix' => 'nstp-admin', 'academic_year' => '2027-2028'],
+            'super_admin' => ['prefix' => 'admin', 'academic_year' => '2028-2029'],
+        ];
+
+        foreach ($roles as $role => $context) {
+            $admin = User::factory()->create(['role' => $role, 'status' => 'active']);
+
+            $this->actingAs($admin)
+                ->get('/'.$context['prefix'].'/sections')
+                ->assertOk()
+                ->assertSee('Automatic sectioning')
+                ->assertSeeTextInOrder(['CWTS', 'LTS', 'ROTC']);
+
+            foreach (NstpComponent::orderBy('code')->get() as $component) {
+                $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+                $enrollment = NstpEnrollment::create([
+                    'student_id' => $student->id,
+                    'component_id' => $component->id,
+                    'academic_year' => $context['academic_year'],
+                    'semester' => 'first',
+                    'status' => 'enrolled',
+                ]);
+
+                $this->actingAs($admin)->post('/'.$context['prefix'].'/sectioning/automate', [
+                    'component_id' => $component->id,
+                    'academic_year' => $context['academic_year'],
+                    'semester' => 'first',
+                ])->assertSessionHasNoErrors();
+
+                $this->assertNotNull($enrollment->fresh()->section_id);
+            }
+        }
+
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $component = NstpComponent::firstOrFail();
+        $payload = [
+            'component_id' => $component->id,
+            'academic_year' => '2029-2030',
+            'semester' => 'first',
+        ];
+
+        $this->actingAs($student)->post('/nstp-admin/sectioning/automate', $payload)->assertForbidden();
+        $this->actingAs($student)->post('/admin/sectioning/automate', $payload)->assertForbidden();
     }
 
     public function test_section_capacity_cannot_be_lower_than_current_enrollment(): void
