@@ -5,13 +5,24 @@
 
 @section('content')
 <section class="ai-assistant-layout">
+    <aside class="card ai-history-panel">
+        <div class="ai-history-heading"><div><span class="eyebrow">Your conversations</span><strong>Chat history</strong></div><a href="{{ route('ai-assistant.index', ['new' => 1]) }}">+ New chat</a></div>
+        <div class="ai-history-list">
+            @forelse($conversations as $history)
+                <div class="ai-history-item {{ $conversation?->id === $history->id ? 'active' : '' }}">
+                    <a href="{{ route('ai-assistant.index', ['conversation' => $history]) }}"><strong>{{ $history->title }}</strong><small>{{ $history->updated_at->diffForHumans() }}</small></a>
+                    <form method="POST" action="{{ route('ai-assistant.destroy', ['conversation' => $history]) }}" data-ai-delete-form>@csrf @method('DELETE')<button type="submit" aria-label="Delete {{ $history->title }} conversation">×</button></form>
+                </div>
+            @empty
+                <div class="ai-history-empty"><strong>No chat history yet</strong><span>Your previous AI conversations will appear here.</span></div>
+            @endforelse
+        </div>
+    </aside>
+
     <div class="card ai-assistant-card">
         <header class="ai-assistant-heading">
             <div class="ai-orb" aria-hidden="true">✦</div>
-            <div><span class="eyebrow">SNAPIE intelligence</span><h2>How can I help?</h2><p>Ask about NSTP, CWTS, LTS, ROTC, coursework, or using the platform.</p></div>
-            @if($messages->isNotEmpty())
-                <form method="POST" action="{{ route('ai-assistant.destroy') }}" data-ai-clear-form>@csrf @method('DELETE')<button class="clear-filter" type="submit">Clear conversation</button></form>
-            @endif
+            <div><span class="eyebrow">SNAPIE intelligence</span><h2>{{ $conversation?->title ?? 'New conversation' }}</h2><p>Ask about NSTP, CWTS, LTS, ROTC, coursework, or using the platform.</p></div>
         </header>
 
         @unless($isConfigured)
@@ -37,7 +48,7 @@
 
         <div class="ai-typing" data-ai-typing hidden><i></i><i></i><i></i><span>SNAPIE AI is thinking…</span></div>
 
-        <form class="ai-composer" method="POST" action="{{ route('ai-assistant.store') }}" data-ai-form>
+        <form class="ai-composer" method="POST" action="{{ route('ai-assistant.store', ['conversation' => $conversation]) }}" data-ai-form data-new-conversation="{{ $conversation ? '0' : '1' }}">
             @csrf
             <label class="sr-only" for="ai-message">Ask the AI Assistant</label>
             <textarea id="ai-message" name="message" rows="2" maxlength="2000" placeholder="Ask SNAPIE AI…" required @disabled(!$isConfigured)>{{ old('message') }}</textarea>

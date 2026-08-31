@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\AiChatConversation;
 use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
 class OpenAiAssistantService
 {
-    public function reply(User $user, string $message): string
+    public function reply(User $user, string $message, ?AiChatConversation $conversation = null): string
     {
         $apiKey = config('services.openai.api_key');
 
@@ -16,17 +17,19 @@ class OpenAiAssistantService
             throw new RuntimeException('The AI Assistant is not configured yet. Add OPENAI_API_KEY to the server environment.');
         }
 
-        $history = $user->aiChatMessages()
-            ->latest()
-            ->limit(14)
-            ->get()
-            ->reverse()
-            ->map(fn ($item) => [
-                'role' => $item->role,
-                'content' => $item->content,
-            ])
-            ->values()
-            ->all();
+        $history = $conversation
+            ? $conversation->messages()
+                ->latest('id')
+                ->limit(14)
+                ->get()
+                ->reverse()
+                ->map(fn ($item) => [
+                    'role' => $item->role,
+                    'content' => $item->content,
+                ])
+                ->values()
+                ->all()
+            : [];
 
         $history[] = ['role' => 'user', 'content' => $message];
 

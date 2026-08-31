@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AiChatConversation;
 use App\Models\AiChatMessage;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,7 +24,9 @@ class AiAssistantTest extends TestCase
             $this->actingAs($user)->get('/ai-assistant')
                 ->assertOk()
                 ->assertSee('SNAPIE AI')
-                ->assertSee('AI Assistant');
+                ->assertSee('AI Assistant')
+                ->assertSee('Chat history')
+                ->assertSee('New chat');
         }
     }
 
@@ -43,19 +46,26 @@ class AiAssistantTest extends TestCase
         ]);
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
 
-        $this->actingAs($student)->postJson('/ai-assistant', [
+        $response = $this->actingAs($student)->postJson('/ai-assistant', [
             'message' => 'What is NSTP?',
         ])->assertOk()
             ->assertJsonPath('user_message.content', 'What is NSTP?')
-            ->assertJsonPath('assistant_message.content', 'NSTP helps develop civic responsibility.');
+            ->assertJsonPath('assistant_message.content', 'NSTP helps develop civic responsibility.')
+            ->assertJsonPath('is_new_conversation', true);
+
+        $conversation = AiChatConversation::firstOrFail();
+        $this->assertSame('What is NSTP?', $conversation->title);
+        $this->assertStringContainsString('/ai-assistant/'.$conversation->id, $response->json('conversation_url'));
 
         $this->assertDatabaseHas('ai_chat_messages', [
             'user_id' => $student->id,
+            'conversation_id' => $conversation->id,
             'role' => 'user',
             'content' => 'What is NSTP?',
         ]);
         $this->assertDatabaseHas('ai_chat_messages', [
             'user_id' => $student->id,
+            'conversation_id' => $conversation->id,
             'role' => 'assistant',
             'content' => 'NSTP helps develop civic responsibility.',
         ]);
@@ -68,6 +78,21 @@ class AiAssistantTest extends TestCase
                 && $request['safety_identifier'] === hash('sha256', 'smart-nstp-user-'.$student->id)
                 && ! str_contains($request['instructions'], $student->email);
         });
+
+        $this->actingAs($student)->get('/ai-assistant/'.$conversation->id)
+            ->assertOk()
+            ->assertSee('What is NSTP?')
+            ->assertSee('NSTP helps develop civic responsibility.');
+
+        $this->actingAs($student)->postJson('/ai-assistant/'.$conversation->id, [
+            'message' => 'Why is it important?',
+        ])->assertOk()->assertJsonPath('is_new_conversation', false);
+
+        $secondRequest = Http::recorded()[1][0];
+        $this->assertCount(3, $secondRequest['input']);
+        $this->assertSame('What is NSTP?', $secondRequest['input'][0]['content']);
+        $this->assertSame('NSTP helps develop civic responsibility.', $secondRequest['input'][1]['content']);
+        $this->assertSame('Why is it important?', $secondRequest['input'][2]['content']);
     }
 
     public function test_missing_configuration_and_api_failures_do_not_store_messages(): void
@@ -92,16 +117,22 @@ class AiAssistantTest extends TestCase
         $this->assertDatabaseCount('ai_chat_messages', 0);
     }
 
-    public function test_user_can_clear_only_their_own_ai_conversation(): void
+    public function test_user_can_delete_only_their_own_ai_conversation(): void
     {
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $otherStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
-        AiChatMessage::create(['user_id' => $student->id, 'role' => 'user', 'content' => 'Mine']);
-        AiChatMessage::create(['user_id' => $otherStudent->id, 'role' => 'user', 'content' => 'Keep this']);
+        $conversation = AiChatConversation::create(['user_id' => $student->id, 'title' => 'Mine']);
+        $otherConversation = AiChatConversation::create(['user_id' => $otherStudent->id, 'title' => 'Keep this']);
+        AiChatMessage::create(['user_id' => $student->id, 'conversation_id' => $conversation->id, 'role' => 'user', 'content' => 'Mine']);
+        AiChatMessage::create(['user_id' => $otherStudent->id, 'conversation_id' => $otherConversation->id, 'role' => 'user', 'content' => 'Keep this']);
 
-        $this->actingAs($student)->delete('/ai-assistant')->assertRedirect();
+        $this->actingAs($student)->get('/ai-assistant/'.$otherConversation->id)->assertNotFound();
+        $this->actingAs($student)->delete('/ai-assistant/conversations/'.$otherConversation->id)->assertNotFound();
+        $this->actingAs($student)->delete('/ai-assistant/conversations/'.$conversation->id)->assertRedirect('/ai-assistant');
 
-        $this->assertDatabaseMissing('ai_chat_messages', ['user_id' => $student->id]);
+        $this->assertDatabaseMissing('ai_chat_conversations', ['id' => $conversation->id]);
+        $this->assertDatabaseMissing('ai_chat_messages', ['conversation_id' => $conversation->id]);
+        $this->assertDatabaseHas('ai_chat_conversations', ['id' => $otherConversation->id]);
         $this->assertDatabaseHas('ai_chat_messages', ['user_id' => $otherStudent->id, 'content' => 'Keep this']);
     }
 }

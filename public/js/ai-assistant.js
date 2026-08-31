@@ -37,9 +37,9 @@
         });
     });
 
-    document.querySelector('[data-ai-clear-form]')?.addEventListener('submit', (event) => {
-        if (!window.confirm('Clear your entire AI conversation?')) event.preventDefault();
-    });
+    document.querySelectorAll('[data-ai-delete-form]').forEach((deleteForm) => deleteForm.addEventListener('submit', (event) => {
+        if (!window.confirm('Delete this AI conversation?')) event.preventDefault();
+    }));
 
     form?.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -60,6 +60,10 @@
             appendMessage(data.user_message);
             appendMessage(data.assistant_message);
             input.value = '';
+            if (data.is_new_conversation && data.conversation_url) {
+                window.location.replace(data.conversation_url);
+                return;
+            }
         } catch (error) {
             window.alert(error.message);
         } finally {

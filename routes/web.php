@@ -132,9 +132,9 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 Route::middleware('auth')->group(function () {
     Route::post('/notifications/{announcement}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
-    Route::get('/ai-assistant', [PortalAiAssistantController::class, 'index'])->name('ai-assistant.index');
-    Route::post('/ai-assistant', [PortalAiAssistantController::class, 'store'])->middleware('throttle:15,1')->name('ai-assistant.store');
-    Route::delete('/ai-assistant', [PortalAiAssistantController::class, 'destroy'])->name('ai-assistant.destroy');
+    Route::get('/ai-assistant/{conversation?}', [PortalAiAssistantController::class, 'index'])->name('ai-assistant.index');
+    Route::post('/ai-assistant/{conversation?}', [PortalAiAssistantController::class, 'store'])->middleware('throttle:15,1')->name('ai-assistant.store');
+    Route::delete('/ai-assistant/conversations/{conversation}', [PortalAiAssistantController::class, 'destroy'])->name('ai-assistant.destroy');
 });
 
 Route::get('/profile-photo', ProfilePhotoController::class)
