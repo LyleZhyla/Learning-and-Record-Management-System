@@ -68,7 +68,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('register.store') }}" enctype="multipart/form-data" id="registration-form" novalidate>
+                <form method="POST" action="{{ route('register.store') }}" enctype="multipart/form-data" id="registration-form" data-server-error-step="{{ $errors->has('email') ? 1 : ($errors->has('student_number') ? 3 : '') }}" novalidate>
                     @csrf
 
                     <section class="registration-panel active" data-step="0">
@@ -110,7 +110,7 @@
                         </div>
                         <div class="registration-grid two-columns">
                             <label class="registration-field"><span>Contact Number *</span><input name="contact_number" value="{{ old('contact_number') }}" inputmode="numeric" pattern="09[0-9]{9}" maxlength="11" placeholder="09XXXXXXXXX" required autocomplete="tel"><small>11 digits and must begin with 09</small></label>
-                            <label class="registration-field"><span>Email Address *</span><input name="email" type="email" value="{{ old('email') }}" maxlength="255" required autocomplete="email"></label>
+                            <label class="registration-field"><span>Email Address *</span><input name="email" type="email" value="{{ old('email') }}" maxlength="255" required autocomplete="email">@error('email')<small class="field-error">{{ $message }}</small>@enderror</label>
                         </div>
                     </section>
 
@@ -127,7 +127,7 @@
                     <section class="registration-panel" data-step="3" hidden>
                         <div class="section-title"><span>04</span><div><h3>Part III — Academic Information</h3><p>Use the information shown in your current school records.</p></div></div>
                         <div class="registration-grid two-columns">
-                            <label class="registration-field"><span>Student Number *</span><input name="student_number" value="{{ old('student_number') }}" inputmode="numeric" pattern="20[0-9]{8}" maxlength="10" placeholder="20XXXXXXXX" required><small>10 digits and must begin with 20</small></label>
+                            <label class="registration-field"><span>Student Number *</span><input name="student_number" value="{{ old('student_number') }}" inputmode="numeric" pattern="20[0-9]{8}" maxlength="10" placeholder="20XXXXXXXX" required><small>10 digits and must begin with 20</small>@error('student_number')<small class="field-error">{{ $message }}</small>@enderror</label>
                             <label class="registration-field"><span>College *</span><select id="academic-college" name="college" data-old-value="{{ old('college') }}" required><option value="">Select college</option>@foreach (array_keys(config('academics.colleges')) as $college)<option value="{{ $college }}" @selected(old('college') === $college)>{{ $college }}</option>@endforeach</select></label>
                             <label class="registration-field"><span>Course *</span><select id="academic-course" name="course" data-old-value="{{ old('course') }}" required disabled><option value="">Select college first</option></select></label>
                             <label class="registration-field"><span>Major *</span><select id="academic-major" name="major" data-old-value="{{ old('major') }}" required disabled><option value="">Select course first</option></select><small>N/A is automatically shown for courses without a major.</small></label>

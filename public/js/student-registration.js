@@ -285,7 +285,10 @@
     form.addEventListener('input', saveDraft);
     form.addEventListener('change', saveDraft);
 
-    const restoredStep = Number.isInteger(Number(savedDraft.step))
+    const serverErrorStep = form.dataset.serverErrorStep;
+    const restoredStep = serverErrorStep !== ''
+        ? Number(serverErrorStep)
+        : Number.isInteger(Number(savedDraft.step))
         ? Math.min(Math.max(Number(savedDraft.step), 0), panels.length - 1)
         : 0;
     showStep(restoredStep);

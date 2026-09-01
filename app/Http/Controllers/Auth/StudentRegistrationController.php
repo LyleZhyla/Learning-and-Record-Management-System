@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStudentRegistrationRequest;
 use App\Models\StudentRegistration;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use Throwable;
 
@@ -62,6 +64,21 @@ class StudentRegistrationController extends Controller
             }
             if ($photoPath) {
                 Storage::disk('local')->delete($photoPath);
+            }
+
+            if ($exception instanceof QueryException && in_array((string) ($exception->errorInfo[0] ?? ''), ['23000', '23505'], true)) {
+                $message = Str::lower($exception->getMessage());
+                $field = Str::contains($message, 'student_number')
+                    ? 'student_number'
+                    : (Str::contains($message, 'email') ? 'email' : null);
+
+                if ($field) {
+                    throw ValidationException::withMessages([
+                        $field => $field === 'student_number'
+                            ? 'A student is already registered with this student number.'
+                            : 'An account or registration already uses this email address.',
+                    ]);
+                }
             }
 
             throw $exception;

@@ -2,9 +2,11 @@
 
 namespace App\Http\Requests;
 
+use App\Models\StudentProfile;
 use App\Models\StudentRegistration;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -28,6 +30,8 @@ class StoreStudentRegistrationRequest extends FormRequest
             'extension_name' => $this->boolean('extension_name_na') ? null : $this->input('extension_name'),
             'middle_name' => $this->boolean('middle_name_na') ? null : $this->input('middle_name'),
             'emergency_address' => $this->boolean('emergency_same_address') ? null : $this->input('emergency_address'),
+            'email' => Str::lower(trim((string) $this->input('email'))),
+            'student_number' => trim((string) $this->input('student_number')),
         ]);
     }
 
@@ -68,7 +72,11 @@ class StoreStudentRegistrationRequest extends FormRequest
             'emergency_contact_number' => ['required', 'regex:/^09\d{9}$/'],
             'emergency_same_address' => ['nullable', 'boolean'],
             'emergency_address' => ['nullable', 'required_unless:emergency_same_address,1', 'string', 'max:500'],
-            'student_number' => ['required', 'regex:/^20\d{8}$/', Rule::unique(StudentRegistration::class)],
+            'student_number' => [
+                'required', 'regex:/^20\d{8}$/',
+                Rule::unique(StudentRegistration::class),
+                Rule::unique(StudentProfile::class),
+            ],
             'college' => ['required', 'string', Rule::in(array_keys(config('academics.colleges', [])))],
             'course' => ['required', 'string', 'max:150'],
             'major' => ['required', 'string', 'max:150'],
@@ -100,6 +108,15 @@ class StoreStudentRegistrationRequest extends FormRequest
                     $validator->errors()->add('major', 'Select a major available for the chosen course.');
                 }
             },
+            function (Validator $validator): void {
+                $email = Str::lower(trim((string) $this->input('email')));
+                if (filled($email) && ! $validator->errors()->has('email') && (
+                    StudentRegistration::whereRaw('LOWER(email) = ?', [$email])->exists()
+                    || User::whereRaw('LOWER(email) = ?', [$email])->exists()
+                )) {
+                    $validator->errors()->add('email', 'An account or registration already uses this email address.');
+                }
+            },
         ];
     }
 
@@ -111,6 +128,8 @@ class StoreStudentRegistrationRequest extends FormRequest
             'contact_number.regex' => 'Enter an 11-digit mobile number beginning with 09.',
             'emergency_contact_number.regex' => 'Enter an 11-digit mobile number beginning with 09.',
             'student_number.regex' => 'The student number must contain 10 digits and begin with 20.',
+            'student_number.unique' => 'A student is already registered with this student number.',
+            'email.unique' => 'An account or registration already uses this email address.',
             'formal_photo.required' => 'Upload a formal picture with a white background.',
             'privacy_consent.accepted' => 'You must confirm that the information is correct.',
         ];
