@@ -26,14 +26,9 @@ class NotificationBell extends Component
         $messageRoutePrefix = $user->isStudent() ? 'student' : ($user->isFacilitator() ? 'facilitator' : null);
         $unreadMessageCount = 0;
         $messageNotifications = collect();
-        $studentNotifications = collect();
-        $unreadStudentNotificationCount = 0;
-
-        if ($user->isStudent()) {
-            $studentNotificationQuery = StudentNotification::where('user_id', $user->id);
-            $unreadStudentNotificationCount = (clone $studentNotificationQuery)->whereNull('read_at')->count();
-            $studentNotifications = $studentNotificationQuery->latest()->limit(8)->get();
-        }
+        $eventNotificationQuery = StudentNotification::where('user_id', $user->id);
+        $unreadEventNotificationCount = (clone $eventNotificationQuery)->whereNull('read_at')->count();
+        $eventNotifications = $eventNotificationQuery->latest()->limit(8)->get();
 
         if ($messageRoutePrefix) {
             $unreadMessages = ChatMessage::query()
@@ -58,12 +53,12 @@ class NotificationBell extends Component
             })->filter()->values();
         }
 
-        $unreadCount = $unreadAnnouncementCount + $unreadMessageCount + $unreadStudentNotificationCount;
+        $unreadCount = $unreadAnnouncementCount + $unreadMessageCount + $unreadEventNotificationCount;
 
         return view('components.notification-bell', compact(
             'notifications',
             'messageNotifications',
-            'studentNotifications',
+            'eventNotifications',
             'messageRoutePrefix',
             'unreadCount',
         ));

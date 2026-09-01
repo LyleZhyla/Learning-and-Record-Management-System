@@ -10,17 +10,17 @@
                     <span class="notification-open" aria-hidden="true">→</span>
                 </a>
             @endforeach
-            @foreach($studentNotifications as $notification)
-                <a class="notification-item notification-event {{ $notification->read_at ? '' : 'unread' }}" href="{{ route('notifications.student.open', $notification) }}">
+            @foreach($eventNotifications as $notification)
+                <a class="notification-item notification-event {{ $notification->read_at ? '' : 'unread' }}" href="{{ route('notifications.events.open', $notification) }}">
                     <i></i>
-                    <div><strong>{{ $notification->title }}</strong><p>{{ str($notification->body)->limit(90) }}</p><small>{{ match($notification->type) {'learning_material' => 'Learning Materials', 'assessment' => 'Assessments', default => 'Attendance'} }} · {{ $notification->created_at->diffForHumans() }}</small></div>
+                    <div><strong>{{ $notification->title }}</strong><p>{{ str($notification->body)->limit(90) }}</p><small>{{ $notification->categoryLabel() }} · {{ $notification->created_at->diffForHumans() }}</small></div>
                     <span class="notification-open" aria-hidden="true">→</span>
                 </a>
             @endforeach
             @foreach($notifications as $notification)
                 <a class="notification-item notification-announcement {{ $notification->is_read ? '' : 'unread' }}" href="{{ route('notifications.announcements.open', $notification) }}"><i></i><div><strong>{{ $notification->title }}</strong><p>{{ str($notification->body)->limit(90) }}</p><small>Announcement · {{ $notification->component?->code ?? 'All components' }} · {{ $notification->published_at?->diffForHumans() }}</small></div><span class="notification-open" aria-hidden="true">→</span></a>
             @endforeach
-            @if($messageNotifications->isEmpty() && $studentNotifications->isEmpty() && $notifications->isEmpty())<div class="notification-empty">No notifications yet.</div>@endif
+            @if($messageNotifications->isEmpty() && $eventNotifications->isEmpty() && $notifications->isEmpty())<div class="notification-empty">No notifications yet.</div>@endif
         </div>
     </div>
 </details>

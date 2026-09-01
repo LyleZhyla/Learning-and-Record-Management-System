@@ -75,5 +75,30 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('sidebarUnreadMessageCount', $sidebarUnreadMessageCount);
         });
+
+        View::composer(['layouts.admin', 'layouts.nstp-admin', 'layouts.coordinator', 'layouts.facilitator'], function ($view): void {
+            $user = auth()->user();
+            $counts = ['announcements' => 0, 'materials' => 0, 'assessments' => 0, 'attendance' => 0];
+
+            if ($user) {
+                $eventCounts = StudentNotification::query()
+                    ->where('user_id', $user->id)
+                    ->whereNull('read_at')
+                    ->selectRaw('type, COUNT(*) as total')
+                    ->groupBy('type')
+                    ->pluck('total', 'type');
+                $counts = [
+                    'announcements' => app(NotificationService::class)->visibleQuery($user)
+                        ->whereDoesntHave('readers', fn ($readers) => $readers->whereKey($user->id))
+                        ->count(),
+                    'materials' => (int) ($eventCounts[StudentNotification::MATERIAL] ?? 0),
+                    'assessments' => (int) ($eventCounts[StudentNotification::ASSESSMENT] ?? 0),
+                    'attendance' => (int) ($eventCounts[StudentNotification::LATE_ATTENDANCE] ?? 0)
+                        + (int) ($eventCounts[StudentNotification::ABSENT_ATTENDANCE] ?? 0),
+                ];
+            }
+
+            $view->with('sidebarPortalNotificationCounts', $counts);
+        });
     }
 }

@@ -43,12 +43,17 @@ class NotificationController extends Controller
         return redirect()->route($route);
     }
 
-    public function openStudent(Request $request, StudentNotification $notification): RedirectResponse
+    public function openEvent(Request $request, StudentNotification $notification): RedirectResponse
     {
-        abort_unless($request->user()->isStudent() && $notification->user_id === $request->user()->id, 404);
+        abort_unless($notification->user_id === $request->user()->id, 404);
         $notification->update(['read_at' => now()]);
 
-        return redirect()->to($notification->destination());
+        return redirect()->to($notification->destination($request->user()));
+    }
+
+    public function openStudent(Request $request, StudentNotification $notification): RedirectResponse
+    {
+        return $this->openEvent($request, $notification);
     }
 
     public function readAll(Request $request): RedirectResponse

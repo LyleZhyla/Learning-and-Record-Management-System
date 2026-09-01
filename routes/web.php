@@ -139,6 +139,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 
 Route::middleware('auth')->group(function () {
     Route::get('/notifications/announcements/{announcement}/open', [NotificationController::class, 'openAnnouncement'])->name('notifications.announcements.open');
+    Route::get('/notifications/events/{notification}/open', [NotificationController::class, 'openEvent'])->name('notifications.events.open');
     Route::get('/notifications/student/{notification}/open', [NotificationController::class, 'openStudent'])->name('notifications.student.open');
     Route::post('/notifications/{announcement}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
