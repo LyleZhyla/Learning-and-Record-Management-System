@@ -62,7 +62,7 @@
     <section class="card attendance-record-panel {{ $canScan ? '' : 'full-width' }}">
         <div class="card-heading">
             <div><h3>Attendance records</h3><p>Scanned students appear here. Duplicate scans do not create duplicate records.</p></div>
-            <span class="pill">{{ $attendance->records->count() }} recorded</span>
+            <span class="pill" data-attendance-record-count="{{ $attendance->records->count() }}">{{ $attendance->records->count() }} recorded</span>
         </div>
         @php($recordColumnCount = 3 + ($canScan ? 0 : 1) + ($canManage ? 1 : 0))
         <div class="table-wrap">
@@ -71,10 +71,10 @@
                 <tbody>
                     @forelse ($enrolledStudents as $enrollment)
                         @php($record = $attendance->records->firstWhere('student_id', $enrollment->student_id))
-                        <tr>
+                        <tr data-attendance-student="{{ $enrollment->student_id }}" data-attendance-recorded="{{ $record ? 1 : 0 }}">
                             <td><strong>{{ $enrollment->student->name }}</strong><br><small class="muted-cell">{{ $enrollment->student->email }}</small></td>
-                            <td><span class="status-badge {{ $record && in_array($record->status, ['present','late']) ? 'active' : 'inactive' }}"><i></i>{{ $record ? ucfirst($record->status) : 'Not recorded' }}</span></td>
-                            <td>{{ $record?->checked_in_at?->format('g:i:s A') ?? '—' }}</td>
+                            <td><span class="status-badge {{ $record && in_array($record->status, ['present','late']) ? 'active' : 'inactive' }}" data-record-status><i></i>{{ $record ? ucfirst($record->status) : 'Not recorded' }}</span></td>
+                            <td data-record-check-in>{{ $record?->checked_in_at?->format('g:i:s A') ?? '—' }}</td>
                             @unless($canScan)<td>{{ $record ? strtoupper($record->source) : '—' }}</td>@endunless
                             @if ($canManage)
                                 <td><form class="inline-record-form" method="POST" action="{{ route($routePrefix.'.attendance.mark', $attendance) }}">@csrf<input type="hidden" name="student_id" value="{{ $enrollment->student_id }}"><select name="status"><option value="present">Present</option><option value="late">Late</option><option value="absent">Absent</option></select><button class="filter-button">Save</button></form></td>

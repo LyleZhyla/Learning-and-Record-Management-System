@@ -54,7 +54,9 @@ class AttendanceLearningTest extends TestCase
         $this->actingAs($this->facilitator)
             ->postJson('/facilitator/attendance/'.$session->id.'/scan', ['qr_code' => $payload])
             ->assertOk()
-            ->assertJsonPath('status', 'present');
+            ->assertJsonPath('status', 'present')
+            ->assertJsonPath('student_id', $this->student->id)
+            ->assertJsonPath('status_label', 'Present');
         $this->actingAs($this->facilitator)
             ->postJson('/facilitator/attendance/'.$session->id.'/scan', ['qr_code' => $payload])
             ->assertOk()
@@ -62,6 +64,11 @@ class AttendanceLearningTest extends TestCase
 
         $this->assertDatabaseHas('attendance_records', ['attendance_session_id' => $session->id, 'student_id' => $this->student->id, 'status' => 'present', 'source' => 'qr', 'recorded_by' => $this->facilitator->id]);
         $this->assertSame(1, AttendanceRecord::where('attendance_session_id', $session->id)->where('student_id', $this->student->id)->count());
+
+        $this->actingAs($this->facilitator)->get('/facilitator/attendance/'.$session->id)
+            ->assertOk()
+            ->assertSee('data-attendance-student="'.$this->student->id.'"', false)
+            ->assertSee('data-attendance-record-count="1"', false);
     }
 
     public function test_facilitator_coordinator_and_nstp_admin_have_camera_scanner_access(): void

@@ -15,6 +15,8 @@
     let fallbackContext = null;
     let scanning = false;
     let submitting = false;
+    let lastScannedCode = '';
+    let framesWithoutCode = 0;
 
     function setMessage(text, state) {
         message.textContent = text;
@@ -29,6 +31,33 @@
         video.classList.remove('active');
         placeholder.hidden = false;
         startButton.textContent = 'Open camera';
+        lastScannedCode = '';
+        framesWithoutCode = 0;
+    }
+
+    function updateAttendanceRecord(result) {
+        const row = document.querySelector(`[data-attendance-student="${result.student_id}"]`);
+        if (!row) return;
+
+        const wasRecorded = row.dataset.attendanceRecorded === '1';
+        const statusBadge = row.querySelector('[data-record-status]');
+        const checkInCell = row.querySelector('[data-record-check-in]');
+        const manualStatus = row.querySelector('select[name="status"]');
+
+        row.dataset.attendanceRecorded = '1';
+        if (statusBadge) {
+            statusBadge.className = `status-badge ${['present', 'late'].includes(result.status) ? 'active' : 'inactive'}`;
+            statusBadge.replaceChildren(document.createElement('i'), document.createTextNode(result.status_label));
+        }
+        if (checkInCell) checkInCell.textContent = result.checked_in_at || '—';
+        if (manualStatus) manualStatus.value = result.status;
+
+        const counter = document.querySelector('[data-attendance-record-count]');
+        if (counter && result.recorded && !wasRecorded) {
+            const total = Number(counter.dataset.attendanceRecordCount || 0) + 1;
+            counter.dataset.attendanceRecordCount = String(total);
+            counter.textContent = `${total} recorded`;
+        }
     }
 
     async function submitCode(code) {
@@ -53,10 +82,10 @@
                 throw new Error(validationMessage);
             }
 
-            stopCamera();
+            updateAttendanceRecord(result);
             setMessage(result.message, 'success');
             input.value = '';
-            window.setTimeout(() => window.location.reload(), 1200);
+            submitting = false;
             return true;
         } catch (error) {
             setMessage(error.message || 'Unable to read the student QR.', 'error');
@@ -93,7 +122,12 @@
     }
 
     async function scanFrame() {
-        if (!scanning || submitting) return;
+        if (!scanning) return;
+
+        if (submitting) {
+            window.setTimeout(scanFrame, 220);
+            return;
+        }
 
         try {
             let code = null;
@@ -106,8 +140,15 @@
             }
             code ||= decodeWithFallback()?.data;
 
-            if (code && await submitCode(code)) {
-                return;
+            if (code) {
+                framesWithoutCode = 0;
+                if (code !== lastScannedCode) {
+                    lastScannedCode = code;
+                    await submitCode(code);
+                }
+            } else {
+                framesWithoutCode += 1;
+                if (framesWithoutCode >= 6) lastScannedCode = '';
             }
         } catch (_) {
             // A camera frame may be unavailable while the stream is starting.

@@ -173,7 +173,10 @@ class AttendanceController extends Controller
                 ? "{$student->name} was marked {$record->status}."
                 : "{$student->name} is already recorded as {$record->status}.",
             'student' => $student->name,
+            'student_id' => $student->id,
             'status' => $record->status,
+            'status_label' => ucfirst($record->status),
+            'checked_in_at' => $record->checked_in_at?->format('g:i:s A'),
             'recorded' => $record->wasRecentlyCreated || $wasArchived,
         ]);
     }
