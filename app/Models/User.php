@@ -177,6 +177,11 @@ class User extends Authenticatable
         return $this->hasMany(AssessmentSubmission::class, 'student_id');
     }
 
+    public function studentNotifications(): HasMany
+    {
+        return $this->hasMany(StudentNotification::class);
+    }
+
     public function sentChatMessages(): HasMany
     {
         return $this->hasMany(ChatMessage::class, 'sender_id');

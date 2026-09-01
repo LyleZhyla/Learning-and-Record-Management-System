@@ -57,6 +57,27 @@ class NotificationTest extends TestCase
         $this->actingAs($student)->get('/student/dashboard')->assertOk()->assertSee('0 unread');
     }
 
+    public function test_clicking_announcement_marks_it_read_and_opens_announcements(): void
+    {
+        $author = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $announcement = Announcement::create([
+            'author_id' => $author->id,
+            'title' => 'Clickable announcement',
+            'body' => 'Open the announcement page.',
+            'audience' => 'students',
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        $this->actingAs($student)->get('/notifications/announcements/'.$announcement->id.'/open')
+            ->assertRedirect('/student/announcements');
+        $this->assertDatabaseHas('announcement_reads', [
+            'announcement_id' => $announcement->id,
+            'user_id' => $student->id,
+        ]);
+    }
+
     public function test_user_cannot_mark_an_out_of_scope_notification_as_read(): void
     {
         $author = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);

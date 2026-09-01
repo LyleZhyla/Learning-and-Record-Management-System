@@ -3,6 +3,7 @@
 namespace App\View\Components;
 
 use App\Models\ChatMessage;
+use App\Models\StudentNotification;
 use App\Services\NotificationService;
 use Closure;
 use Illuminate\Contracts\View\View;
@@ -25,6 +26,14 @@ class NotificationBell extends Component
         $messageRoutePrefix = $user->isStudent() ? 'student' : ($user->isFacilitator() ? 'facilitator' : null);
         $unreadMessageCount = 0;
         $messageNotifications = collect();
+        $studentNotifications = collect();
+        $unreadStudentNotificationCount = 0;
+
+        if ($user->isStudent()) {
+            $studentNotificationQuery = StudentNotification::where('user_id', $user->id);
+            $unreadStudentNotificationCount = (clone $studentNotificationQuery)->whereNull('read_at')->count();
+            $studentNotifications = $studentNotificationQuery->latest()->limit(8)->get();
+        }
 
         if ($messageRoutePrefix) {
             $unreadMessages = ChatMessage::query()
@@ -49,11 +58,12 @@ class NotificationBell extends Component
             })->filter()->values();
         }
 
-        $unreadCount = $unreadAnnouncementCount + $unreadMessageCount;
+        $unreadCount = $unreadAnnouncementCount + $unreadMessageCount + $unreadStudentNotificationCount;
 
         return view('components.notification-bell', compact(
             'notifications',
             'messageNotifications',
+            'studentNotifications',
             'messageRoutePrefix',
             'unreadCount',
         ));

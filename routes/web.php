@@ -138,6 +138,8 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
     ->name('logout');
 
 Route::middleware('auth')->group(function () {
+    Route::get('/notifications/announcements/{announcement}/open', [NotificationController::class, 'openAnnouncement'])->name('notifications.announcements.open');
+    Route::get('/notifications/student/{notification}/open', [NotificationController::class, 'openStudent'])->name('notifications.student.open');
     Route::post('/notifications/{announcement}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     Route::get('/ai-assistant/{conversation?}', [PortalAiAssistantController::class, 'index'])->name('ai-assistant.index');

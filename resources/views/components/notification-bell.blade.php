@@ -1,5 +1,5 @@
 <details class="notification-menu">
-    <summary class="notification-bell" aria-label="Notifications{{ $unreadCount ? ': '.$unreadCount.' unread' : '' }}">🔔@if($unreadCount)<span>{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>@endif</summary>
+    <summary class="notification-bell" aria-label="Notifications{{ $unreadCount ? ': '.$unreadCount.' unread' : '' }}" data-notification-count="{{ $unreadCount }}">🔔@if($unreadCount)<span>{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>@endif</summary>
     <div class="notification-panel">
         <div class="notification-heading"><div><strong>Notifications</strong><small>{{ $unreadCount }} unread</small></div>@if($unreadCount)<form method="POST" action="{{ route('notifications.read-all') }}">@csrf<button type="submit">Mark all read</button></form>@endif</div>
         <div class="notification-list">
@@ -10,10 +10,17 @@
                     <span class="notification-open" aria-hidden="true">→</span>
                 </a>
             @endforeach
-            @foreach($notifications as $notification)
-                <article class="notification-item {{ $notification->is_read ? '' : 'unread' }}"><i></i><div><strong>{{ $notification->title }}</strong><p>{{ str($notification->body)->limit(90) }}</p><small>{{ $notification->component?->code ?? 'All components' }} · {{ $notification->published_at?->diffForHumans() }}</small></div>@unless($notification->is_read)<form method="POST" action="{{ route('notifications.read', $notification) }}">@csrf<button type="submit" aria-label="Mark {{ $notification->title }} as read">✓</button></form>@endunless</article>
+            @foreach($studentNotifications as $notification)
+                <a class="notification-item notification-event {{ $notification->read_at ? '' : 'unread' }}" href="{{ route('notifications.student.open', $notification) }}">
+                    <i></i>
+                    <div><strong>{{ $notification->title }}</strong><p>{{ str($notification->body)->limit(90) }}</p><small>{{ match($notification->type) {'learning_material' => 'Learning Materials', 'assessment' => 'Assessments', default => 'Attendance'} }} · {{ $notification->created_at->diffForHumans() }}</small></div>
+                    <span class="notification-open" aria-hidden="true">→</span>
+                </a>
             @endforeach
-            @if($messageNotifications->isEmpty() && $notifications->isEmpty())<div class="notification-empty">No notifications yet.</div>@endif
+            @foreach($notifications as $notification)
+                <a class="notification-item notification-announcement {{ $notification->is_read ? '' : 'unread' }}" href="{{ route('notifications.announcements.open', $notification) }}"><i></i><div><strong>{{ $notification->title }}</strong><p>{{ str($notification->body)->limit(90) }}</p><small>Announcement · {{ $notification->component?->code ?? 'All components' }} · {{ $notification->published_at?->diffForHumans() }}</small></div><span class="notification-open" aria-hidden="true">→</span></a>
+            @endforeach
+            @if($messageNotifications->isEmpty() && $studentNotifications->isEmpty() && $notifications->isEmpty())<div class="notification-empty">No notifications yet.</div>@endif
         </div>
     </div>
 </details>

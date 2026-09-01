@@ -7,6 +7,7 @@ use App\Models\LearningMaterial;
 use App\Models\NstpComponent;
 use App\Models\NstpSection;
 use App\Services\PortalAccessService;
+use App\Services\StudentNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +18,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class MaterialController extends Controller
 {
-    public function __construct(private PortalAccessService $access) {}
+    public function __construct(private PortalAccessService $access, private StudentNotificationService $studentNotifications) {}
 
     public function index(Request $request): View
     {
@@ -64,13 +65,14 @@ class MaterialController extends Controller
         }
 
         $file = $request->file('file');
-        LearningMaterial::create([
+        $material = LearningMaterial::create([
             ...collect($validated)->except('file')->all(),
             'created_by' => $request->user()->id,
             'file_path' => $file?->store('learning-materials'),
             'original_filename' => $file?->getClientOriginalName(),
             'published_at' => $validated['status'] === 'published' ? now() : null,
         ]);
+        $this->studentNotifications->learningMaterialPublished($material);
 
         return redirect()->route($this->access->routePrefix($request->user()).'.materials.index')
             ->with('status', 'Learning material saved successfully.');
@@ -91,6 +93,7 @@ class MaterialController extends Controller
             $enrollment = $this->access->currentEnrollment($user);
             abort_unless($enrollment && $material->status === 'published' && $material->component_id === $enrollment->component_id
                 && (! $material->section_id || $material->section_id === $enrollment->section_id), 403);
+
             return;
         }
 

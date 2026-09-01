@@ -9,6 +9,7 @@ use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
 use App\Services\PortalAccessService;
+use App\Services\StudentNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,7 +22,7 @@ use Illuminate\View\View;
 
 class AttendanceController extends Controller
 {
-    public function __construct(private PortalAccessService $access) {}
+    public function __construct(private PortalAccessService $access, private StudentNotificationService $studentNotifications) {}
 
     public function index(Request $request): View
     {
@@ -163,6 +164,9 @@ class AttendanceController extends Controller
                 'archived_by' => null,
             ])->save();
         }
+        if (($record->wasRecentlyCreated || $wasArchived) && $record->status === 'late') {
+            $this->studentNotifications->attendanceRecorded($record);
+        }
 
         return response()->json([
             'message' => ($record->wasRecentlyCreated || $wasArchived)
@@ -182,7 +186,7 @@ class AttendanceController extends Controller
             'status' => ['required', Rule::in(['present', 'late', 'absent'])],
         ]);
 
-        AttendanceRecord::withArchived()->updateOrCreate(
+        $record = AttendanceRecord::withArchived()->updateOrCreate(
             ['attendance_session_id' => $attendance->id, 'student_id' => $validated['student_id']],
             [
                 'status' => $validated['status'],
@@ -193,6 +197,7 @@ class AttendanceController extends Controller
                 'archived_by' => null,
             ],
         );
+        $this->studentNotifications->attendanceRecorded($record);
 
         return back()->with('status', 'Attendance record updated successfully.');
     }
@@ -210,6 +215,9 @@ class AttendanceController extends Controller
                 );
                 if ($record->archived_at) {
                     $record->forceFill(['archived_at' => null, 'archived_by' => null])->save();
+                }
+                if ($record->status === 'absent') {
+                    $this->studentNotifications->attendanceRecorded($record);
                 }
             }
             $attendance->update(['status' => 'closed']);

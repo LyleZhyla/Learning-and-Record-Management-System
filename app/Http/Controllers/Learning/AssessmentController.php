@@ -12,6 +12,7 @@ use App\Models\NstpSection;
 use App\Models\OmrSheet;
 use App\Services\GradeService;
 use App\Services\PortalAccessService;
+use App\Services\StudentNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -22,7 +23,11 @@ use Illuminate\View\View;
 
 class AssessmentController extends Controller
 {
-    public function __construct(private PortalAccessService $access, private GradeService $grades) {}
+    public function __construct(
+        private PortalAccessService $access,
+        private GradeService $grades,
+        private StudentNotificationService $studentNotifications,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -107,6 +112,7 @@ class AssessmentController extends Controller
 
             return [$assessment, $sheet];
         });
+        $this->studentNotifications->assessmentPublished($assessment);
 
         if ($sheet) {
             return redirect()->route($this->access->routePrefix($request->user()).'.omr.show', $sheet)
@@ -246,7 +252,7 @@ class AssessmentController extends Controller
             'max_score' => ['required', 'numeric', 'min:0.01', 'max:10000'],
         ]);
         $category = GradingCategory::where('section_id', $section->id)->findOrFail($validated['grading_category_id']);
-        Assessment::create([
+        $assessment = Assessment::create([
             ...$validated,
             'section_id' => $section->id,
             'created_by' => $request->user()->id,
@@ -256,6 +262,7 @@ class AssessmentController extends Controller
             'status' => 'published',
             'published_at' => now(),
         ]);
+        $this->studentNotifications->assessmentPublished($assessment);
 
         return back()->with('status', 'Score item added to the grading sheet.');
     }

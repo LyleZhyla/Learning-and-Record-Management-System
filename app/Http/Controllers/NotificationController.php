@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
+use App\Models\StudentNotification;
 use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,6 +24,33 @@ class NotificationController extends Controller
         return back();
     }
 
+    public function openAnnouncement(Request $request, Announcement $announcement): RedirectResponse
+    {
+        abort_unless($this->notifications->visibleQuery($request->user())->whereKey($announcement)->exists(), 404);
+        DB::table('announcement_reads')->updateOrInsert(
+            ['announcement_id' => $announcement->id, 'user_id' => $request->user()->id],
+            ['read_at' => now()],
+        );
+
+        $route = match ($request->user()->role) {
+            'student' => 'student.announcements.index',
+            'facilitator' => 'facilitator.announcements.index',
+            'coordinator' => 'coordinator.announcements.index',
+            'nstp_admin' => 'nstp_admin.announcements.index',
+            default => 'admin.announcements.index',
+        };
+
+        return redirect()->route($route);
+    }
+
+    public function openStudent(Request $request, StudentNotification $notification): RedirectResponse
+    {
+        abort_unless($request->user()->isStudent() && $notification->user_id === $request->user()->id, 404);
+        $notification->update(['read_at' => now()]);
+
+        return redirect()->to($notification->destination());
+    }
+
     public function readAll(Request $request): RedirectResponse
     {
         $now = now();
@@ -36,6 +64,9 @@ class NotificationController extends Controller
         }
         DB::table('chat_messages')
             ->where('recipient_id', $request->user()->id)
+            ->whereNull('read_at')
+            ->update(['read_at' => $now]);
+        StudentNotification::where('user_id', $request->user()->id)
             ->whereNull('read_at')
             ->update(['read_at' => $now]);
 
