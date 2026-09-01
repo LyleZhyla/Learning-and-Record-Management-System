@@ -37,6 +37,7 @@ use App\Http\Controllers\Student\AttendanceController as StudentAttendanceContro
 use App\Http\Controllers\Student\ComponentController as StudentComponentController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\LearningController as StudentLearningController;
+use App\Http\Controllers\Student\ReportController as StudentReportController;
 use App\Http\Controllers\StudentAccountController;
 use App\Http\Controllers\StudentImportController;
 use Illuminate\Support\Facades\Route;
@@ -262,4 +263,5 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::get('/assessments/{assessment}', [StudentLearningController::class, 'show'])->name('assessments.show');
     Route::post('/assessments/{assessment}/submit', [StudentLearningController::class, 'submit'])->name('assessments.submit');
     Route::get('/grades', [StudentLearningController::class, 'grades'])->name('grades.index');
+    Route::get('/reports', StudentReportController::class)->name('reports.index');
 });
