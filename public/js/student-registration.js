@@ -152,7 +152,7 @@
         }
     });
 
-    const API = 'https://psgc.gitlab.io/api';
+    const locationEndpoints = window.registrationLocationEndpoints || {};
     async function fetchPlaces(url) {
         const response = await fetch(url);
         if (!response.ok) throw new Error('PSGC data could not be loaded.');
@@ -169,8 +169,7 @@
         hidden.value = select.selectedOptions[0]?.dataset.name || '';
     }
     async function citiesFor(provinceCode) {
-        if (provinceCode === '130000000') return fetchPlaces(`${API}/regions/130000000/cities-municipalities/`);
-        return fetchPlaces(`${API}/provinces/${provinceCode}/cities-municipalities/`);
+        return fetchPlaces(locationEndpoints.cities.replace('__CODE__', provinceCode));
     }
     async function setupAddress({ provinceId, cityId, barangayId, provinceNameId, cityNameId, barangayNameId }) {
         const province = document.getElementById(provinceId);
@@ -182,32 +181,36 @@
         const oldProvince = province.dataset.oldCode;
         const oldCity = city.dataset.oldCode;
         const oldBarangay = barangay?.dataset.oldCode;
-        try {
-            const provinces = await fetchPlaces(`${API}/provinces/`);
-            provinces.push({ code: '130000000', name: 'Metro Manila (NCR)' });
-            setOptions(province, provinces, 'Select province', oldProvince);
-            syncName(province, provinceName);
-            if (oldProvince) await loadCities(oldCity, oldBarangay);
-        } catch (error) {
-            province.innerHTML = '<option value="">Unable to load locations — refresh the page</option>';
-            province.disabled = true;
-        }
+        province.disabled = false;
+        if (oldProvince) province.value = oldProvince;
+        syncName(province, provinceName);
+        if (oldProvince) await loadCities(oldCity, oldBarangay);
 
         async function loadCities(selectedCity, selectedBarangay) {
             city.innerHTML = '<option value="">Loading cities…</option>';
             city.disabled = true;
             if (barangay) { barangay.innerHTML = '<option value="">Select city first</option>'; barangay.disabled = true; }
             if (!province.value) return;
-            setOptions(city, await citiesFor(province.value), 'Select city / municipality', selectedCity);
-            syncName(city, cityName);
-            if (selectedCity && barangay) await loadBarangays(selectedBarangay);
+            try {
+                setOptions(city, await citiesFor(province.value), 'Select city / municipality', selectedCity);
+                syncName(city, cityName);
+                if (selectedCity && barangay) await loadBarangays(selectedBarangay);
+            } catch (error) {
+                city.innerHTML = '<option value="">Unable to load cities — select the province again</option>';
+                city.disabled = true;
+            }
         }
         async function loadBarangays(selectedBarangay) {
             barangay.innerHTML = '<option value="">Loading barangays…</option>';
             barangay.disabled = true;
             if (!city.value) return;
-            setOptions(barangay, await fetchPlaces(`${API}/cities-municipalities/${city.value}/barangays/`), 'Select barangay', selectedBarangay);
-            syncName(barangay, barangayName);
+            try {
+                setOptions(barangay, await fetchPlaces(locationEndpoints.barangays.replace('__CODE__', city.value)), 'Select barangay', selectedBarangay);
+                syncName(barangay, barangayName);
+            } catch (error) {
+                barangay.innerHTML = '<option value="">Unable to load barangays — select the city again</option>';
+                barangay.disabled = true;
+            }
         }
         province.addEventListener('change', async () => { syncName(province, provinceName); await loadCities('', ''); });
         city.addEventListener('change', async () => { syncName(city, cityName); if (barangay) await loadBarangays(''); });

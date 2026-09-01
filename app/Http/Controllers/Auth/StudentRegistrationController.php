@@ -16,7 +16,12 @@ class StudentRegistrationController extends Controller
 {
     public function create(): View
     {
-        return view('auth.register');
+        return view('auth.register', [
+            'locationEndpoints' => [
+                'cities' => route('locations.cities', ['provinceCode' => '__CODE__']),
+                'barangays' => route('locations.barangays', ['cityCode' => '__CODE__']),
+            ],
+        ]);
     }
 
     public function store(StoreStudentRegistrationRequest $request): RedirectResponse

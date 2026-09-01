@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\SystemLogController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\PhilippineLocationController;
 use App\Http\Controllers\Auth\StudentRegistrationController;
 use App\Http\Controllers\Coordinator\AccountController as CoordinatorAccountController;
 use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
@@ -126,6 +127,8 @@ Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
     Route::get('/register', [StudentRegistrationController::class, 'create'])->name('register');
     Route::post('/register', [StudentRegistrationController::class, 'store'])->middleware('throttle:5,1')->name('register.store');
+    Route::get('/locations/provinces/{provinceCode}/cities', [PhilippineLocationController::class, 'cities'])->whereNumber('provinceCode')->middleware('throttle:60,1')->name('locations.cities');
+    Route::get('/locations/cities/{cityCode}/barangays', [PhilippineLocationController::class, 'barangays'])->whereNumber('cityCode')->middleware('throttle:60,1')->name('locations.barangays');
 });
 
 Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
