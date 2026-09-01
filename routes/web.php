@@ -37,6 +37,7 @@ use App\Http\Controllers\Student\AttendanceController as StudentAttendanceContro
 use App\Http\Controllers\Student\ComponentController as StudentComponentController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\LearningController as StudentLearningController;
+use App\Http\Controllers\Student\ProfileController as StudentProfileController;
 use App\Http\Controllers\Student\ReportController as StudentReportController;
 use App\Http\Controllers\StudentAccountController;
 use App\Http\Controllers\StudentImportController;
@@ -250,8 +251,9 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
-    Route::get('/profile', [PortalProfileController::class, 'edit'])->name('profile.edit');
+    Route::get('/profile', [StudentProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/details', [StudentProfileController::class, 'update'])->name('profile.details.update');
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
     Route::get('/component', [StudentComponentController::class, 'edit'])->name('component.edit');
     Route::put('/component', [StudentComponentController::class, 'update'])->name('component.update');

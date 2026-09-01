@@ -234,3 +234,8 @@ html[data-theme=dark] .grade-score-input.saved{border-color:#3ca77f!important;ba
 html[data-theme=dark] .autosave-status.saving{background:#3b2d0d;color:#ffd477}
 html[data-theme=dark] .autosave-status.saved{background:#12362d;color:#8ce2c0}
 html[data-theme=dark] .autosave-status.error{background:#3d1921;color:#ff9daa}
+
+/* Guided student profile editor. */
+.student-details-form{display:flex;flex-direction:column;gap:18px}.student-profile-section{margin:0}.student-profile-section .registration-grid:last-child{margin-bottom:0}.student-profile-section .form-subheading{margin-top:4px}.student-profile-save{position:sticky;bottom:14px;z-index:8;display:flex;justify-content:flex-end;border:1px solid var(--line);border-radius:15px;background:rgba(255,255,255,.92);padding:13px;box-shadow:0 12px 35px rgba(16,38,75,.14);backdrop-filter:blur(12px)}.student-password-card{max-width:760px;margin-top:22px}.student-details-form .alert ul{margin-bottom:0}.student-details-form input:disabled,.student-details-form textarea:disabled{opacity:1}
+html[data-theme=dark] .student-profile-save{background:rgba(21,34,53,.94)}
+@media(max-width:760px){.student-profile-save{bottom:8px}.student-profile-save .primary-button{width:100%}}

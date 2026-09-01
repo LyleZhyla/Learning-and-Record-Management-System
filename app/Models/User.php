@@ -152,6 +152,11 @@ class User extends Authenticatable
         return $this->hasOne(NstpEnrollment::class, 'student_id')->latestOfMany();
     }
 
+    public function studentProfile(): HasOne
+    {
+        return $this->hasOne(StudentProfile::class);
+    }
+
     public function nstpComponent(): BelongsTo
     {
         return $this->belongsTo(NstpComponent::class, 'nstp_component_id');

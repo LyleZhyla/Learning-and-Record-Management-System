@@ -1,0 +1,36 @@
+<?php
+
+return [
+    'religions' => [
+        'Roman Catholic',
+        'Islam',
+        'Iglesia ni Cristo',
+        'Philippine Independent Church (Aglipayan)',
+        'Seventh-day Adventist',
+        'Bible Baptist',
+        'United Church of Christ in the Philippines',
+        'Jehovah’s Witnesses',
+        'Church of Christ',
+        'Jesus Is Lord Church',
+        'Members Church of God International',
+        'Church of Jesus Christ of Latter-day Saints',
+        'Evangelical / Born Again Christian',
+        'Other Protestant',
+        'Orthodox Christian',
+        'Hinduism',
+        'Buddhism',
+        'Judaism',
+        'Baháʼí Faith',
+        'Sikhism',
+        'Indigenous Philippine Folk Religion',
+        'No Religion / Atheist / Agnostic',
+        'Prefer not to say',
+        'Others',
+    ],
+    'relationships' => [
+        'Mother', 'Father', 'Sibling', 'Aunt', 'Uncle', 'Cousin',
+        'Nephew', 'Niece', 'Grandmother', 'Grandfather', 'Guardian',
+    ],
+    'blood_types' => ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-', 'Unknown'],
+    'year_sections' => ['1A', '1B', '1C', '1D', '1E', '1F', 'Others'],
+];
