@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\NstpAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\NstpComponent;
 use App\Models\User;
 use Illuminate\View\View;
 
@@ -13,6 +14,7 @@ class DashboardController extends Controller
         [$academicYear, $semester] = $this->currentTerm();
 
         return view('nstp_admin.dashboard', [
+            'components' => NstpComponent::whereIn('code', ['CWTS', 'LTS', 'ROTC'])->get(),
             'studentCount' => User::where('role', 'student')->where('status', 'active')->count(),
             'facilitatorCount' => User::where('role', 'facilitator')->where('status', 'active')->count(),
             'coordinatorCount' => User::where('role', 'coordinator')->where('status', 'active')->count(),

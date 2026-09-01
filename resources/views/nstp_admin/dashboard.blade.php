@@ -21,9 +21,9 @@
     </section>
 
     <section class="component-overview" aria-label="NSTP components">
-        <a class="component-card cwts" href="{{ route('nstp_admin.components.index') }}"><div class="component-symbol">C</div><div><span>Civic Welfare Training Service</span><h3>CWTS</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Manage component →</span></a>
-        <a class="component-card lts" href="{{ route('nstp_admin.components.index') }}"><div class="component-symbol">L</div><div><span>Literacy Training Service</span><h3>LTS</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Manage component →</span></a>
-        <a class="component-card rotc" href="{{ route('nstp_admin.components.index') }}"><div class="component-symbol">R</div><div><span>Reserve Officers' Training Corps</span><h3>ROTC</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Manage component →</span></a>
+        <a class="component-card cwts" href="{{ route('nstp_admin.sections.index', ['component_id' => $components->firstWhere('code', 'CWTS')?->id]) }}"><div class="component-symbol">C</div><div><span>Civic Welfare Training Service</span><h3>CWTS</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Open sectioning →</span></a>
+        <a class="component-card lts" href="{{ route('nstp_admin.sections.index', ['component_id' => $components->firstWhere('code', 'LTS')?->id]) }}"><div class="component-symbol">L</div><div><span>Literacy Training Service</span><h3>LTS</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Open sectioning →</span></a>
+        <a class="component-card rotc" href="{{ route('nstp_admin.sections.index', ['component_id' => $components->firstWhere('code', 'ROTC')?->id]) }}"><div class="component-symbol">R</div><div><span>Reserve Officers' Training Corps</span><h3>ROTC</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Open sectioning →</span></a>
     </section>
 
     <div class="content-grid nstp-content-grid">

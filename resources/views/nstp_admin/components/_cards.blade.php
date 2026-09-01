@@ -14,7 +14,7 @@
                 <div><dt>Enrollments</dt><dd>{{ $component->enrollments_count }}</dd></div>
             </dl>
             <div class="component-actions">
-                <a class="secondary-outline-button" href="{{ route($routePrefix.'.components.edit', ['component' => $component, 'return_to' => $componentReturnTo ?? 'components']) }}">Configure</a>
+                <a class="secondary-outline-button" href="{{ route($routePrefix.'.components.edit', $component) }}">Configure</a>
                 <a class="table-action" href="{{ route($routePrefix.'.sections.index', ['component_id' => $component->id]) }}">Open in sectioning →</a>
             </div>
         </article>

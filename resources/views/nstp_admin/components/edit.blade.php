@@ -4,13 +4,12 @@
 @section('page-title', 'Configure '.$component->code)
 
 @section('content')
-    <div class="back-row"><a href="{{ route($routePrefix.($returnTo === 'sectioning' ? '.sections.index' : '.components.index')) }}">← Back to {{ $returnTo === 'sectioning' ? 'sectioning' : 'NSTP components' }}</a></div>
+    <div class="back-row"><a href="{{ route($routePrefix.'.sections.index') }}">← Back to sectioning</a></div>
     <div class="editor-grid">
         <section class="card">
             <div class="account-heading"><span class="large-avatar small">{{ substr($component->code, 0, 1) }}</span><div><span class="eyebrow">NSTP component</span><h2>{{ $component->code }}</h2><p>{{ $component->name }}</p></div></div>
             <form method="POST" action="{{ route($routePrefix.'.components.update', $component) }}" class="account-form">
                 @csrf @method('PUT')
-                <input type="hidden" name="return_to" value="{{ $returnTo }}">
                 <div class="form-grid">
                     <label class="field-group full"><span>Official component name</span><input name="name" value="{{ old('name', $component->name) }}" maxlength="150" required>@error('name')<small class="field-error">{{ $message }}</small>@enderror</label>
                     <label class="field-group full"><span>Description</span><textarea name="description" maxlength="1000" rows="5">{{ old('description', $component->description) }}</textarea>@error('description')<small class="field-error">{{ $message }}</small>@enderror</label>

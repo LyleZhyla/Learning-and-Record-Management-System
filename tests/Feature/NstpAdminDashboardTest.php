@@ -36,7 +36,9 @@ class NstpAdminDashboardTest extends TestCase
         $this->actingAs($user)
             ->get('/nstp-admin/dashboard')
             ->assertOk()
-            ->assertSee('NSTP Admin Dashboard');
+            ->assertSee('NSTP Admin Dashboard')
+            ->assertSee('Open sectioning')
+            ->assertDontSee('NSTP Components');
     }
 
     public function test_nstp_admin_dashboard_shows_active_students_without_a_current_component(): void

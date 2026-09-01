@@ -20,12 +20,16 @@ class NstpStructureManagementTest extends TestCase
         $this->seed(NstpComponentSeeder::class);
     }
 
-    public function test_nstp_admin_can_view_all_three_components(): void
+    public function test_legacy_component_page_redirects_to_sectioning_with_all_three_components(): void
     {
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
 
         $this->actingAs($admin)
             ->get('/nstp-admin/components')
+            ->assertRedirect('/nstp-admin/sections');
+
+        $this->actingAs($admin)
+            ->get('/nstp-admin/sections')
             ->assertOk()
             ->assertSeeTextInOrder(['CWTS', 'LTS', 'ROTC']);
     }
@@ -36,8 +40,7 @@ class NstpStructureManagementTest extends TestCase
 
         $this->actingAs($admin)
             ->get('/admin/components')
-            ->assertOk()
-            ->assertSeeTextInOrder(['CWTS', 'LTS', 'ROTC']);
+            ->assertRedirect('/admin/sections');
 
         $this->actingAs($admin)
             ->get('/admin/sections')
@@ -63,17 +66,15 @@ class NstpStructureManagementTest extends TestCase
         $component = NstpComponent::where('code', 'CWTS')->firstOrFail();
 
         $this->actingAs($admin)
-            ->get('/nstp-admin/components/'.$component->id.'/edit?return_to=sectioning')
+            ->get('/nstp-admin/components/'.$component->id.'/edit')
             ->assertOk()
-            ->assertSee('Back to sectioning')
-            ->assertSee('name="return_to" value="sectioning"', false);
+            ->assertSee('Back to sectioning');
 
         $this->actingAs($admin)->put('/nstp-admin/components/'.$component->id, [
             'name' => $component->name,
             'description' => 'Updated from sectioning.',
             'default_section_capacity' => 45,
             'is_active' => 1,
-            'return_to' => 'sectioning',
         ])->assertRedirect('/nstp-admin/sections');
 
         $this->assertDatabaseHas('nstp_components', [

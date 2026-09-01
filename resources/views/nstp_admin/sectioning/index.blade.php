@@ -6,7 +6,7 @@
 
 <section class="sectioning-component-overview">
     <div class="sectioning-toolbar"><div><span class="eyebrow">NSTP component configuration</span><h3>CWTS, LTS, and ROTC</h3><p class="muted-cell">Review availability, descriptions, default section capacity, and current usage before managing student assignments.</p></div></div>
-    @include('nstp_admin.components._cards', ['componentCards' => $componentSummaries, 'componentReturnTo' => 'sectioning'])
+    @include('nstp_admin.components._cards', ['componentCards' => $componentSummaries])
 </section>
 
 <section class="card term-panel"><form method="GET" action="{{ route($routePrefix.'.sections.index') }}" class="term-form"><label class="field-group"><span>Component</span><select name="component_id"><option value="">All components</option>@foreach($components as $component)<option value="{{ $component->id }}" @selected($componentId === $component->id)>{{ $component->code }}</option>@endforeach</select></label><label class="field-group"><span>Academic year</span><input name="academic_year" value="{{ $academicYear }}" pattern="\d{4}-\d{4}" required></label><label class="field-group"><span>Semester</span><select name="semester" required>@foreach(\App\Models\NstpSection::SEMESTERS as $value=>$label)<option value="{{ $value }}" @selected($semester === $value)>{{ $label }}</option>@endforeach</select></label><button class="filter-button" type="submit">Load workspace</button></form></section>
