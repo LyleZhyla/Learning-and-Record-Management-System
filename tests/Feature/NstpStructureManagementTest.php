@@ -47,10 +47,12 @@ class NstpStructureManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Sections & Student Sectioning')
             ->assertSee('Manage sections and student assignments')
+            ->assertSee('Choose component and term')
+            ->assertSee('Enroll students in CWTS')
+            ->assertSee('Create and fill CWTS sections')
             ->assertSee('Automatic sectioning')
             ->assertSee('Run automatic sectioning')
-            ->assertSee('Component enrollment')
-            ->assertSee('NSTP component configuration')
+            ->assertSee('Component settings (advanced)')
             ->assertSeeTextInOrder(['CWTS', 'LTS', 'ROTC'])
             ->assertSee('Default capacity')
             ->assertSee('How default capacity works')
@@ -58,6 +60,39 @@ class NstpStructureManagementTest extends TestCase
 
         $this->actingAs($admin)->get('/admin/sectioning')
             ->assertOk()->assertSee('Sections & Student Sectioning');
+    }
+
+    public function test_sectioning_defaults_to_the_first_active_component_and_filters_its_workspace(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $cwts = NstpComponent::where('code', 'CWTS')->firstOrFail();
+        $lts = NstpComponent::where('code', 'LTS')->firstOrFail();
+
+        NstpSection::create([
+            'component_id' => $cwts->id,
+            'code' => 'CWTS-DEFAULT',
+            'name' => 'Default workspace section',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'capacity' => 40,
+            'status' => 'active',
+        ]);
+        NstpSection::create([
+            'component_id' => $lts->id,
+            'code' => 'LTS-HIDDEN',
+            'name' => 'Other workspace section',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'capacity' => 40,
+            'status' => 'active',
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/nstp-admin/sections?academic_year=2026-2027&semester=first')
+            ->assertOk()
+            ->assertViewHas('componentId', $cwts->id)
+            ->assertSee('CWTS-DEFAULT')
+            ->assertDontSee('LTS-HIDDEN');
     }
 
     public function test_component_edit_from_sectioning_returns_to_the_sectioning_workspace(): void

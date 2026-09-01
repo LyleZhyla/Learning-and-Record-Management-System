@@ -20,7 +20,13 @@ class SectioningController extends Controller
         $term = $this->validatedTerm($request, true);
         $academicYear = $term['academic_year'] ?? $this->currentAcademicYear();
         $semester = $term['semester'] ?? $this->currentSemester();
-        $componentId = isset($term['component_id']) ? (int) $term['component_id'] : null;
+        $components = NstpComponent::where('is_active', true)
+            ->orderByRaw("CASE code WHEN 'CWTS' THEN 1 WHEN 'LTS' THEN 2 WHEN 'ROTC' THEN 3 ELSE 4 END")
+            ->get();
+        $componentId = isset($term['component_id'])
+            ? (int) $term['component_id']
+            : $components->first()?->id;
+        $selectedComponent = $components->firstWhere('id', $componentId);
 
         $students = User::where('role', 'student')
             ->where('status', 'active')
@@ -52,8 +58,16 @@ class SectioningController extends Controller
             ->orderByRaw("CASE code WHEN 'CWTS' THEN 1 WHEN 'LTS' THEN 2 WHEN 'ROTC' THEN 3 ELSE 4 END")
             ->get();
 
+        $selectedEnrollmentCount = $componentId
+            ? NstpEnrollment::where('component_id', $componentId)
+                ->where('status', 'enrolled')
+                ->where('academic_year', $academicYear)
+                ->where('semester', $semester)
+                ->count()
+            : 0;
+
         return view('nstp_admin.sectioning.index', [
-            'components' => NstpComponent::where('is_active', true)->orderBy('code')->get(),
+            'components' => $components,
             'students' => $students,
             'sections' => $sections,
             'academicYear' => $academicYear,
@@ -61,6 +75,8 @@ class SectioningController extends Controller
             'componentId' => $componentId,
             'unsectionedCounts' => $unsectionedCounts,
             'componentSummaries' => $componentSummaries,
+            'selectedComponent' => $selectedComponent,
+            'selectedEnrollmentCount' => $selectedEnrollmentCount,
             'routePrefix' => $this->routePrefix($request),
         ]);
     }
