@@ -5,11 +5,13 @@ namespace Database\Seeders;
 use App\Models\Assessment;
 use App\Models\AttendanceSession;
 use App\Models\LearningMaterial;
+use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
 use App\Services\QrCodeService;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class AttendanceLearningDemoSeeder extends Seeder
@@ -18,8 +20,18 @@ class AttendanceLearningDemoSeeder extends Seeder
     {
         $this->call(SampleAccountsSeeder::class);
 
-        $component = \App\Models\NstpComponent::where('code', 'CWTS')->firstOrFail();
-        $student = User::where('email', 'student.demo@smartnstp.local')->firstOrFail();
+        $component = NstpComponent::where('code', 'CWTS')->firstOrFail();
+        $student = User::firstOrCreate(
+            ['email' => 'student.demo@smartnstp.local'],
+            [
+                'name' => 'Juan Dela Cruz',
+                'password' => Hash::make(SampleAccountsSeeder::PASSWORD),
+                'role' => 'student',
+                'status' => 'active',
+                'must_change_password' => true,
+                'email_verified_at' => now(),
+            ],
+        );
         $facilitator = User::where('email', 'facilitator.demo@smartnstp.local')->firstOrFail();
         $admin = User::where('email', 'nstpadmin.demo@smartnstp.local')->firstOrFail();
         $section = NstpSection::updateOrCreate(

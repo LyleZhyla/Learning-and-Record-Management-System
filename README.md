@@ -61,15 +61,22 @@ php artisan key:generate
 php artisan migrate --seed
 ```
 
-## Temporary sample accounts
+## Temporary non-student sample accounts
 
-Populate one temporary account for each non-Super-Admin role with:
+Populate one temporary account for each non-student role with:
 
 ```powershell
 php artisan db:seed --class=SampleAccountsSeeder
 ```
 
 These demo accounts use the password `Demo!Account2026` and require a password change at first login. Do not run this seeder in production.
+
+| Role | Email |
+| --- | --- |
+| Super Admin | `superadmin.demo@smartnstp.local` |
+| NSTP Admin | `nstpadmin.demo@smartnstp.local` |
+| Coordinator (CWTS) | `coordinator.demo@smartnstp.local` |
+| Facilitator | `facilitator.demo@smartnstp.local` |
 
 Remove only these temporary demo accounts later with:
 
