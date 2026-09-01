@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Announcement;
 use App\Models\StudentNotification;
+use App\Models\User;
 use App\Services\NotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -56,6 +57,35 @@ class NotificationController extends Controller
         return $this->openEvent($request, $notification);
     }
 
+    public function openCategory(Request $request, string $category): RedirectResponse
+    {
+        $user = $request->user();
+        $destination = $this->categoryDestination($user, $category);
+        $now = now();
+
+        match ($category) {
+            'announcements' => $this->markAnnouncementsRead($user, $now),
+            'materials' => StudentNotification::where('user_id', $user->id)
+                ->where('type', StudentNotification::MATERIAL)
+                ->whereNull('read_at')
+                ->update(['read_at' => $now]),
+            'assessments' => StudentNotification::where('user_id', $user->id)
+                ->where('type', StudentNotification::ASSESSMENT)
+                ->whereNull('read_at')
+                ->update(['read_at' => $now]),
+            'attendance' => StudentNotification::where('user_id', $user->id)
+                ->whereIn('type', [StudentNotification::LATE_ATTENDANCE, StudentNotification::ABSENT_ATTENDANCE])
+                ->whereNull('read_at')
+                ->update(['read_at' => $now]),
+            'messages' => DB::table('chat_messages')
+                ->where('recipient_id', $user->id)
+                ->whereNull('read_at')
+                ->update(['read_at' => $now]),
+        };
+
+        return redirect()->to($destination);
+    }
+
     public function readAll(Request $request): RedirectResponse
     {
         $now = now();
@@ -76,5 +106,49 @@ class NotificationController extends Controller
             ->update(['read_at' => $now]);
 
         return back();
+    }
+
+    private function markAnnouncementsRead(User $user, mixed $readAt): void
+    {
+        $rows = $this->notifications->visibleQuery($user)
+            ->whereDoesntHave('readers', fn ($readers) => $readers->whereKey($user->id))
+            ->pluck('id')
+            ->map(fn ($id) => [
+                'announcement_id' => $id,
+                'user_id' => $user->id,
+                'read_at' => $readAt,
+            ])->all();
+
+        if ($rows !== []) {
+            DB::table('announcement_reads')->upsert($rows, ['announcement_id', 'user_id'], ['read_at']);
+        }
+    }
+
+    private function categoryDestination(User $user, string $category): string
+    {
+        if ($category === 'materials' && $user->isCoordinator()) {
+            abort(404);
+        }
+
+        if ($category === 'messages' && ! $user->isStudent() && ! $user->isFacilitator()) {
+            abort(404);
+        }
+
+        $prefix = match ($user->role) {
+            'super_admin' => 'admin',
+            'nstp_admin' => 'nstp_admin',
+            default => $user->role,
+        };
+
+        return match ($category) {
+            'announcements' => route($prefix.'.announcements.index'),
+            'materials' => route($prefix.'.materials.index'),
+            'assessments' => $user->isCoordinator()
+                ? route('coordinator.grades.index')
+                : route($prefix.'.assessments.index'),
+            'attendance' => route($prefix.'.attendance.index'),
+            'messages' => route($prefix.'.messages.index'),
+            default => abort(404),
+        };
     }
 }

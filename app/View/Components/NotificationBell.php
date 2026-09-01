@@ -18,16 +18,18 @@ class NotificationBell extends Component
     {
         $user = auth()->user();
         $query = app(NotificationService::class)->visibleQuery($user);
-        $unreadAnnouncementCount = (clone $query)->whereDoesntHave('readers', fn ($readers) => $readers->whereKey($user->id))->count();
-        $notifications = $query->with(['author', 'component'])
+        $unreadAnnouncements = (clone $query)
+            ->whereDoesntHave('readers', fn ($readers) => $readers->whereKey($user->id));
+        $unreadAnnouncementCount = (clone $unreadAnnouncements)->count();
+        $notifications = $unreadAnnouncements->with(['author', 'component'])
             ->withExists(['readers as is_read' => fn ($readers) => $readers->whereKey($user->id)])
             ->latest('published_at')->limit(6)->get();
 
         $messageRoutePrefix = $user->isStudent() ? 'student' : ($user->isFacilitator() ? 'facilitator' : null);
         $unreadMessageCount = 0;
         $messageNotifications = collect();
-        $eventNotificationQuery = StudentNotification::where('user_id', $user->id);
-        $unreadEventNotificationCount = (clone $eventNotificationQuery)->whereNull('read_at')->count();
+        $eventNotificationQuery = StudentNotification::where('user_id', $user->id)->whereNull('read_at');
+        $unreadEventNotificationCount = (clone $eventNotificationQuery)->count();
         $eventNotifications = $eventNotificationQuery->latest()->limit(8)->get();
 
         if ($messageRoutePrefix) {
