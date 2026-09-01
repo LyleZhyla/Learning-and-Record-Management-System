@@ -23,6 +23,7 @@ class StudentRegistrationTest extends TestCase
 
         $this->assertSame('pending', $registration->status);
         $this->assertSame('Juan Dela Cruz', $registration->first_name.' '.$registration->last_name);
+        $this->assertSame('1A', $registration->year_section);
         $this->assertTrue($registration->emergency_same_address);
         $this->assertNull($registration->emergency_address);
         Storage::disk('local')->assertExists($registration->cor_path);
@@ -76,6 +77,16 @@ class StudentRegistrationTest extends TestCase
         $this->get('/register')->assertOk();
     }
 
+    public function test_other_year_and_section_requires_a_custom_value(): void
+    {
+        $payload = $this->validPayload([
+            'year_section_selection' => 'Others',
+            'year_section_other' => '',
+        ]);
+
+        $this->post('/register', $payload)->assertSessionHasErrors('year_section_other');
+    }
+
     private function validPayload(array $overrides = []): array
     {
         return array_replace([
@@ -109,7 +120,7 @@ class StudentRegistrationTest extends TestCase
             'college' => 'College of Education',
             'course' => 'Bachelor of Secondary Education (BSEd)',
             'major' => 'Mathematics',
-            'year_section' => '1-A',
+            'year_section_selection' => '1A',
             'privacy_consent' => '1',
         ], $overrides);
     }

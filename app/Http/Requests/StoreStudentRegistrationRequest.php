@@ -72,7 +72,8 @@ class StoreStudentRegistrationRequest extends FormRequest
             'college' => ['required', 'string', Rule::in(array_keys(config('academics.colleges', [])))],
             'course' => ['required', 'string', 'max:150'],
             'major' => ['required', 'string', 'max:150'],
-            'year_section' => ['required', 'string', 'max:80'],
+            'year_section_selection' => ['required', Rule::in(['1A', '1B', '1C', '1D', '1E', '1F', 'Others'])],
+            'year_section_other' => ['nullable', 'required_if:year_section_selection,Others', 'string', 'max:80'],
             'privacy_consent' => ['accepted'],
         ];
     }

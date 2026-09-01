@@ -155,6 +155,17 @@
     religion.addEventListener('change', syncReligion);
     syncReligion();
 
+    const yearSection = document.getElementById('year-section');
+    const yearSectionOther = document.getElementById('year-section-other');
+    function syncYearSection() {
+        const isOther = yearSection.value === 'Others';
+        yearSectionOther.hidden = !isOther;
+        yearSectionOther.required = isOther;
+        if (!isOther) yearSectionOther.value = '';
+    }
+    yearSection.addEventListener('change', syncYearSection);
+    syncYearSection();
+
     const academicColleges = window.registrationAcademics || {};
     const college = document.getElementById('academic-college');
     const course = document.getElementById('academic-course');

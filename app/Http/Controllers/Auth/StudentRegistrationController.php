@@ -38,10 +38,14 @@ class StudentRegistrationController extends Controller
                 $validated['religion'] = $validated['religion_selection'] === 'Others'
                     ? $validated['religion_other']
                     : $validated['religion_selection'];
+                $validated['year_section'] = $validated['year_section_selection'] === 'Others'
+                    ? $validated['year_section_other']
+                    : $validated['year_section_selection'];
                 unset(
                     $validated['cor'], $validated['formal_photo'], $validated['privacy_consent'],
                     $validated['extension_name_na'], $validated['middle_name_na'],
-                    $validated['religion_selection'], $validated['religion_other']
+                    $validated['religion_selection'], $validated['religion_other'],
+                    $validated['year_section_selection'], $validated['year_section_other']
                 );
 
                 return StudentRegistration::create([
