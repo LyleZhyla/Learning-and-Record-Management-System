@@ -111,6 +111,83 @@ class DynamicGradingTest extends TestCase
             ->assertDontSee('17.00 / 50.00');
     }
 
+    public function test_assessment_requires_and_displays_its_grading_sheet_category(): void
+    {
+        [$facilitator, $student, $section] = $this->records();
+        app(GradeService::class)->summary($student, $section->id);
+        $category = $section->gradingCategories()->where('name', 'Requirements')->firstOrFail();
+
+        $this->actingAs($facilitator)->get('/facilitator/assessments/create')
+            ->assertOk()
+            ->assertSee('Grading sheet category')
+            ->assertSee('data-assessment-category', false)
+            ->assertSee('data-section="'.$section->id.'"', false);
+
+        $this->actingAs($facilitator)->post('/facilitator/assessments', [
+            'section_id' => $section->id,
+            'title' => 'Unmapped Project',
+            'type' => 'project',
+            'max_score' => 100,
+            'status' => 'published',
+            'create_answer_sheet' => 0,
+        ])->assertSessionHasErrors('grading_category_id');
+
+        $this->actingAs($facilitator)->post('/facilitator/assessments', [
+            'section_id' => $section->id,
+            'grading_category_id' => $category->id,
+            'title' => 'Mapped Project',
+            'type' => 'project',
+            'max_score' => 100,
+            'status' => 'published',
+            'create_answer_sheet' => 0,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('assessments', [
+            'title' => 'Mapped Project',
+            'grading_category_id' => $category->id,
+        ]);
+    }
+
+    public function test_score_encoded_on_assessment_page_automatically_appears_in_gradebook(): void
+    {
+        [$facilitator, $student, $section] = $this->records();
+        app(GradeService::class)->summary($student, $section->id);
+        $category = $section->gradingCategories()->where('name', 'Quizzes')->firstOrFail();
+        $assessment = Assessment::create([
+            'section_id' => $section->id,
+            'grading_category_id' => $category->id,
+            'created_by' => $facilitator->id,
+            'title' => 'Automatic Quiz Score',
+            'type' => 'quiz',
+            'max_score' => 50,
+            'weight' => $category->weight,
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        $this->actingAs($facilitator)->get('/facilitator/assessments/'.$assessment->id)
+            ->assertOk()
+            ->assertSee('Automatic grading-sheet encoding')
+            ->assertSee('/facilitator/assessments/'.$assessment->id.'/students/'.$student->id.'/score', false);
+
+        $this->actingAs($facilitator)->put('/facilitator/assessments/'.$assessment->id.'/students/'.$student->id.'/score', [
+            'score' => 45,
+            'feedback' => 'Good work.',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('assessment_submissions', [
+            'assessment_id' => $assessment->id,
+            'student_id' => $student->id,
+            'score' => 45,
+            'feedback' => 'Good work.',
+        ]);
+        $summary = app(GradeService::class)->summary($student, $section->id);
+        $quizSummary = $summary['categories']->first(fn ($item) => $item['category']->id === $category->id);
+        $this->assertSame(45.0, $quizSummary['earned']);
+        $this->assertSame(50.0, $quizSummary['maximum']);
+        $this->assertSame(18.0, $quizSummary['weighted_score']);
+    }
+
     private function records(): array
     {
         $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\ArchiveController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SystemLogController;
@@ -72,6 +73,7 @@ $learningManagementRoutes = function (): void {
     Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store');
     Route::get('/assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');
     Route::put('/assessments/{assessment}/submissions/{submission}', [AssessmentController::class, 'grade'])->name('assessments.grade');
+    Route::put('/assessments/{assessment}/students/{student}/score', [AssessmentController::class, 'scoreStudent'])->name('assessments.score');
     Route::get('/grades', [AssessmentController::class, 'grades'])->name('grades.index');
     Route::put('/grades/{section}/structure', [AssessmentController::class, 'updateGradeStructure'])->name('grades.structure');
     Route::delete('/grades/categories/{category}', [AssessmentController::class, 'destroyGradeCategory'])->name('grades.categories.destroy');
@@ -177,6 +179,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
+    Route::get('/database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup.index');
+    Route::post('/database-backup/download', [DatabaseBackupController::class, 'download'])->middleware('throttle:2,1')->name('database-backup.download');
     Route::get('/system-logs', [SystemLogController::class, 'index'])->name('system-logs.index');
     Route::get('/announcements', [NstpAdminAnnouncementController::class, 'index'])->name('announcements.index');
     Route::delete('/announcements/{announcement}', [NstpAdminAnnouncementController::class, 'destroy'])->name('announcements.destroy');

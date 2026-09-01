@@ -8,6 +8,7 @@ use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\OmrSheet;
 use App\Models\User;
+use App\Services\GradeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -35,7 +36,9 @@ class OmrScannerTest extends TestCase
         $this->coordinator->update(['nstp_component_id' => $component->id]);
         $this->section = NstpSection::create(['component_id' => $component->id, 'facilitator_id' => $this->facilitator->id, 'code' => 'CWTS-01', 'name' => 'Section 1', 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);
         NstpEnrollment::create(['student_id' => $this->student->id, 'component_id' => $component->id, 'section_id' => $this->section->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
-        $this->assessment = Assessment::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'Paper Quiz', 'type' => 'quiz', 'max_score' => 100, 'weight' => 20, 'status' => 'published', 'published_at' => now()]);
+        app(GradeService::class)->summary($this->student, $this->section->id);
+        $quizCategory = $this->section->gradingCategories()->where('name', 'Quizzes')->firstOrFail();
+        $this->assessment = Assessment::create(['section_id' => $this->section->id, 'grading_category_id' => $quizCategory->id, 'created_by' => $this->facilitator->id, 'title' => 'Paper Quiz', 'type' => 'quiz', 'max_score' => 100, 'weight' => 20, 'status' => 'published', 'published_at' => now()]);
     }
 
     public function test_facilitator_can_create_answer_key_and_open_camera_scanner(): void
@@ -62,6 +65,7 @@ class OmrScannerTest extends TestCase
 
         $response = $this->actingAs($this->facilitator)->post('/facilitator/assessments', [
             'section_id' => $this->section->id,
+            'grading_category_id' => $this->section->gradingCategories()->where('name', 'Quizzes')->value('id'),
             'title' => 'Integrated Quiz',
             'type' => 'quiz',
             'max_score' => 20,
@@ -85,6 +89,7 @@ class OmrScannerTest extends TestCase
 
         $response = $this->actingAs($this->coordinator)->post('/coordinator/assessments', [
             'section_id' => $this->section->id,
+            'grading_category_id' => $this->section->gradingCategories()->where('name', 'Term Test')->value('id'),
             'title' => 'Exam Without Sheet',
             'type' => 'exam',
             'max_score' => 50,

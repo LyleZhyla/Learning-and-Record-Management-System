@@ -8,6 +8,7 @@ use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\StudentNotification;
 use App\Models\User;
+use App\Services\GradeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -75,8 +76,10 @@ class StudentEventNotificationTest extends TestCase
 
     public function test_published_assessment_notifies_student_and_opens_assessment(): void
     {
+        app(GradeService::class)->summary($this->student, $this->section->id);
         $this->actingAs($this->facilitator)->post('/facilitator/assessments', [
             'section_id' => $this->section->id,
+            'grading_category_id' => $this->section->gradingCategories()->where('name', 'Class Standing')->value('id'),
             'title' => 'Community Reflection',
             'type' => 'activity',
             'instructions' => 'Write your reflection.',

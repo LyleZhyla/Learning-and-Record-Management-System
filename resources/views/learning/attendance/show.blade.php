@@ -45,7 +45,7 @@
                     </div>
                 </div>
                 <button class="primary-button scanner-start-button" type="button" data-scanner-start>Open camera</button>
-                <p class="scanner-message" data-scanner-message role="status">Ready to scan.</p>
+                <p class="scanner-message" data-scanner-message role="status">Ready to scan. Each successful scan is saved automatically.</p>
 
                 <div class="scanner-divider"><span>or enter the QR code manually</span></div>
                 <form class="scanner-manual-form" data-scanner-form>

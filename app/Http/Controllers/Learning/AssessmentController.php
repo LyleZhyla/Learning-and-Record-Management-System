@@ -10,6 +10,7 @@ use App\Models\GradingSetting;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\OmrSheet;
+use App\Models\User;
 use App\Services\GradeService;
 use App\Services\PortalAccessService;
 use App\Services\StudentNotificationService;
@@ -55,7 +56,7 @@ class AssessmentController extends Controller
         $request->merge(['create_answer_sheet' => $request->boolean('create_answer_sheet')]);
         $validated = $request->validate([
             'section_id' => ['required', 'exists:nstp_sections,id'],
-            'grading_category_id' => ['nullable', 'integer', 'exists:grading_categories,id'],
+            'grading_category_id' => ['required', 'integer', 'exists:grading_categories,id'],
             'title' => ['required', 'string', 'max:180'],
             'type' => ['required', Rule::in(['quiz', 'activity', 'project', 'exam'])],
             'instructions' => ['nullable', 'string'],
@@ -72,13 +73,9 @@ class AssessmentController extends Controller
         $section = NstpSection::findOrFail($validated['section_id']);
         $this->access->ensureCanAccessGradebookSection($request->user(), $section);
         $this->ensureGradingStructure($section);
-        $category = isset($validated['grading_category_id'])
-            ? GradingCategory::where('section_id', $section->id)->findOrFail($validated['grading_category_id'])
-            : $section->gradingCategories()->where('name', match ($validated['type']) {
-                'quiz' => 'Quizzes', 'exam' => 'Term Test', 'project' => 'Requirements', default => 'Class Standing'
-            })->first();
-        $validated['grading_category_id'] = $category?->id;
-        $validated['weight'] = $category?->weight ?? ($validated['weight'] ?? 10);
+        $category = GradingCategory::where('section_id', $section->id)->findOrFail($validated['grading_category_id']);
+        $validated['grading_category_id'] = $category->id;
+        $validated['weight'] = $category->weight;
         $createAnswerSheet = (bool) $validated['create_answer_sheet'];
 
         if ($createAnswerSheet) {
@@ -144,6 +141,40 @@ class AssessmentController extends Controller
         $submission->update([...$validated, 'graded_by' => $request->user()->id, 'graded_at' => now()]);
 
         return back()->with('status', 'Submission graded successfully.');
+    }
+
+    public function scoreStudent(Request $request, Assessment $assessment, User $student): RedirectResponse
+    {
+        $assessment->loadMissing(['section', 'gradingCategory']);
+        $this->access->ensureCanManageSection($request->user(), $assessment->section);
+        abort_unless(
+            $student->isStudent()
+                && NstpEnrollment::where('section_id', $assessment->section_id)
+                    ->where('student_id', $student->id)
+                    ->where('status', 'enrolled')
+                    ->exists(),
+            404,
+        );
+
+        $validated = $request->validate([
+            'score' => ['required', 'numeric', 'min:0', 'max:'.$assessment->max_score],
+            'feedback' => ['nullable', 'string', 'max:3000'],
+        ]);
+        $submission = AssessmentSubmission::firstOrNew([
+            'assessment_id' => $assessment->id,
+            'student_id' => $student->id,
+        ]);
+        $submission->fill([
+            ...$validated,
+            'submitted_at' => $submission->submitted_at ?? now(),
+            'graded_by' => $request->user()->id,
+            'graded_at' => now(),
+        ])->save();
+
+        return back()->with(
+            'status',
+            'Score saved automatically under '.($assessment->gradingCategory?->name ?? 'the selected category').' in the grading sheet.',
+        );
     }
 
     public function grades(Request $request): View
