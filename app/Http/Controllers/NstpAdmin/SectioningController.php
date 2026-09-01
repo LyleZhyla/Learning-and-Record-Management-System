@@ -48,6 +48,10 @@ class SectioningController extends Controller
             ->groupBy('component_id')
             ->pluck('total', 'component_id');
 
+        $componentSummaries = NstpComponent::withCount(['sections', 'enrollments'])
+            ->orderByRaw("CASE code WHEN 'CWTS' THEN 1 WHEN 'LTS' THEN 2 WHEN 'ROTC' THEN 3 ELSE 4 END")
+            ->get();
+
         return view('nstp_admin.sectioning.index', [
             'components' => NstpComponent::where('is_active', true)->orderBy('code')->get(),
             'students' => $students,
@@ -56,6 +60,7 @@ class SectioningController extends Controller
             'semester' => $semester,
             'componentId' => $componentId,
             'unsectionedCounts' => $unsectionedCounts,
+            'componentSummaries' => $componentSummaries,
             'routePrefix' => $this->routePrefix($request),
         ]);
     }

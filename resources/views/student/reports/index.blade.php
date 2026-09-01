@@ -32,11 +32,11 @@
 
     <section class="card user-table-card report-result-card">
         <div class="report-result-heading"><div><span class="eyebrow">Attendance</span><h3>Recent attendance records</h3><p>Your latest recorded NSTP attendance.</p></div><a class="secondary-outline-button" href="{{ route('student.attendance.index') }}">View all attendance</a></div>
-        <div class="table-wrap"><table class="data-table"><thead><tr><th>Session</th><th>Component</th><th>Section</th><th>Date</th><th>Status</th><th>Check-in</th></tr></thead><tbody>
+        <div class="table-wrap"><table class="data-table"><thead><tr><th>Session</th><th>Component</th><th>Section</th><th>Date</th><th>Status</th><th>Time In</th><th>Time Out</th></tr></thead><tbody>
             @forelse($attendanceRecords->take(10) as $record)
-                <tr><td><strong>{{ $record->attendanceSession->title }}</strong></td><td>{{ $record->attendanceSession->section->component->code }}</td><td>{{ $record->attendanceSession->section->code }}</td><td>{{ $record->attendanceSession->starts_at->format('M d, Y') }}</td><td><span class="status-badge {{ in_array($record->status, ['present', 'late']) ? 'active' : 'inactive' }}"><i></i>{{ ucfirst($record->status) }}</span></td><td>{{ $record->checked_in_at?->format('h:i A') ?? '—' }}</td></tr>
+                <tr><td><strong>{{ $record->attendanceSession->title }}</strong></td><td>{{ $record->attendanceSession->section->component->code }}</td><td>{{ $record->attendanceSession->section->code }}</td><td>{{ $record->attendanceSession->starts_at->format('M d, Y') }}</td><td><span class="status-badge {{ in_array($record->status, ['present', 'late']) ? 'active' : 'inactive' }}"><i></i>{{ ucfirst($record->status) }}</span></td><td>{{ $record->checked_in_at?->format('h:i A') ?? '—' }}</td><td>{{ $record->checked_out_at?->format('h:i A') ?? '—' }}</td></tr>
             @empty
-                <tr><td colspan="6"><div class="empty-state"><strong>No attendance records yet</strong><span>Your recorded sessions will appear here.</span></div></td></tr>
+                <tr><td colspan="7"><div class="empty-state"><strong>No attendance records yet</strong><span>Your recorded sessions will appear here.</span></div></td></tr>
             @endforelse
         </tbody></table></div>
     </section>

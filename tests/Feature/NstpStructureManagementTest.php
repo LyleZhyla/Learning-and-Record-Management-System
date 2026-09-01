@@ -47,10 +47,39 @@ class NstpStructureManagementTest extends TestCase
             ->assertSee('Automatic sectioning')
             ->assertSee('Run automatic sectioning')
             ->assertSee('Component enrollment')
+            ->assertSee('NSTP component configuration')
+            ->assertSeeTextInOrder(['CWTS', 'LTS', 'ROTC'])
+            ->assertSee('Default capacity')
+            ->assertSee('How default capacity works')
             ->assertSee('Sectioning');
 
         $this->actingAs($admin)->get('/admin/sectioning')
             ->assertOk()->assertSee('Sections & Student Sectioning');
+    }
+
+    public function test_component_edit_from_sectioning_returns_to_the_sectioning_workspace(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $component = NstpComponent::where('code', 'CWTS')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get('/nstp-admin/components/'.$component->id.'/edit?return_to=sectioning')
+            ->assertOk()
+            ->assertSee('Back to sectioning')
+            ->assertSee('name="return_to" value="sectioning"', false);
+
+        $this->actingAs($admin)->put('/nstp-admin/components/'.$component->id, [
+            'name' => $component->name,
+            'description' => 'Updated from sectioning.',
+            'default_section_capacity' => 45,
+            'is_active' => 1,
+            'return_to' => 'sectioning',
+        ])->assertRedirect('/nstp-admin/sections');
+
+        $this->assertDatabaseHas('nstp_components', [
+            'id' => $component->id,
+            'default_section_capacity' => 45,
+        ]);
     }
 
     public function test_nstp_admin_can_create_a_section_with_a_facilitator(): void

@@ -148,6 +148,10 @@ class AttendanceController extends Controller
             throw ValidationException::withMessages(['qr_code' => 'This student is not enrolled in the session’s section.']);
         }
 
+        if ($attendance->scan_mode === 'time_out') {
+            return $this->recordTimeOut($attendance, $student);
+        }
+
         $status = $attendance->late_after && now()->gt($attendance->late_after) ? 'late' : 'present';
         $record = AttendanceRecord::withArchived()->firstOrCreate(
             ['attendance_session_id' => $attendance->id, 'student_id' => $student->id],
@@ -158,6 +162,7 @@ class AttendanceController extends Controller
             $record->forceFill([
                 'status' => $status,
                 'checked_in_at' => now(),
+                'checked_out_at' => null,
                 'source' => 'qr',
                 'recorded_by' => $request->user()->id,
                 'archived_at' => null,
@@ -177,7 +182,30 @@ class AttendanceController extends Controller
             'status' => $record->status,
             'status_label' => ucfirst($record->status),
             'checked_in_at' => $record->checked_in_at?->format('g:i:s A'),
+            'checked_out_at' => $record->checked_out_at?->format('g:i:s A'),
+            'scan_mode' => 'time_in',
+            'scan_mode_label' => 'Time In',
             'recorded' => $record->wasRecentlyCreated || $wasArchived,
+        ]);
+    }
+
+    public function updateScanMode(Request $request, AttendanceSession $attendance): JsonResponse
+    {
+        $attendance->loadMissing('section');
+        $this->access->ensureCanScanSection($request->user(), $attendance->section);
+        $validated = $request->validate(['scan_mode' => ['required', Rule::in(['time_in', 'time_out'])]]);
+
+        if ($attendance->status !== 'open') {
+            throw ValidationException::withMessages(['scan_mode' => 'This attendance session is already closed.']);
+        }
+
+        $attendance->update(['scan_mode' => $validated['scan_mode']]);
+        $label = $validated['scan_mode'] === 'time_out' ? 'Time Out' : 'Time In';
+
+        return response()->json([
+            'message' => "Scanner changed to {$label} mode.",
+            'scan_mode' => $validated['scan_mode'],
+            'scan_mode_label' => $label,
         ]);
     }
 
@@ -194,6 +222,7 @@ class AttendanceController extends Controller
             [
                 'status' => $validated['status'],
                 'checked_in_at' => in_array($validated['status'], ['present', 'late']) ? now() : null,
+                'checked_out_at' => null,
                 'source' => 'manual',
                 'recorded_by' => $request->user()->id,
                 'archived_at' => null,
@@ -227,6 +256,38 @@ class AttendanceController extends Controller
         });
 
         return back()->with('status', 'Attendance session closed. Missing students were marked absent automatically.');
+    }
+
+    private function recordTimeOut(AttendanceSession $attendance, User $student): JsonResponse
+    {
+        $record = AttendanceRecord::withArchived()
+            ->where('attendance_session_id', $attendance->id)
+            ->where('student_id', $student->id)
+            ->first();
+
+        if (! $record || $record->archived_at || ! $record->checked_in_at || $record->status === 'absent') {
+            throw ValidationException::withMessages(['qr_code' => "{$student->name} must Time In before recording Time Out."]);
+        }
+
+        $recorded = blank($record->checked_out_at);
+        if ($recorded) {
+            $record->forceFill(['checked_out_at' => now()])->save();
+        }
+
+        return response()->json([
+            'message' => $recorded
+                ? "{$student->name} was timed out successfully."
+                : "{$student->name} is already timed out.",
+            'student' => $student->name,
+            'student_id' => $student->id,
+            'status' => $record->status,
+            'status_label' => ucfirst($record->status),
+            'checked_in_at' => $record->checked_in_at?->format('g:i:s A'),
+            'checked_out_at' => $record->checked_out_at?->format('g:i:s A'),
+            'scan_mode' => 'time_out',
+            'scan_mode_label' => 'Time Out',
+            'recorded' => $recorded,
+        ]);
     }
 
     private function context(Request $request): array

@@ -29,6 +29,7 @@ class ComponentController extends Controller
         return view('nstp_admin.components.edit', [
             'component' => $component,
             'routePrefix' => $this->routePrefix($request),
+            'returnTo' => $request->string('return_to')->toString() === 'sectioning' ? 'sectioning' : 'components',
         ]);
     }
 
@@ -39,11 +40,14 @@ class ComponentController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'default_section_capacity' => ['required', 'integer', 'min:1', 'max:200'],
             'is_active' => ['required', 'boolean'],
+            'return_to' => ['nullable', 'in:components,sectioning'],
         ]);
 
+        $returnTo = $validated['return_to'] ?? 'components';
+        unset($validated['return_to']);
         $component->update($validated);
 
-        return redirect()->route($this->routePrefix($request).'.components.index')
+        return redirect()->route($this->routePrefix($request).($returnTo === 'sectioning' ? '.sections.index' : '.components.index'))
             ->with('status', "{$component->code} configuration updated successfully.");
     }
 

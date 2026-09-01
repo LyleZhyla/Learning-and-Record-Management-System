@@ -191,11 +191,12 @@ class ReportController extends Controller
                     'student' => $item->student->name, 'component' => $session->section->component->code,
                     'section' => $session->section->code, 'session' => $session->title,
                     'date' => $session->starts_at->format('M d, Y'), 'status' => ucfirst($item->status),
-                    'check_in' => $item->checked_in_at?->format('h:i:s A') ?? '—', 'source' => strtoupper($item->source),
+                    'time_in' => $item->checked_in_at?->format('h:i:s A') ?? '—',
+                    'time_out' => $item->checked_out_at?->format('h:i:s A') ?? '—', 'source' => strtoupper($item->source),
                 ];
             });
 
-        return $this->report('Attendance Report', ['Student', 'Component', 'Section', 'Session', 'Date', 'Status', 'Check-in', 'Source'], $rows);
+        return $this->report('Attendance Report', ['Student', 'Component', 'Section', 'Session', 'Date', 'Status', 'Time In', 'Time Out', 'Source'], $rows);
     }
 
     private function gradeReport(array $filters): array

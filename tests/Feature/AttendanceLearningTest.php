@@ -71,6 +71,56 @@ class AttendanceLearningTest extends TestCase
             ->assertSee('data-attendance-record-count="1"', false);
     }
 
+    public function test_scanner_indicates_and_records_the_selected_time_in_or_time_out_mode(): void
+    {
+        $session = AttendanceSession::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'Time In and Out Session', 'starts_at' => now()->subMinute(), 'late_after' => now()->addMinute(), 'ends_at' => now()->addHour(), 'token' => str()->random(48), 'qr_payload' => '', 'qr_svg' => '', 'status' => 'open']);
+        $payload = $this->student->fresh()->studentQrPayload();
+        $secondStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        NstpEnrollment::create(['student_id' => $secondStudent->id, 'component_id' => $this->section->component_id, 'section_id' => $this->section->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
+
+        $this->actingAs($this->facilitator)->get('/facilitator/attendance/'.$session->id)
+            ->assertOk()
+            ->assertSee('data-scan-mode="time_in"', false)
+            ->assertSee('TIME IN');
+
+        $this->actingAs($this->facilitator)
+            ->postJson('/facilitator/attendance/'.$session->id.'/scan', ['qr_code' => $payload])
+            ->assertOk()
+            ->assertJsonPath('scan_mode', 'time_in');
+
+        $this->actingAs($this->facilitator)
+            ->patchJson('/facilitator/attendance/'.$session->id.'/scan-mode', ['scan_mode' => 'time_out'])
+            ->assertOk()
+            ->assertJsonPath('scan_mode', 'time_out')
+            ->assertJsonPath('scan_mode_label', 'Time Out');
+
+        $this->actingAs($this->facilitator)
+            ->postJson('/facilitator/attendance/'.$session->id.'/scan', ['qr_code' => $secondStudent->fresh()->studentQrPayload()])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('qr_code');
+
+        $this->actingAs($this->facilitator)
+            ->postJson('/facilitator/attendance/'.$session->id.'/scan', ['qr_code' => $payload])
+            ->assertOk()
+            ->assertJsonPath('scan_mode', 'time_out')
+            ->assertJsonPath('recorded', true);
+
+        $record = AttendanceRecord::where('attendance_session_id', $session->id)->where('student_id', $this->student->id)->firstOrFail();
+        $this->assertNotNull($record->checked_in_at);
+        $this->assertNotNull($record->checked_out_at);
+
+        $this->actingAs($this->facilitator)
+            ->postJson('/facilitator/attendance/'.$session->id.'/scan', ['qr_code' => $payload])
+            ->assertOk()
+            ->assertJsonPath('recorded', false);
+
+        $this->actingAs($this->facilitator)->get('/facilitator/attendance/'.$session->id)
+            ->assertOk()
+            ->assertSee('data-scan-mode="time_out"', false)
+            ->assertSee('TIME OUT')
+            ->assertSee($record->checked_out_at->format('g:i:s A'));
+    }
+
     public function test_facilitator_coordinator_and_nstp_admin_have_camera_scanner_access(): void
     {
         $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active', 'nstp_component_id' => $this->section->component_id]);
@@ -98,6 +148,7 @@ class AttendanceLearningTest extends TestCase
             ->assertOk()
             ->assertSee('<th>Source</th>', false);
         $this->actingAs($superAdmin)->postJson('/admin/attendance/'.$session->id.'/scan', ['qr_code' => $payload])->assertForbidden();
+        $this->actingAs($superAdmin)->patchJson('/admin/attendance/'.$session->id.'/scan-mode', ['scan_mode' => 'time_out'])->assertForbidden();
     }
 
     public function test_published_assessment_score_is_included_in_student_grade(): void

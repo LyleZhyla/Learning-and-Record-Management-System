@@ -61,6 +61,7 @@ $learningManagementRoutes = function (): void {
     Route::get('/attendance/create', [ManagementAttendanceController::class, 'create'])->name('attendance.create');
     Route::post('/attendance', [ManagementAttendanceController::class, 'store'])->name('attendance.store');
     Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');
+    Route::patch('/attendance/{attendance}/scan-mode', [ManagementAttendanceController::class, 'updateScanMode'])->name('attendance.scan-mode');
     Route::post('/attendance/{attendance}/scan', [ManagementAttendanceController::class, 'scan'])->name('attendance.scan');
     Route::post('/attendance/{attendance}/mark', [ManagementAttendanceController::class, 'mark'])->name('attendance.mark');
     Route::patch('/attendance/{attendance}/close', [ManagementAttendanceController::class, 'close'])->name('attendance.close');
@@ -236,6 +237,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/sections', [CoordinatorMonitoringController::class, 'sections'])->name('sections.index');
     Route::get('/attendance', [CoordinatorMonitoringController::class, 'attendance'])->name('attendance.index');
     Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');
+    Route::patch('/attendance/{attendance}/scan-mode', [ManagementAttendanceController::class, 'updateScanMode'])->name('attendance.scan-mode');
     Route::post('/attendance/{attendance}/scan', [ManagementAttendanceController::class, 'scan'])->name('attendance.scan');
     Route::get('/performance', [CoordinatorMonitoringController::class, 'performance'])->name('performance.index');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

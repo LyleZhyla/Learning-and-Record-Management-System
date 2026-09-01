@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class AttendanceSession extends Model
 {
-    protected $fillable = ['section_id', 'created_by', 'title', 'starts_at', 'late_after', 'ends_at', 'token', 'qr_payload', 'qr_svg', 'status'];
+    protected $fillable = ['section_id', 'created_by', 'title', 'starts_at', 'late_after', 'ends_at', 'token', 'qr_payload', 'qr_svg', 'status', 'scan_mode'];
 
     protected function casts(): array
     {

@@ -10,11 +10,11 @@ class AttendanceRecord extends Model
 {
     use Archivable;
 
-    protected $fillable = ['attendance_session_id', 'student_id', 'status', 'checked_in_at', 'source', 'recorded_by', 'archived_at', 'archived_by'];
+    protected $fillable = ['attendance_session_id', 'student_id', 'status', 'checked_in_at', 'checked_out_at', 'source', 'recorded_by', 'archived_at', 'archived_by'];
 
     protected function casts(): array
     {
-        return ['checked_in_at' => 'datetime', 'archived_at' => 'datetime'];
+        return ['checked_in_at' => 'datetime', 'checked_out_at' => 'datetime', 'archived_at' => 'datetime'];
     }
 
     public function attendanceSession(): BelongsTo

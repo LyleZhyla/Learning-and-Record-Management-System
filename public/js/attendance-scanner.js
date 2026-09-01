@@ -8,6 +8,11 @@
     const message = scanner.querySelector('[data-scanner-message]');
     const form = scanner.querySelector('[data-scanner-form]');
     const input = scanner.querySelector('[data-scanner-input]');
+    const submitButton = scanner.querySelector('[data-scanner-submit]');
+    const modePanel = scanner.querySelector('[data-scan-mode-panel]');
+    const modeIndicator = scanner.querySelector('[data-scan-mode-indicator]');
+    const modeHelp = scanner.querySelector('[data-scan-mode-help]');
+    const modeButtons = [...scanner.querySelectorAll('[data-scan-mode-option]')];
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
     let stream = null;
     let detector = null;
@@ -17,6 +22,7 @@
     let submitting = false;
     let lastScannedCode = '';
     let framesWithoutCode = 0;
+    let scanMode = scanner.dataset.scanMode || 'time_in';
 
     function setMessage(text, state) {
         message.textContent = text;
@@ -42,6 +48,7 @@
         const wasRecorded = row.dataset.attendanceRecorded === '1';
         const statusBadge = row.querySelector('[data-record-status]');
         const checkInCell = row.querySelector('[data-record-check-in]');
+        const checkOutCell = row.querySelector('[data-record-check-out]');
         const manualStatus = row.querySelector('select[name="status"]');
 
         row.dataset.attendanceRecorded = '1';
@@ -50,6 +57,7 @@
             statusBadge.replaceChildren(document.createElement('i'), document.createTextNode(result.status_label));
         }
         if (checkInCell) checkInCell.textContent = result.checked_in_at || '—';
+        if (checkOutCell) checkOutCell.textContent = result.checked_out_at || '—';
         if (manualStatus) manualStatus.value = result.status;
 
         const counter = document.querySelector('[data-attendance-record-count]');
@@ -57,6 +65,51 @@
             const total = Number(counter.dataset.attendanceRecordCount || 0) + 1;
             counter.dataset.attendanceRecordCount = String(total);
             counter.textContent = `${total} recorded`;
+        }
+    }
+
+    function renderScanMode(mode) {
+        scanMode = mode;
+        scanner.dataset.scanMode = mode;
+        const isTimeOut = mode === 'time_out';
+        modePanel?.classList.toggle('is-time-in', !isTimeOut);
+        modePanel?.classList.toggle('is-time-out', isTimeOut);
+        if (modeIndicator) modeIndicator.textContent = isTimeOut ? 'TIME OUT' : 'TIME IN';
+        if (modeHelp) modeHelp.textContent = isTimeOut
+            ? 'Scans will record departure time. Students must Time In first.'
+            : 'Scans will record arrival time and determine Present or Late.';
+        if (submitButton) submitButton.textContent = `Record ${isTimeOut ? 'Time Out' : 'Time In'}`;
+        modeButtons.forEach((button) => button.classList.toggle('active', button.dataset.scanModeOption === mode));
+    }
+
+    async function changeScanMode(mode) {
+        if (submitting || mode === scanMode) return;
+        submitting = true;
+        modeButtons.forEach((button) => { button.disabled = true; });
+        setMessage(`Changing scanner to ${mode === 'time_out' ? 'Time Out' : 'Time In'}…`, 'working');
+
+        try {
+            const response = await fetch(scanner.dataset.modeEndpoint, {
+                method: 'PATCH',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrf,
+                },
+                body: JSON.stringify({ scan_mode: mode }),
+            });
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.errors?.scan_mode?.[0] || result.message || 'Unable to change scan mode.');
+            }
+
+            renderScanMode(result.scan_mode);
+            setMessage(`${result.message} Remove the current QR from the frame before scanning.`, 'success');
+        } catch (error) {
+            setMessage(error.message || 'Unable to change scan mode.', 'error');
+        } finally {
+            submitting = false;
+            modeButtons.forEach((button) => { button.disabled = false; });
         }
     }
 
@@ -215,9 +268,11 @@
     }
 
     startButton?.addEventListener('click', startCamera);
+    modeButtons.forEach((button) => button.addEventListener('click', () => changeScanMode(button.dataset.scanModeOption)));
     form?.addEventListener('submit', (event) => {
         event.preventDefault();
         submitCode(input.value);
     });
     window.addEventListener('pagehide', stopCamera);
+    renderScanMode(scanMode);
 })();
