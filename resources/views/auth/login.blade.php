@@ -59,6 +59,8 @@
                     <button class="primary-button" type="submit">Sign in to dashboard <span>→</span></button>
                 </form>
 
+                <p class="auth-register-link">New student? <a href="{{ route('register') }}">Complete your registration</a></p>
+
                 <p class="security-note">Protected by server-side sessions, CSRF validation, password hashing, and login rate limiting.</p>
             </div>
         </section>

@@ -18,11 +18,10 @@ class SuperAdminAuthenticationTest extends TestCase
         $this->get('/admin/dashboard')->assertRedirect('/login');
     }
 
-    public function test_public_registration_is_not_available(): void
+    public function test_public_student_registration_is_available(): void
     {
-        $this->get('/register')->assertNotFound();
-        $this->post('/register')->assertNotFound();
-        $this->get('/login')->assertOk()->assertDontSee('Create an account');
+        $this->get('/register')->assertOk()->assertSee('Student Information Form');
+        $this->get('/login')->assertOk()->assertSee('Complete your registration');
     }
 
     public function test_super_admin_can_sign_in(): void
@@ -103,8 +102,7 @@ class SuperAdminAuthenticationTest extends TestCase
             ->assertDontSee('Current session')
             ->assertDontSee('Account overview')
             ->assertDontSee('Development roadmap')
-            ->assertViewHas('componentEnrollments', fn ($components) =>
-                $components->firstWhere('code', 'CWTS')['count'] === 2
+            ->assertViewHas('componentEnrollments', fn ($components) => $components->firstWhere('code', 'CWTS')['count'] === 2
                 && $components->firstWhere('code', 'LTS')['count'] === 1
                 && $components->firstWhere('code', 'MS-1')['count'] === 1
                 && $components->firstWhere('code', 'MS-31')['count'] === 2
