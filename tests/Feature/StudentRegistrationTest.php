@@ -54,6 +54,18 @@ class StudentRegistrationTest extends TestCase
         $this->post('/register', $payload)->assertSessionHasErrors(['cor', 'formal_photo']);
     }
 
+    public function test_course_and_major_must_belong_to_the_selected_college(): void
+    {
+        $payload = $this->validPayload([
+            'college' => 'College of Veterinary Medicine',
+            'course' => 'Bachelor of Secondary Education (BSEd)',
+            'major' => 'Marketing Management',
+        ]);
+
+        $this->post('/register', $payload)->assertSessionHasErrors(['course']);
+        $this->assertDatabaseCount('student_registrations', 0);
+    }
+
     private function validPayload(array $overrides = []): array
     {
         return array_replace([
@@ -85,8 +97,8 @@ class StudentRegistrationTest extends TestCase
             'emergency_same_address' => '1',
             'student_number' => '2026123456',
             'college' => 'College of Education',
-            'course' => 'Bachelor of Secondary Education',
-            'major' => 'English',
+            'course' => 'Bachelor of Secondary Education (BSEd)',
+            'major' => 'Mathematics',
             'year_section' => '1-A',
             'privacy_consent' => '1',
         ], $overrides);

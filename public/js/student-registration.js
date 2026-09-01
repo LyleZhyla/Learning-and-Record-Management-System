@@ -106,6 +106,36 @@
     religion.addEventListener('change', syncReligion);
     syncReligion();
 
+    const academicColleges = window.registrationAcademics || {};
+    const college = document.getElementById('academic-college');
+    const course = document.getElementById('academic-course');
+    const major = document.getElementById('academic-major');
+    const oldCourse = course.dataset.oldValue;
+    const oldMajor = major.dataset.oldValue;
+
+    function academicOptions(select, values, placeholder, selectedValue = '') {
+        select.innerHTML = `<option value="">${placeholder}</option>` + values
+            .map(value => `<option value="${value.replace(/"/g, '&quot;')}">${value}</option>`).join('');
+        select.disabled = values.length === 0;
+        if (selectedValue && values.includes(selectedValue)) select.value = selectedValue;
+    }
+
+    function loadMajors(selectedMajor = '') {
+        const majors = academicColleges[college.value]?.[course.value] || [];
+        academicOptions(major, majors, 'Select major', selectedMajor);
+        if (majors.length === 1 && majors[0] === 'N/A') major.value = 'N/A';
+    }
+
+    function loadCourses(selectedCourse = '', selectedMajor = '') {
+        const courses = Object.keys(academicColleges[college.value] || {});
+        academicOptions(course, courses, 'Select course', selectedCourse);
+        loadMajors(selectedMajor);
+    }
+
+    college.addEventListener('change', () => loadCourses());
+    course.addEventListener('change', () => loadMajors());
+    if (college.value) loadCourses(oldCourse, oldMajor);
+
     const photoInput = document.getElementById('formal-photo');
     const photoPreview = document.getElementById('photo-preview');
     const photoPlaceholder = document.getElementById('photo-placeholder');

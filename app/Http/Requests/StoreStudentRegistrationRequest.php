@@ -6,6 +6,7 @@ use App\Models\StudentRegistration;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreStudentRegistrationRequest extends FormRequest
 {
@@ -68,11 +69,36 @@ class StoreStudentRegistrationRequest extends FormRequest
             'emergency_same_address' => ['nullable', 'boolean'],
             'emergency_address' => ['nullable', 'required_unless:emergency_same_address,1', 'string', 'max:500'],
             'student_number' => ['required', 'regex:/^20\d{8}$/', Rule::unique(StudentRegistration::class)],
-            'college' => ['required', 'string', 'max:150'],
+            'college' => ['required', 'string', Rule::in(array_keys(config('academics.colleges', [])))],
             'course' => ['required', 'string', 'max:150'],
-            'major' => ['nullable', 'string', 'max:150'],
+            'major' => ['required', 'string', 'max:150'],
             'year_section' => ['required', 'string', 'max:80'],
             'privacy_consent' => ['accepted'],
+        ];
+    }
+
+    public function after(): array
+    {
+        return [
+            function (Validator $validator): void {
+                $programs = config('academics.colleges', [])[$this->input('college')] ?? null;
+
+                if (! is_array($programs)) {
+                    return;
+                }
+
+                $majors = $programs[$this->input('course')] ?? null;
+
+                if (! is_array($majors)) {
+                    $validator->errors()->add('course', 'Select a course offered by the chosen college.');
+
+                    return;
+                }
+
+                if (! in_array($this->input('major'), $majors, true)) {
+                    $validator->errors()->add('major', 'Select a major available for the chosen course.');
+                }
+            },
         ];
     }
 

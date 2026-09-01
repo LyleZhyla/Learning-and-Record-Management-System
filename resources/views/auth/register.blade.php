@@ -128,9 +128,9 @@
                         <div class="section-title"><span>04</span><div><h3>Part III — Academic Information</h3><p>Use the information shown in your current school records.</p></div></div>
                         <div class="registration-grid two-columns">
                             <label class="registration-field"><span>Student Number *</span><input name="student_number" value="{{ old('student_number') }}" inputmode="numeric" pattern="20[0-9]{8}" maxlength="10" placeholder="20XXXXXXXX" required><small>10 digits and must begin with 20</small></label>
-                            <label class="registration-field"><span>College *</span><input name="college" value="{{ old('college') }}" maxlength="150" placeholder="e.g. College of Education" required></label>
-                            <label class="registration-field"><span>Course *</span><input name="course" value="{{ old('course') }}" maxlength="150" placeholder="e.g. Bachelor of Secondary Education" required></label>
-                            <label class="registration-field"><span>Major</span><input name="major" value="{{ old('major') }}" maxlength="150" placeholder="Enter N/A if not applicable"></label>
+                            <label class="registration-field"><span>College *</span><select id="academic-college" name="college" data-old-value="{{ old('college') }}" required><option value="">Select college</option>@foreach (array_keys(config('academics.colleges')) as $college)<option value="{{ $college }}" @selected(old('college') === $college)>{{ $college }}</option>@endforeach</select></label>
+                            <label class="registration-field"><span>Course *</span><select id="academic-course" name="course" data-old-value="{{ old('course') }}" required disabled><option value="">Select college first</option></select></label>
+                            <label class="registration-field"><span>Major *</span><select id="academic-major" name="major" data-old-value="{{ old('major') }}" required disabled><option value="">Select course first</option></select><small>N/A is automatically shown for courses without a major.</small></label>
                             <label class="registration-field full"><span>Year and Section *</span><input name="year_section" value="{{ old('year_section') }}" maxlength="80" placeholder="e.g. 1-A" required></label>
                         </div>
                     </section>
@@ -153,6 +153,9 @@
         </section>
     </main>
     <script src="{{ asset('js/theme.js') }}"></script>
-    @unless(session('status'))<script src="{{ asset('js/student-registration.js') }}?v={{ filemtime(public_path('js/student-registration.js')) }}"></script>@endunless
+    @unless(session('status'))
+        <script>window.registrationAcademics = @json(config('academics.colleges'));</script>
+        <script src="{{ asset('js/student-registration.js') }}?v={{ filemtime(public_path('js/student-registration.js')) }}"></script>
+    @endunless
 </body>
 </html>
