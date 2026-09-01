@@ -34,4 +34,4 @@
         <form method="POST" action="{{ route('logout') }}" class="logout-form">@csrf<button type="submit" class="nav-link logout"><span class="nav-icon">↪</span> Sign out</button></form>
     </aside>
     <main class="main-content"><header class="topbar"><button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button><div><small>Smart NSTP / Coordinator</small><h1>@yield('page-title', 'Dashboard')</h1></div><x-notification-bell /><x-theme-toggle /><div class="topbar-status"><span></span> Monitoring & QR scanning</div></header>@if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif @if($errors->any())<div class="alert danger">{{ $errors->first() }}</div>@endif @yield('content')<footer class="app-footer">© {{ date('Y') }} Smart NSTP Management and AI-Integrated Platform</footer></main>
-</div><script src="{{ asset('js/sidebar.js') }}"></script><script src="{{ asset('js/theme.js') }}"></script></body></html>
+</div><x-ai-chat-widget /><script src="{{ asset('js/sidebar.js') }}"></script><script src="{{ asset('js/theme.js') }}"></script></body></html>

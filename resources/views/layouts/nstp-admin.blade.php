@@ -90,6 +90,7 @@
             <footer class="app-footer">© {{ date('Y') }} Smart NSTP Management and AI-Integrated Platform</footer>
         </main>
     </div>
+    <x-ai-chat-widget />
     <script src="{{ asset('js/sidebar.js') }}"></script>
     <script src="{{ asset('js/theme.js') }}"></script>
 </body>

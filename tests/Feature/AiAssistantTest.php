@@ -14,6 +14,52 @@ class AiAssistantTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_floating_chatbot_is_available_across_every_account_portal(): void
+    {
+        config(['services.openai.api_key' => 'test-key']);
+
+        foreach ([
+            'super_admin' => '/admin/dashboard',
+            'nstp_admin' => '/nstp-admin/dashboard',
+            'coordinator' => '/coordinator/dashboard',
+            'facilitator' => '/facilitator/dashboard',
+            'student' => '/student/dashboard',
+        ] as $role => $path) {
+            $user = User::factory()->create(['role' => $role, 'status' => 'active']);
+
+            $this->actingAs($user)->get($path)
+                ->assertOk()
+                ->assertSee('data-ai-widget', false)
+                ->assertSee('Open SNAPIE AI chat')
+                ->assertSee('ai-chat-widget.js');
+        }
+    }
+
+    public function test_widget_shows_only_the_signed_in_users_latest_conversation(): void
+    {
+        config(['services.openai.api_key' => 'test-key']);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $other = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $conversation = AiChatConversation::create(['user_id' => $student->id, 'title' => 'My chat']);
+        $otherConversation = AiChatConversation::create(['user_id' => $other->id, 'title' => 'Other chat']);
+        AiChatMessage::create(['user_id' => $student->id, 'conversation_id' => $conversation->id, 'role' => 'assistant', 'content' => 'Private answer for this student.']);
+        AiChatMessage::create(['user_id' => $other->id, 'conversation_id' => $otherConversation->id, 'role' => 'assistant', 'content' => 'Another user private answer.']);
+
+        $this->actingAs($student)->get('/student/dashboard')
+            ->assertOk()
+            ->assertSee('Private answer for this student.')
+            ->assertDontSee('Another user private answer.');
+    }
+
+    public function test_full_ai_page_does_not_duplicate_the_floating_widget(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+
+        $this->actingAs($student)->get('/ai-assistant')
+            ->assertOk()
+            ->assertDontSee('data-ai-widget', false);
+    }
+
     public function test_every_account_role_can_open_the_ai_assistant_from_communication(): void
     {
         config(['services.openai.api_key' => 'test-key']);
