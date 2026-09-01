@@ -64,9 +64,10 @@
             <div><h3>Attendance records</h3><p>Scanned students appear here. Duplicate scans do not create duplicate records.</p></div>
             <span class="pill">{{ $attendance->records->count() }} recorded</span>
         </div>
+        @php($recordColumnCount = 3 + ($canScan ? 0 : 1) + ($canManage ? 1 : 0))
         <div class="table-wrap">
             <table class="data-table">
-                <thead><tr><th>Student</th><th>Status</th><th>Check-in</th><th>Source</th>@if($canManage)<th>Manual update</th>@endif</tr></thead>
+                <thead><tr><th>Student</th><th>Status</th><th>Check-in</th>@unless($canScan)<th>Source</th>@endunless @if($canManage)<th>Manual update</th>@endif</tr></thead>
                 <tbody>
                     @forelse ($enrolledStudents as $enrollment)
                         @php($record = $attendance->records->firstWhere('student_id', $enrollment->student_id))
@@ -74,13 +75,13 @@
                             <td><strong>{{ $enrollment->student->name }}</strong><br><small class="muted-cell">{{ $enrollment->student->email }}</small></td>
                             <td><span class="status-badge {{ $record && in_array($record->status, ['present','late']) ? 'active' : 'inactive' }}"><i></i>{{ $record ? ucfirst($record->status) : 'Not recorded' }}</span></td>
                             <td>{{ $record?->checked_in_at?->format('g:i:s A') ?? '—' }}</td>
-                            <td>{{ $record ? strtoupper($record->source) : '—' }}</td>
+                            @unless($canScan)<td>{{ $record ? strtoupper($record->source) : '—' }}</td>@endunless
                             @if ($canManage)
                                 <td><form class="inline-record-form" method="POST" action="{{ route($routePrefix.'.attendance.mark', $attendance) }}">@csrf<input type="hidden" name="student_id" value="{{ $enrollment->student_id }}"><select name="status"><option value="present">Present</option><option value="late">Late</option><option value="absent">Absent</option></select><button class="filter-button">Save</button></form></td>
                             @endif
                         </tr>
                     @empty
-                        <tr><td colspan="{{ $canManage ? 5 : 4 }}"><div class="empty-state"><strong>No enrolled students</strong><span>Assign students to this section before recording attendance.</span></div></td></tr>
+                        <tr><td colspan="{{ $recordColumnCount }}"><div class="empty-state"><strong>No enrolled students</strong><span>Assign students to this section before recording attendance.</span></div></td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -89,6 +90,7 @@
 </div>
 
 @if ($canScan && $attendance->status === 'open')
+    <script src="{{ asset('js/vendor/jsQR.js') }}?v={{ filemtime(public_path('js/vendor/jsQR.js')) }}"></script>
     <script src="{{ asset('js/attendance-scanner.js') }}?v={{ filemtime(public_path('js/attendance-scanner.js')) }}"></script>
 @endif
 @endsection

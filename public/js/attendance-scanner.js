@@ -11,6 +11,8 @@
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
     let stream = null;
     let detector = null;
+    let fallbackCanvas = null;
+    let fallbackContext = null;
     let scanning = false;
     let submitting = false;
 
@@ -30,7 +32,7 @@
     }
 
     async function submitCode(code) {
-        if (submitting || !code.trim()) return;
+        if (submitting || !code.trim()) return false;
         submitting = true;
         setMessage('Verifying student QR…', 'working');
 
@@ -55,19 +57,56 @@
             setMessage(result.message, 'success');
             input.value = '';
             window.setTimeout(() => window.location.reload(), 1200);
+            return true;
         } catch (error) {
             setMessage(error.message || 'Unable to read the student QR.', 'error');
             submitting = false;
+            return false;
         }
     }
 
+    function decodeWithFallback() {
+        if (typeof window.jsQR !== 'function' || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) return null;
+
+        const sourceWidth = video.videoWidth;
+        const sourceHeight = video.videoHeight;
+        if (!sourceWidth || !sourceHeight) return null;
+
+        const maximumWidth = 960;
+        const scale = Math.min(1, maximumWidth / sourceWidth);
+        const width = Math.max(1, Math.round(sourceWidth * scale));
+        const height = Math.max(1, Math.round(sourceHeight * scale));
+
+        fallbackCanvas ||= document.createElement('canvas');
+        fallbackContext ||= fallbackCanvas.getContext('2d', { willReadFrequently: true });
+        if (!fallbackContext) return null;
+
+        if (fallbackCanvas.width !== width || fallbackCanvas.height !== height) {
+            fallbackCanvas.width = width;
+            fallbackCanvas.height = height;
+        }
+
+        fallbackContext.drawImage(video, 0, 0, width, height);
+        const image = fallbackContext.getImageData(0, 0, width, height);
+
+        return window.jsQR(image.data, width, height, { inversionAttempts: 'attemptBoth' });
+    }
+
     async function scanFrame() {
-        if (!scanning || !detector || submitting) return;
+        if (!scanning || submitting) return;
 
         try {
-            const codes = await detector.detect(video);
-            if (codes.length) {
-                await submitCode(codes[0].rawValue);
+            let code = null;
+            if (detector) {
+                try {
+                    code = (await detector.detect(video))[0]?.rawValue || null;
+                } catch (_) {
+                    detector = null;
+                }
+            }
+            code ||= decodeWithFallback()?.data;
+
+            if (code && await submitCode(code)) {
                 return;
             }
         } catch (_) {
@@ -90,16 +129,29 @@
             return;
         }
 
-        if (!('BarcodeDetector' in window)) {
-            setMessage('QR camera scanning is not supported by this browser. Open this page in an updated Chrome, Edge, or Android browser, or enter the code manually.', 'error');
+        const hasNativeDetector = 'BarcodeDetector' in window;
+        const hasFallbackDetector = typeof window.jsQR === 'function';
+        if (!hasNativeDetector && !hasFallbackDetector) {
+            setMessage('The QR scanner could not load. Refresh the page, then try again or enter the code manually.', 'error');
             input.focus();
             return;
         }
 
         try {
-            detector = new BarcodeDetector({ formats: ['qr_code'] });
+            detector = null;
+            if (hasNativeDetector) {
+                try {
+                    detector = new BarcodeDetector({ formats: ['qr_code'] });
+                } catch (_) {
+                    // The local decoder below remains available when the native API is incomplete.
+                }
+            }
             stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: { ideal: 'environment' } },
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                },
                 audio: false,
             });
             video.srcObject = stream;
@@ -110,9 +162,14 @@
             startButton.textContent = 'Close camera';
             setMessage('Camera active. Hold the student QR inside the frame.', 'working');
             scanFrame();
-        } catch (_) {
+        } catch (error) {
             stopCamera();
-            setMessage('Camera access was unavailable. Check browser permission or enter the code manually.', 'error');
+            const cameraError = {
+                NotAllowedError: 'Camera permission was blocked. Allow camera access in the browser site settings, then try again.',
+                NotFoundError: 'No camera was found on this device.',
+                NotReadableError: 'The camera is being used by another application. Close it there, then try again.',
+            }[error?.name];
+            setMessage(cameraError || 'Camera access was unavailable. Check browser permission or enter the code manually.', 'error');
         }
     }
 

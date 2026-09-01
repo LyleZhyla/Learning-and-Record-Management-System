@@ -71,11 +71,25 @@ class AttendanceLearningTest extends TestCase
         $session = AttendanceSession::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'QR Session', 'starts_at' => now()->subMinute(), 'ends_at' => now()->addHour(), 'token' => str()->random(48), 'qr_payload' => '', 'qr_svg' => '', 'status' => 'open']);
         $payload = $this->student->fresh()->studentQrPayload();
 
-        $this->actingAs($this->facilitator)->get('/facilitator/attendance/'.$session->id)->assertOk()->assertSee('data-scanner-video', false);
-        $this->actingAs($coordinator)->get('/coordinator/attendance/'.$session->id)->assertOk()->assertSee('data-scanner-video', false);
-        $this->actingAs($this->admin)->get('/nstp-admin/attendance/'.$session->id)->assertOk()->assertSee('data-scanner-video', false);
+        $this->actingAs($this->facilitator)->get('/facilitator/attendance/'.$session->id)
+            ->assertOk()
+            ->assertSee('data-scanner-video', false)
+            ->assertSee('js/vendor/jsQR.js', false)
+            ->assertSee('js/attendance-scanner.js', false)
+            ->assertDontSee('<th>Source</th>', false);
+        $this->actingAs($coordinator)->get('/coordinator/attendance/'.$session->id)
+            ->assertOk()
+            ->assertSee('data-scanner-video', false)
+            ->assertSee('js/vendor/jsQR.js', false);
+        $this->actingAs($this->admin)->get('/nstp-admin/attendance/'.$session->id)
+            ->assertOk()
+            ->assertSee('data-scanner-video', false)
+            ->assertSee('js/vendor/jsQR.js', false);
         $this->actingAs($coordinator)->postJson('/coordinator/attendance/'.$session->id.'/scan', ['qr_code' => $payload])->assertOk();
         $this->actingAs($this->admin)->postJson('/nstp-admin/attendance/'.$session->id.'/scan', ['qr_code' => $payload])->assertOk();
+        $this->actingAs($superAdmin)->get('/admin/attendance/'.$session->id)
+            ->assertOk()
+            ->assertSee('<th>Source</th>', false);
         $this->actingAs($superAdmin)->postJson('/admin/attendance/'.$session->id.'/scan', ['qr_code' => $payload])->assertForbidden();
     }
 
