@@ -153,6 +153,9 @@
         </section>
     </main>
     <script src="{{ asset('js/theme.js') }}"></script>
+    @if(session('status'))
+        <script>try { sessionStorage.removeItem('smartNstpRegistrationDraft'); } catch (error) {}</script>
+    @endif
     @unless(session('status'))
         <script>window.registrationAcademics = @json(config('academics.colleges'));</script>
         <script>window.registrationLocationEndpoints = {{ Illuminate\Support\Js::from($locationEndpoints) }};</script>

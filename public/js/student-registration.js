@@ -8,7 +8,54 @@
     const back = document.getElementById('registration-back');
     const submit = document.getElementById('registration-submit');
     const stepNumber = document.getElementById('current-step-number');
+    const draftKey = 'smartNstpRegistrationDraft';
     let current = 0;
+
+    function readDraft() {
+        try {
+            return JSON.parse(sessionStorage.getItem(draftKey)) || {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function saveDraft() {
+        const fields = {};
+        form.querySelectorAll('input, select, textarea').forEach(field => {
+            if (!field.name || field.name === '_token' || field.name === 'privacy_consent' || field.type === 'file') return;
+            if (field.type === 'radio') {
+                if (field.checked) fields[field.name] = field.value;
+                return;
+            }
+            fields[field.name] = field.type === 'checkbox' ? field.checked : field.value;
+        });
+
+        try {
+            sessionStorage.setItem(draftKey, JSON.stringify({ step: current, fields }));
+        } catch (error) {
+            // The wizard still works when browser storage is unavailable.
+        }
+    }
+
+    function restoreDraftFields(draft) {
+        if (!draft.fields) return;
+        form.querySelectorAll('input, select, textarea').forEach(field => {
+            if (!field.name || !(field.name in draft.fields) || field.type === 'file' || field.name === 'privacy_consent') return;
+            const value = draft.fields[field.name];
+            if (field.type === 'checkbox') {
+                field.checked = Boolean(value);
+            } else if (field.type === 'radio') {
+                field.checked = field.value === value;
+            } else if (field.tagName === 'SELECT' && ![...field.options].some(option => option.value === value)) {
+                field.dataset.draftValue = value;
+            } else {
+                field.value = value ?? '';
+            }
+        });
+    }
+
+    const savedDraft = readDraft();
+    restoreDraftFields(savedDraft);
 
     function showStep(index) {
         current = index;
@@ -24,7 +71,9 @@
         back.hidden = index === 0;
         next.hidden = index === panels.length - 1;
         submit.hidden = index !== panels.length - 1;
+        next.disabled = index === 0 ? !document.getElementById('cor').files.length : false;
         next.textContent = index === 0 ? 'Continue to Part I  →' : 'Continue  →';
+        saveDraft();
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
@@ -110,8 +159,8 @@
     const college = document.getElementById('academic-college');
     const course = document.getElementById('academic-course');
     const major = document.getElementById('academic-major');
-    const oldCourse = course.dataset.oldValue;
-    const oldMajor = major.dataset.oldValue;
+    const oldCourse = course.dataset.oldValue || course.dataset.draftValue;
+    const oldMajor = major.dataset.oldValue || major.dataset.draftValue;
 
     function academicOptions(select, values, placeholder, selectedValue = '') {
         select.innerHTML = `<option value="">${placeholder}</option>` + values
@@ -178,9 +227,9 @@
         const cityName = document.getElementById(cityNameId);
         const barangay = barangayId ? document.getElementById(barangayId) : null;
         const barangayName = barangayNameId ? document.getElementById(barangayNameId) : null;
-        const oldProvince = province.dataset.oldCode;
-        const oldCity = city.dataset.oldCode;
-        const oldBarangay = barangay?.dataset.oldCode;
+        const oldProvince = province.dataset.oldCode || province.dataset.draftValue;
+        const oldCity = city.dataset.oldCode || city.dataset.draftValue;
+        const oldBarangay = barangay?.dataset.oldCode || barangay?.dataset.draftValue;
         province.disabled = false;
         if (oldProvince) province.value = oldProvince;
         syncName(province, provinceName);
@@ -220,7 +269,15 @@
     Promise.all([
         setupAddress({ provinceId: 'province', cityId: 'city', barangayId: 'barangay', provinceNameId: 'province-name', cityNameId: 'city-name', barangayNameId: 'barangay-name' }),
         setupAddress({ provinceId: 'birth-province', cityId: 'birth-city', provinceNameId: 'birth-province-name', cityNameId: 'birth-city-name' })
-    ]);
+    ]).then(saveDraft);
+
+    form.addEventListener('input', saveDraft);
+    form.addEventListener('change', saveDraft);
+
+    const restoredStep = Number.isInteger(Number(savedDraft.step))
+        ? Math.min(Math.max(Number(savedDraft.step), 0), panels.length - 1)
+        : 0;
+    showStep(restoredStep);
 
     form.addEventListener('submit', event => {
         if (!form.checkValidity()) {

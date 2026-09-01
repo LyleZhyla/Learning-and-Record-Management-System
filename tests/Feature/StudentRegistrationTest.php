@@ -66,6 +66,16 @@ class StudentRegistrationTest extends TestCase
         $this->assertDatabaseCount('student_registrations', 0);
     }
 
+    public function test_registration_wizard_keeps_a_tab_scoped_refresh_draft(): void
+    {
+        $script = file_get_contents(public_path('js/student-registration.js'));
+
+        $this->assertStringContainsString("const draftKey = 'smartNstpRegistrationDraft'", $script);
+        $this->assertStringContainsString('sessionStorage.setItem', $script);
+        $this->assertStringContainsString('showStep(restoredStep)', $script);
+        $this->get('/register')->assertOk();
+    }
+
     private function validPayload(array $overrides = []): array
     {
         return array_replace([
