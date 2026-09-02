@@ -2,6 +2,71 @@
     const form = document.getElementById('student-profile-form');
     if (!form) return;
 
+    const draftKey = form.dataset.profileDraftKey;
+    let discardDraft = false;
+
+    function readDraft() {
+        if (!draftKey) return {};
+        try {
+            return JSON.parse(sessionStorage.getItem(draftKey)) || {};
+        } catch (error) {
+            return {};
+        }
+    }
+
+    function restoreDraft() {
+        const draft = readDraft();
+        form.querySelectorAll('[name]').forEach(field => {
+            if (!(field.name in draft) || ['_token', '_method', '_profile_editor', 'profile_photo'].includes(field.name)) return;
+            const value = draft[field.name];
+            if (field.type === 'checkbox') {
+                field.checked = value === true;
+            } else if (field.type === 'radio') {
+                field.checked = field.value === value;
+            } else if (field.tagName === 'SELECT') {
+                field.dataset.draftValue = value;
+                if ([...field.options].some(option => option.value === value)) field.value = value;
+            } else {
+                field.value = value;
+            }
+        });
+    }
+
+    function saveDraft() {
+        if (!draftKey || discardDraft) return;
+        const draft = {};
+        form.querySelectorAll('[name]').forEach(field => {
+            if (['_token', '_method', '_profile_editor', 'profile_photo'].includes(field.name) || field.type === 'file') return;
+            if (field.type === 'radio') {
+                if (field.checked) draft[field.name] = field.value;
+            } else if (field.type === 'checkbox') {
+                draft[field.name] = field.checked;
+            } else {
+                draft[field.name] = field.value;
+            }
+        });
+        try {
+            sessionStorage.setItem(draftKey, JSON.stringify(draft));
+        } catch (error) {
+            // Keep the editor usable when browser storage is unavailable.
+        }
+    }
+
+    let draftTimer;
+    function scheduleDraftSave() {
+        window.clearTimeout(draftTimer);
+        draftTimer = window.setTimeout(saveDraft, 120);
+    }
+
+    restoreDraft();
+    form.addEventListener('input', scheduleDraftSave);
+    form.addEventListener('change', scheduleDraftSave);
+    window.addEventListener('pagehide', saveDraft);
+    document.querySelector('[data-profile-draft-cancel]')?.addEventListener('click', () => {
+        discardDraft = true;
+        sessionStorage.removeItem(draftKey);
+    });
+
     function setupNA(checkboxId, inputId) {
         const checkbox = document.getElementById(checkboxId);
         const input = document.getElementById(inputId);
@@ -78,7 +143,7 @@
 
     college.addEventListener('change', () => loadCourses());
     course.addEventListener('change', () => loadMajors());
-    if (college.value) loadCourses(course.dataset.oldValue, major.dataset.oldValue);
+    if (college.value) loadCourses(course.dataset.draftValue || course.dataset.oldValue, major.dataset.draftValue || major.dataset.oldValue);
 
     const endpoints = window.studentProfileLocationEndpoints || {};
     async function fetchPlaces(url) {
@@ -106,9 +171,9 @@
         const provinceName = document.getElementById(provinceNameId);
         const cityName = document.getElementById(cityNameId);
         const barangayName = barangayNameId ? document.getElementById(barangayNameId) : null;
-        const initialProvince = province.dataset.oldCode || '';
-        const initialCity = city.dataset.oldCode || '';
-        const initialBarangay = barangay?.dataset.oldCode || '';
+        const initialProvince = province.dataset.draftValue || province.dataset.oldCode || '';
+        const initialCity = city.dataset.draftValue || city.dataset.oldCode || '';
+        const initialBarangay = barangay?.dataset.draftValue || barangay?.dataset.oldCode || '';
 
         async function loadBarangays(selected = '') {
             if (!barangay || !city.value) return;

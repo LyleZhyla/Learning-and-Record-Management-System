@@ -29,6 +29,7 @@ class StudentProfileTest extends TestCase
             ->assertOk()
             ->assertSee('Cancel editing')
             ->assertSee('student-profile-form', false)
+            ->assertSee('data-profile-draft-key="smartNstpProfileDraft:'.$student->id.'"', false)
             ->assertSee('student-profile.js')
             ->assertSee('Select province')
             ->assertSee('Select college');
@@ -94,6 +95,17 @@ class StudentProfileTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertSame($registration->id, $student->fresh()->studentProfile->student_registration_id);
+    }
+
+    public function test_profile_editor_script_keeps_a_tab_scoped_refresh_draft(): void
+    {
+        $script = file_get_contents(public_path('js/student-profile.js'));
+
+        $this->assertStringContainsString('form.dataset.profileDraftKey', $script);
+        $this->assertStringContainsString('sessionStorage.setItem(draftKey', $script);
+        $this->assertStringContainsString('sessionStorage.getItem(draftKey)', $script);
+        $this->assertStringContainsString('field.dataset.draftValue', $script);
+        $this->assertStringContainsString("'profile_photo'", $script);
     }
 
     private function validPayload(array $overrides = []): array

@@ -15,10 +15,11 @@
     $displayName = collect([$details?->first_name, $details?->middle_name, $details?->last_name, $details?->extension_name])->filter()->implode(' ') ?: $user->name;
     $currentAddress = collect([$details?->barangay, $details?->city_municipality, $details?->province])->filter()->implode(', ');
     $birthPlace = collect([$details?->birth_city_municipality, $details?->birth_province])->filter()->implode(', ');
+    $profileDraftKey = 'smartNstpProfileDraft:'.$user->id;
 @endphp
 
 @section('content')
-<div class="page-actions student-profile-heading"><div><h2>Your student information</h2><p>{{ $isEditing ? 'Update your details using the guided choices and validation used during registration.' : 'Review your saved personal, emergency contact, and academic details.' }}</p></div>@if($isEditing)<a class="secondary-outline-button" href="{{ route('student.profile.edit') }}">Cancel editing</a>@else<a class="primary-button compact" href="{{ route('student.profile.edit', ['edit' => 1]) }}">Edit profile</a>@endif</div>
+<div class="page-actions student-profile-heading"><div><h2>Your student information</h2><p>{{ $isEditing ? 'Update your details using the guided choices and validation used during registration.' : 'Review your saved personal, emergency contact, and academic details.' }}</p></div>@if($isEditing)<a class="secondary-outline-button" href="{{ route('student.profile.edit') }}" data-profile-draft-cancel>Cancel editing</a>@else<a class="primary-button compact" href="{{ route('student.profile.edit', ['edit' => 1]) }}">Edit profile</a>@endif</div>
 
 @if (! $isEditing)
 <section class="card student-profile-overview">
@@ -67,7 +68,7 @@
     <div class="alert danger"><strong>Please check the highlighted information.</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
 @endif
 
-<form method="POST" action="{{ route('student.profile.details.update') }}" enctype="multipart/form-data" id="student-profile-form" class="student-details-form">
+<form method="POST" action="{{ route('student.profile.details.update') }}" enctype="multipart/form-data" id="student-profile-form" class="student-details-form" data-profile-draft-key="{{ $profileDraftKey }}">
     @csrf
     @method('PUT')
     <input type="hidden" name="_profile_editor" value="1">
@@ -149,5 +150,8 @@
 @if($isEditing)
     <script>window.studentProfileAcademics = @json(config('academics.colleges')); window.studentProfileLocationEndpoints = {{ Illuminate\Support\Js::from($locationEndpoints) }};</script>
     <script src="{{ asset('js/student-profile.js') }}?v={{ filemtime(public_path('js/student-profile.js')) }}"></script>
+@endif
+@if(session('profile_saved'))
+    <script>sessionStorage.removeItem(@json($profileDraftKey));</script>
 @endif
 @endsection
