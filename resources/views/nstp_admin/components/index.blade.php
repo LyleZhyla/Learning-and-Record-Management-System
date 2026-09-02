@@ -31,7 +31,7 @@
         <form class="component-analytics-filter" method="GET" action="{{ route($routePrefix.'.components.index') }}" data-component-analytics-filter>
             <label class="field-group"><span>Academic year</span><select name="academic_year">@foreach($academicYears as $year)<option value="{{ $year }}" @selected($academicYear === $year)>{{ $year }}</option>@endforeach</select></label>
             <label class="field-group"><span>Semester</span><select name="semester">@foreach(\App\Models\NstpSection::SEMESTERS as $value => $label)<option value="{{ $value }}" @selected($semester === $value)>{{ $label }}</option>@endforeach</select></label>
-            <label class="field-group"><span>Specific component</span><select name="component" data-component-select>@foreach($components as $component)<option value="{{ $component->id }}" data-component-code="{{ $component->code }}" @selected($selectedComponent?->id === $component->id)>{{ $component->code }} — {{ $component->name }}</option>@endforeach</select></label>
+            <label class="field-group"><span>Component scope</span><select name="component" data-component-select><option value="all" @selected($compareAllComponents)>All components — Compare</option>@foreach($components as $component)<option value="{{ $component->id }}" data-component-code="{{ $component->code }}" @selected($selectedComponent?->id === $component->id)>{{ $component->code }} — {{ $component->name }}</option>@endforeach</select></label>
             <label class="field-group" data-ms-level-field @if($selectedComponent?->code !== 'ROTC') hidden @endif><span>ROTC MS level</span><select name="ms_level" data-ms-level-select @disabled($selectedComponent?->code !== 'ROTC')><option value="">All MS levels</option>@foreach($rotcCategories as $value => $label)<option value="{{ $value }}" @selected($msLevel === $value)>{{ $label }}</option>@endforeach</select></label>
             <button class="filter-button" type="submit">Apply filters</button>
         </form>
@@ -39,7 +39,7 @@
 
     @php
         $largestComponentCount = max(1, (int) $componentEnrollments->max('count'));
-        $selectedScope = $selectedComponent?->code.($msLevel ? ' · '.$msLevel : '');
+        $selectedScope = $compareAllComponents ? 'All components' : $selectedComponent?->code.($msLevel ? ' · '.$msLevel : '');
     @endphp
     <section class="card enrollee-chart-card component-total-chart">
         <div class="card-heading">
@@ -65,14 +65,28 @@
 
     <section class="demographic-chart-grid">
         @foreach(['college' => 'Enrollees per college', 'course' => 'Enrollees per course', 'province' => 'Enrollees per province', 'sex' => 'Enrollees according to sex'] as $key => $title)
-            @php($largest = max(1, (int) $breakdowns[$key]->max('count')))
+            @php($chartRows = $compareAllComponents ? $comparisonBreakdowns[$key] : $breakdowns[$key])
+            @php($largest = $compareAllComponents ? $comparisonMaximums[$key] : max(1, (int) $chartRows->max('count')))
             <article class="card demographic-chart-card">
-                <div class="card-heading"><div><span class="eyebrow">{{ $selectedScope }}</span><h3>{{ $title }}</h3><p>Distinct students matching the selected component{{ $msLevel ? ' and MS level' : '' }}.</p></div></div>
+                <div class="card-heading"><div><span class="eyebrow">{{ $selectedScope }}</span><h3>{{ $title }}</h3><p>{{ $compareAllComponents ? 'Compare CWTS, LTS, and ROTC within every category.' : 'Distinct students matching the selected component'.($msLevel ? ' and MS level' : '').'.' }}</p></div></div>
                 <div class="horizontal-chart" role="list" aria-label="{{ $title }} for {{ $selectedScope }}">
-                    @forelse($breakdowns[$key] as $row)
-                        <div class="horizontal-chart-row" role="listitem" aria-label="{{ $row['label'] }}: {{ $row['count'] }} enrollees">
-                            <div class="horizontal-chart-label"><span title="{{ $row['label'] }}">{{ $row['label'] }}</span><strong>{{ number_format($row['count']) }}</strong></div>
-                            <div class="horizontal-chart-track" aria-hidden="true"><span style="width: {{ $row['count'] > 0 ? max(3, ($row['count'] / $largest) * 100) : 0 }}%"></span></div>
+                    @forelse($chartRows as $row)
+                        <div class="horizontal-chart-row @if($compareAllComponents) component-comparison-row @endif" role="listitem">
+                            <div class="horizontal-chart-label"><span title="{{ $row['label'] }}">{{ $row['label'] }}</span><strong>{{ number_format($compareAllComponents ? $row['total'] : $row['count']) }}</strong></div>
+                            @if($compareAllComponents)
+                                <div class="component-comparison-bars">
+                                    @foreach($components as $component)
+                                        @php($componentCount = $row['counts'][$component->code] ?? 0)
+                                        <div class="component-comparison-bar" aria-label="{{ $row['label'] }}, {{ $component->code }}: {{ $componentCount }} enrollees">
+                                            <b>{{ $component->code }}</b>
+                                            <div class="horizontal-chart-track" aria-hidden="true"><span class="component-{{ strtolower($component->code) }}" style="width: {{ $componentCount > 0 ? max(3, ($componentCount / $largest) * 100) : 0 }}%"></span></div>
+                                            <strong>{{ number_format($componentCount) }}</strong>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="horizontal-chart-track" aria-hidden="true"><span style="width: {{ $row['count'] > 0 ? max(3, ($row['count'] / $largest) * 100) : 0 }}%"></span></div>
+                            @endif
                         </div>
                     @empty
                         <div class="empty-state compact"><strong>No enrollment data</strong><span>No students match the selected filters.</span></div>

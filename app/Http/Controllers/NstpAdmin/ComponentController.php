@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ComponentController extends Controller
@@ -23,7 +24,7 @@ class ComponentController extends Controller
             ->get();
 
         $validated = $request->validate([
-            'component' => ['nullable', 'integer', 'exists:nstp_components,id'],
+            'component' => ['nullable', Rule::in($components->pluck('id')->map(fn ($id) => (string) $id)->prepend('all')->all())],
             'academic_year' => ['nullable', 'regex:/^\d{4}-\d{4}$/'],
             'semester' => ['nullable', 'in:'.implode(',', array_keys(NstpSection::SEMESTERS))],
             'ms_level' => ['nullable', 'in:'.implode(',', array_keys(NstpEnrollment::ROTC_CATEGORIES))],
@@ -31,8 +32,10 @@ class ComponentController extends Controller
 
         $academicYear = $validated['academic_year'] ?? $defaultAcademicYear;
         $semester = $validated['semester'] ?? $defaultSemester;
-        $selectedComponent = $components->firstWhere('id', (int) ($validated['component'] ?? 0))
-            ?? $components->first();
+        $compareAllComponents = ($validated['component'] ?? null) === 'all';
+        $selectedComponent = $compareAllComponents
+            ? null
+            : ($components->firstWhere('id', (int) ($validated['component'] ?? 0)) ?? $components->first());
         $msLevel = $selectedComponent?->code === 'ROTC' ? ($validated['ms_level'] ?? null) : null;
 
         $termEnrollments = NstpEnrollment::query()
@@ -52,13 +55,29 @@ class ComponentController extends Controller
         ]);
 
         $selectedEnrollments = (clone $termEnrollments)
-            ->where('component_id', $selectedComponent?->id ?? 0)
+            ->when(! $compareAllComponents, fn (Builder $query) => $query->where('component_id', $selectedComponent?->id ?? 0))
             ->when($msLevel, fn (Builder $query, string $level) => $query->where('rotc_category', $level));
+        $fields = ['college', 'course', 'province', 'sex'];
+        $breakdowns = $compareAllComponents
+            ? []
+            : collect($fields)->mapWithKeys(fn (string $field) => [
+                $field => $this->profileBreakdown($selectedEnrollments, $field),
+            ])->all();
+        $comparisonBreakdowns = $compareAllComponents
+            ? collect($fields)->mapWithKeys(fn (string $field) => [
+                $field => $this->componentProfileComparison($selectedEnrollments, $field, $components),
+            ])->all()
+            : [];
+        $comparisonMaximums = collect($comparisonBreakdowns)->map(fn (Collection $rows) => max(
+            1,
+            (int) $rows->flatMap(fn (array $row) => $row['counts']->values())->max(),
+        ))->all();
 
         return view('nstp_admin.components.index', [
             'components' => $components,
             'componentEnrollments' => $componentEnrollments,
             'selectedComponent' => $selectedComponent,
+            'compareAllComponents' => $compareAllComponents,
             'selectedEnrollmentCount' => (clone $selectedEnrollments)->distinct()->count('student_id'),
             'academicYear' => $academicYear,
             'semester' => $semester,
@@ -66,12 +85,9 @@ class ComponentController extends Controller
             'academicYears' => NstpEnrollment::query()->distinct()->orderByDesc('academic_year')->pluck('academic_year')
                 ->prepend($academicYear)->unique()->values(),
             'rotcCategories' => NstpEnrollment::ROTC_CATEGORIES,
-            'breakdowns' => [
-                'college' => $this->profileBreakdown($selectedEnrollments, 'college'),
-                'course' => $this->profileBreakdown($selectedEnrollments, 'course'),
-                'province' => $this->profileBreakdown($selectedEnrollments, 'province'),
-                'sex' => $this->profileBreakdown($selectedEnrollments, 'sex'),
-            ],
+            'breakdowns' => $breakdowns,
+            'comparisonBreakdowns' => $comparisonBreakdowns,
+            'comparisonMaximums' => $comparisonMaximums,
             'routePrefix' => $this->routePrefix($request),
             'componentSelectionOpen' => SystemSetting::componentSelectionIsOpen(),
             'componentSelectionSetting' => SystemSetting::with('updater')->find('component_selection_open'),
@@ -142,6 +158,32 @@ class ComponentController extends Controller
                 'count' => (int) $rows->sum('count'),
             ])
             ->sort(fn (array $left, array $right) => $right['count'] <=> $left['count'] ?: strcasecmp($left['label'], $right['label']))
+            ->values();
+    }
+
+    private function componentProfileComparison(Builder $enrollments, string $field, Collection $components): Collection
+    {
+        $column = 'student_profiles.'.$field;
+
+        return (clone $enrollments)
+            ->leftJoin('student_profiles', 'student_profiles.user_id', '=', 'nstp_enrollments.student_id')
+            ->selectRaw("nstp_enrollments.component_id, {$column} as label, COUNT(DISTINCT nstp_enrollments.student_id) as total")
+            ->groupBy('nstp_enrollments.component_id', $column)
+            ->get()
+            ->map(fn ($row) => [
+                'component_id' => (int) $row->component_id,
+                'label' => filled(trim((string) $row->label)) ? trim((string) $row->label) : 'Not provided',
+                'count' => (int) $row->total,
+            ])
+            ->groupBy('label')
+            ->map(function (Collection $rows, string $label) use ($components): array {
+                $counts = $components->mapWithKeys(fn (NstpComponent $component) => [
+                    $component->code => (int) $rows->where('component_id', $component->id)->sum('count'),
+                ]);
+
+                return ['label' => $label, 'total' => (int) $counts->sum(), 'counts' => $counts];
+            })
+            ->sort(fn (array $left, array $right) => $right['total'] <=> $left['total'] ?: strcasecmp($left['label'], $right['label']))
             ->values();
     }
 

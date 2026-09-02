@@ -69,6 +69,47 @@ class NstpStructureManagementTest extends TestCase
             ->assertDontSee('Female');
     }
 
+    public function test_all_components_scope_compares_demographics_side_by_side(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $components = NstpComponent::query()->get()->keyBy('code');
+        $cwtsStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $ltsStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $rotcStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $this->createAnalyticsProfile($cwtsStudent, '2026100001', 'College of Engineering', 'BSCE', 'Bulacan', 'Female');
+        $this->createAnalyticsProfile($ltsStudent, '2026100002', 'College of Engineering', 'BSIT', 'Pampanga', 'Male');
+        $this->createAnalyticsProfile($rotcStudent, '2026100003', 'College of Education', 'BSEd', 'Bulacan', 'Male');
+
+        foreach ([['CWTS', $cwtsStudent], ['LTS', $ltsStudent], ['ROTC', $rotcStudent]] as [$code, $student]) {
+            NstpEnrollment::create([
+                'student_id' => $student->id,
+                'component_id' => $components[$code]->id,
+                'academic_year' => '2026-2027',
+                'semester' => 'first',
+                'shirt_size' => 'M',
+                'rotc_category' => $code === 'ROTC' ? 'MS-1' : null,
+                'status' => 'enrolled',
+            ]);
+        }
+
+        $this->actingAs($admin)->get('/nstp-admin/components?component=all&academic_year=2026-2027&semester=first')
+            ->assertOk()
+            ->assertViewHas('compareAllComponents', true)
+            ->assertViewHas('selectedEnrollmentCount', 3)
+            ->assertViewHas('comparisonBreakdowns', function (array $breakdowns): bool {
+                $engineering = $breakdowns['college']->firstWhere('label', 'College of Engineering');
+
+                return $engineering['total'] === 2
+                    && $engineering['counts']['CWTS'] === 1
+                    && $engineering['counts']['LTS'] === 1
+                    && $engineering['counts']['ROTC'] === 0;
+            })
+            ->assertSee('All components — Compare')
+            ->assertSee('Compare CWTS, LTS, and ROTC within every category.')
+            ->assertSee('College of Engineering')
+            ->assertSee('College of Education');
+    }
+
     public function test_super_admin_can_manage_the_same_nstp_structure_records(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
