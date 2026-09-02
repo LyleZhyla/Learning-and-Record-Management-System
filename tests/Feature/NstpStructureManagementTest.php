@@ -42,17 +42,24 @@ class NstpStructureManagementTest extends TestCase
         $rotc = NstpComponent::where('code', 'ROTC')->firstOrFail();
         $msOneStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $msThirtyOneStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $studentWithoutProfile = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $studentWithBlankProfileFields = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $this->createAnalyticsProfile($msOneStudent, '2026000001', 'College of Education', 'BSEd', 'Bulacan', 'Female');
         $this->createAnalyticsProfile($msThirtyOneStudent, '2026000002', 'College of Engineering', 'BSCE', 'Pampanga', 'Male');
+        $this->createAnalyticsProfile($studentWithBlankProfileFields, '2026000003', '', '', '', '');
 
         NstpEnrollment::create(['student_id' => $msOneStudent->id, 'component_id' => $rotc->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-1', 'status' => 'enrolled']);
         NstpEnrollment::create(['student_id' => $msThirtyOneStudent->id, 'component_id' => $rotc->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-31', 'status' => 'pending_approval']);
+        NstpEnrollment::create(['student_id' => $studentWithoutProfile->id, 'component_id' => $rotc->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-31', 'status' => 'enrolled']);
+        NstpEnrollment::create(['student_id' => $studentWithBlankProfileFields->id, 'component_id' => $rotc->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-31', 'status' => 'enrolled']);
 
         $this->actingAs($admin)->get('/nstp-admin/components?component='.$rotc->id.'&academic_year=2026-2027&semester=first&ms_level=MS-31')
             ->assertOk()
-            ->assertViewHas('selectedEnrollmentCount', 1)
+            ->assertViewHas('selectedEnrollmentCount', 3)
+            ->assertViewHas('breakdowns', fn (array $breakdowns) => $breakdowns['college']->contains(fn (array $row) => $row['label'] === 'Not provided' && $row['count'] === 2))
             ->assertSee('ROTC · MS-31')
             ->assertSee('College of Engineering')
+            ->assertSee('Not provided')
             ->assertSee('BSCE')
             ->assertSee('Pampanga')
             ->assertSee('Male')

@@ -108,16 +108,23 @@ class ComponentController extends Controller
     private function profileBreakdown(Builder $enrollments, string $field): Collection
     {
         $column = 'student_profiles.'.$field;
-        $labelExpression = "COALESCE(NULLIF({$column}, ''), 'Not provided')";
 
         return (clone $enrollments)
             ->leftJoin('student_profiles', 'student_profiles.user_id', '=', 'nstp_enrollments.student_id')
-            ->selectRaw("{$labelExpression} as label, COUNT(DISTINCT nstp_enrollments.student_id) as total")
-            ->groupByRaw($labelExpression)
-            ->orderByDesc('total')
-            ->orderBy('label')
+            ->selectRaw("{$column} as label, COUNT(DISTINCT nstp_enrollments.student_id) as total")
+            ->groupBy($column)
             ->get()
-            ->map(fn ($row) => ['label' => $row->label, 'count' => (int) $row->total]);
+            ->map(fn ($row) => [
+                'label' => filled(trim((string) $row->label)) ? trim((string) $row->label) : 'Not provided',
+                'count' => (int) $row->total,
+            ])
+            ->groupBy('label')
+            ->map(fn (Collection $rows, string $label) => [
+                'label' => $label,
+                'count' => (int) $rows->sum('count'),
+            ])
+            ->sort(fn (array $left, array $right) => $right['count'] <=> $left['count'] ?: strcasecmp($left['label'], $right['label']))
+            ->values();
     }
 
     private function currentTerm(): array
