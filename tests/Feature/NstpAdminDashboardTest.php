@@ -38,7 +38,10 @@ class NstpAdminDashboardTest extends TestCase
             ->assertOk()
             ->assertSee('NSTP Admin Dashboard')
             ->assertSee('Open sectioning')
-            ->assertSee('NSTP Components');
+            ->assertSee('NSTP Components')
+            ->assertSee('Recent NSTP accounts')
+            ->assertDontSee('Module readiness')
+            ->assertDontSee('Operations checklist');
     }
 
     public function test_nstp_admin_dashboard_shows_active_students_without_a_current_component(): void

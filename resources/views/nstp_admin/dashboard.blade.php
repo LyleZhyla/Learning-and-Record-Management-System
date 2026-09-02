@@ -26,32 +26,19 @@
         <a class="component-card rotc" href="{{ route('nstp_admin.sections.index', ['component_id' => $components->firstWhere('code', 'ROTC')?->id]) }}"><div class="component-symbol">R</div><div><span>Reserve Officers' Training Corps</span><h3>ROTC</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Open sectioning →</span></a>
     </section>
 
-    <div class="content-grid nstp-content-grid">
-        <section class="card">
-            <div class="card-heading"><div><span class="eyebrow">Latest registrations</span><h3>Recent NSTP accounts</h3><p>Recently added students, facilitators, and coordinators.</p></div><span class="pill">{{ $recentAccounts->count() }} shown</span></div>
-            <div class="compact-user-list">
-                @forelse ($recentAccounts as $account)
-                    <div class="compact-user-row">
-                        <span class="table-avatar">{{ strtoupper(substr($account->name, 0, 1)) }}</span>
-                        <div><strong>{{ $account->name }}</strong><small>{{ $account->email }}</small></div>
-                        <span class="role-badge role-{{ $account->role }}">{{ $account->roleLabel() }}</span>
-                        <span class="status-badge {{ $account->status }}"><i></i>{{ $account->statusLabel() }}</span>
-                    </div>
-                @empty
-                    <div class="empty-state"><strong>No operational accounts yet</strong><span>Accounts created by the Super Admin will appear here.</span></div>
-                @endforelse
-            </div>
-        </section>
-
-        <aside class="card">
-            <div class="card-heading"><div><span class="eyebrow">Module readiness</span><h3>Operations checklist</h3></div></div>
-            <div class="readiness-list">
-                <div><span class="check ready">✓</span><p><strong>NSTP Admin access</strong><small>Secure role-based dashboard</small></p></div>
-                <div><span class="check ready">✓</span><p><strong>Components & sections</strong><small>CWTS, LTS, and ROTC configuration</small></p></div>
-                <div><span class="check ready">✓</span><p><strong>Student Accounts workflow</strong><small>Component assignment is managed from Student Accounts</small></p></div>
-                <div><span class="check ready">✓</span><p><strong>Operational reports</strong><small>Masterlists, summaries, CSV, and print output</small></p></div>
-                <div><span class="check ready">✓</span><p><strong>Announcements</strong><small>Targeted messages by audience and component</small></p></div>
-            </div>
-        </aside>
-    </div>
+    <section class="card">
+        <div class="card-heading"><div><span class="eyebrow">Latest registrations</span><h3>Recent NSTP accounts</h3><p>Recently added students, facilitators, and coordinators.</p></div><span class="pill">{{ $recentAccounts->count() }} shown</span></div>
+        <div class="compact-user-list">
+            @forelse ($recentAccounts as $account)
+                <div class="compact-user-row">
+                    <span class="table-avatar">{{ strtoupper(substr($account->name, 0, 1)) }}</span>
+                    <div><strong>{{ $account->name }}</strong><small>{{ $account->email }}</small></div>
+                    <span class="role-badge role-{{ $account->role }}">{{ $account->roleLabel() }}</span>
+                    <span class="status-badge {{ $account->status }}"><i></i>{{ $account->statusLabel() }}</span>
+                </div>
+            @empty
+                <div class="empty-state"><strong>No operational accounts yet</strong><span>Accounts created by the Super Admin will appear here.</span></div>
+            @endforelse
+        </div>
+    </section>
 @endsection
