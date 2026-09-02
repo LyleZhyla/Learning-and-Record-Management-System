@@ -113,6 +113,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
+    Route::patch('/components/selection-availability', [NstpAdminComponentController::class, 'updateSelectionAvailability'])->name('components.selection-availability');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
     Route::get('/sections', [NstpAdminSectioningController::class, 'index'])->name('sections.index');
@@ -189,6 +190,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/settings', [SystemSettingController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SystemSettingController::class, 'update'])->name('settings.update');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
+    Route::patch('/components/selection-availability', [NstpAdminComponentController::class, 'updateSelectionAvailability'])->name('components.selection-availability');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
     Route::get('/sections', [NstpAdminSectioningController::class, 'index'])->name('sections.index');

@@ -4,8 +4,15 @@
 
 @section('content')
 <section class="page-actions">
-    <div><span class="eyebrow">Student enrollment</span><h2>{{ $currentEnrollment ? 'Your NSTP selection' : 'Choose your NSTP component' }}</h2><p>{{ $currentEnrollment ? 'Your component, ROTC details, and shirt size for this term are final.' : 'Select your preferred component and required shirt size for '.$semesterLabel.' '.$academicYear.'.' }}</p></div>
+    <div><span class="eyebrow">Student enrollment</span><h2>{{ $currentEnrollment ? 'Your NSTP selection' : ($componentSelectionOpen ? 'Choose your NSTP component' : 'NSTP selection is closed') }}</h2><p>{{ $currentEnrollment ? 'Your component, ROTC details, and shirt size for this term are final.' : ($componentSelectionOpen ? 'Select your preferred component and required shirt size for '.$semesterLabel.' '.$academicYear.'.' : 'The NSTP Admin or Super Admin has temporarily closed component selection for '.$semesterLabel.' '.$academicYear.'.') }}</p></div>
 </section>
+
+@if(! $currentEnrollment && ! $componentSelectionOpen)
+    <section class="card selection-closed-notice">
+        <span aria-hidden="true">!</span>
+        <div><h3>Selection is not accepting submissions</h3><p>Please wait for the NSTP Admin or Super Admin to reopen component selection. No enrollment preference has been saved yet.</p></div>
+    </section>
+@else
 
 <div class="student-selection-layout">
     <section class="card student-component-card">
@@ -76,7 +83,9 @@
         </dl>
     </aside>
 </div>
+@endif
 
+@if($currentEnrollment || $componentSelectionOpen)
 <script>
     const componentOptions = [...document.querySelectorAll('[data-component-code]')];
     const rotcCategoryPanel = document.querySelector('[data-rotc-category-panel]');
@@ -109,4 +118,5 @@
     rotcCategorySelect.addEventListener('change', updateRotcProof);
     updateRotcCategory();
 </script>
+@endif
 @endsection

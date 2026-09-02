@@ -26,4 +26,11 @@ class SystemSetting extends Model
             ->where('key', 'inactivity_timeout_minutes')
             ->value('value') ?: 30));
     }
+
+    public static function componentSelectionIsOpen(): bool
+    {
+        return static::query()
+            ->where('key', 'component_selection_open')
+            ->value('value') !== '0';
+    }
 }

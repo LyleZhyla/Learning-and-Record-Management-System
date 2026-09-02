@@ -9,6 +9,24 @@
         <a class="secondary-outline-button" href="{{ route($routePrefix.'.sections.index') }}">Manage sectioning →</a>
     </section>
 
+    <section class="card component-selection-control {{ $componentSelectionOpen ? 'is-open' : 'is-closed' }}">
+        <div class="component-selection-control-copy">
+            <span class="component-selection-status-dot" aria-hidden="true"></span>
+            <div>
+                <span class="eyebrow">Student self-selection</span>
+                <h3>Component selection is {{ $componentSelectionOpen ? 'open' : 'closed' }}</h3>
+                <p>{{ $componentSelectionOpen ? 'Students without an enrollment can currently choose their component, shirt size, and ROTC details.' : 'Students without an enrollment can view the page, but they cannot submit an NSTP selection.' }}</p>
+                <small>Last changed by {{ $componentSelectionSetting?->updater?->name ?? 'System default' }}{{ $componentSelectionSetting?->updated_at ? ' · '.$componentSelectionSetting->updated_at->format('M d, Y g:i A') : '' }}</small>
+            </div>
+        </div>
+        <form method="POST" action="{{ route($routePrefix.'.components.selection-availability') }}">
+            @csrf
+            @method('PATCH')
+            <input type="hidden" name="is_open" value="{{ $componentSelectionOpen ? 0 : 1 }}">
+            <button class="{{ $componentSelectionOpen ? 'danger-button' : 'success-button' }}" type="submit">{{ $componentSelectionOpen ? 'Close selection' : 'Open selection' }}</button>
+        </form>
+    </section>
+
     <section class="card component-filter-card">
         <form class="component-analytics-filter" method="GET" action="{{ route($routePrefix.'.components.index') }}" data-component-analytics-filter>
             <label class="field-group"><span>Academic year</span><select name="academic_year">@foreach($academicYears as $year)<option value="{{ $year }}" @selected($academicYear === $year)>{{ $year }}</option>@endforeach</select></label>

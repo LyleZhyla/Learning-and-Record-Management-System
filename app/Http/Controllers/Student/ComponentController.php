@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Models\SystemSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -40,6 +41,7 @@ class ComponentController extends Controller
             'semesterLabel' => NstpSection::SEMESTERS[$semester],
             'shirtSizes' => NstpEnrollment::SHIRT_SIZES,
             'rotcCategories' => NstpEnrollment::ROTC_CATEGORIES,
+            'componentSelectionOpen' => SystemSetting::componentSelectionIsOpen(),
         ]);
     }
 
@@ -56,6 +58,12 @@ class ComponentController extends Controller
         if ($enrollment->exists) {
             return back()->withErrors([
                 'selection' => 'Your NSTP component, ROTC details, and shirt size are final and can no longer be changed.',
+            ]);
+        }
+
+        if (! SystemSetting::componentSelectionIsOpen()) {
+            return back()->withErrors([
+                'selection' => 'NSTP component selection is currently closed. Please wait for an administrator to reopen it.',
             ]);
         }
 

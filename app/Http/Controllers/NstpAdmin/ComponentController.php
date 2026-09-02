@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Models\SystemSetting;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,7 +73,24 @@ class ComponentController extends Controller
                 'sex' => $this->profileBreakdown($selectedEnrollments, 'sex'),
             ],
             'routePrefix' => $this->routePrefix($request),
+            'componentSelectionOpen' => SystemSetting::componentSelectionIsOpen(),
+            'componentSelectionSetting' => SystemSetting::with('updater')->find('component_selection_open'),
         ]);
+    }
+
+    public function updateSelectionAvailability(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'is_open' => ['required', 'boolean'],
+        ]);
+        $isOpen = (bool) $validated['is_open'];
+
+        SystemSetting::updateOrCreate(
+            ['key' => 'component_selection_open'],
+            ['value' => $isOpen ? '1' : '0', 'updated_by' => $request->user()->id],
+        );
+
+        return back()->with('status', 'Student NSTP selection is now '.($isOpen ? 'open' : 'closed').'.');
     }
 
     public function edit(Request $request, NstpComponent $component): View
