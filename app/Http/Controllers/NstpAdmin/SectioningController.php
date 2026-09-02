@@ -64,74 +64,84 @@ class SectioningController extends Controller
 
     public function automate(Request $request): RedirectResponse
     {
-        $validated = $request->validate($this->termRules());
-        $component = NstpComponent::findOrFail($validated['component_id']);
+        $showAllComponents = $request->input('component_id') === 'all';
+        $rules = $this->termRules();
+        if ($showAllComponents) {
+            $rules['component_id'] = ['required', Rule::in(['all'])];
+        }
+
+        $validated = $request->validate($rules);
+        $components = $showAllComponents
+            ? NstpComponent::where('is_active', true)->orderBy('id')->get()
+            : collect([NstpComponent::findOrFail($validated['component_id'])]);
         $assignedCount = 0;
         $createdCount = 0;
 
-        DB::transaction(function () use ($validated, $component, &$assignedCount, &$createdCount): void {
-            $unassigned = NstpEnrollment::where('component_id', $component->id)
-                ->where('status', 'enrolled')
-                ->where('academic_year', $validated['academic_year'])
-                ->where('semester', $validated['semester'])
-                ->whereNull('section_id')
-                ->with('student')
-                ->get()
-                ->sortBy(fn ($enrollment) => $enrollment->student->name, SORT_NATURAL | SORT_FLAG_CASE)
-                ->values();
+        DB::transaction(function () use ($validated, $components, &$assignedCount, &$createdCount): void {
+            foreach ($components as $component) {
+                $unassigned = NstpEnrollment::where('component_id', $component->id)
+                    ->where('status', 'enrolled')
+                    ->where('academic_year', $validated['academic_year'])
+                    ->where('semester', $validated['semester'])
+                    ->whereNull('section_id')
+                    ->with('student')
+                    ->get()
+                    ->sortBy(fn ($enrollment) => $enrollment->student->name, SORT_NATURAL | SORT_FLAG_CASE)
+                    ->values();
 
-            if ($unassigned->isEmpty()) {
-                return;
-            }
-
-            $sections = NstpSection::where('component_id', $component->id)
-                ->where('academic_year', $validated['academic_year'])
-                ->where('semester', $validated['semester'])
-                ->where('status', 'active')
-                ->withCount('enrollments')
-                ->lockForUpdate()
-                ->get();
-
-            $nextNumber = $sections->count() + 1;
-
-            foreach ($unassigned as $enrollment) {
-                $section = $sections
-                    ->filter(fn ($candidate) => $candidate->enrollments_count < $candidate->capacity)
-                    ->sortBy(fn ($candidate) => $candidate->enrollments_count / $candidate->capacity)
-                    ->first();
-
-                if (! $section) {
-                    do {
-                        $code = $component->code.'-'.str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT);
-                        $nextNumber++;
-                    } while (NstpSection::where('academic_year', $validated['academic_year'])
-                        ->where('semester', $validated['semester'])
-                        ->where('code', $code)
-                        ->exists());
-
-                    $section = NstpSection::create([
-                        'component_id' => $component->id,
-                        'code' => $code,
-                        'name' => $component->code.' Section '.($nextNumber - 1),
-                        'academic_year' => $validated['academic_year'],
-                        'semester' => $validated['semester'],
-                        'capacity' => $component->default_section_capacity,
-                        'status' => 'active',
-                    ]);
-                    $section->enrollments_count = 0;
-                    $sections->push($section);
-                    $createdCount++;
+                if ($unassigned->isEmpty()) {
+                    continue;
                 }
 
-                $enrollment->update(['section_id' => $section->id]);
-                $section->enrollments_count++;
-                $assignedCount++;
+                $sections = NstpSection::where('component_id', $component->id)
+                    ->where('academic_year', $validated['academic_year'])
+                    ->where('semester', $validated['semester'])
+                    ->where('status', 'active')
+                    ->withCount('enrollments')
+                    ->lockForUpdate()
+                    ->get();
+
+                $nextNumber = $sections->count() + 1;
+
+                foreach ($unassigned as $enrollment) {
+                    $section = $sections
+                        ->filter(fn ($candidate) => $candidate->enrollments_count < $candidate->capacity)
+                        ->sortBy(fn ($candidate) => $candidate->enrollments_count / $candidate->capacity)
+                        ->first();
+
+                    if (! $section) {
+                        do {
+                            $code = $component->code.'-'.str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT);
+                            $nextNumber++;
+                        } while (NstpSection::where('academic_year', $validated['academic_year'])
+                            ->where('semester', $validated['semester'])
+                            ->where('code', $code)
+                            ->exists());
+
+                        $section = NstpSection::create([
+                            'component_id' => $component->id,
+                            'code' => $code,
+                            'name' => $component->code.' Section '.($nextNumber - 1),
+                            'academic_year' => $validated['academic_year'],
+                            'semester' => $validated['semester'],
+                            'capacity' => $component->default_section_capacity,
+                            'status' => 'active',
+                        ]);
+                        $section->enrollments_count = 0;
+                        $sections->push($section);
+                        $createdCount++;
+                    }
+
+                    $enrollment->update(['section_id' => $section->id]);
+                    $section->enrollments_count++;
+                    $assignedCount++;
+                }
             }
         });
 
         $message = $assignedCount
             ? "Automated sectioning assigned {$assignedCount} student(s) and created {$createdCount} new section(s)."
-            : 'No unsectioned students were found for the selected component and term.';
+            : 'No unsectioned students were found for the selected component(s) and term.';
 
         return redirect()->route($this->routePrefix($request).'.sections.index', $this->termQuery($validated))
             ->with('status', $message);

@@ -8,7 +8,7 @@
     <div class="automated-sectioning-copy">
         <span class="eyebrow">Automatic sectioning</span>
         <h2>{{ $showAllComponents ? (int) $unsectionedCounts->sum() : (int) ($unsectionedCounts[$componentId] ?? 0) }} student(s) awaiting placement</h2>
-        <p>@if($showAllComponents)All active NSTP components and their sections are shown below. Choose a specific component before running automatic sectioning.@else Select the component and term. Assigned students will fill available seats first, and new sections will be created only when needed.@endif</p>
+        <p>@if($showAllComponents)All active NSTP components and their sections are shown below. Automatic sectioning will process CWTS, LTS, and ROTC in one run.@else Select the component and term. Assigned students will fill available seats first, and new sections will be created only when needed.@endif</p>
     </div>
 
     <form method="GET" action="{{ route($routePrefix.'.sections.index') }}" class="term-form sectioning-workspace-form sectioning-inline-filter">
@@ -18,15 +18,13 @@
         <button class="filter-button" type="submit">Apply</button>
     </form>
 
-    @if($selectedComponent)
-        <form method="POST" action="{{ route($routePrefix.'.sectioning.automate') }}" class="sectioning-run-form">
-            @csrf
-            <input type="hidden" name="component_id" value="{{ $componentId }}">
-            <input type="hidden" name="academic_year" value="{{ $academicYear }}">
-            <input type="hidden" name="semester" value="{{ $semester }}">
-            <button class="primary-button compact" type="submit">Run automatic sectioning</button>
-        </form>
-    @endif
+    <form method="POST" action="{{ route($routePrefix.'.sectioning.automate') }}" class="sectioning-run-form">
+        @csrf
+        <input type="hidden" name="component_id" value="{{ $showAllComponents ? 'all' : $componentId }}">
+        <input type="hidden" name="academic_year" value="{{ $academicYear }}">
+        <input type="hidden" name="semester" value="{{ $semester }}">
+        <button class="primary-button compact" type="submit">{{ $showAllComponents ? 'Run automatic sectioning for all components' : 'Run automatic sectioning' }}</button>
+    </form>
 </section>
 
 <section class="sectioning-sections-step">

@@ -134,9 +134,12 @@ class NstpStructureManagementTest extends TestCase
     public function test_sectioning_can_show_sections_from_all_components(): void
     {
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $studentIds = [];
 
         foreach (['CWTS', 'LTS', 'ROTC'] as $code) {
             $component = NstpComponent::where('code', $code)->firstOrFail();
+            $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+            $studentIds[] = $student->id;
             NstpSection::create([
                 'component_id' => $component->id,
                 'code' => $code.'-ALL',
@@ -145,6 +148,13 @@ class NstpStructureManagementTest extends TestCase
                 'semester' => 'first',
                 'capacity' => 40,
                 'status' => 'active',
+            ]);
+            NstpEnrollment::create([
+                'student_id' => $student->id,
+                'component_id' => $component->id,
+                'academic_year' => '2026-2027',
+                'semester' => 'first',
+                'status' => 'enrolled',
             ]);
         }
 
@@ -158,7 +168,20 @@ class NstpStructureManagementTest extends TestCase
             ->assertSee('CWTS-ALL')
             ->assertSee('LTS-ALL')
             ->assertSee('ROTC-ALL')
-            ->assertDontSee('Run automatic sectioning');
+            ->assertSee('Run automatic sectioning for all components');
+
+        $this->actingAs($admin)->post('/nstp-admin/sectioning/automate', [
+            'component_id' => 'all',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+        ])->assertRedirect('/nstp-admin/sections?component_id=all&academic_year=2026-2027&semester=first');
+
+        foreach ($studentIds as $studentId) {
+            $this->assertDatabaseMissing('nstp_enrollments', [
+                'student_id' => $studentId,
+                'section_id' => null,
+            ]);
+        }
     }
 
     public function test_component_edit_from_sectioning_returns_to_the_sectioning_workspace(): void
