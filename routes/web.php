@@ -267,6 +267,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::put('/component', [StudentComponentController::class, 'update'])->name('component.update');
     Route::get('/attendance', [StudentAttendanceController::class, 'index'])->name('attendance.index');
     Route::get('/attendance/qr', [StudentAttendanceController::class, 'qr'])->name('attendance.qr');
+    Route::get('/student-id', [StudentAttendanceController::class, 'studentId'])->name('id-card');
     Route::get('/materials', [StudentLearningController::class, 'materials'])->name('materials.index');
     Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
     Route::get('/assessments', [StudentLearningController::class, 'assessments'])->name('assessments.index');
