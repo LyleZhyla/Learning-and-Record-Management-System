@@ -10,8 +10,10 @@
             <h2>Manage staff and administrator accounts</h2>
             <p>Create and manage facilitators, coordinators, NSTP Admins, and Super Admins separately from students.</p>
         </div>
-        <div class="page-action-buttons">
-            <a class="primary-button compact" href="{{ route('admin.users.create', ['role' => 'facilitator']) }}">+ Create staff account</a>
+        <div class="page-action-buttons staff-create-actions" aria-label="Create staff account">
+            <a class="secondary-outline-button" href="{{ route('admin.users.create', ['role' => 'nstp_admin']) }}">+ NSTP Admin</a>
+            <a class="secondary-outline-button" href="{{ route('admin.users.create', ['role' => 'coordinator']) }}">+ Coordinator</a>
+            <a class="primary-button compact" href="{{ route('admin.users.create', ['role' => 'facilitator']) }}">+ Facilitator</a>
         </div>
     </section>
 

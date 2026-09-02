@@ -16,7 +16,7 @@
                 <span class="large-avatar small">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
                 <div><span class="eyebrow">Account #{{ $user->id }}</span><h2>{{ $user->name }}</h2><p>{{ $user->email }}</p></div>
             </div>
-            <form method="POST" action="{{ route('admin.users.update', $user) }}" class="account-form">
+            <form method="POST" action="{{ route('admin.users.update', $user) }}" class="account-form" data-staff-account-form>
                 @csrf @method('PUT')
                 @include('admin.users._form', ['user' => $user])
                 <div class="form-actions"><button class="primary-button compact" type="submit">Save changes</button></div>
@@ -55,4 +55,5 @@
             </section>
         </div>
     </div>
+    <script src="{{ asset('js/staff-account-form.js') }}?v={{ filemtime(public_path('js/staff-account-form.js')) }}"></script>
 @endsection

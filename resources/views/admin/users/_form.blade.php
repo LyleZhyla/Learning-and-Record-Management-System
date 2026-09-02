@@ -13,7 +13,7 @@
 
     <label class="field-group">
         <span>Account role</span>
-        <select name="role" required>
+        <select name="role" required data-account-role>
             @foreach (\App\Models\User::ROLE_LABELS as $value => $label)
                 <option value="{{ $value }}" @selected(old('role', $user?->role ?? ($initialRole ?? 'facilitator')) === $value)>{{ $label }}</option>
             @endforeach
@@ -31,15 +31,15 @@
         @error('status') <small class="field-error">{{ $message }}</small> @enderror
     </label>
 
-    <label class="field-group full">
+    <label class="field-group full" data-staff-component-field>
         <span>Staff component</span>
-        <select name="nstp_component_id">
+        <select name="nstp_component_id" data-staff-component-select>
             <option value="">Not applicable</option>
             @foreach ($components as $component)
                 <option value="{{ $component->id }}" @selected((int) old('nstp_component_id', $user?->nstp_component_id) === $component->id)>{{ $component->code }} — {{ $component->name }}</option>
             @endforeach
         </select>
-        <small class="form-help">Required for Coordinators and optional for Facilitators. Coordinator access is restricted to the selected component.</small>
+        <small class="form-help" data-staff-component-help>Required for Coordinators and optional for Facilitators. Coordinator access is restricted to the selected component.</small>
         @error('nstp_component_id') <small class="field-error">{{ $message }}</small> @enderror
     </label>
 

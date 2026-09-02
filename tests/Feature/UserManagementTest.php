@@ -33,6 +33,24 @@ class UserManagementTest extends TestCase
             ->assertOk()->assertSee($student->name)->assertDontSee($staff->name)->assertSee('Download QR');
     }
 
+    public function test_staff_directory_has_dedicated_creation_actions_for_the_three_nstp_staff_roles(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($admin)->get('/admin/users')
+            ->assertOk()
+            ->assertSee('href="'.route('admin.users.create', ['role' => 'nstp_admin']).'"', false)
+            ->assertSee('href="'.route('admin.users.create', ['role' => 'coordinator']).'"', false)
+            ->assertSee('href="'.route('admin.users.create', ['role' => 'facilitator']).'"', false);
+
+        foreach (['nstp_admin', 'coordinator', 'facilitator'] as $role) {
+            $this->actingAs($admin)->get('/admin/users/create?role='.$role)
+                ->assertOk()
+                ->assertSee('New '.User::ROLE_LABELS[$role].' account')
+                ->assertSee('value="'.$role.'" selected', false);
+        }
+    }
+
     public function test_super_admin_can_create_each_supported_role(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
