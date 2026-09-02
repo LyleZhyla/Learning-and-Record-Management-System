@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Models\StudentProfile;
 use App\Models\User;
 use Database\Seeders\NstpComponentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -20,18 +21,45 @@ class NstpStructureManagementTest extends TestCase
         $this->seed(NstpComponentSeeder::class);
     }
 
-    public function test_legacy_component_page_redirects_to_sectioning_with_all_three_components(): void
+    public function test_component_page_shows_enrollment_analytics_for_all_three_components(): void
     {
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
 
         $this->actingAs($admin)
             ->get('/nstp-admin/components')
-            ->assertRedirect('/nstp-admin/sections');
-
-        $this->actingAs($admin)
-            ->get('/nstp-admin/sections')
             ->assertOk()
+            ->assertSee('Enrollees per component')
+            ->assertSee('Enrollees per college')
+            ->assertSee('Enrollees per course')
+            ->assertSee('Enrollees per province')
+            ->assertSee('Enrollees according to sex')
             ->assertSeeTextInOrder(['CWTS', 'LTS', 'ROTC']);
+    }
+
+    public function test_rotc_analytics_can_be_filtered_by_ms_level(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $rotc = NstpComponent::where('code', 'ROTC')->firstOrFail();
+        $msOneStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $msThirtyOneStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $this->createAnalyticsProfile($msOneStudent, '2026000001', 'College of Education', 'BSEd', 'Bulacan', 'Female');
+        $this->createAnalyticsProfile($msThirtyOneStudent, '2026000002', 'College of Engineering', 'BSCE', 'Pampanga', 'Male');
+
+        NstpEnrollment::create(['student_id' => $msOneStudent->id, 'component_id' => $rotc->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-1', 'status' => 'enrolled']);
+        NstpEnrollment::create(['student_id' => $msThirtyOneStudent->id, 'component_id' => $rotc->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-31', 'status' => 'pending_approval']);
+
+        $this->actingAs($admin)->get('/nstp-admin/components?component='.$rotc->id.'&academic_year=2026-2027&semester=first&ms_level=MS-31')
+            ->assertOk()
+            ->assertViewHas('selectedEnrollmentCount', 1)
+            ->assertSee('ROTC · MS-31')
+            ->assertSee('College of Engineering')
+            ->assertSee('BSCE')
+            ->assertSee('Pampanga')
+            ->assertSee('Male')
+            ->assertDontSee('College of Education')
+            ->assertDontSee('BSEd')
+            ->assertDontSee('Bulacan')
+            ->assertDontSee('Female');
     }
 
     public function test_super_admin_can_manage_the_same_nstp_structure_records(): void
@@ -40,7 +68,9 @@ class NstpStructureManagementTest extends TestCase
 
         $this->actingAs($admin)
             ->get('/admin/components')
-            ->assertRedirect('/admin/sections');
+            ->assertOk()
+            ->assertSee('NSTP component insights')
+            ->assertSee('Enrollees per component');
 
         $this->actingAs($admin)
             ->get('/admin/sections')
@@ -262,5 +292,20 @@ class NstpStructureManagementTest extends TestCase
             'capacity' => 1,
             'status' => 'active',
         ])->assertSessionHasErrors('capacity');
+    }
+
+    private function createAnalyticsProfile(User $user, string $studentNumber, string $college, string $course, string $province, string $sex): void
+    {
+        StudentProfile::create([
+            'user_id' => $user->id, 'last_name' => 'Student', 'first_name' => 'Analytics',
+            'province' => $province, 'province_code' => '000000000', 'city_municipality' => 'Sample City',
+            'city_municipality_code' => '000000000', 'barangay' => 'Sample Barangay', 'barangay_code' => '000000000',
+            'date_of_birth' => '2006-01-01', 'birth_province' => $province, 'birth_province_code' => '000000000',
+            'birth_city_municipality' => 'Sample City', 'birth_city_municipality_code' => '000000000',
+            'religion' => 'Roman Catholic', 'sex' => $sex, 'blood_type' => 'O+', 'contact_number' => '09123456789',
+            'emergency_contact_name' => 'Parent', 'emergency_relationship' => 'Parent',
+            'emergency_contact_number' => '09987654321', 'emergency_same_address' => true,
+            'student_number' => $studentNumber, 'college' => $college, 'course' => $course, 'year_section' => '1A',
+        ]);
     }
 }

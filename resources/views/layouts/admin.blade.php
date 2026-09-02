@@ -38,7 +38,8 @@
                     <span class="nav-icon">♙</span> Staff Accounts
                 </a>
                 <a class="nav-link {{ $managingStudentAccount ? 'active' : '' }}" href="{{ route('admin.students.index') }}"><span class="nav-icon">♟</span> Student Accounts</a>
-                <a class="nav-link {{ request()->routeIs('admin.components.*', 'admin.sections.*', 'admin.sectioning.*') ? 'active' : '' }}" href="{{ route('admin.sections.index') }}"><span class="nav-icon">▦</span> Sectioning</a>
+                <a class="nav-link {{ request()->routeIs('admin.components.*') ? 'active' : '' }}" href="{{ route('admin.components.index') }}"><span class="nav-icon">◉</span> NSTP Components</a>
+                <a class="nav-link {{ request()->routeIs('admin.sections.*', 'admin.sectioning.*') ? 'active' : '' }}" href="{{ route('admin.sections.index') }}"><span class="nav-icon">▦</span> Sectioning</a>
                 <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}"><span class="nav-icon">◫</span> Reports</a>
                 <a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}"><span class="nav-icon">⇩</span> Database Backup</a>
                 <a class="nav-link {{ request()->routeIs('admin.system-logs.*') ? 'active' : '' }}" href="{{ route('admin.system-logs.index') }}"><span class="nav-icon">☷</span> System Logs</a>
