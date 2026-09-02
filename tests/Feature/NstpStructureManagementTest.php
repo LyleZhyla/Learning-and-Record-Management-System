@@ -82,22 +82,20 @@ class NstpStructureManagementTest extends TestCase
         $this->actingAs($admin)
             ->get('/admin/sections')
             ->assertOk()
-            ->assertSee('Sections & Sectioning')
-            ->assertSee('Manage NSTP sections')
-            ->assertSee('Choose component and term')
-            ->assertSee('Create and fill CWTS sections')
+            ->assertSee('Automatic sectioning')
+            ->assertSee('CWTS sections')
+            ->assertSee('Sections')
             ->assertDontSee('Student assignment')
             ->assertDontSee('Enroll students in CWTS')
-            ->assertSee('Automatic sectioning')
             ->assertSee('Run automatic sectioning')
-            ->assertSee('Component settings (advanced)')
-            ->assertSeeTextInOrder(['CWTS', 'LTS', 'ROTC'])
-            ->assertSee('Default capacity')
-            ->assertSee('How default capacity works')
-            ->assertSee('Sectioning');
+            ->assertDontSee('Choose workspace')
+            ->assertDontSee('Component settings (advanced)')
+            ->assertDontSee('How default capacity works');
 
         $this->actingAs($admin)->get('/admin/sectioning')
-            ->assertOk()->assertSee('Sections & Sectioning');
+            ->assertOk()
+            ->assertSee('Automatic sectioning')
+            ->assertSee('Sections');
     }
 
     public function test_sectioning_defaults_to_the_first_active_component_and_filters_its_workspace(): void
