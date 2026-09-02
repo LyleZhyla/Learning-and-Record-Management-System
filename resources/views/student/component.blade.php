@@ -4,7 +4,7 @@
 
 @section('content')
 <section class="page-actions">
-    <div><span class="eyebrow">Student enrollment</span><h2>Choose your NSTP component</h2><p>Select your preferred component and required shirt size for {{ $semesterLabel }} {{ $academicYear }}.</p></div>
+    <div><span class="eyebrow">Student enrollment</span><h2>{{ $currentEnrollment ? 'Your NSTP component' : 'Choose your NSTP component' }}</h2><p>{{ $currentEnrollment ? 'Your component selection for this term is final. You may still update the supporting enrollment details below.' : 'Select your preferred component and required shirt size for '.$semesterLabel.' '.$academicYear.'.' }}</p></div>
 </section>
 
 <div class="student-selection-layout">
@@ -15,17 +15,18 @@
             @method('PUT')
 
             <fieldset class="component-choice-fieldset">
-                <legend>NSTP component</legend>
+                <legend>NSTP component @if($currentEnrollment)<span class="component-final-badge">Final selection</span>@endif</legend>
                 <div class="component-choice-grid">
                     @foreach($availableComponents as $component)
-                        <label class="component-choice-card">
-                            <input type="radio" name="nstp_component_id" value="{{ $component->id }}" data-component-code="{{ $component->code }}" @checked((int) old('nstp_component_id', $currentEnrollment?->component_id) === $component->id) required>
+                        <label class="component-choice-card @if($currentEnrollment) component-choice-locked @endif">
+                            <input type="radio" @if(! $currentEnrollment) name="nstp_component_id" @endif value="{{ $component->id }}" data-component-code="{{ $component->code }}" @checked((int) old('nstp_component_id', $currentEnrollment?->component_id) === $component->id) @disabled($currentEnrollment) required>
                             <span class="component-choice-mark">{{ substr($component->code, 0, 1) }}</span>
                             <strong>{{ $component->code }}</strong>
                             <small>{{ $component->name }}</small>
                         </label>
                     @endforeach
                 </div>
+                @if($currentEnrollment)<input type="hidden" name="nstp_component_id" value="{{ $currentEnrollment->component_id }}"><p class="component-lock-note">This component can no longer be changed after selection.</p>@endif
             </fieldset>
             @error('nstp_component_id')<small class="field-error">{{ $message }}</small>@enderror
 
@@ -57,8 +58,8 @@
             </select>
             @error('shirt_size')<small class="field-error">{{ $message }}</small>@enderror
 
-            <p class="form-help">If you change components, your current section assignment will be cleared and the NSTP Admin will assign a new section.</p>
-            <div class="form-actions"><button class="primary-button compact" type="submit">Save enrollment preferences</button></div>
+            <p class="form-help">{{ $currentEnrollment ? 'Only supporting details can be updated. Contact the NSTP Admin if the recorded component needs administrative correction.' : 'Review your choice carefully. The component cannot be changed after the first successful submission.' }}</p>
+            <div class="form-actions"><button class="primary-button compact" type="submit">{{ $currentEnrollment ? 'Update enrollment details' : 'Save enrollment preferences' }}</button></div>
         </form>
     </section>
 

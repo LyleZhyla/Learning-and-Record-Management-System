@@ -19,15 +19,23 @@ class ComponentController extends Controller
     {
         $academicYear = $this->currentAcademicYear();
         $semester = $this->currentSemester();
+        $currentEnrollment = NstpEnrollment::query()
+            ->where('student_id', $request->user()->id)
+            ->where('academic_year', $academicYear)
+            ->where('semester', $semester)
+            ->with(['component', 'section'])
+            ->first();
 
         return view('student.component', [
-            'availableComponents' => NstpComponent::query()->where('is_active', true)->orderBy('code')->get(),
-            'currentEnrollment' => NstpEnrollment::query()
-                ->where('student_id', $request->user()->id)
-                ->where('academic_year', $academicYear)
-                ->where('semester', $semester)
-                ->with(['component', 'section'])
-                ->first(),
+            'availableComponents' => NstpComponent::query()
+                ->when(
+                    $currentEnrollment,
+                    fn ($query) => $query->whereKey($currentEnrollment->component_id),
+                    fn ($query) => $query->where('is_active', true)
+                )
+                ->orderBy('code')
+                ->get(),
+            'currentEnrollment' => $currentEnrollment,
             'academicYear' => $academicYear,
             'semesterLabel' => NstpSection::SEMESTERS[$semester],
             'shirtSizes' => NstpEnrollment::SHIRT_SIZES,
@@ -44,8 +52,10 @@ class ComponentController extends Controller
             'academic_year' => $academicYear,
             'semester' => $semester,
         ]);
+        $componentRule = $enrollment->exists
+            ? Rule::exists('nstp_components', 'id')->where('id', $enrollment->component_id)
+            : Rule::exists('nstp_components', 'id')->where('is_active', true);
         $selectedComponent = NstpComponent::query()
-            ->where('is_active', true)
             ->find($request->input('nstp_component_id'));
         $isAdvancedRotc = $selectedComponent?->code === 'ROTC'
             && in_array($request->input('rotc_category'), ['MS-31', 'MS-41'], true);
@@ -54,7 +64,7 @@ class ComponentController extends Controller
             'nstp_component_id' => [
                 'required',
                 'integer',
-                Rule::exists('nstp_components', 'id')->where('is_active', true),
+                $componentRule,
             ],
             'shirt_size' => ['required', Rule::in(array_keys(NstpEnrollment::SHIRT_SIZES))],
             'rotc_category' => [
@@ -69,6 +79,10 @@ class ComponentController extends Controller
                 'mimes:pdf,jpg,jpeg,png',
                 'max:5120',
             ],
+        ], [
+            'nstp_component_id.exists' => $enrollment->exists
+                ? 'Your selected NSTP component is final and cannot be changed.'
+                : 'The selected NSTP component is not available.',
         ]);
 
         $componentId = (int) $validated['nstp_component_id'];
@@ -80,10 +94,6 @@ class ComponentController extends Controller
             || $enrollment->component_id !== $componentId
             || $enrollment->rotc_category !== $rotcCategory
             || $newProof !== null;
-
-        if ($enrollment->exists && $enrollment->component_id !== $componentId) {
-            $enrollment->section_id = null;
-        }
 
         try {
             $enrollment->fill([
