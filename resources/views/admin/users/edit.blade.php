@@ -6,6 +6,13 @@
 @section('content')
     <div class="back-row"><a href="{{ $user->isStudent() ? route('admin.students.index') : route('admin.users.index') }}">← Back to {{ $user->isStudent() ? 'student' : 'staff' }} accounts</a></div>
 
+    @if(session('temporary_password'))
+        <section class="temporary-credential-card" role="status">
+            <div><span class="eyebrow">Copy before leaving this page</span><h2>Temporary login credentials</h2><p>This password is shown only once. Send it securely to the account owner.</p></div>
+            <dl><div><dt>Email</dt><dd>{{ session('temporary_password_email') }}</dd></div><div><dt>Temporary password</dt><dd><code data-temporary-password>{{ session('temporary_password') }}</code><button type="button" data-copy-temporary-password>Copy password</button></dd></div></dl>
+        </section>
+    @endif
+
     @if ($errors->any())
         <div class="alert danger" role="alert">{{ $errors->first() }}</div>
     @endif

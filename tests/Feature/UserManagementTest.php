@@ -33,22 +33,24 @@ class UserManagementTest extends TestCase
             ->assertOk()->assertSee($student->name)->assertDontSee($staff->name)->assertSee('Download QR');
     }
 
-    public function test_staff_directory_has_dedicated_creation_actions_for_the_three_nstp_staff_roles(): void
+    public function test_staff_directory_uses_one_creation_button_with_role_choices(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
 
         $this->actingAs($admin)->get('/admin/users')
             ->assertOk()
-            ->assertSee('href="'.route('admin.users.create', ['role' => 'nstp_admin']).'"', false)
-            ->assertSee('href="'.route('admin.users.create', ['role' => 'coordinator']).'"', false)
-            ->assertSee('href="'.route('admin.users.create', ['role' => 'facilitator']).'"', false);
+            ->assertSee('href="'.route('admin.users.create').'"', false)
+            ->assertSee('Create staff account');
 
-        foreach (['nstp_admin', 'coordinator', 'facilitator'] as $role) {
-            $this->actingAs($admin)->get('/admin/users/create?role='.$role)
-                ->assertOk()
-                ->assertSee('New '.User::ROLE_LABELS[$role].' account')
-                ->assertSee('value="'.$role.'" selected', false);
-        }
+        $this->actingAs($admin)->get('/admin/users/create')
+            ->assertOk()
+            ->assertSee('New staff account')
+            ->assertSee('NSTP Admin')
+            ->assertSee('Coordinator')
+            ->assertSee('Facilitator')
+            ->assertDontSee('option value="student"', false)
+            ->assertDontSee('option value="super_admin"', false)
+            ->assertDontSee('name="password"', false);
     }
 
     public function test_super_admin_can_create_each_supported_role(): void
@@ -57,17 +59,20 @@ class UserManagementTest extends TestCase
         $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
 
         foreach (array_keys(User::ROLE_LABELS) as $index => $role) {
-            $this->actingAs($admin)->post('/admin/users', [
+            $response = $this->actingAs($admin)->post('/admin/users', [
                 'name' => "Test User {$index}",
                 'email' => "role{$index}@example.test",
                 'role' => $role,
                 'status' => 'active',
                 'nstp_component_id' => $role === 'coordinator' ? $component->id : null,
-                'password' => 'Secure!Password2026',
-                'password_confirmation' => 'Secure!Password2026',
-            ])->assertSessionHasNoErrors();
+            ])->assertSessionHasNoErrors()->assertSessionHas('temporary_password');
 
-            $this->assertDatabaseHas('users', ['email' => "role{$index}@example.test", 'role' => $role]);
+            $createdUser = User::where('email', "role{$index}@example.test")->firstOrFail();
+            $temporaryPassword = $response->getSession()->get('temporary_password');
+            $this->assertMatchesRegularExpression('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/', $temporaryPassword);
+            $this->assertTrue(Hash::check($temporaryPassword, $createdUser->password));
+            $this->assertTrue($createdUser->must_change_password);
+            $this->assertSame($role, $createdUser->role);
         }
     }
 

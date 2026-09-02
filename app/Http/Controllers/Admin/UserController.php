@@ -18,6 +18,8 @@ class UserController extends Controller
 {
     private const STAFF_ROLES = ['super_admin', 'nstp_admin', 'coordinator', 'facilitator'];
 
+    private const CREATABLE_STAFF_ROLES = ['nstp_admin', 'coordinator', 'facilitator'];
+
     public function index(Request $request): View
     {
         $filters = $request->validate([
@@ -53,22 +55,26 @@ class UserController extends Controller
     public function create(Request $request): View
     {
         $initialRole = $request->query('role', 'facilitator');
-        abort_unless(array_key_exists($initialRole, User::ROLE_LABELS), 404);
+        abort_unless($initialRole === 'student' || in_array($initialRole, self::CREATABLE_STAFF_ROLES, true), 404);
 
         return view('admin.users.create', [
             'components' => NstpComponent::where('is_active', true)->orderBy('code')->get(),
             'initialRole' => $initialRole,
+            'roleOptions' => $initialRole === 'student'
+                ? ['student' => User::ROLE_LABELS['student']]
+                : collect(User::ROLE_LABELS)->only(self::CREATABLE_STAFF_ROLES)->all(),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate($this->accountRules());
+        $temporaryPassword = $this->generateTemporaryPassword();
 
         $user = User::create([
             'name' => $validated['name'],
             'email' => str($validated['email'])->lower()->toString(),
-            'password' => $validated['password'],
+            'password' => $temporaryPassword,
             'role' => $validated['role'],
             'status' => $validated['status'],
             'nstp_component_id' => in_array($validated['role'], ['coordinator', 'facilitator'], true) ? ($validated['nstp_component_id'] ?? null) : null,
@@ -76,7 +82,11 @@ class UserController extends Controller
         ]);
 
         return redirect()->route('admin.users.edit', $user)
-            ->with('status', "The {$user->roleLabel()} account for {$user->name} was created successfully.");
+            ->with([
+                'status' => "The {$user->roleLabel()} account for {$user->name} was created successfully.",
+                'temporary_password' => $temporaryPassword,
+                'temporary_password_email' => $user->email,
+            ]);
     }
 
     public function edit(User $user): View
@@ -86,7 +96,7 @@ class UserController extends Controller
 
     public function update(Request $request, User $user): RedirectResponse
     {
-        $validated = $request->validate($this->accountRules($user, false));
+        $validated = $request->validate($this->accountRules($user));
 
         if ($request->user()->is($user) && $validated['role'] !== 'super_admin') {
             throw ValidationException::withMessages(['role' => 'You cannot change your own Super Admin role.']);
@@ -178,21 +188,41 @@ class UserController extends Controller
             ->with('status', "The account for {$deletedName} was permanently deleted. Existing institutional records were preserved.");
     }
 
-    private function accountRules(?User $user = null, bool $includePassword = true): array
+    private function accountRules(?User $user = null): array
     {
-        $rules = [
+        return [
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user?->id)],
             'role' => ['required', Rule::in(array_keys(User::ROLE_LABELS))],
             'status' => ['required', Rule::in(array_keys(User::STATUS_LABELS))],
             'nstp_component_id' => ['nullable', 'required_if:role,coordinator', 'integer', Rule::exists('nstp_components', 'id')->where('is_active', true)],
         ];
+    }
 
-        if ($includePassword) {
-            $rules['password'] = ['required', 'confirmed', Password::min(12)->mixedCase()->numbers()->symbols()];
+    private function generateTemporaryPassword(): string
+    {
+        $uppercase = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+        $lowercase = 'abcdefghijkmnopqrstuvwxyz';
+        $numbers = '23456789';
+        $symbols = '!@#$%&*?';
+        $pool = $uppercase.$lowercase.$numbers.$symbols;
+        $characters = [
+            $uppercase[random_int(0, strlen($uppercase) - 1)],
+            $lowercase[random_int(0, strlen($lowercase) - 1)],
+            $numbers[random_int(0, strlen($numbers) - 1)],
+            $symbols[random_int(0, strlen($symbols) - 1)],
+        ];
+
+        while (count($characters) < 16) {
+            $characters[] = $pool[random_int(0, strlen($pool) - 1)];
         }
 
-        return $rules;
+        for ($index = count($characters) - 1; $index > 0; $index--) {
+            $swap = random_int(0, $index);
+            [$characters[$index], $characters[$swap]] = [$characters[$swap], $characters[$index]];
+        }
+
+        return implode('', $characters);
     }
 
     private function ensureActiveSuperAdminRemains(User $user, string $newRole, string $newStatus): void

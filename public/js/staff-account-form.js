@@ -1,4 +1,23 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const copyButton = document.querySelector('[data-copy-temporary-password]');
+    const password = document.querySelector('[data-temporary-password]');
+
+    copyButton?.addEventListener('click', async () => {
+        if (!password) return;
+
+        try {
+            await navigator.clipboard.writeText(password.textContent.trim());
+            copyButton.textContent = 'Copied';
+        } catch {
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(password);
+            selection.removeAllRanges();
+            selection.addRange(range);
+            copyButton.textContent = 'Select and copy';
+        }
+    });
+
     document.querySelectorAll('[data-staff-account-form]').forEach((form) => {
         const role = form.querySelector('[data-account-role]');
         const componentField = form.querySelector('[data-staff-component-field]');

@@ -14,7 +14,7 @@
     <label class="field-group">
         <span>Account role</span>
         <select name="role" required data-account-role>
-            @foreach (\App\Models\User::ROLE_LABELS as $value => $label)
+            @foreach (($roleOptions ?? \App\Models\User::ROLE_LABELS) as $value => $label)
                 <option value="{{ $value }}" @selected(old('role', $user?->role ?? ($initialRole ?? 'facilitator')) === $value)>{{ $label }}</option>
             @endforeach
         </select>
@@ -44,17 +44,6 @@
     </label>
 
     @if (! $user)
-        <label class="field-group">
-            <span>Temporary password</span>
-            <input type="password" name="password" autocomplete="new-password" minlength="12" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.*[^A-Za-z0-9]).{12,}" required>
-            @error('password') <small class="field-error">{{ $message }}</small> @enderror
-        </label>
-
-        <label class="field-group">
-            <span>Confirm temporary password</span>
-            <input type="password" name="password_confirmation" autocomplete="new-password" required>
-        </label>
-        <x-password-requirements />
-        <p class="form-help full">The user must change this temporary password at the next login.</p>
+        <div class="generated-password-note full"><span aria-hidden="true">✦</span><div><strong>Automatic temporary password</strong><p>The password will be shown once after account creation. The user must change it at the next login.</p></div></div>
     @endif
 </div>
