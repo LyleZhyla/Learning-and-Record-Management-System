@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
-use Illuminate\View\View;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -22,12 +22,16 @@ class AuthenticatedSessionController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $request->merge([
+            'email' => Str::lower(trim((string) $request->input('email'))),
+        ]);
+
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required', 'string'],
         ]);
 
-        $key = Str::lower($credentials['email']).'|'.$request->ip();
+        $key = $credentials['email'].'|'.$request->ip();
 
         if (RateLimiter::tooManyAttempts($key, 5)) {
             throw ValidationException::withMessages([
@@ -35,9 +39,16 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        $user = User::where('email', Str::lower($credentials['email']))->first();
+        $user = User::where('email', $credentials['email'])->first();
+        $passwordMatches = $user && Hash::check($credentials['password'], $user->password);
 
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+        if ($user && ! $passwordMatches && $user->must_change_password) {
+            $trimmedPassword = trim($credentials['password']);
+            $passwordMatches = $trimmedPassword !== $credentials['password']
+                && Hash::check($trimmedPassword, $user->password);
+        }
+
+        if (! $user || ! $passwordMatches) {
             RateLimiter::hit($key, 60);
 
             throw ValidationException::withMessages([

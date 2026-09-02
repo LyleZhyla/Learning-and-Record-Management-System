@@ -56,6 +56,24 @@ class SuperAdminAuthenticationTest extends TestCase
         $this->assertAuthenticatedAs($user);
     }
 
+    public function test_imported_student_can_sign_in_when_copied_credentials_have_outer_whitespace(): void
+    {
+        $student = User::factory()->create([
+            'email' => 'imported.student@example.test',
+            'password' => Hash::make('Generated!Pass2026'),
+            'role' => 'student',
+            'status' => 'active',
+            'must_change_password' => true,
+        ]);
+
+        $this->post('/login', [
+            'email' => '  IMPORTED.STUDENT@EXAMPLE.TEST  ',
+            'password' => "  Generated!Pass2026\r\n",
+        ])->assertRedirect('/student/dashboard');
+
+        $this->assertAuthenticatedAs($student);
+    }
+
     public function test_inactive_super_admin_cannot_sign_in(): void
     {
         $user = User::factory()->create([
