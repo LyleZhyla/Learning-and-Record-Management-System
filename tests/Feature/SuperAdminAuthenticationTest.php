@@ -21,7 +21,12 @@ class SuperAdminAuthenticationTest extends TestCase
     public function test_public_student_registration_is_available(): void
     {
         $this->get('/register')->assertOk()->assertSee('Student Information Form');
-        $this->get('/login')->assertOk()->assertSee('Complete your registration');
+        $this->get('/login')
+            ->assertOk()
+            ->assertSee('Complete your registration')
+            ->assertSee('data-password-visibility-toggle', false)
+            ->assertSee('aria-label="Show password"', false)
+            ->assertSee('login-password-toggle.js');
     }
 
     public function test_super_admin_can_sign_in(): void

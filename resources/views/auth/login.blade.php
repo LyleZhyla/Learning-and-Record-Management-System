@@ -49,7 +49,13 @@
                         <label for="password">Password</label>
                         <span>Minimum 12 characters</span>
                     </div>
-                    <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Enter your password">
+                    <div class="password-input-wrap">
+                        <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Enter your password" data-login-password>
+                        <button class="password-visibility-toggle" type="button" aria-label="Show password" aria-pressed="false" title="Show password" data-password-visibility-toggle>
+                            <svg data-eye-open viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.8"/></svg>
+                            <svg data-eye-closed viewBox="0 0 24 24" aria-hidden="true" hidden><path d="m4 4 16 16M9.9 6.3A9.8 9.8 0 0 1 12 6c6 0 9.5 6 9.5 6a15.6 15.6 0 0 1-2.3 3M6.2 7.2A15.8 15.8 0 0 0 2.5 12s3.5 6 9.5 6a9.8 9.8 0 0 0 3-.5M10.2 10.2a2.8 2.8 0 0 0 3.6 3.6"/></svg>
+                        </button>
+                    </div>
 
                     <label class="check-row" for="remember">
                         <input id="remember" name="remember" type="checkbox" value="1">
@@ -83,5 +89,6 @@
         </section>
     </main>
     <script src="{{ asset('js/theme.js') }}"></script>
+    <script src="{{ asset('js/login-password-toggle.js') }}?v={{ filemtime(public_path('js/login-password-toggle.js')) }}"></script>
 </body>
 </html>
