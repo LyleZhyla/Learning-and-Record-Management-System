@@ -16,15 +16,20 @@ class SectioningController extends Controller
 {
     public function index(Request $request): View
     {
+        $showAllComponents = $request->input('component_id') === 'all';
+        if ($showAllComponents) {
+            $request->merge(['component_id' => null]);
+        }
+
         $term = $this->validatedTerm($request, true);
         $academicYear = $term['academic_year'] ?? $this->currentAcademicYear();
         $semester = $term['semester'] ?? $this->currentSemester();
         $components = NstpComponent::where('is_active', true)
             ->orderByRaw("CASE code WHEN 'CWTS' THEN 1 WHEN 'LTS' THEN 2 WHEN 'ROTC' THEN 3 ELSE 4 END")
             ->get();
-        $componentId = isset($term['component_id'])
+        $componentId = ! $showAllComponents && isset($term['component_id'])
             ? (int) $term['component_id']
-            : $components->first()?->id;
+            : ($showAllComponents ? null : $components->first()?->id);
         $selectedComponent = $components->firstWhere('id', $componentId);
 
         $sections = NstpSection::with(['component', 'facilitator'])
@@ -52,6 +57,7 @@ class SectioningController extends Controller
             'componentId' => $componentId,
             'unsectionedCounts' => $unsectionedCounts,
             'selectedComponent' => $selectedComponent,
+            'showAllComponents' => $showAllComponents,
             'routePrefix' => $this->routePrefix($request),
         ]);
     }

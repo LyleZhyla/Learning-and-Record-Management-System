@@ -131,6 +131,36 @@ class NstpStructureManagementTest extends TestCase
             ->assertDontSee('LTS-HIDDEN');
     }
 
+    public function test_sectioning_can_show_sections_from_all_components(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+
+        foreach (['CWTS', 'LTS', 'ROTC'] as $code) {
+            $component = NstpComponent::where('code', $code)->firstOrFail();
+            NstpSection::create([
+                'component_id' => $component->id,
+                'code' => $code.'-ALL',
+                'name' => $code.' all-components section',
+                'academic_year' => '2026-2027',
+                'semester' => 'first',
+                'capacity' => 40,
+                'status' => 'active',
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->get('/nstp-admin/sections?component_id=all&academic_year=2026-2027&semester=first')
+            ->assertOk()
+            ->assertViewHas('componentId', null)
+            ->assertViewHas('showAllComponents', true)
+            ->assertSee('All components')
+            ->assertSee('All component sections')
+            ->assertSee('CWTS-ALL')
+            ->assertSee('LTS-ALL')
+            ->assertSee('ROTC-ALL')
+            ->assertDontSee('Run automatic sectioning');
+    }
+
     public function test_component_edit_from_sectioning_returns_to_the_sectioning_workspace(): void
     {
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
