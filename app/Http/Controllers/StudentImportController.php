@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Services\QrCodeService;
 use App\Services\StudentImportService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -19,13 +21,18 @@ class StudentImportController extends Controller
         return view('student-import.create', $this->viewData($request));
     }
 
-    public function store(Request $request, StudentImportService $importer, QrCodeService $qrCode): StreamedResponse
+    public function store(Request $request, StudentImportService $importer, QrCodeService $qrCode): StreamedResponse|Response
     {
-        $request->validate(['file' => ['required', 'file', 'max:5120', 'mimes:xlsx,xls,csv']]);
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'max:5120', 'mimes:xlsx,xls,csv'],
+            'credential_delivery' => ['nullable', Rule::in(['download', 'view'])],
+        ]);
 
         $result = $importer->import($request->file('file'));
 
-        return $this->credentialsDownload($result, $qrCode);
+        return ($validated['credential_delivery'] ?? 'download') === 'view'
+            ? $this->credentialsView($request, $result, $qrCode)
+            : $this->credentialsDownload($result, $qrCode);
     }
 
     public function template(): StreamedResponse
@@ -121,6 +128,28 @@ class StudentImportController extends Controller
         }, 'student-temporary-credentials-'.now()->format('Ymd-His').'.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'X-Imported-Students' => (string) $result['students'],
+        ]);
+    }
+
+    /**
+     * @param  array{
+     *     students: int,
+     *     credentials: array<int, array{name: string, email: string, temporary_password: string, qr_payload: string}>
+     * }  $result
+     */
+    private function credentialsView(Request $request, array $result, QrCodeService $qrCode): Response
+    {
+        return response()->view('student-import.credentials', $this->viewData($request) + [
+            'studentCount' => $result['students'],
+            'credentials' => collect($result['credentials'])->map(fn (array $credential) => [
+                'name' => $credential['name'],
+                'email' => $credential['email'],
+                'temporary_password' => $credential['temporary_password'],
+                'qr_data_uri' => 'data:image/png;base64,'.base64_encode($qrCode->generatePng($credential['qr_payload'], 220)),
+            ])->all(),
+        ])->withHeaders([
+            'Cache-Control' => 'no-store, private',
+            'Pragma' => 'no-cache',
         ]);
     }
 

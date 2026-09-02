@@ -34,7 +34,9 @@ class StudentImportTest extends TestCase
             $this->actingAs($user)->get($url)
                 ->assertOk()
                 ->assertSee('Upload an Excel student list')
-                ->assertSee('Download Excel template');
+                ->assertSee('Download Excel template')
+                ->assertSee('Import & download credentials')
+                ->assertSee('Import & view credentials');
 
             $this->actingAs($user)->get($url.'/template')
                 ->assertOk()
@@ -52,7 +54,7 @@ class StudentImportTest extends TestCase
                 ['Imported '.ucwords(str_replace('_', ' ', $index)), $email],
             ]);
 
-            $response = $this->actingAs($user)->post($url, ['file' => $file]);
+            $response = $this->actingAs($user)->post($url, ['file' => $file, 'credential_delivery' => 'download']);
             $response->assertOk()
                 ->assertDownload()
                 ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -92,6 +94,36 @@ class StudentImportTest extends TestCase
         }
     }
 
+    public function test_authorized_user_can_view_generated_credentials_instead_of_downloading_them(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $file = $this->excelFile([
+            StudentImportService::HEADERS,
+            ['Viewed Student', 'viewed.student@import.test'],
+        ]);
+
+        $response = $this->actingAs($admin)->post('/admin/students/import', [
+            'file' => $file,
+            'credential_delivery' => 'view',
+        ]);
+
+        $response->assertOk()
+            ->assertViewIs('student-import.credentials')
+            ->assertHeader('cache-control', 'no-store, private')
+            ->assertSee('Imported Student Credentials')
+            ->assertSee('Viewed Student')
+            ->assertSee('viewed.student@import.test')
+            ->assertSee('Copy')
+            ->assertSee('data:image/png;base64,', false)
+            ->assertViewHas('credentials', function (array $credentials): bool {
+                $password = $credentials[0]['temporary_password'];
+                $student = User::where('email', 'viewed.student@import.test')->firstOrFail();
+
+                return preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/', $password) === 1
+                    && Hash::check($password, $student->password);
+            });
+    }
+
     public function test_import_is_all_or_nothing_and_reports_row_errors(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
@@ -103,7 +135,7 @@ class StudentImportTest extends TestCase
             ['Duplicate Student', 'existing@example.test'],
         ]);
 
-        $this->actingAs($admin)->from('/admin/students/import')->post('/admin/students/import', ['file' => $file])
+        $this->actingAs($admin)->from('/admin/students/import')->post('/admin/students/import', ['file' => $file, 'credential_delivery' => 'view'])
             ->assertRedirect('/admin/students/import')
             ->assertSessionHasErrors('import_rows');
 

@@ -47,7 +47,10 @@
                     <input type="file" name="file" accept=".xlsx,.xls,.csv" required data-student-import-file>
                     <em data-student-import-name>No file selected</em>
                 </label>
-                <div class="form-actions"><button class="primary-button compact" type="submit">Import and download credentials + QR</button></div>
+                <div class="import-delivery-actions" aria-label="Choose how to receive generated credentials">
+                    <button class="primary-button compact" type="submit" name="credential_delivery" value="download">Import &amp; download credentials</button>
+                    <button class="secondary-outline-button" type="submit" name="credential_delivery" value="view">Import &amp; view credentials</button>
+                </div>
             </form>
         </section>
 
@@ -57,7 +60,7 @@
                 <li><strong>name</strong><span>Student's complete name</span></li>
                 <li><strong>email</strong><span>Unique login email</span></li>
             </ol>
-            <div class="import-security-note"><strong>Passwords and QR codes are generated automatically</strong><p>After a successful import, Excel downloads with each student's temporary password and attendance QR image. The same QR remains visible and downloadable from Student Accounts.</p></div>
+            <div class="import-security-note"><strong>Choose download or on-screen viewing</strong><p>Download an Excel copy, or view and copy the temporary credentials directly in the browser. Passwords are shown only in the selected result.</p></div>
         </aside>
     </div>
 
