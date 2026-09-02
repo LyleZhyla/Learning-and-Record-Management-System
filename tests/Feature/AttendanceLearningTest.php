@@ -43,7 +43,10 @@ class AttendanceLearningTest extends TestCase
         $this->assertNotEmpty($this->student->fresh()->student_qr_token);
         $this->assertNotEmpty($secondStudent->student_qr_token);
         $this->assertNotSame($this->student->fresh()->student_qr_token, $secondStudent->student_qr_token);
-        $this->actingAs($this->student)->get('/student/attendance')->assertOk()->assertSee('Your permanent attendance QR');
+        $this->actingAs($this->student)->get('/student/attendance')
+            ->assertOk()
+            ->assertSee('Your Student ID')
+            ->assertSee('SCAN FOR ATTENDANCE');
     }
 
     public function test_facilitator_scans_student_qr_to_record_attendance(): void

@@ -3,19 +3,14 @@
 @section('page-title', 'Attendance')
 
 @section('content')
-<section class="student-qr-identity">
-    <div class="student-qr-copy">
-        <span class="eyebrow">Your permanent attendance QR</span>
-        <h2>Present this code to your facilitator or coordinator.</h2>
-        <p>This QR is unique to your SNAPIE account. Keep it private and use the same code for every attendance session.</p>
-        <div class="student-qr-actions">
-            <a class="primary-button compact" href="{{ route('student.id-card') }}">View / Print Student ID</a>
-            <a class="primary-button compact" href="{{ route('student.attendance.qr') }}">Download QR</a>
-            <button class="secondary-outline-button" type="button" onclick="window.print()">Print QR</button>
-        </div>
-    </div>
-    <div class="student-personal-qr" aria-label="Your unique student attendance QR code">{!! $qrSvg !!}<small>{{ auth()->user()->name }}</small></div>
+<div class="page-actions student-id-page-actions attendance-id-actions"><div><span class="eyebrow">Attendance identification</span><h2>Your Student ID</h2><p>Present the generated ID below when your facilitator or coordinator records attendance.</p></div><div class="student-qr-actions"><button class="primary-button compact" type="button" onclick="window.print()">Print / Save Student ID</button><a class="secondary-outline-button" href="{{ route('student.attendance.qr') }}">Download QR</a></div></div>
+<section class="student-id-stage attendance-student-id">
+    @include('student._id-card')
 </section>
+
+@if(! $details || ! $enrollment)
+    <div class="alert warning student-id-completion-note"><strong>Some ID information is incomplete.</strong> Update your profile and NSTP selection so all fields appear on your generated ID.</div>
+@endif
 
 <div class="page-actions attendance-history-heading"><div><h2>Your attendance history</h2><p>Records appear after an authorized facilitator or coordinator scans your QR.</p></div></div>
 <section class="card user-table-card">

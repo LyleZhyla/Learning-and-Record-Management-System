@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
 use App\Models\NstpEnrollment;
 use App\Models\StudentRegistration;
+use App\Models\User;
 use App\Services\QrCodeService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -15,7 +16,7 @@ class AttendanceController extends Controller
 {
     public function index(Request $request, QrCodeService $qrCode): View
     {
-        $student = $request->user();
+        $student = $request->user()->load('studentProfile');
         if (blank($student->student_qr_token)) {
             $student->save();
         }
@@ -25,7 +26,10 @@ class AttendanceController extends Controller
             ->paginate(15);
         $qrSvg = $qrCode->generateSvg($student->studentQrPayload());
 
-        return view('student.attendance.index', compact('records', 'qrSvg'));
+        return view('student.attendance.index', [
+            'records' => $records,
+            ...$this->studentIdData($student, $qrSvg),
+        ]);
     }
 
     public function qr(Request $request, QrCodeService $qrCode)
@@ -48,6 +52,13 @@ class AttendanceController extends Controller
             $student->save();
         }
 
+        $qrSvg = $qrCode->generateSvg($student->studentQrPayload());
+
+        return view('student.id-card', $this->studentIdData($student, $qrSvg));
+    }
+
+    private function studentIdData(User $student, string $qrSvg): array
+    {
         $details = $student->studentProfile
             ?? StudentRegistration::where('email', $student->email)->latest()->first();
         $enrollment = NstpEnrollment::with('component')
@@ -64,8 +75,7 @@ class AttendanceController extends Controller
             $details?->last_name,
             $details?->extension_name,
         ])->filter()->implode(' ') ?: $student->name;
-        $qrSvg = $qrCode->generateSvg($student->studentQrPayload());
 
-        return view('student.id-card', compact('student', 'details', 'enrollment', 'displayName', 'qrSvg'));
+        return compact('student', 'details', 'enrollment', 'displayName', 'qrSvg');
     }
 }

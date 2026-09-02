@@ -98,7 +98,7 @@ class StudentIdCardTest extends TestCase
             ->assertSee('<svg', false);
     }
 
-    public function test_student_id_is_linked_from_attendance_instead_of_the_sidebar_menu(): void
+    public function test_student_id_is_shown_directly_on_attendance_instead_of_the_sidebar_menu(): void
     {
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
 
@@ -108,7 +108,9 @@ class StudentIdCardTest extends TestCase
 
         $this->actingAs($student)->get('/student/attendance')
             ->assertOk()
-            ->assertSee('View / Print Student ID')
-            ->assertSee(route('student.id-card'), false);
+            ->assertSee('Your Student ID')
+            ->assertSee('student-id-card', false)
+            ->assertSee('Print / Save Student ID')
+            ->assertDontSee('View / Print Student ID');
     }
 }
