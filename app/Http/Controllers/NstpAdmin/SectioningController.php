@@ -16,7 +16,7 @@ class SectioningController extends Controller
 {
     public function index(Request $request): View
     {
-        $showAllComponents = $request->input('component_id') === 'all';
+        $showAllComponents = ! $request->filled('component_id') || $request->input('component_id') === 'all';
         if ($showAllComponents) {
             $request->merge(['component_id' => null]);
         }

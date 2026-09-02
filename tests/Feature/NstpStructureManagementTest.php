@@ -83,7 +83,7 @@ class NstpStructureManagementTest extends TestCase
             ->get('/admin/sections')
             ->assertOk()
             ->assertSee('Automatic sectioning')
-            ->assertSee('CWTS sections')
+            ->assertSee('All component sections')
             ->assertSee('Sections')
             ->assertDontSee('Student assignment')
             ->assertDontSee('Enroll students in CWTS')
@@ -98,7 +98,7 @@ class NstpStructureManagementTest extends TestCase
             ->assertSee('Sections');
     }
 
-    public function test_sectioning_defaults_to_the_first_active_component_and_filters_its_workspace(): void
+    public function test_sectioning_defaults_to_showing_sections_from_all_components(): void
     {
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
         $cwts = NstpComponent::where('code', 'CWTS')->firstOrFail();
@@ -126,9 +126,11 @@ class NstpStructureManagementTest extends TestCase
         $this->actingAs($admin)
             ->get('/nstp-admin/sections?academic_year=2026-2027&semester=first')
             ->assertOk()
-            ->assertViewHas('componentId', $cwts->id)
+            ->assertViewHas('componentId', null)
+            ->assertViewHas('showAllComponents', true)
+            ->assertSee('All component sections')
             ->assertSee('CWTS-DEFAULT')
-            ->assertDontSee('LTS-HIDDEN');
+            ->assertSee('LTS-HIDDEN');
     }
 
     public function test_sectioning_can_show_sections_from_all_components(): void
