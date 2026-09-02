@@ -27,6 +27,8 @@ class StudentProfileTest extends TestCase
 
         $this->actingAs($student)->get('/student/profile?edit=1')
             ->assertOk()
+            ->assertViewHas('locationEndpoints', fn (array $endpoints): bool => $endpoints['cities'] === '/locations/provinces/__CODE__/cities'
+                && $endpoints['barangays'] === '/locations/cities/__CODE__/barangays')
             ->assertSee('Cancel editing')
             ->assertSee('student-profile-form', false)
             ->assertSee('data-profile-draft-key="smartNstpProfileDraft:'.$student->id.'"', false)

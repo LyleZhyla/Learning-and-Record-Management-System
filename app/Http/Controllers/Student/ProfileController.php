@@ -25,8 +25,8 @@ class ProfileController extends Controller
             'user' => $user,
             'details' => $user->studentProfile ?? $registration,
             'locationEndpoints' => [
-                'cities' => route('locations.cities', ['provinceCode' => '__CODE__']),
-                'barangays' => route('locations.barangays', ['cityCode' => '__CODE__']),
+                'cities' => route('locations.cities', ['provinceCode' => '__CODE__'], false),
+                'barangays' => route('locations.barangays', ['cityCode' => '__CODE__'], false),
             ],
         ]);
     }

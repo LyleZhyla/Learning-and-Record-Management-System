@@ -20,8 +20,8 @@ class StudentRegistrationController extends Controller
     {
         return view('auth.register', [
             'locationEndpoints' => [
-                'cities' => route('locations.cities', ['provinceCode' => '__CODE__']),
-                'barangays' => route('locations.barangays', ['cityCode' => '__CODE__']),
+                'cities' => route('locations.cities', ['provinceCode' => '__CODE__'], false),
+                'barangays' => route('locations.barangays', ['cityCode' => '__CODE__'], false),
             ],
         ]);
     }

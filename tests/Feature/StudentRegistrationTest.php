@@ -76,7 +76,10 @@ class StudentRegistrationTest extends TestCase
         $this->assertStringContainsString("const draftKey = 'smartNstpRegistrationDraft'", $script);
         $this->assertStringContainsString('sessionStorage.setItem', $script);
         $this->assertStringContainsString('showStep(restoredStep)', $script);
-        $this->get('/register')->assertOk();
+        $this->get('/register')
+            ->assertOk()
+            ->assertViewHas('locationEndpoints', fn (array $endpoints): bool => $endpoints['cities'] === '/locations/provinces/__CODE__/cities'
+                && $endpoints['barangays'] === '/locations/cities/__CODE__/barangays');
     }
 
     public function test_other_year_and_section_requires_a_custom_value(): void
