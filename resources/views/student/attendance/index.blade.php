@@ -9,6 +9,7 @@
         <h2>Present this code to your facilitator or coordinator.</h2>
         <p>This QR is unique to your SNAPIE account. Keep it private and use the same code for every attendance session.</p>
         <div class="student-qr-actions">
+            <a class="primary-button compact" href="{{ route('student.id-card') }}">View / Print Student ID</a>
             <a class="primary-button compact" href="{{ route('student.attendance.qr') }}">Download QR</a>
             <button class="secondary-outline-button" type="button" onclick="window.print()">Print QR</button>
         </div>
