@@ -52,9 +52,13 @@ class ComponentController extends Controller
             'academic_year' => $academicYear,
             'semester' => $semester,
         ]);
-        $componentRule = $enrollment->exists
-            ? Rule::exists('nstp_components', 'id')->where('id', $enrollment->component_id)
-            : Rule::exists('nstp_components', 'id')->where('is_active', true);
+
+        if ($enrollment->exists) {
+            return back()->withErrors([
+                'selection' => 'Your NSTP component, ROTC details, and shirt size are final and can no longer be changed.',
+            ]);
+        }
+
         $selectedComponent = NstpComponent::query()
             ->find($request->input('nstp_component_id'));
         $isAdvancedRotc = $selectedComponent?->code === 'ROTC'
@@ -64,7 +68,7 @@ class ComponentController extends Controller
             'nstp_component_id' => [
                 'required',
                 'integer',
-                $componentRule,
+                Rule::exists('nstp_components', 'id')->where('is_active', true),
             ],
             'shirt_size' => ['required', Rule::in(array_keys(NstpEnrollment::SHIRT_SIZES))],
             'rotc_category' => [
@@ -80,9 +84,7 @@ class ComponentController extends Controller
                 'max:5120',
             ],
         ], [
-            'nstp_component_id.exists' => $enrollment->exists
-                ? 'Your selected NSTP component is final and cannot be changed.'
-                : 'The selected NSTP component is not available.',
+            'nstp_component_id.exists' => 'The selected NSTP component is not available.',
         ]);
 
         $componentId = (int) $validated['nstp_component_id'];

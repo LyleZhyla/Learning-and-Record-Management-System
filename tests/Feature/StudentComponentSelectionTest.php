@@ -54,20 +54,21 @@ class StudentComponentSelectionTest extends TestCase
         $this->actingAs($student)->get('/student/component')
             ->assertOk()
             ->assertSee('Final selection')
-            ->assertSee('This component can no longer be changed after selection.')
+            ->assertSee('Your entire NSTP selection can no longer be changed.')
             ->assertSee('CWTS')
             ->assertDontSee('LTS')
-            ->assertSee('Update enrollment details');
+            ->assertDontSee('Update enrollment details')
+            ->assertDontSee('Save enrollment preferences');
 
         $this->actingAs($student)->put('/student/component', [
             'nstp_component_id' => $component->id,
             'shirt_size' => 'L',
-        ])->assertRedirect()->assertSessionHasNoErrors();
+        ])->assertRedirect()->assertSessionHasErrors('selection');
 
         $this->assertDatabaseHas('nstp_enrollments', [
             'student_id' => $student->id,
             'component_id' => $component->id,
-            'shirt_size' => 'L',
+            'shirt_size' => 'M',
         ]);
     }
 
@@ -118,7 +119,7 @@ class StudentComponentSelectionTest extends TestCase
             'nstp_component_id' => $cwts->id,
             'shirt_size' => 'L',
             'rotc_category' => 'MS-41',
-        ])->assertSessionHasErrors('nstp_component_id');
+        ])->assertSessionHasErrors('selection');
 
         $this->assertDatabaseHas('nstp_enrollments', [
             'student_id' => $student->id,
@@ -143,7 +144,7 @@ class StudentComponentSelectionTest extends TestCase
             'shirt_size' => 'L',
             'rotc_category' => 'MS-41',
             'ms1_proof' => UploadedFile::fake()->create('ms1-proof.pdf', 200, 'application/pdf'),
-        ])->assertSessionHasErrors('nstp_component_id');
+        ])->assertSessionHasErrors('selection');
 
         $this->assertDatabaseHas('nstp_enrollments', [
             'id' => $enrollment->id,
