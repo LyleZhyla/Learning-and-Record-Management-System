@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
-use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,15 +26,6 @@ class SectioningController extends Controller
             ? (int) $term['component_id']
             : $components->first()?->id;
         $selectedComponent = $components->firstWhere('id', $componentId);
-
-        $students = User::where('role', 'student')
-            ->where('status', 'active')
-            ->with(['nstpEnrollments' => fn ($query) => $query
-                ->where('academic_year', $academicYear)
-                ->where('semester', $semester)
-                ->with(['component', 'section'])])
-            ->orderBy('name')
-            ->get();
 
         $sections = NstpSection::with(['component', 'facilitator'])
             ->withCount('enrollments')
@@ -68,7 +58,6 @@ class SectioningController extends Controller
 
         return view('nstp_admin.sectioning.index', [
             'components' => $components,
-            'students' => $students,
             'sections' => $sections,
             'academicYear' => $academicYear,
             'semester' => $semester,
@@ -79,39 +68,6 @@ class SectioningController extends Controller
             'selectedEnrollmentCount' => $selectedEnrollmentCount,
             'routePrefix' => $this->routePrefix($request),
         ]);
-    }
-
-    public function enroll(Request $request): RedirectResponse
-    {
-        $validated = $request->validate($this->termRules() + [
-            'student_ids' => ['required', 'array', 'min:1'],
-            'student_ids.*' => [
-                'integer',
-                Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', 'student')->where('status', 'active')),
-            ],
-        ]);
-
-        DB::transaction(function () use ($validated): void {
-            foreach (array_unique($validated['student_ids']) as $studentId) {
-                $enrollment = NstpEnrollment::firstOrNew([
-                    'student_id' => $studentId,
-                    'academic_year' => $validated['academic_year'],
-                    'semester' => $validated['semester'],
-                ]);
-
-                if ($enrollment->exists && $enrollment->component_id !== (int) $validated['component_id']) {
-                    $enrollment->section_id = null;
-                }
-
-                $enrollment->fill([
-                    'component_id' => $validated['component_id'],
-                    'status' => 'enrolled',
-                ])->save();
-            }
-        });
-
-        return redirect()->route($this->routePrefix($request).'.sections.index', $this->termQuery($validated))
-            ->with('status', count(array_unique($validated['student_ids'])).' student enrollment(s) saved successfully.');
     }
 
     public function automate(Request $request): RedirectResponse
@@ -187,16 +143,6 @@ class SectioningController extends Controller
 
         return redirect()->route($this->routePrefix($request).'.sections.index', $this->termQuery($validated))
             ->with('status', $message);
-    }
-
-    public function destroy(Request $request, NstpEnrollment $enrollment): RedirectResponse
-    {
-        $query = $this->termQuery($enrollment->toArray());
-        $studentName = $enrollment->student->name;
-        $enrollment->delete();
-
-        return redirect()->route($this->routePrefix($request).'.sections.index', $query)
-            ->with('status', "{$studentName} was removed from the selected NSTP term.");
     }
 
     private function validatedTerm(Request $request, bool $optional = false): array

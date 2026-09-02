@@ -121,9 +121,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/sections/{section}/edit', [NstpAdminSectionController::class, 'edit'])->name('sections.edit');
     Route::put('/sections/{section}', [NstpAdminSectionController::class, 'update'])->name('sections.update');
     Route::get('/sectioning', [NstpAdminSectioningController::class, 'index'])->name('sectioning.index');
-    Route::post('/sectioning/enroll', [NstpAdminSectioningController::class, 'enroll'])->name('sectioning.enroll');
     Route::post('/sectioning/automate', [NstpAdminSectioningController::class, 'automate'])->name('sectioning.automate');
-    Route::delete('/sectioning/enrollments/{enrollment}', [NstpAdminSectioningController::class, 'destroy'])->name('sectioning.destroy');
     $learningManagementRoutes();
 });
 
@@ -199,9 +197,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/sections/{section}/edit', [NstpAdminSectionController::class, 'edit'])->name('sections.edit');
     Route::put('/sections/{section}', [NstpAdminSectionController::class, 'update'])->name('sections.update');
     Route::get('/sectioning', [NstpAdminSectioningController::class, 'index'])->name('sectioning.index');
-    Route::post('/sectioning/enroll', [NstpAdminSectioningController::class, 'enroll'])->name('sectioning.enroll');
     Route::post('/sectioning/automate', [NstpAdminSectioningController::class, 'automate'])->name('sectioning.automate');
-    Route::delete('/sectioning/enrollments/{enrollment}', [NstpAdminSectioningController::class, 'destroy'])->name('sectioning.destroy');
     $learningManagementRoutes();
 });
 

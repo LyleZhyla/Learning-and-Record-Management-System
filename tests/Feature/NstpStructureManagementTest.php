@@ -82,11 +82,12 @@ class NstpStructureManagementTest extends TestCase
         $this->actingAs($admin)
             ->get('/admin/sections')
             ->assertOk()
-            ->assertSee('Sections & Student Sectioning')
-            ->assertSee('Manage sections and student assignments')
+            ->assertSee('Sections & Sectioning')
+            ->assertSee('Manage NSTP sections')
             ->assertSee('Choose component and term')
-            ->assertSee('Enroll students in CWTS')
             ->assertSee('Create and fill CWTS sections')
+            ->assertDontSee('Student assignment')
+            ->assertDontSee('Enroll students in CWTS')
             ->assertSee('Automatic sectioning')
             ->assertSee('Run automatic sectioning')
             ->assertSee('Component settings (advanced)')
@@ -96,7 +97,7 @@ class NstpStructureManagementTest extends TestCase
             ->assertSee('Sectioning');
 
         $this->actingAs($admin)->get('/admin/sectioning')
-            ->assertOk()->assertSee('Sections & Student Sectioning');
+            ->assertOk()->assertSee('Sections & Sectioning');
     }
 
     public function test_sectioning_defaults_to_the_first_active_component_and_filters_its_workspace(): void
@@ -189,12 +190,13 @@ class NstpStructureManagementTest extends TestCase
         $component = NstpComponent::where('code', 'LTS')->firstOrFail();
         $component->update(['default_section_capacity' => 2]);
 
-        $this->actingAs($admin)->post('/nstp-admin/sectioning/enroll', [
+        NstpEnrollment::create([
+            'student_id' => $student->id,
             'component_id' => $component->id,
             'academic_year' => '2026-2027',
             'semester' => 'first',
-            'student_ids' => [$student->id],
-        ])->assertSessionHasNoErrors();
+            'status' => 'enrolled',
+        ]);
 
         $this->actingAs($admin)->post('/nstp-admin/sectioning/automate', [
             'component_id' => $component->id,
