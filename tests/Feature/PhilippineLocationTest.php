@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -33,6 +34,26 @@ class PhilippineLocationTest extends TestCase
             ->assertOk()
             ->assertJsonPath('0.name', 'City of Malolos');
         $this->getJson('/locations/cities/031410000/barangays')
+            ->assertOk()
+            ->assertJsonPath('0.name', 'Anilao');
+    }
+
+    public function test_authenticated_students_can_load_profile_location_options(): void
+    {
+        Http::fake([
+            'https://psgc.gitlab.io/api/provinces/031400000/cities-municipalities/' => Http::response([
+                ['code' => '031410000', 'name' => 'City of Malolos'],
+            ]),
+            'https://psgc.gitlab.io/api/cities-municipalities/031410000/barangays/' => Http::response([
+                ['code' => '031410001', 'name' => 'Anilao'],
+            ]),
+        ]);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+
+        $this->actingAs($student)->getJson('/locations/provinces/031400000/cities')
+            ->assertOk()
+            ->assertJsonPath('0.name', 'City of Malolos');
+        $this->actingAs($student)->getJson('/locations/cities/031410000/barangays')
             ->assertOk()
             ->assertJsonPath('0.name', 'Anilao');
     }
