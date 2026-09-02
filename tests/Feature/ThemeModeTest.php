@@ -48,4 +48,21 @@ class ThemeModeTest extends TestCase
         $this->assertStringContainsString('prefers-color-scheme: dark', $script);
         $this->assertStringContainsString('root.dataset.theme', $script);
     }
+
+    public function test_student_dashboard_includes_dark_mode_specific_surfaces(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+
+        $this->actingAs($student)->get('/student/dashboard')
+            ->assertOk()
+            ->assertSee('student-dashboard-welcome', false)
+            ->assertSee('student-dashboard-metrics', false)
+            ->assertSee('student-dashboard-actions', false);
+
+        $styles = file_get_contents(public_path('css/app.css'));
+
+        $this->assertStringContainsString('html[data-theme=dark] .student-dashboard-welcome', $styles);
+        $this->assertStringContainsString('html[data-theme=dark] .student-dashboard-metrics .metric-icon', $styles);
+        $this->assertStringContainsString('html[data-theme=dark] .student-dashboard-actions a', $styles);
+    }
 }
