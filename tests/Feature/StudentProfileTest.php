@@ -12,7 +12,7 @@ class StudentProfileTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_student_can_open_guided_profile_editor_with_registration_features(): void
+    public function test_student_sees_saved_details_before_opening_the_profile_editor(): void
     {
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
 
@@ -21,6 +21,14 @@ class StudentProfileTest extends TestCase
             ->assertSee('Personal Information')
             ->assertSee('Emergency Contact')
             ->assertSee('Academic Information')
+            ->assertSee('Edit profile')
+            ->assertDontSee('student-profile-form', false)
+            ->assertDontSee('student-profile.js');
+
+        $this->actingAs($student)->get('/student/profile?edit=1')
+            ->assertOk()
+            ->assertSee('Cancel editing')
+            ->assertSee('student-profile-form', false)
             ->assertSee('student-profile.js')
             ->assertSee('Select province')
             ->assertSee('Select college');
@@ -53,10 +61,18 @@ class StudentProfileTest extends TestCase
             'major' => 'Marketing Management',
         ]);
 
-        $this->actingAs($student)->put('/student/profile/details', $payload)
+        $this->actingAs($student)
+            ->from('/student/profile?edit=1')
+            ->put('/student/profile/details', [...$payload, '_profile_editor' => '1'])
+            ->assertRedirect('/student/profile?edit=1')
             ->assertSessionHasErrors(['contact_number', 'student_number', 'course']);
 
         $this->assertDatabaseCount('student_profiles', 0);
+
+        $this->get('/student/profile')
+            ->assertOk()
+            ->assertSee('student-profile-form', false)
+            ->assertSee('Please check the highlighted information.');
     }
 
     public function test_existing_registration_details_are_prefilled_and_linked(): void
@@ -70,7 +86,9 @@ class StudentProfileTest extends TestCase
         $this->actingAs($student)->get('/student/profile')
             ->assertOk()
             ->assertSee('2026123456')
-            ->assertSee('Juan');
+            ->assertSee('Juan')
+            ->assertSee('Edit profile')
+            ->assertDontSee('student-profile-form', false);
 
         $this->actingAs($student)->put('/student/profile/details', $this->validPayload(['email' => $student->email]))
             ->assertSessionHasNoErrors();

@@ -11,11 +11,58 @@
     $savedReligionOther = old('religion_other', $savedReligion === 'Others' ? $details?->religion : '');
     $savedYearSection = old('year_section_selection', $details && in_array($details->year_section, array_slice($yearSections, 0, -1), true) ? $details->year_section : ($details ? 'Others' : ''));
     $savedYearSectionOther = old('year_section_other', $savedYearSection === 'Others' ? $details?->year_section : '');
+    $isEditing = request()->boolean('edit') || old('_profile_editor') === '1';
+    $displayName = collect([$details?->first_name, $details?->middle_name, $details?->last_name, $details?->extension_name])->filter()->implode(' ') ?: $user->name;
+    $currentAddress = collect([$details?->barangay, $details?->city_municipality, $details?->province])->filter()->implode(', ');
+    $birthPlace = collect([$details?->birth_city_municipality, $details?->birth_province])->filter()->implode(', ');
 @endphp
 
 @section('content')
-<div class="page-actions"><div><h2>Your student information</h2><p>Edit your details using the same guided choices and validation used during registration.</p></div></div>
+<div class="page-actions student-profile-heading"><div><h2>Your student information</h2><p>{{ $isEditing ? 'Update your details using the guided choices and validation used during registration.' : 'Review your saved personal, emergency contact, and academic details.' }}</p></div>@if($isEditing)<a class="secondary-outline-button" href="{{ route('student.profile.edit') }}">Cancel editing</a>@else<a class="primary-button compact" href="{{ route('student.profile.edit', ['edit' => 1]) }}">Edit profile</a>@endif</div>
 
+@if (! $isEditing)
+<section class="card student-profile-overview">
+    <div class="student-profile-identity">
+        <div class="profile-photo-preview">
+            @if ($user->profile_photo_path)
+                <img src="{{ route('profile.photo', ['v' => $user->updated_at?->timestamp]) }}" alt="Profile photo of {{ $user->name }}">
+            @else
+                <span>{{ strtoupper(substr($user->name, 0, 1)) }}</span>
+            @endif
+        </div>
+        <div><span class="eyebrow">Student profile</span><h3>{{ $displayName }}</h3><p>{{ $details?->student_number ?: 'Student number not provided' }} · {{ $user->email }}</p></div>
+    </div>
+
+    <div class="student-profile-detail-groups">
+        <section><div class="student-profile-group-heading"><span>01</span><div><strong>Personal Information</strong><small>Identity and contact details</small></div></div><dl class="student-profile-details">
+            <div><dt>Full name</dt><dd>{{ $displayName }}</dd></div>
+            <div><dt>Email address</dt><dd>{{ $user->email }}</dd></div>
+            <div><dt>Contact number</dt><dd>{{ $details?->contact_number ?: 'Not provided' }}</dd></div>
+            <div><dt>Date of birth</dt><dd>{{ $details?->date_of_birth ? \Illuminate\Support\Carbon::parse($details->date_of_birth)->format('F j, Y') : 'Not provided' }}</dd></div>
+            <div><dt>Sex</dt><dd>{{ $details?->sex ?: 'Not provided' }}</dd></div>
+            <div><dt>Blood type</dt><dd>{{ $details?->blood_type ?: 'Not provided' }}</dd></div>
+            <div><dt>Religion</dt><dd>{{ $details?->religion ?: 'Not provided' }}</dd></div>
+            <div class="full"><dt>Current address</dt><dd>{{ $currentAddress ?: 'Not provided' }}</dd></div>
+            <div class="full"><dt>Place of birth</dt><dd>{{ $birthPlace ?: 'Not provided' }}</dd></div>
+        </dl></section>
+
+        <section><div class="student-profile-group-heading"><span>02</span><div><strong>Emergency Contact</strong><small>Person to contact during an emergency</small></div></div><dl class="student-profile-details">
+            <div><dt>Full name</dt><dd>{{ $details?->emergency_contact_name ?: 'Not provided' }}</dd></div>
+            <div><dt>Relationship</dt><dd>{{ $details?->emergency_relationship ?: 'Not provided' }}</dd></div>
+            <div><dt>Contact number</dt><dd>{{ $details?->emergency_contact_number ?: 'Not provided' }}</dd></div>
+            <div class="full"><dt>Address</dt><dd>{{ $details?->emergency_same_address ? ($currentAddress ?: 'Same as student address') : ($details?->emergency_address ?: 'Not provided') }}</dd></div>
+        </dl></section>
+
+        <section><div class="student-profile-group-heading"><span>03</span><div><strong>Academic Information</strong><small>Current college and program details</small></div></div><dl class="student-profile-details">
+            <div><dt>Student number</dt><dd>{{ $details?->student_number ?: 'Not provided' }}</dd></div>
+            <div><dt>Year and section</dt><dd>{{ $details?->year_section ?: 'Not provided' }}</dd></div>
+            <div class="full"><dt>College</dt><dd>{{ $details?->college ?: 'Not provided' }}</dd></div>
+            <div class="full"><dt>Course</dt><dd>{{ $details?->course ?: 'Not provided' }}</dd></div>
+            <div class="full"><dt>Major</dt><dd>{{ $details?->major ?: 'Not provided' }}</dd></div>
+        </dl></section>
+    </div>
+</section>
+@else
 @if ($errors->any())
     <div class="alert danger"><strong>Please check the highlighted information.</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
 @endif
@@ -23,6 +70,7 @@
 <form method="POST" action="{{ route('student.profile.details.update') }}" enctype="multipart/form-data" id="student-profile-form" class="student-details-form">
     @csrf
     @method('PUT')
+    <input type="hidden" name="_profile_editor" value="1">
 
     <section class="card student-profile-section">
         <div class="card-heading"><div><span class="eyebrow">Account picture</span><h3>Profile photo</h3><p>You may update your account picture together with your student information.</p></div></div>
@@ -84,6 +132,7 @@
 
     <div class="student-profile-save"><button class="primary-button compact" type="submit">Save student information <span>✓</span></button></div>
 </form>
+@endif
 
 <section class="card student-password-card" id="password">
     <div class="card-heading"><div><span class="eyebrow">Authentication</span><h3>Change password</h3><p>Use at least 12 characters with uppercase, lowercase, a number, and a symbol.</p></div></div>
@@ -97,6 +146,8 @@
     </form>
 </section>
 
-<script>window.studentProfileAcademics = @json(config('academics.colleges')); window.studentProfileLocationEndpoints = {{ Illuminate\Support\Js::from($locationEndpoints) }};</script>
-<script src="{{ asset('js/student-profile.js') }}?v={{ filemtime(public_path('js/student-profile.js')) }}"></script>
+@if($isEditing)
+    <script>window.studentProfileAcademics = @json(config('academics.colleges')); window.studentProfileLocationEndpoints = {{ Illuminate\Support\Js::from($locationEndpoints) }};</script>
+    <script src="{{ asset('js/student-profile.js') }}?v={{ filemtime(public_path('js/student-profile.js')) }}"></script>
+@endif
 @endsection

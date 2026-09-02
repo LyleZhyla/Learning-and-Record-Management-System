@@ -74,6 +74,6 @@ class ProfileController extends Controller
             $photos->replace($user, $request->file('profile_photo'));
         }
 
-        return back()->with('status', 'Your student information was updated successfully.');
+        return redirect()->route('student.profile.edit')->with('status', 'Your student information was updated successfully.');
     }
 }
