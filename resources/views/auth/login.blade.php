@@ -47,7 +47,7 @@
 
                     <div class="label-row">
                         <label for="password">Password</label>
-                        <span>Minimum 12 characters</span>
+                        <a href="{{ route('password.request') }}">Forgot password?</a>
                     </div>
                     <div class="password-input-wrap">
                         <input id="password" name="password" type="password" autocomplete="current-password" required placeholder="Enter your password" data-login-password>
