@@ -68,6 +68,16 @@ class SuperAdminReportsTest extends TestCase
             ->assertOk()->assertSee('Print now')->assertSee('90.00%');
     }
 
+    public function test_super_admin_can_download_a_valid_pdf_report(): void
+    {
+        $response = $this->actingAs($this->superAdmin)->get('/admin/reports/attendance/pdf');
+
+        $response->assertOk()->assertHeader('content-type', 'application/pdf');
+        $this->assertStringContainsString('.pdf', $response->headers->get('content-disposition'));
+        $this->assertStringStartsWith('%PDF-', $response->getContent());
+        $this->assertGreaterThan(1000, strlen($response->getContent()));
+    }
+
     public function test_non_super_admin_cannot_access_reports(): void
     {
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);

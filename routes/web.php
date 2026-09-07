@@ -112,6 +112,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/accounts/{user}', [NstpAdminAccountController::class, 'show'])->name('accounts.show');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
@@ -191,6 +192,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup.index');
     Route::post('/database-backup/download', [DatabaseBackupController::class, 'download'])->middleware('throttle:2,1')->name('database-backup.download');
@@ -228,6 +230,7 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     $learningManagementRoutes();
     $omrScannerRoutes();
@@ -253,6 +256,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/performance', [CoordinatorMonitoringController::class, 'performance'])->name('performance.index');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
     Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store');

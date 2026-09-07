@@ -11,7 +11,10 @@ use App\Models\NstpSection;
 use App\Models\User;
 use App\Services\GradeService;
 use App\Services\ReportSpreadsheetService;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -111,6 +114,45 @@ class ReportController extends Controller
             'report' => $this->buildReport($filters),
             'filters' => $filters,
             'routePrefix' => $this->routePrefix($request),
+        ]);
+    }
+
+    public function pdf(Request $request, string $type): Response
+    {
+        abort_unless(array_key_exists($type, self::TYPES), 404);
+        $filters = $this->filters($request, $type);
+        $report = $this->buildReport($filters);
+        $logoPath = public_path('images/snapie-logo-160.png');
+        $logo = is_file($logoPath) ? 'data:image/png;base64,'.base64_encode((string) file_get_contents($logoPath)) : null;
+
+        $options = new Options;
+        $options->set('defaultFont', 'Helvetica');
+        $options->set('isRemoteEnabled', false);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml(view('admin.reports.pdf', [
+            'report' => $report,
+            'filterSummary' => $this->filterSummary($filters),
+            'logo' => $logo,
+        ])->render());
+        $dompdf->setPaper('a4', 'landscape');
+        $dompdf->render();
+
+        $canvas = $dompdf->getCanvas();
+        $font = $dompdf->getFontMetrics()->getFont('Helvetica');
+        $canvas->page_text(
+            $canvas->get_width() - 105,
+            $canvas->get_height() - 22,
+            'Page {PAGE_NUM} of {PAGE_COUNT}',
+            $font,
+            8,
+            [0.39, 0.45, 0.55],
+        );
+
+        $filename = str($report['title'])->slug().'-'.now()->format('Y-m-d-His').'.pdf';
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
         ]);
     }
 

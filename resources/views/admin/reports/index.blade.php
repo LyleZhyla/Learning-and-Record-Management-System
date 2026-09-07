@@ -10,7 +10,7 @@
         <div>
             <span class="eyebrow">{{ $isFacilitatorReport ? 'Assigned section reporting center' : ($isCoordinatorReport ? 'Assigned component reporting center' : 'Central reporting center') }}</span>
             <h2>{{ $isFacilitatorReport ? 'My section reports' : ($isCoordinatorReport ? $reportScope.' operational reports' : 'Operational reports, ready when needed.') }}</h2>
-            <p>{{ $isFacilitatorReport ? 'Review student, attendance, grade, and section data limited to the sections assigned to you.' : ($isCoordinatorReport ? 'Review student, attendance, grade, and section data limited to your assigned component.' : 'Review institution-wide student, attendance, grade, component, and section data.') }} Apply filters before printing or downloading an Excel file.</p>
+            <p>{{ $isFacilitatorReport ? 'Review student, attendance, grade, and section data limited to the sections assigned to you.' : ($isCoordinatorReport ? 'Review student, attendance, grade, and section data limited to your assigned component.' : 'Review institution-wide student, attendance, grade, component, and section data.') }} Apply filters before printing or downloading an Excel or PDF file.</p>
         </div>
         <span class="workspace-date">Last generated<strong>{{ $report['generated_at']->format('M d, Y · h:i A') }}</strong></span>
     </section>
@@ -48,6 +48,7 @@
             <div><span class="eyebrow">Generated report</span><h3>{{ $report['title'] }}</h3><p>{{ $report['rows']->count() }} record{{ $report['rows']->count() === 1 ? '' : 's' }} matched the selected filters.</p></div>
             <div class="report-output-actions">
                 <a class="secondary-outline-button" target="_blank" href="{{ route($routePrefix.'.reports.print', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Print report</a>
+                <a class="secondary-outline-button" href="{{ route($routePrefix.'.reports.pdf', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download PDF</a>
                 <a class="primary-button compact" href="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download Excel</a>
             </div>
         </div>

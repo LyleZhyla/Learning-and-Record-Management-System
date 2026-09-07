@@ -22,9 +22,11 @@ class NstpAdminUnlockedFeaturesTest extends TestCase
         $this->actingAs($admin)->get('/nstp-admin/accounts?role=facilitator')
             ->assertOk()->assertSee($facilitator->name);
         $this->actingAs($admin)->get('/nstp-admin/reports')
-            ->assertOk()->assertSee('Operational reports')->assertSee('Download Excel');
+            ->assertOk()->assertSee('Operational reports')->assertSee('Download Excel')->assertSee('Download PDF');
         $this->actingAs($admin)->get('/nstp-admin/reports/students/export')
             ->assertOk()->assertDownload();
+        $this->actingAs($admin)->get('/nstp-admin/reports/students/pdf')
+            ->assertOk()->assertHeader('content-type', 'application/pdf');
     }
 
     public function test_nstp_admin_can_publish_a_component_targeted_announcement(): void
