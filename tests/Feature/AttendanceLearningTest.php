@@ -285,6 +285,10 @@ class AttendanceLearningTest extends TestCase
             ->assertOk()
             ->assertSee('/facilitator/reports', false)
             ->assertDontSee($otherSection->code);
+        $this->actingAs($this->facilitator)->get('/facilitator/reports')
+            ->assertOk()->assertDontSee('Students by Section');
+        $this->actingAs($this->facilitator)->get('/facilitator/reports/students_by_section/export')
+            ->assertNotFound();
     }
 
     public function test_each_authorized_portal_can_open_its_attendance_and_learning_pages(): void

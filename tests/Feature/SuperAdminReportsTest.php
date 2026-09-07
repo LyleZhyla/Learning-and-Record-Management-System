@@ -78,6 +78,62 @@ class SuperAdminReportsTest extends TestCase
         $this->assertGreaterThan(1000, strlen($response->getContent()));
     }
 
+    public function test_super_admin_can_download_students_segregated_into_section_worksheets(): void
+    {
+        $component = NstpComponent::where('code', 'CWTS')->firstOrFail();
+        $facilitator = User::where('role', 'facilitator')->firstOrFail();
+        $secondSection = NstpSection::create([
+            'component_id' => $component->id,
+            'facilitator_id' => $facilitator->id,
+            'code' => 'CWTS-02',
+            'name' => 'Section 2',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'capacity' => 40,
+            'status' => 'active',
+        ]);
+        $secondStudent = User::factory()->create(['role' => 'student', 'status' => 'active', 'name' => 'Second Student']);
+        NstpEnrollment::create([
+            'student_id' => $secondStudent->id,
+            'component_id' => $component->id,
+            'section_id' => $secondSection->id,
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'status' => 'enrolled',
+        ]);
+        User::factory()->create(['role' => 'student', 'status' => 'active', 'name' => 'Unassigned Student']);
+
+        $this->actingAs($this->superAdmin)->get('/admin/reports?type=students_by_section')
+            ->assertOk()
+            ->assertSee('Student Masterlist by Section')
+            ->assertSee('CWTS - CWTS-01')
+            ->assertSee('CWTS - CWTS-02')
+            ->assertSee('Unassigned Students');
+
+        $response = $this->actingAs($this->superAdmin)->get('/admin/reports/students_by_section/export');
+        $response->assertOk()->assertDownload();
+        $temporaryFile = tempnam(sys_get_temp_dir(), 'smart-nstp-section-report-');
+        file_put_contents($temporaryFile, $response->streamedContent());
+        $workbook = IOFactory::load($temporaryFile);
+
+        $this->assertSame(['CWTS-01', 'CWTS-02', 'Unassigned'], $workbook->getSheetNames());
+        $this->assertSame('Demo Student', $workbook->getSheetByName('CWTS-01')->getCell('A7')->getValue());
+        $this->assertSame('Second Student', $workbook->getSheetByName('CWTS-02')->getCell('A7')->getValue());
+        $this->assertSame('Unassigned Student', $workbook->getSheetByName('Unassigned')->getCell('A7')->getValue());
+
+        $workbook->disconnectWorksheets();
+        unlink($temporaryFile);
+
+        $this->actingAs($this->superAdmin)->get('/admin/reports/students_by_section/pdf')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+        $this->actingAs($this->superAdmin)->get('/admin/reports/students_by_section/print')
+            ->assertOk()
+            ->assertSee('CWTS - CWTS-01')
+            ->assertSee('CWTS - CWTS-02')
+            ->assertSee('Unassigned Students');
+    }
+
     public function test_non_super_admin_cannot_access_reports(): void
     {
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);

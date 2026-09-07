@@ -25,6 +25,7 @@ class ReportController extends Controller
 {
     public const TYPES = [
         'students' => 'Student Masterlist',
+        'students_by_section' => 'Students by Section',
         'attendance' => 'Attendance Report',
         'grades' => 'Grade Report',
         'sections' => 'Component and Section Report',
@@ -63,7 +64,7 @@ class ReportController extends Controller
             'routePrefix' => $routePrefix,
             'filters' => $filters,
             'report' => $report,
-            'reportTypes' => self::TYPES,
+            'reportTypes' => $this->availableReportTypes($request),
             'components' => $components,
             'sections' => $sections,
             'academicYears' => $academicYears,
@@ -91,7 +92,7 @@ class ReportController extends Controller
 
     public function export(Request $request, string $type): StreamedResponse
     {
-        abort_unless(array_key_exists($type, self::TYPES), 404);
+        abort_unless(array_key_exists($type, $this->availableReportTypes($request)), 404);
         $filters = $this->filters($request, $type);
         $report = $this->buildReport($filters);
         $spreadsheet = $this->spreadsheets->create($report, $this->filterSummary($filters));
@@ -107,7 +108,7 @@ class ReportController extends Controller
 
     public function print(Request $request, string $type): View
     {
-        abort_unless(array_key_exists($type, self::TYPES), 404);
+        abort_unless(array_key_exists($type, $this->availableReportTypes($request)), 404);
         $filters = $this->filters($request, $type);
 
         return view('admin.reports.print', [
@@ -119,7 +120,7 @@ class ReportController extends Controller
 
     public function pdf(Request $request, string $type): Response
     {
-        abort_unless(array_key_exists($type, self::TYPES), 404);
+        abort_unless(array_key_exists($type, $this->availableReportTypes($request)), 404);
         $filters = $this->filters($request, $type);
         $report = $this->buildReport($filters);
         $logoPath = public_path('images/snapie-logo-160.png');
@@ -159,7 +160,7 @@ class ReportController extends Controller
     private function filters(Request $request, ?string $forcedType = null): array
     {
         $validated = $request->validate([
-            'type' => ['nullable', Rule::in(array_keys(self::TYPES))],
+            'type' => ['nullable', Rule::in(array_keys($this->availableReportTypes($request)))],
             'academic_year' => ['nullable', 'string', 'max:9'],
             'semester' => ['nullable', Rule::in(array_keys(NstpSection::SEMESTERS))],
             'component_id' => ['nullable', 'integer', 'exists:nstp_components,id'],
@@ -182,6 +183,7 @@ class ReportController extends Controller
     private function buildReport(array $filters): array
     {
         return match ($filters['type']) {
+            'students_by_section' => $this->studentsBySectionReport($filters),
             'attendance' => $this->attendanceReport($filters),
             'grades' => $this->gradeReport($filters),
             'sections' => $this->sectionReport($filters),
@@ -217,6 +219,32 @@ class ReportController extends Controller
             })->values();
 
         return $this->report('Student Masterlist', ['Student', 'Email', 'Component', 'Section', 'Term', 'Facilitator', 'Status'], $rows);
+    }
+
+    private function studentsBySectionReport(array $filters): array
+    {
+        $studentReport = $this->studentReport($filters);
+        $groups = $studentReport['rows']
+            ->groupBy(fn (array $row): string => implode('|', [$row['component'], $row['section'], $row['term']]))
+            ->map(function (Collection $rows): array {
+                $first = $rows->first();
+                $isUnassigned = $first['section'] === 'Unassigned';
+
+                return [
+                    'title' => $isUnassigned ? 'Unassigned Students' : $first['component'].' - '.$first['section'],
+                    'subtitle' => $isUnassigned
+                        ? 'Students without a section assignment'
+                        : $first['term'].' | Facilitator: '.$first['facilitator'],
+                    'sheet_name' => $isUnassigned ? 'Unassigned' : $first['section'],
+                    'is_unassigned' => $isUnassigned,
+                    'rows' => $rows->sortBy('student', SORT_NATURAL | SORT_FLAG_CASE)->values(),
+                ];
+            })
+            ->sortBy(fn (array $group): string => ($group['is_unassigned'] ? '1' : '0').'|'.$group['title'].'|'.$group['subtitle'], SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        return $this->report('Student Masterlist by Section', $studentReport['headers'], $groups->flatMap(fn (array $group) => $group['rows'])->values())
+            + ['groups' => $groups];
     }
 
     private function attendanceReport(array $filters): array
@@ -342,5 +370,16 @@ class ReportController extends Controller
             $request->user()->isNstpAdmin() => 'nstp_admin',
             default => 'admin',
         };
+    }
+
+    private function availableReportTypes(Request $request): array
+    {
+        $types = self::TYPES;
+
+        if ($request->user()->isCoordinator() || $request->user()->isFacilitator()) {
+            unset($types['students_by_section']);
+        }
+
+        return $types;
     }
 }

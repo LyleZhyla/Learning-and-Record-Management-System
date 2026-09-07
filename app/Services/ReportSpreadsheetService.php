@@ -11,6 +11,7 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class ReportSpreadsheetService
 {
@@ -27,8 +28,38 @@ class ReportSpreadsheetService
             ->setTitle($report['title'])
             ->setSubject('NSTP operational report');
 
+        if (array_key_exists('groups', $report)) {
+            $groups = collect($report['groups']);
+
+            if ($groups->isEmpty()) {
+                $sheet = $spreadsheet->getActiveSheet();
+                $sheet->setTitle('No Students');
+                $this->populateSheet($sheet, $report, $filterSummary, 'No Students', 'No students matched the selected filters.');
+
+                return $spreadsheet;
+            }
+
+            $usedTitles = [];
+            foreach ($groups->values() as $index => $group) {
+                $sheet = $index === 0 ? $spreadsheet->getActiveSheet() : $spreadsheet->createSheet();
+                $sheet->setTitle($this->uniqueSheetTitle($group['sheet_name'], $usedTitles));
+                $this->populateSheet($sheet, array_merge($report, ['rows' => $group['rows']]), $filterSummary, $group['title'], $group['subtitle']);
+            }
+
+            $spreadsheet->setActiveSheetIndex(0);
+
+            return $spreadsheet;
+        }
+
         $sheet = $spreadsheet->getActiveSheet();
-        $sheet->setTitle(mb_substr($report['title'], 0, 31));
+        $sheet->setTitle($this->uniqueSheetTitle($report['title']));
+        $this->populateSheet($sheet, $report, $filterSummary, $report['title']);
+
+        return $spreadsheet;
+    }
+
+    private function populateSheet(Worksheet $sheet, array $report, string $filterSummary, string $title, ?string $subtitle = null): void
+    {
         $sheet->setShowGridlines(false);
 
         $columnCount = count($report['headers']);
@@ -36,9 +67,9 @@ class ReportSpreadsheetService
         $sheet->mergeCells("A2:{$lastColumn}2");
         $sheet->mergeCells("A3:{$lastColumn}3");
         $sheet->mergeCells("A4:{$lastColumn}4");
-        $sheet->setCellValue('A2', $report['title']);
-        $sheet->setCellValue('A3', 'Generated '.$report['generated_at']->format('F d, Y · h:i A'));
-        $sheet->setCellValue('A4', 'Filters: '.$filterSummary);
+        $sheet->setCellValue('A2', $title);
+        $sheet->setCellValue('A3', $subtitle ?? 'Generated '.$report['generated_at']->format('F d, Y - h:i A'));
+        $sheet->setCellValue('A4', ($subtitle ? 'Generated '.$report['generated_at']->format('F d, Y - h:i A').' | ' : '').'Filters: '.$filterSummary);
         $sheet->fromArray([$report['headers']], null, 'A'.self::HEADER_ROW);
 
         $sheet->getStyle("A2:{$lastColumn}2")->getFont()->setName('Arial')->setBold(true)->setSize(16)->getColor()->setARGB('FF173760');
@@ -86,7 +117,24 @@ class ReportSpreadsheetService
             $sheet->getColumnDimension($letter)->setWidth(min(40, max(12, $columnWidths[$column - 1] + 2)));
         }
 
-        return $spreadsheet;
+    }
+
+    private function uniqueSheetTitle(string $preferredTitle, array &$usedTitles = []): string
+    {
+        $base = trim((string) preg_replace('/[\\\\\/\?\*\[\]:]/', '-', $preferredTitle));
+        $base = mb_substr($base !== '' ? $base : 'Section', 0, 31);
+        $title = $base;
+        $suffix = 2;
+
+        while (in_array(mb_strtolower($title), $usedTitles, true)) {
+            $marker = ' ('.$suffix.')';
+            $title = mb_substr($base, 0, 31 - mb_strlen($marker)).$marker;
+            $suffix++;
+        }
+
+        $usedTitles[] = mb_strtolower($title);
+
+        return $title;
     }
 
     private function writeValue($cell, string $header, mixed $value): void
