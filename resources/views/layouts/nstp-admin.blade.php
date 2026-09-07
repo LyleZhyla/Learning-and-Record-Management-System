@@ -93,5 +93,6 @@
     <x-ai-chat-widget />
     <script src="{{ asset('js/sidebar.js') }}"></script>
     <script src="{{ asset('js/theme.js') }}"></script>
+    <script src="{{ asset('js/table-sort.js') }}?v={{ filemtime(public_path('js/table-sort.js')) }}"></script>
 </body>
 </html>

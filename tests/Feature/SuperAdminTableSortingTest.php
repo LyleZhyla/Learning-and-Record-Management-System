@@ -21,13 +21,15 @@ class SuperAdminTableSortingTest extends TestCase
         }
     }
 
-    public function test_column_sorter_is_limited_to_the_super_admin_layout(): void
+    public function test_nstp_admin_list_pages_load_the_shared_column_sorter(): void
     {
         $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
 
-        $this->actingAs($nstpAdmin)->get('/nstp-admin/reports')
-            ->assertOk()
-            ->assertDontSee('js/table-sort.js', false);
+        foreach (['/nstp-admin/accounts', '/nstp-admin/students', '/nstp-admin/sections', '/nstp-admin/reports', '/nstp-admin/announcements'] as $url) {
+            $this->actingAs($nstpAdmin)->get($url)
+                ->assertOk()
+                ->assertSee('js/table-sort.js', false);
+        }
     }
 
     public function test_column_sorter_supports_accessible_multi_type_sorting(): void
