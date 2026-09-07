@@ -53,6 +53,17 @@ class SuperAdminTableSortingTest extends TestCase
         }
     }
 
+    public function test_facilitator_list_pages_load_the_shared_column_sorter(): void
+    {
+        $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+
+        foreach (['/facilitator/students', '/facilitator/attendance', '/facilitator/materials', '/facilitator/assessments', '/facilitator/answer-sheet-scanner', '/facilitator/reports'] as $url) {
+            $this->actingAs($facilitator)->get($url)
+                ->assertOk()
+                ->assertSee('js/table-sort.js', false);
+        }
+    }
+
     public function test_column_sorter_supports_accessible_multi_type_sorting(): void
     {
         $script = file_get_contents(public_path('js/table-sort.js'));
