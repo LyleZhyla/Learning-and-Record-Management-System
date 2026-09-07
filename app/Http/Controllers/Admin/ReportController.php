@@ -10,10 +10,12 @@ use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
 use App\Services\GradeService;
+use App\Services\ReportSpreadsheetService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
@@ -25,7 +27,10 @@ class ReportController extends Controller
         'sections' => 'Component and Section Report',
     ];
 
-    public function __construct(private GradeService $grades) {}
+    public function __construct(
+        private GradeService $grades,
+        private ReportSpreadsheetService $spreadsheets,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -86,20 +91,15 @@ class ReportController extends Controller
         abort_unless(array_key_exists($type, self::TYPES), 404);
         $filters = $this->filters($request, $type);
         $report = $this->buildReport($filters);
-        $filename = str($report['title'])->slug().'-'.now()->format('Y-m-d-His').'.csv';
+        $spreadsheet = $this->spreadsheets->create($report, $this->filterSummary($filters));
+        $filename = str($report['title'])->slug().'-'.now()->format('Y-m-d-His').'.xlsx';
 
-        return response()->streamDownload(function () use ($report): void {
-            $output = fopen('php://output', 'w');
-            fwrite($output, "\xEF\xBB\xBF");
-            fputcsv($output, [$report['title']]);
-            fputcsv($output, ['Generated', now()->format('F d, Y h:i A')]);
-            fputcsv($output, []);
-            fputcsv($output, $report['headers']);
-            foreach ($report['rows'] as $row) {
-                fputcsv($output, array_values($row));
-            }
-            fclose($output);
-        }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        return response()->streamDownload(function () use ($spreadsheet): void {
+            (new Xlsx($spreadsheet))->save('php://output');
+            $spreadsheet->disconnectWorksheets();
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     public function print(Request $request, string $type): View
@@ -251,6 +251,35 @@ class ReportController extends Controller
     private function report(string $title, array $headers, Collection $rows): array
     {
         return compact('title', 'headers', 'rows') + ['generated_at' => now()];
+    }
+
+    private function filterSummary(array $filters): string
+    {
+        $summary = [];
+
+        if ($filters['academic_year'] ?? null) {
+            $summary[] = 'Academic year: '.$filters['academic_year'];
+        }
+        if ($filters['semester'] ?? null) {
+            $summary[] = 'Semester: '.(NstpSection::SEMESTERS[$filters['semester']] ?? str($filters['semester'])->headline());
+        }
+        if ($filters['component_id'] ?? null) {
+            $summary[] = 'Component: '.(NstpComponent::find($filters['component_id'])?->code ?? 'Unavailable');
+        }
+        if ($filters['section_id'] ?? null) {
+            $summary[] = 'Section: '.(NstpSection::find($filters['section_id'])?->code ?? 'Unavailable');
+        }
+        if ($filters['date_from'] ?? null) {
+            $summary[] = 'From: '.$filters['date_from'];
+        }
+        if ($filters['date_to'] ?? null) {
+            $summary[] = 'To: '.$filters['date_to'];
+        }
+        if ($filters['facilitator_id'] ?? null) {
+            $summary[] = 'Scope: Assigned sections';
+        }
+
+        return $summary === [] ? 'All records' : implode(' · ', $summary);
     }
 
     private function attendanceRate(?int $componentId = null, ?int $facilitatorId = null): float

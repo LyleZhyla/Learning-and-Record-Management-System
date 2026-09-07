@@ -277,7 +277,7 @@ class AttendanceLearningTest extends TestCase
 
         $this->actingAs($this->facilitator)->get('/facilitator/reports/students/export?section_id='.$otherSection->id)
             ->assertOk()
-            ->assertHeader('content-type', 'text/csv; charset=UTF-8');
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $this->actingAs($this->facilitator)->get('/facilitator/reports/sections/print?section_id='.$otherSection->id)
             ->assertOk()
             ->assertSee('/facilitator/reports', false)

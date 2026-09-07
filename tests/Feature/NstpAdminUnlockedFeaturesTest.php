@@ -22,7 +22,7 @@ class NstpAdminUnlockedFeaturesTest extends TestCase
         $this->actingAs($admin)->get('/nstp-admin/accounts?role=facilitator')
             ->assertOk()->assertSee($facilitator->name);
         $this->actingAs($admin)->get('/nstp-admin/reports')
-            ->assertOk()->assertSee('Operational reports')->assertSee('Download CSV');
+            ->assertOk()->assertSee('Operational reports')->assertSee('Download Excel');
         $this->actingAs($admin)->get('/nstp-admin/reports/students/export')
             ->assertOk()->assertDownload();
     }

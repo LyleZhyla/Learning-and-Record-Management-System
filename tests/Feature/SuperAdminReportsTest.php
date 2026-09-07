@@ -11,6 +11,7 @@ use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
 
 class SuperAdminReportsTest extends TestCase
@@ -42,10 +43,27 @@ class SuperAdminReportsTest extends TestCase
         }
     }
 
-    public function test_super_admin_can_download_csv_and_open_print_view(): void
+    public function test_super_admin_can_download_excel_and_open_print_view(): void
     {
-        $this->actingAs($this->superAdmin)->get('/admin/reports/attendance/export')
-            ->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $response = $this->actingAs($this->superAdmin)->get('/admin/reports/attendance/export');
+        $response->assertOk()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        $this->assertStringContainsString('.xlsx', $response->headers->get('content-disposition'));
+
+        $temporaryFile = tempnam(sys_get_temp_dir(), 'smart-nstp-report-');
+        file_put_contents($temporaryFile, $response->streamedContent());
+        $workbook = IOFactory::load($temporaryFile);
+        $sheet = $workbook->getActiveSheet();
+
+        $this->assertSame('Attendance Report', $sheet->getCell('A2')->getValue());
+        $this->assertSame('Student', $sheet->getCell('A6')->getValue());
+        $this->assertSame('Demo Student', $sheet->getCell('A7')->getValue());
+        $this->assertSame('A7', $sheet->getFreezePane());
+        $this->assertSame('A6:I7', $sheet->getAutoFilter()->getRange());
+
+        $workbook->disconnectWorksheets();
+        unlink($temporaryFile);
+
         $this->actingAs($this->superAdmin)->get('/admin/reports/grades/print')
             ->assertOk()->assertSee('Print now')->assertSee('90.00%');
     }

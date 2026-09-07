@@ -149,7 +149,7 @@ class CoordinatorPortalTest extends TestCase
         }
 
         $this->actingAs($this->coordinator)->get('/coordinator/reports/students/export?component_id='.$otherComponent->id)
-            ->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+            ->assertOk()->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         $this->actingAs($this->coordinator)->get('/coordinator/reports/sections/print?component_id='.$otherComponent->id)
             ->assertOk()->assertSee('CWTS-01')->assertDontSee('ROTC-RPT');
     }
