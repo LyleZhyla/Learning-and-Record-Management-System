@@ -26,6 +26,7 @@
                     <span class="eyebrow">Secure NSTP portal</span>
                     <h1>Welcome back</h1>
                     <p>Sign in using your authorized Smart NSTP account.</p>
+                    <img class="snapie-character snapie-login-mobile" src="{{ asset('images/characters/snapie-hero.webp') }}" alt="SNAPIE mascot pointing forward">
                 </div>
 
                 @if (session('status'))
