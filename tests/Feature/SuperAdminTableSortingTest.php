@@ -64,6 +64,17 @@ class SuperAdminTableSortingTest extends TestCase
         }
     }
 
+    public function test_student_table_pages_load_the_shared_column_sorter(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+
+        foreach (['/student/attendance', '/student/grades', '/student/reports'] as $url) {
+            $this->actingAs($student)->get($url)
+                ->assertOk()
+                ->assertSee('js/table-sort.js', false);
+        }
+    }
+
     public function test_column_sorter_supports_accessible_multi_type_sorting(): void
     {
         $script = file_get_contents(public_path('js/table-sort.js'));
