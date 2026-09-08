@@ -48,7 +48,8 @@
 
     newChat.addEventListener('click', () => {
         form.action = form.dataset.newAction;
-        messages.innerHTML = '<div class="ai-widget-welcome" data-ai-widget-welcome><span>✦</span><strong>New conversation</strong><p>What would you like help with?</p></div>';
+        const character = widget.dataset.aiCharacter;
+        messages.innerHTML = `<div class="ai-widget-welcome" data-ai-widget-welcome><img class="snapie-character" src="${character}" alt="SNAPIE AI mascot with a tablet"><strong>New conversation</strong><p>What would you like help with?</p></div>`;
         expand.href = `${form.dataset.newAction}?new=1`;
         errorBox.hidden = true;
         textarea.value = '';

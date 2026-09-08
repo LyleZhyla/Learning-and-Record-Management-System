@@ -86,6 +86,7 @@
                     <div><strong>ROTC</strong><span>Reserve Officers</span></div>
                 </div>
             </div>
+            <img class="snapie-character snapie-auth-character" src="{{ asset('images/characters/snapie-hero.webp') }}" alt="SNAPIE mascot pointing forward">
         </section>
     </main>
     <script src="{{ asset('js/theme.js') }}"></script>

@@ -1,8 +1,8 @@
 @unless(request()->routeIs('ai-assistant.*'))
-<aside class="ai-chat-widget" data-ai-widget>
+<aside class="ai-chat-widget" data-ai-widget data-ai-character="{{ asset('images/characters/snapie-ai-guide.webp') }}">
     <section class="ai-widget-panel" data-ai-widget-panel hidden aria-label="SNAPIE AI mini chat">
         <header class="ai-widget-header">
-            <span class="ai-widget-avatar" aria-hidden="true">✦</span>
+            <img class="ai-widget-avatar" src="{{ asset('images/characters/snapie-face.webp') }}" alt="" aria-hidden="true">
             <div><strong>SNAPIE AI</strong><small>Ask without leaving this page</small></div>
             <button type="button" data-ai-widget-close aria-label="Close AI chat">×</button>
         </header>
@@ -23,7 +23,7 @@
                     <p>{!! nl2br(e($message->content)) !!}</p>
                 </article>
             @empty
-                <div class="ai-widget-welcome" data-ai-widget-welcome><span>✦</span><strong>How can I help?</strong><p>Ask about NSTP, coursework, studying, or using the platform.</p></div>
+                <div class="ai-widget-welcome" data-ai-widget-welcome><img class="snapie-character" src="{{ asset('images/characters/snapie-ai-guide.webp') }}" alt="SNAPIE AI mascot with a tablet"><strong>How can I help?</strong><p>Ask about NSTP, coursework, studying, or using the platform.</p></div>
             @endforelse
         </div>
 
@@ -40,7 +40,7 @@
     </section>
 
     <button class="ai-widget-launcher" type="button" data-ai-widget-toggle aria-label="Open SNAPIE AI chat" aria-expanded="false">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3C6.8 3 2.5 6.7 2.5 11.3c0 2.6 1.4 4.9 3.6 6.4L5.4 21l4-1.8c.8.2 1.7.3 2.6.3 5.2 0 9.5-3.7 9.5-8.2S17.2 3 12 3Z"/><path d="M8.2 11.5h.1m3.7 0h.1m3.7 0h.1"/></svg>
+        <img src="{{ asset('images/characters/snapie-face.webp') }}" alt="" aria-hidden="true">
         <span>AI</span>
     </button>
 </aside>

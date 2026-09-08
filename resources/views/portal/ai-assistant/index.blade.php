@@ -21,7 +21,7 @@
 
     <div class="card ai-assistant-card">
         <header class="ai-assistant-heading">
-            <div class="ai-orb" aria-hidden="true">✦</div>
+            <img class="snapie-character snapie-ai-avatar" src="{{ asset('images/characters/snapie-ai-guide.webp') }}" alt="" aria-hidden="true">
             <div><span class="eyebrow">SNAPIE intelligence</span><h2>{{ $conversation?->title ?? 'New conversation' }}</h2><p>Ask about NSTP, CWTS, LTS, ROTC, coursework, or using the platform.</p></div>
         </header>
 
@@ -42,7 +42,7 @@
                     <div><strong>{{ $message->role === 'user' ? 'You' : 'SNAPIE AI' }}</strong><p>{!! nl2br(e($message->content)) !!}</p><small>{{ $message->created_at->format('M d · h:i A') }}</small></div>
                 </article>
             @empty
-                <div class="ai-welcome" data-ai-welcome><span>✦</span><strong>Welcome to SNAPIE AI</strong><p>I can explain concepts and help you study. I cannot change official records or make school decisions.</p></div>
+                <div class="ai-welcome" data-ai-welcome><img class="snapie-character" src="{{ asset('images/characters/snapie-ai-guide.webp') }}" alt="SNAPIE AI mascot with a tablet"><strong>Welcome to SNAPIE AI</strong><p>I can explain concepts and help you study. I cannot change official records or make school decisions.</p></div>
             @endforelse
         </div>
 

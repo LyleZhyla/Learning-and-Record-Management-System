@@ -27,6 +27,7 @@
 
     <main class="registration-shell">
         <aside class="registration-intro">
+            <img class="snapie-character snapie-registration-character" src="{{ asset('images/characters/snapie-learning.webp') }}" alt="SNAPIE mascot using a laptop">
             <span class="eyebrow">Student application</span>
             <h1>Begin your NSTP journey.</h1>
             <p>Complete each part carefully. Your Certificate of Registration is required before the personal information section becomes available.</p>

@@ -10,6 +10,7 @@
             <h2>Good day, {{ explode(' ', auth()->user()->name)[0] }}.</h2>
             <p>Manage system access across five NSTP roles and monitor the accounts registered on the platform.</p>
         </div>
+        <img class="snapie-character snapie-banner-character" src="{{ asset('images/characters/snapie-wave.webp') }}" alt="SNAPIE mascot waving">
         <a class="secondary-button" href="{{ route('admin.users.create') }}">Create user account</a>
     </section>
 

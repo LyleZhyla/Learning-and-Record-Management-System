@@ -10,6 +10,7 @@
             <h2>Good day, {{ explode(' ', auth()->user()->name)[0] }}.</h2>
             <p>Monitor NSTP participation and prepare CWTS, LTS, and ROTC operations from one centralized workspace.</p>
         </div>
+        <img class="snapie-character snapie-banner-character" src="{{ asset('images/characters/snapie-wave.webp') }}" alt="SNAPIE mascot waving">
         <span class="workspace-date">{{ now()->format('l') }}<strong>{{ now()->format('M d, Y') }}</strong></span>
     </section>
 
