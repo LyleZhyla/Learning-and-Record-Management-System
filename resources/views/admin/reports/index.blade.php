@@ -48,8 +48,27 @@
             <div><span class="eyebrow">Generated report</span><h3>{{ $report['title'] }}</h3><p>{{ $report['rows']->count() }} record{{ $report['rows']->count() === 1 ? '' : 's' }} matched the selected filters.</p></div>
             <div class="report-output-actions">
                 <a class="secondary-outline-button" target="_blank" href="{{ route($routePrefix.'.reports.print', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Print report</a>
-                <a class="secondary-outline-button" href="{{ route($routePrefix.'.reports.pdf', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download PDF</a>
-                <a class="primary-button compact" href="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download Excel</a>
+                <div
+                    class="report-save-control"
+                    data-report-download
+                    data-pdf-url="{{ route($routePrefix.'.reports.pdf', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}"
+                    data-excel-url="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}"
+                    data-base-filename="{{ str($report['title'])->slug() }}"
+                >
+                    <label class="report-format-field">
+                        <span>File format</span>
+                        <select data-report-format aria-label="Select download file format">
+                            <option value="pdf">PDF document</option>
+                            <option value="xlsx">Excel workbook</option>
+                        </select>
+                    </label>
+                    <button class="primary-button compact" type="button" data-report-save>Choose folder &amp; save</button>
+                    <small class="report-save-status" data-report-save-status aria-live="polite">Select PDF or Excel, then choose where to save the file.</small>
+                    <noscript>
+                        <a href="{{ route($routePrefix.'.reports.pdf', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download PDF</a>
+                        <a href="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download Excel</a>
+                    </noscript>
+                </div>
             </div>
         </div>
         @if(array_key_exists('groups', $report) && $report['groups']->isNotEmpty())
@@ -61,4 +80,5 @@
             <div class="table-wrap"><table class="data-table report-table"><thead><tr>@foreach($report['headers'] as $header)<th>{{ $header }}</th>@endforeach</tr></thead><tbody>@forelse($report['rows'] as $row)<tr>@foreach($row as $value)<td>{{ $value }}</td>@endforeach</tr>@empty<tr><td colspan="{{ count($report['headers']) }}"><div class="empty-state"><strong>No records found</strong><span>Try removing one or more report filters.</span></div></td></tr>@endforelse</tbody></table></div>
         @endif
     </section>
+    <script src="{{ asset('js/report-download.js') }}?v={{ filemtime(public_path('js/report-download.js')) }}"></script>
 @endsection

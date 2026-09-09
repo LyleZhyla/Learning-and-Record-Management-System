@@ -43,6 +43,18 @@ class SuperAdminReportsTest extends TestCase
         }
     }
 
+    public function test_report_page_offers_format_and_save_location_controls(): void
+    {
+        $this->actingAs($this->superAdmin)->get('/admin/reports?type=students')
+            ->assertOk()
+            ->assertSee('PDF document')
+            ->assertSee('Excel workbook')
+            ->assertSee('Choose folder &amp; save', false)
+            ->assertSee('data-pdf-url="'.url('/admin/reports/students/pdf').'"', false)
+            ->assertSee('data-excel-url="'.url('/admin/reports/students/export').'"', false)
+            ->assertSee('js/report-download.js', false);
+    }
+
     public function test_super_admin_can_download_excel_and_open_print_view(): void
     {
         $response = $this->actingAs($this->superAdmin)->get('/admin/reports/attendance/export');
