@@ -17,10 +17,14 @@ class StudentImportService
         'name', 'email',
     ];
 
+    public function __construct(private readonly AccountCredentialMailer $credentialMailer) {}
+
     /**
      * @return array{
      *     students: int,
-     *     credentials: array<int, array{name: string, email: string, temporary_password: string, qr_payload: string}>
+     *     credentials: array<int, array{name: string, email: string, temporary_password: string, qr_payload: string}>,
+     *     emails_queued: int,
+     *     emails_failed: int
      * }
      */
     public function import(UploadedFile $file): array
@@ -95,7 +99,7 @@ class StudentImportService
             throw ValidationException::withMessages(['file' => 'The spreadsheet does not contain any valid student rows.']);
         }
 
-        return DB::transaction(function () use ($prepared): array {
+        $result = DB::transaction(function () use ($prepared): array {
             $credentials = [];
 
             foreach ($prepared as $data) {
@@ -119,6 +123,25 @@ class StudentImportService
 
             return ['students' => count($prepared), 'credentials' => $credentials];
         });
+
+        $users = User::query()
+            ->whereIn('email', array_column($result['credentials'], 'email'))
+            ->get()
+            ->keyBy('email');
+        $emailsQueued = 0;
+
+        foreach ($result['credentials'] as $credential) {
+            $student = $users->get($credential['email']);
+
+            if ($student && $this->credentialMailer->send($student, $credential['temporary_password'])) {
+                $emailsQueued++;
+            }
+        }
+
+        return $result + [
+            'emails_queued' => $emailsQueued,
+            'emails_failed' => count($result['credentials']) - $emailsQueued,
+        ];
     }
 
     /** @return array<int, array<int, mixed>> */

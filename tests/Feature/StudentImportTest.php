@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Mail\AccountCreatedMail;
 use App\Models\User;
 use App\Services\StudentImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -46,6 +48,8 @@ class StudentImportTest extends TestCase
 
     public function test_both_authorized_roles_can_import_excel_student_accounts(): void
     {
+        Mail::fake();
+
         foreach (['super_admin' => '/admin/students/import', 'nstp_admin' => '/nstp-admin/students/import'] as $index => $url) {
             $user = User::factory()->create(['role' => $index, 'status' => 'active']);
             $email = str_replace('_', '.', $index).'@import.test';
@@ -58,7 +62,9 @@ class StudentImportTest extends TestCase
             $response->assertOk()
                 ->assertDownload()
                 ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-                ->assertHeader('x-imported-students', '1');
+                ->assertHeader('x-imported-students', '1')
+                ->assertHeader('x-credential-emails-queued', '1')
+                ->assertHeader('x-credential-emails-failed', '0');
 
             $credentials = $this->credentialsFromResponse($response->streamedContent());
             $this->assertSame($email, $credentials['email']);
@@ -91,7 +97,14 @@ class StudentImportTest extends TestCase
             ]);
             $this->actingAs($user)->get($directory.'/'.$student->id.'/qr/download')
                 ->assertOk()->assertHeader('content-disposition', 'attachment; filename="'.str($student->name)->slug().'-attendance-qr.svg"');
+
+            Mail::assertSent(AccountCreatedMail::class, fn (AccountCreatedMail $mail): bool => $mail->hasTo($student->email)
+                && $mail->recipientName === $student->name
+                && $mail->roleLabel === 'Student'
+            );
         }
+
+        Mail::assertSent(AccountCreatedMail::class, 2);
     }
 
     public function test_authorized_user_can_view_generated_credentials_instead_of_downloading_them(): void

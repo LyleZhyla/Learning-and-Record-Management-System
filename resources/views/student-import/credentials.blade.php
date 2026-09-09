@@ -6,7 +6,7 @@
 @section('content')
     <div class="import-credentials-page">
         <section class="page-actions import-credential-heading">
-            <div><span class="eyebrow">Import successful</span><h2>{{ number_format($studentCount) }} student account{{ $studentCount === 1 ? '' : 's' }} created</h2><p>Copy or print these credentials before leaving this page.</p></div>
+            <div><span class="eyebrow">Import successful</span><h2>{{ number_format($studentCount) }} student account{{ $studentCount === 1 ? '' : 's' }} created</h2><p>{{ number_format($emailsQueued) }} credential email{{ $emailsQueued === 1 ? '' : 's' }} queued for delivery{{ $emailsFailed > 0 ? '; '.number_format($emailsFailed).' could not be queued' : '' }}. Copy or print these credentials before leaving this page.</p></div>
             <div class="page-action-buttons import-credential-actions"><button class="secondary-outline-button" type="button" onclick="window.print()">Print credentials</button><a class="primary-button compact" href="{{ route($backRoute) }}">Done</a></div>
         </section>
 

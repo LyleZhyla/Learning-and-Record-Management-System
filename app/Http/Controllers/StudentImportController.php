@@ -74,7 +74,9 @@ class StudentImportController extends Controller
     /**
      * @param  array{
      *     students: int,
-     *     credentials: array<int, array{name: string, email: string, temporary_password: string, qr_payload: string}>
+     *     credentials: array<int, array{name: string, email: string, temporary_password: string, qr_payload: string}>,
+     *     emails_queued: int,
+     *     emails_failed: int
      * }  $result
      */
     private function credentialsDownload(array $result, QrCodeService $qrCode): StreamedResponse
@@ -83,7 +85,7 @@ class StudentImportController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Generated Credentials');
         $sheet->mergeCells('A1:D1')->setCellValue('A1', 'Imported Student Credentials and Attendance QR Codes');
-        $sheet->mergeCells('A2:D2')->setCellValue('A2', "{$result['students']} account(s) imported. Keep this file secure.");
+        $sheet->mergeCells('A2:D2')->setCellValue('A2', "{$result['students']} account(s) imported; {$result['emails_queued']} credential email(s) queued. Keep this file secure.");
         $sheet->fromArray([['Full name', 'Email', 'Temporary password', 'Attendance QR']], null, 'A4');
 
         foreach ($result['credentials'] as $index => $credential) {
@@ -128,19 +130,25 @@ class StudentImportController extends Controller
         }, 'student-temporary-credentials-'.now()->format('Ymd-His').'.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'X-Imported-Students' => (string) $result['students'],
+            'X-Credential-Emails-Queued' => (string) $result['emails_queued'],
+            'X-Credential-Emails-Failed' => (string) $result['emails_failed'],
         ]);
     }
 
     /**
      * @param  array{
      *     students: int,
-     *     credentials: array<int, array{name: string, email: string, temporary_password: string, qr_payload: string}>
+     *     credentials: array<int, array{name: string, email: string, temporary_password: string, qr_payload: string}>,
+     *     emails_queued: int,
+     *     emails_failed: int
      * }  $result
      */
     private function credentialsView(Request $request, array $result, QrCodeService $qrCode): Response
     {
         return response()->view('student-import.credentials', $this->viewData($request) + [
             'studentCount' => $result['students'],
+            'emailsQueued' => $result['emails_queued'],
+            'emailsFailed' => $result['emails_failed'],
             'credentials' => collect($result['credentials'])->map(fn (array $credential) => [
                 'name' => $credential['name'],
                 'email' => $credential['email'],

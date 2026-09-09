@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Mail\AccountCreatedMail;
 use App\Models\Assessment;
 use App\Models\NstpComponent;
 use App\Models\NstpSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Tests\TestCase;
 
 class UserManagementTest extends TestCase
@@ -55,6 +57,8 @@ class UserManagementTest extends TestCase
 
     public function test_super_admin_can_create_each_supported_role(): void
     {
+        Mail::fake();
+
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
 
@@ -73,7 +77,16 @@ class UserManagementTest extends TestCase
             $this->assertTrue(Hash::check($temporaryPassword, $createdUser->password));
             $this->assertTrue($createdUser->must_change_password);
             $this->assertSame($role, $createdUser->role);
+
+            Mail::assertSent(AccountCreatedMail::class, fn (AccountCreatedMail $mail): bool => $mail->hasTo($createdUser->email)
+                && $mail->recipientName === $createdUser->name
+                && $mail->accountEmail === $createdUser->email
+                && $mail->temporaryPassword === $temporaryPassword
+                && $mail->roleLabel === $createdUser->roleLabel()
+            );
         }
+
+        Mail::assertSent(AccountCreatedMail::class, count(User::ROLE_LABELS));
     }
 
     public function test_super_admin_cannot_deactivate_own_account(): void
