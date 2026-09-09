@@ -65,4 +65,34 @@ class ThemeModeTest extends TestCase
         $this->assertStringContainsString('html[data-theme=dark] .student-dashboard-metrics .metric-icon', $styles);
         $this->assertStringContainsString('html[data-theme=dark] .student-dashboard-actions a', $styles);
     }
+
+    public function test_every_portal_uses_a_distinct_snapie_background_character(): void
+    {
+        foreach ([
+            'admin.blade.php' => 'portal-super-admin',
+            'nstp-admin.blade.php' => 'portal-nstp-admin',
+            'coordinator.blade.php' => 'portal-coordinator',
+            'facilitator.blade.php' => 'portal-facilitator',
+            'student.blade.php' => 'portal-student',
+        ] as $layout => $portalClass) {
+            $markup = file_get_contents(resource_path('views/layouts/'.$layout));
+
+            $this->assertStringContainsString($portalClass, $markup);
+        }
+
+        $styles = file_get_contents(public_path('css/app.css'));
+
+        foreach ([
+            'snapie-ai-guide.webp',
+            'snapie-learning.webp',
+            'snapie-qr.webp',
+            'snapie-wave.webp',
+            'snapie-hero.webp',
+        ] as $character) {
+            $this->assertStringContainsString($character, $styles);
+        }
+
+        $this->assertStringContainsString(".admin-body[class*='portal-'] .main-content", $styles);
+        $this->assertStringContainsString("html[data-theme=dark] .admin-body[class*='portal-'] .main-content", $styles);
+    }
 }

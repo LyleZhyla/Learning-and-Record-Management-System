@@ -6,7 +6,7 @@
     <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('images/snapie-logo-64.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}"><x-theme-init />
 </head>
-<body class="admin-body"><div class="app-shell">
+<body class="admin-body portal-student"><div class="app-shell">
     <aside class="sidebar" id="sidebar"><button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">‹</button>
         <a class="brand" href="{{ route('student.dashboard') }}"><img class="brand-logo brand-logo-compact" src="{{ asset('images/snapie-logo-160.png') }}" alt="SNAPIE logo"><img class="brand-logo-dark" src="{{ asset('images/snapie-landscape-dark.png') }}" alt="SNAPIE — Smart NSTP Management and AI-Integrated Platform"><span><strong>Smart NSTP</strong><small>Student Learning Portal</small></span></a>
         <div class="role-card"><x-user-avatar :user="auth()->user()" /><span><strong>{{ auth()->user()->name }}</strong><small>Student</small></span></div>

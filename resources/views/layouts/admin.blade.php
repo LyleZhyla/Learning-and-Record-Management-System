@@ -12,7 +12,7 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     <x-theme-init />
 </head>
-<body class="admin-body">
+<body class="admin-body portal-super-admin">
     <div class="app-shell">
         <aside class="sidebar" id="sidebar">
             <button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">‹</button>
