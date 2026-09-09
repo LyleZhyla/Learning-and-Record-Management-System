@@ -45,10 +45,19 @@
                 </tr>
 
                 <tr>
-                    <td class="email-pad" style="padding:38px 40px 12px;">
-                        <div style="color:#2468ca; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1.1px;">Account ready</div>
-                        <h1 style="margin:10px 0 14px; color:#163657; font-size:29px; line-height:1.25;">Welcome to Smart NSTP, {{ $recipientName }}!</h1>
-                        <p style="margin:0; color:#53657a; font-size:16px; line-height:1.7;">Your {{ strtolower($roleLabel) }} account has been created. Use the temporary credentials below to access the platform.</p>
+                    <td class="email-pad" style="padding:30px 40px 12px;">
+                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
+                            <tr>
+                                <td valign="middle" style="padding-right:16px;">
+                                    <div style="color:#2468ca; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1.1px;">Account ready</div>
+                                    <h1 style="margin:10px 0 14px; color:#163657; font-size:29px; line-height:1.25;">Welcome to Smart NSTP, {{ $recipientName }}!</h1>
+                                    <p style="margin:0; color:#53657a; font-size:16px; line-height:1.7;">Your {{ strtolower($roleLabel) }} account has been created. Use the temporary credentials below to access the platform.</p>
+                                </td>
+                                <td width="142" align="right" valign="bottom" style="width:142px;">
+                                    <img src="{{ $message->embed(public_path('images/characters/snapie-email-wave.png')) }}" width="132" alt="Snapie waving hello" style="display:block; width:132px; max-width:132px; height:auto; border:0;">
+                                </td>
+                            </tr>
+                        </table>
                     </td>
                 </tr>
 
