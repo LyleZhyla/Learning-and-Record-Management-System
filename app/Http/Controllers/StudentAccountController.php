@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendStudentAccountAccess;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
 use App\Services\QrCodeService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
@@ -61,6 +63,29 @@ class StudentAccountController extends Controller
             'Content-Disposition' => 'inline; filename="'.Str::slug($student->name).'-attendance-qr.svg"',
             'Cache-Control' => 'private, max-age=86400',
         ]);
+    }
+
+    public function bulkEmailAccess(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'student_ids' => ['required', 'array', 'min:1', 'max:1000'],
+            'student_ids.*' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('users', 'id')->where(fn ($query) => $query
+                    ->where('role', 'student')
+                    ->where('status', 'active')),
+            ],
+        ]);
+
+        $studentIds = array_values(array_unique(array_map('intval', $validated['student_ids'])));
+
+        foreach ($studentIds as $studentId) {
+            SendStudentAccountAccess::dispatch($studentId);
+        }
+
+        return back()->with('status', count($studentIds).' student account email(s) queued for delivery.');
     }
 
     public function downloadQr(Request $request, User $student, QrCodeService $qrCode): Response

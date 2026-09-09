@@ -104,6 +104,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/students/import', [StudentImportController::class, 'create'])->name('students.import.create');
     Route::post('/students/import', [StudentImportController::class, 'store'])->name('students.import.store');
     Route::get('/students/import/template', [StudentImportController::class, 'template'])->name('students.import.template');
+    Route::post('/students/email-access', [StudentAccountController::class, 'bulkEmailAccess'])->middleware('throttle:3,1')->name('students.email-access');
     Route::get('/students/{student}/qr', [StudentAccountController::class, 'qr'])->name('students.qr');
     Route::get('/students/{student}/qr/download', [StudentAccountController::class, 'downloadQr'])->name('students.qr.download');
     Route::post('/accounts/students/component', [NstpAdminAccountController::class, 'bulkAssignStudents'])->name('accounts.students.component.bulk');
@@ -181,6 +182,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/students/import', [StudentImportController::class, 'create'])->name('students.import.create');
     Route::post('/students/import', [StudentImportController::class, 'store'])->name('students.import.store');
     Route::get('/students/import/template', [StudentImportController::class, 'template'])->name('students.import.template');
+    Route::post('/students/email-access', [StudentAccountController::class, 'bulkEmailAccess'])->middleware('throttle:3,1')->name('students.email-access');
     Route::get('/students/{student}/qr', [StudentAccountController::class, 'qr'])->name('students.qr');
     Route::get('/students/{student}/qr/download', [StudentAccountController::class, 'downloadQr'])->name('students.qr.download');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');

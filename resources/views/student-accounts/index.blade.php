@@ -11,6 +11,7 @@
         <p>Imported students appear here automatically with their permanent attendance QR code.</p>
     </div>
     <div class="page-action-buttons">
+        <button class="secondary-outline-button bulk-email-button" type="submit" form="bulk-student-form" formnovalidate data-bulk-email-button disabled><span aria-hidden="true">✉</span> Email selected students</button>
         <a class="import-students-button" href="{{ route($routePrefix.'.students.import.create') }}" aria-label="Import students from Excel"><span aria-hidden="true">⇧</span> Import Students</a>
         @if($routePrefix === 'admin')<a class="primary-button compact" href="{{ route('admin.users.create', ['role' => 'student']) }}">+ Create student</a>@endif
     </div>
@@ -33,23 +34,23 @@
         @if(request()->hasAny(['search', 'status']))<a class="clear-filter" href="{{ route($routePrefix.'.students.index') }}">Clear</a>@endif
     </form>
 
-    @if($routePrefix === 'nstp_admin')
-    <form method="POST" action="{{ route('nstp_admin.accounts.students.component.bulk') }}" id="bulk-student-component-form">
+    <form method="POST" action="{{ route($routePrefix.'.students.email-access') }}" id="bulk-student-form" data-bulk-student-form>
         @csrf
+    @if($routePrefix === 'nstp_admin')
         <div class="enrollment-action-bar bulk-account-action-bar">
             <div class="bulk-account-action-copy"><strong>Bulk student component assignment</strong><span>Current term: {{ $semesterLabel }} {{ $academicYear }}</span></div>
             <label class="field-group"><span>Assign selected students to</span><select name="nstp_component_id" data-bulk-component-select required><option value="">Choose a component</option>@foreach($availableComponents as $component)<option value="{{ $component->id }}" data-component-code="{{ $component->code }}" @selected((int) old('nstp_component_id') === $component->id)>{{ $component->code }} — {{ $component->name }}</option>@endforeach</select></label>
             <label class="field-group" data-bulk-rotc-level hidden><span>ROTC MS level</span><select name="rotc_category" data-bulk-rotc-level-select disabled><option value="">Choose an MS level</option>@foreach($rotcCategories as $value => $label)<option value="{{ $value }}" @selected(old('rotc_category') === $value)>{{ $label }}</option>@endforeach</select></label>
-            <button class="filter-button" type="submit">Assign selected students</button>
+            <button class="filter-button" type="submit" formaction="{{ route('nstp_admin.accounts.students.component.bulk') }}">Assign selected students</button>
         </div>
     @endif
 
     <div class="table-wrap"><table class="data-table student-account-table">
-        <thead><tr>@if($routePrefix === 'nstp_admin')<th class="check-column"><input type="checkbox" data-select-all-students aria-label="Select all active students on this page"></th>@endif<th>Student</th><th>Attendance QR</th><th>Component</th><th>Status</th><th>Last sign in</th><th class="align-right">Action</th></tr></thead>
+        <thead><tr><th class="check-column"><input type="checkbox" data-select-all-students aria-label="Select all active students on this page"></th><th>Student</th><th>Attendance QR</th><th>Component</th><th>Status</th><th>Last sign in</th><th class="align-right">Action</th></tr></thead>
         <tbody>@forelse($students as $student)
             @php($enrollment = $student->latestNstpEnrollment)
             <tr>
-                @if($routePrefix === 'nstp_admin')<td class="check-column">@if($student->isActive())<input class="student-check" type="checkbox" name="student_ids[]" value="{{ $student->id }}" @checked(in_array($student->id, old('student_ids', []))) aria-label="Select {{ $student->name }}">@else<span class="muted-cell">—</span>@endif</td>@endif
+                <td class="check-column">@if($student->isActive())<input class="student-check" type="checkbox" name="student_ids[]" value="{{ $student->id }}" @checked(in_array($student->id, old('student_ids', []))) aria-label="Select {{ $student->name }}">@else<span class="muted-cell">—</span>@endif</td>
                 <td><div class="user-cell"><span class="table-avatar">{{ strtoupper(substr($student->name, 0, 1)) }}</span><div><strong>{{ $student->name }}</strong><small>{{ $student->email }}</small></div></div></td>
                 <td><div class="student-qr-cell"><button type="button" data-student-qr-preview data-qr-url="{{ route($routePrefix.'.students.qr', $student) }}" data-student-name="{{ $student->name }}" aria-label="Preview attendance QR for {{ $student->name }}"><span aria-hidden="true">▦</span> View QR</button><a href="{{ route($routePrefix.'.students.qr.download', $student) }}">Download QR</a></div></td>
                 <td>@if($enrollment?->component)<span class="component-mini-badge">{{ $enrollment->component->code }}</span><small class="student-term-label">{{ $enrollment->academic_year }}</small>@else<span class="muted-cell">Not assigned</span>@endif</td>
@@ -57,10 +58,10 @@
                 <td class="muted-cell">{{ $student->last_login_at?->format('M d, Y · h:i A') ?? 'Never' }}</td>
                 <td class="align-right"><a class="table-action" href="{{ $routePrefix === 'admin' ? route('admin.users.edit', $student) : route('nstp_admin.accounts.show', $student) }}">{{ $routePrefix === 'admin' ? 'Manage' : 'View records' }} →</a></td>
             </tr>
-        @empty<tr><td colspan="{{ $routePrefix === 'nstp_admin' ? 7 : 6 }}"><div class="empty-state"><strong>No student accounts found</strong><span>Import a student list or change the filters.</span></div></td></tr>@endforelse</tbody>
+        @empty<tr><td colspan="7"><div class="empty-state"><strong>No student accounts found</strong><span>Import a student list or change the filters.</span></div></td></tr>@endforelse</tbody>
     </table></div>
 
-    @if($routePrefix === 'nstp_admin')</form>@endif
+    </form>
     @if($students->hasPages())<div class="pagination-row"><span>Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }}</span>{{ $students->links() }}</div>@endif
 </section>
 
@@ -71,12 +72,34 @@
 
 <script src="{{ asset('js/student-qr-preview.js') }}"></script>
 
-@if($routePrefix === 'nstp_admin')
 <script>
-    const bulkStudentForm = document.querySelector('#bulk-student-component-form');
+    const bulkStudentForm = document.querySelector('[data-bulk-student-form]');
+    const bulkEmailButton = document.querySelector('[data-bulk-email-button]');
     const bulkActionBar = bulkStudentForm?.querySelector('.bulk-account-action-bar');
     const selectAllStudents = bulkStudentForm?.querySelector('[data-select-all-students]');
     const studentChecks = [...(bulkStudentForm?.querySelectorAll('.student-check') || [])];
+    const syncBulkSelection = () => {
+        const selectedCount = studentChecks.filter((checkbox) => checkbox.checked).length;
+        selectAllStudents.checked = studentChecks.length > 0 && selectedCount === studentChecks.length;
+        selectAllStudents.indeterminate = selectedCount > 0 && selectedCount < studentChecks.length;
+        bulkEmailButton.disabled = selectedCount === 0;
+        bulkEmailButton.innerHTML = selectedCount > 0
+            ? `<span aria-hidden="true">✉</span> Email ${selectedCount} selected student${selectedCount === 1 ? '' : 's'}`
+            : '<span aria-hidden="true">✉</span> Email selected students';
+    };
+    selectAllStudents?.addEventListener('change', function () {
+        studentChecks.forEach((checkbox) => checkbox.checked = this.checked);
+        syncBulkSelection();
+    });
+    studentChecks.forEach((checkbox) => checkbox.addEventListener('change', syncBulkSelection));
+    bulkStudentForm?.addEventListener('submit', (event) => {
+        if (event.submitter === bulkEmailButton && !window.confirm('Queue an account access email for every selected student?')) {
+            event.preventDefault();
+        }
+    });
+    syncBulkSelection();
+
+@if($routePrefix === 'nstp_admin')
     const bulkComponentSelect = bulkStudentForm?.querySelector('[data-bulk-component-select]');
     const bulkRotcLevel = bulkStudentForm?.querySelector('[data-bulk-rotc-level]');
     const bulkRotcLevelSelect = bulkStudentForm?.querySelector('[data-bulk-rotc-level-select]');
@@ -90,11 +113,6 @@
     };
     bulkComponentSelect?.addEventListener('change', syncBulkRotcLevel);
     if (bulkComponentSelect) syncBulkRotcLevel();
-    selectAllStudents?.addEventListener('change', function () { studentChecks.forEach((checkbox) => checkbox.checked = this.checked); });
-    studentChecks.forEach((checkbox) => checkbox.addEventListener('change', () => {
-        selectAllStudents.checked = studentChecks.length > 0 && studentChecks.every((item) => item.checked);
-        selectAllStudents.indeterminate = studentChecks.some((item) => item.checked) && !selectAllStudents.checked;
-    }));
-</script>
 @endif
+</script>
 @endsection
