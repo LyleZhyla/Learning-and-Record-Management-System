@@ -37,7 +37,9 @@ class AssessmentController extends Controller
 
     public function index(Request $request): View
     {
-        $sectionIds = $this->access->manageableSections($request->user())->pluck('id');
+        $sectionIds = ($request->user()->isCoordinator()
+            ? $this->access->gradebookSections($request->user())
+            : $this->access->manageableSections($request->user()))->pluck('id');
         $assessments = Assessment::with(['section.component', 'creator', 'gradingCategory'])->withCount('submissions')
             ->whereIn('section_id', $sectionIds)->latest()->paginate(15);
 
@@ -133,7 +135,11 @@ class AssessmentController extends Controller
     public function show(Request $request, Assessment $assessment): View
     {
         $assessment->load(['section.component', 'gradingCategory', 'submissions.student', 'submissions.grader', 'submissions.aiApprover']);
-        $this->access->ensureCanManageSection($request->user(), $assessment->section);
+        if ($request->user()->isCoordinator()) {
+            $this->access->ensureCanAccessGradebookSection($request->user(), $assessment->section);
+        } else {
+            $this->access->ensureCanManageSection($request->user(), $assessment->section);
+        }
         $students = NstpEnrollment::with('student')->where('section_id', $assessment->section_id)->get()->sortBy(fn ($item) => $item->student->name);
 
         return view('learning.assessments.show', $this->context($request) + compact('assessment', 'students'));

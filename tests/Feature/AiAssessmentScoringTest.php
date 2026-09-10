@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -205,6 +206,67 @@ class AiAssessmentScoringTest extends TestCase
         $this->assertNull($this->submission->ai_suggested_score);
         $this->assertNull($this->submission->ai_generated_at);
         $this->assertNull($this->submission->score);
+    }
+
+    public function test_coordinator_can_only_view_ai_scoring_within_their_component(): void
+    {
+        $this->submission->update([
+            'score' => 84,
+            'feedback' => 'Approved feedback',
+            'ai_suggested_score' => 84,
+            'ai_feedback' => 'Good practical proposal.',
+            'ai_breakdown' => [
+                'criteria' => [[
+                    'criterion' => 'Understanding',
+                    'points_awarded' => 44,
+                    'points_possible' => 50,
+                    'evidence' => 'Identifies a specific community need.',
+                ]],
+                'needs_manual_review' => false,
+            ],
+            'ai_confidence' => 82,
+            'ai_model' => 'gpt-5-mini',
+            'ai_generated_at' => now(),
+            'ai_approved_by' => $this->facilitator->id,
+            'ai_approved_at' => now(),
+        ]);
+        $coordinator = User::factory()->create([
+            'role' => 'coordinator',
+            'status' => 'active',
+            'nstp_component_id' => $this->assessment->section->component_id,
+        ]);
+
+        $this->actingAs($coordinator)->get('/coordinator/assessments')
+            ->assertOk()
+            ->assertSee('View assessments')
+            ->assertSee($this->assessment->title)
+            ->assertDontSee('Create assessment');
+
+        $this->actingAs($coordinator)->get('/coordinator/assessments/'.$this->assessment->id)
+            ->assertOk()
+            ->assertSee('Coordinator view only')
+            ->assertSee('Official AI scoring rubric')
+            ->assertSee('AI suggested 84.00')
+            ->assertSee('82% confidence')
+            ->assertSee('Approved feedback')
+            ->assertDontSee('Generate AI suggestion')
+            ->assertDontSee('Approve as official score')
+            ->assertDontSee('Save manual score')
+            ->assertDontSee('Save rubric');
+
+        $this->assertFalse(Route::has('coordinator.assessments.ai-score.generate'));
+        $this->assertFalse(Route::has('coordinator.assessments.ai-score.approve'));
+        $this->assertFalse(Route::has('coordinator.assessments.rubric.update'));
+
+        $otherComponent = NstpComponent::create(['code' => 'LTS', 'name' => 'Literacy Training Service', 'is_active' => true]);
+        $otherCoordinator = User::factory()->create([
+            'role' => 'coordinator',
+            'status' => 'active',
+            'nstp_component_id' => $otherComponent->id,
+        ]);
+        $this->actingAs($otherCoordinator)
+            ->get('/coordinator/assessments/'.$this->assessment->id)
+            ->assertForbidden();
     }
 
     private function fakeAiResponse(): array

@@ -34,6 +34,13 @@
         <div class="form-actions"><button class="secondary-outline-button" type="submit">Save rubric</button></div>
     </form>
 </section>
+@elseif(auth()->user()->isCoordinator())
+<section class="card ai-rubric-card ai-readonly-card">
+    <div class="card-heading">
+        <div><span class="eyebrow">View only</span><h3>Official AI scoring rubric</h3><p>The coordinator can monitor the rubric and AI-assisted scoring results but cannot change or approve them.</p></div>
+    </div>
+    <div class="ai-readonly-rubric">{!! nl2br(e($assessment->rubric ?: 'No AI scoring rubric has been provided by the facilitator.')) !!}</div>
+</section>
 @endif
 
 <section class="card user-table-card">
@@ -95,6 +102,30 @@
                             </div>
                         @endif
 
+                        @if(auth()->user()->isCoordinator())
+                            <div class="ai-score-workspace ai-score-readonly">
+                                <span class="eyebrow">Coordinator view only</span>
+                                @if($submission?->ai_generated_at)
+                                    @php($needsReview = ($submission->ai_breakdown['needs_manual_review'] ?? false) || (float) $submission->ai_confidence < 70)
+                                    <details class="ai-score-suggestion" open>
+                                        <summary>
+                                            <span><strong>AI suggested {{ number_format((float) $submission->ai_suggested_score, 2) }} / {{ number_format((float) $assessment->max_score, 2) }}</strong><small>{{ number_format((float) $submission->ai_confidence, 0) }}% confidence</small></span>
+                                            <span class="status-badge {{ $needsReview ? 'inactive' : 'active' }}"><i></i>{{ $needsReview ? 'Manual review required' : 'Reviewed by AI' }}</span>
+                                        </summary>
+                                        <div class="ai-criteria-list">
+                                            @foreach(($submission->ai_breakdown['criteria'] ?? []) as $criterion)
+                                                <article><div><strong>{{ $criterion['criterion'] }}</strong><b>{{ number_format((float) $criterion['points_awarded'], 2) }} / {{ number_format((float) $criterion['points_possible'], 2) }}</b></div><p>{{ $criterion['evidence'] }}</p></article>
+                                            @endforeach
+                                        </div>
+                                        <div class="ai-readonly-feedback"><strong>Suggested feedback</strong><p>{{ $submission->ai_feedback ?: 'No suggested feedback.' }}</p></div>
+                                    </details>
+                                @else
+                                    <p class="ai-score-help">No AI score suggestion has been generated for this submission.</p>
+                                @endif
+                            </div>
+                            <div class="official-score-readonly"><strong>Official score</strong><span>{{ $submission?->score === null ? 'Pending' : number_format((float) $submission->score, 2).' / '.number_format((float) $assessment->max_score, 2) }}</span><p>{{ $submission?->feedback ?: 'No official feedback yet.' }}</p></div>
+                        @else
+
                         <form class="grade-form" method="POST" action="{{ route($routePrefix.'.assessments.score', [$assessment, $enrollment->student]) }}">
                             @csrf
                             @method('PUT')
@@ -102,6 +133,7 @@
                             <input name="feedback" value="{{ $submission?->feedback }}" placeholder="Feedback (optional)">
                             <button class="filter-button">Save manual score</button>
                         </form>
+                        @endif
                         @if($submission?->ai_approved_at)
                             <small class="ai-approved-note">AI-assisted score approved by {{ $submission->aiApprover?->name ?? 'a facilitator' }} {{ $submission->ai_approved_at->diffForHumans() }}.</small>
                         @endif

@@ -259,12 +259,14 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::patch('/attendance/{attendance}/scan-mode', [ManagementAttendanceController::class, 'updateScanMode'])->name('attendance.scan-mode');
     Route::post('/attendance/{attendance}/scan', [ManagementAttendanceController::class, 'scan'])->name('attendance.scan');
     Route::get('/performance', [CoordinatorMonitoringController::class, 'performance'])->name('performance.index');
+    Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
     Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store');
+    Route::get('/assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');
     Route::get('/grades', [AssessmentController::class, 'grades'])->name('grades.index');
     Route::put('/grades/{section}/structure', [AssessmentController::class, 'updateGradeStructure'])->name('grades.structure');
     Route::delete('/grades/categories/{category}', [AssessmentController::class, 'destroyGradeCategory'])->name('grades.categories.destroy');
