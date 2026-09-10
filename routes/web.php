@@ -213,6 +213,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/archives', [ArchiveController::class, 'index'])->name('archives.index');
     Route::post('/archives/{type}', [ArchiveController::class, 'archiveAll'])->name('archives.archive');
     Route::patch('/archives/{type}/restore', [ArchiveController::class, 'restoreAll'])->name('archives.restore');
+    Route::delete('/archives/{type}', [ArchiveController::class, 'destroyAll'])->name('archives.destroy');
     Route::get('/settings', [SystemSettingController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SystemSettingController::class, 'update'])->name('settings.update');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');

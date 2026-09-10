@@ -56,6 +56,77 @@ class ArchiveManagementTest extends TestCase
         $this->actingAs($student)->get('/admin/archives')->assertForbidden();
         $this->actingAs($student)->post('/admin/archives/attendance')->assertForbidden();
         $this->actingAs($student)->patch('/admin/archives/attendance/restore')->assertForbidden();
+        $this->actingAs($student)->delete('/admin/archives/attendance', ['confirmation' => 'DELETE'])->assertForbidden();
+    }
+
+    public function test_super_admin_can_permanently_delete_only_archived_records(): void
+    {
+        [$superAdmin, $attendance, $log, $notification, $draft] = $this->records();
+        $activeAttendance = AttendanceRecord::create([
+            'attendance_session_id' => $attendance->attendance_session_id,
+            'student_id' => User::factory()->create(['role' => 'student', 'status' => 'active'])->id,
+            'status' => 'present',
+            'checked_in_at' => now(),
+            'source' => 'qr',
+        ]);
+
+        foreach (['attendance', 'system-logs', 'notifications'] as $type) {
+            $this->actingAs($superAdmin)->post('/admin/archives/'.$type)
+                ->assertRedirect()
+                ->assertSessionHasNoErrors();
+        }
+
+        $newActiveAttendance = AttendanceRecord::create([
+            'attendance_session_id' => $attendance->attendance_session_id,
+            'student_id' => User::factory()->create(['role' => 'student', 'status' => 'active'])->id,
+            'status' => 'present',
+            'checked_in_at' => now(),
+            'source' => 'qr',
+        ]);
+
+        $newActiveLog = AuditLog::create([
+            'actor_name' => 'Active Audit Actor',
+            'actor_email' => 'active-audit@example.test',
+            'actor_role' => 'super_admin',
+            'action' => 'view',
+            'description' => 'Active audit entry',
+            'method' => 'GET',
+            'path' => '/active-audit',
+            'status_code' => 200,
+        ]);
+
+        $this->actingAs($superAdmin)->get('/admin/archives')
+            ->assertOk()
+            ->assertSee('Permanently delete archived')
+            ->assertSee('Type DELETE to confirm');
+
+        foreach (['attendance', 'system-logs', 'notifications'] as $type) {
+            $this->actingAs($superAdmin)->delete('/admin/archives/'.$type, ['confirmation' => 'DELETE'])
+                ->assertRedirect()
+                ->assertSessionHasNoErrors();
+        }
+
+        $this->assertNull(AttendanceRecord::withArchived()->find($attendance->id));
+        $this->assertNull(AttendanceRecord::withArchived()->find($activeAttendance->id));
+        $this->assertNull(AuditLog::withArchived()->find($log->id));
+        $this->assertNull(Announcement::withArchived()->find($notification->id));
+        $this->assertNotNull(AttendanceRecord::find($newActiveAttendance->id));
+        $this->assertNotNull(AuditLog::find($newActiveLog->id));
+        $this->assertNotNull(Announcement::find($draft->id));
+    }
+
+    public function test_permanent_deletion_requires_exact_confirmation(): void
+    {
+        [$superAdmin, $attendance] = $this->records();
+        $this->actingAs($superAdmin)->post('/admin/archives/attendance');
+
+        $this->actingAs($superAdmin)
+            ->from('/admin/archives')
+            ->delete('/admin/archives/attendance', ['confirmation' => 'delete'])
+            ->assertRedirect('/admin/archives')
+            ->assertSessionHasErrors('confirmation');
+
+        $this->assertNotNull(AttendanceRecord::onlyArchived()->find($attendance->id));
     }
 
     public function test_unknown_archive_type_is_not_found(): void
@@ -63,6 +134,7 @@ class ArchiveManagementTest extends TestCase
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
 
         $this->actingAs($superAdmin)->post('/admin/archives/unknown')->assertNotFound();
+        $this->actingAs($superAdmin)->delete('/admin/archives/unknown', ['confirmation' => 'DELETE'])->assertNotFound();
     }
 
     private function records(): array

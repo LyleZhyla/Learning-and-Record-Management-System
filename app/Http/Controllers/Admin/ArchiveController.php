@@ -59,6 +59,24 @@ class ArchiveController extends Controller
         return back()->with('status', number_format($count).' '.$details['label'].' restored successfully.');
     }
 
+    public function destroyAll(Request $request, string $type): RedirectResponse
+    {
+        $details = $this->details($type);
+        $request->validate([
+            'confirmation' => ['required', 'in:DELETE'],
+        ], [
+            'confirmation.in' => 'Type DELETE exactly to permanently remove the archived records.',
+            'confirmation.required' => 'Type DELETE to confirm permanent deletion.',
+        ]);
+
+        $count = DB::transaction(fn () => $this->records($type, true)->delete());
+
+        return back()->with(
+            'status',
+            number_format($count).' archived '.$details['label'].' permanently deleted. These records can no longer be restored.'
+        );
+    }
+
     private function details(string $type): array
     {
         abort_unless(isset(self::TYPES[$type]), 404);
