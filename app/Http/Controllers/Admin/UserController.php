@@ -167,15 +167,30 @@ class UserController extends Controller
         return back()->with('status', "The password for {$user->name} was reset. This is a temporary password and must be changed at the next login.");
     }
 
+    public function confirmDestroy(User $user): View
+    {
+        $this->ensureAccountCanBeDeleted($user);
+
+        return view('admin.users.delete', compact('user'));
+    }
+
     public function destroy(Request $request, User $user): RedirectResponse
     {
-        if ($request->user()->is($user)) {
-            return back()->withErrors(['user' => 'You cannot delete the account you are currently using.']);
-        }
+        $this->ensureAccountCanBeDeleted($user);
 
-        $this->ensureActiveSuperAdminRemains($user, 'deleted', 'inactive');
+        $request->validate([
+            'confirmation' => ['required', 'string', Rule::in([$user->email])],
+        ], [
+            'confirmation.in' => 'Enter the account email address exactly as shown to confirm permanent deletion.',
+        ]);
+
         $actor = $request->user();
-        $photoPath = $user->profile_photo_path;
+        $studentProfile = $user->studentProfile;
+        $privateFilePaths = collect([
+            $user->profile_photo_path,
+            $studentProfile?->cor_path,
+            $studentProfile?->formal_photo_path,
+        ])->filter()->unique()->values();
         $deletedName = $user->name;
         $wasStudent = $user->isStudent();
 
@@ -189,12 +204,21 @@ class UserController extends Controller
             $user->delete();
         });
 
-        if ($photoPath) {
-            Storage::disk('local')->delete($photoPath);
+        if ($privateFilePaths->isNotEmpty()) {
+            Storage::disk('local')->delete($privateFilePaths->all());
         }
 
+        $status = $wasStudent
+            ? "The student account for {$deletedName} and its linked participation records were permanently deleted."
+            : "The account for {$deletedName} was permanently deleted. Existing institutional records were preserved.";
+
         return redirect()->route($wasStudent ? 'admin.students.index' : 'admin.users.index')
-            ->with('status', "The account for {$deletedName} was permanently deleted. Existing institutional records were preserved.");
+            ->with('status', $status);
+    }
+
+    private function ensureAccountCanBeDeleted(User $user): void
+    {
+        abort_unless($user->canBePermanentlyDeleted(), 404);
     }
 
     private function accountRules(?User $user = null): array

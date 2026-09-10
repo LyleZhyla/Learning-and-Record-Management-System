@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class UserManagementTest extends TestCase
@@ -36,6 +37,7 @@ class UserManagementTest extends TestCase
             ->assertSee($student->name)
             ->assertDontSee($staff->name)
             ->assertSee('Download QR')
+            ->assertSee('Delete')
             ->assertSee('Create student account')
             ->assertSee('href="'.route('admin.users.create', ['role' => 'student']).'"', false);
     }
@@ -145,7 +147,9 @@ class UserManagementTest extends TestCase
         $section = NstpSection::create(['component_id' => $component->id, 'facilitator_id' => $facilitator->id, 'code' => 'CWTS-01', 'name' => 'Section 1', 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);
         $assessment = Assessment::create(['section_id' => $section->id, 'created_by' => $facilitator->id, 'title' => 'Preserved Assessment', 'type' => 'activity', 'max_score' => 100, 'weight' => 20, 'status' => 'published']);
 
-        $this->actingAs($admin)->delete('/admin/users/'.$facilitator->id)
+        $this->actingAs($admin)->delete('/admin/users/'.$facilitator->id, [
+            'confirmation' => $facilitator->email,
+        ])
             ->assertRedirect('/admin/users')
             ->assertSessionHasNoErrors();
 
@@ -154,18 +158,105 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseHas('nstp_sections', ['id' => $section->id, 'facilitator_id' => null]);
     }
 
-    public function test_super_admin_cannot_delete_self_or_the_last_active_super_admin(): void
+    public function test_super_admin_can_permanently_delete_student_and_coordinator_accounts(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
-        $otherAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active']);
 
-        $this->actingAs($admin)->delete('/admin/users/'.$admin->id)->assertSessionHasErrors('user');
-        $this->actingAs($admin)->delete('/admin/users/'.$otherAdmin->id)->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('users', ['id' => $admin->id]);
-        $this->assertDatabaseMissing('users', ['id' => $otherAdmin->id]);
+        foreach ([$student, $coordinator] as $account) {
+            $this->actingAs($admin)
+                ->get('/admin/users/'.$account->id.'/delete')
+                ->assertOk()
+                ->assertSee($account->email)
+                ->assertSee('Permanently delete account');
 
-        $thirdAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'inactive']);
-        $this->actingAs($admin)->delete('/admin/users/'.$thirdAdmin->id)->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('users', ['id' => $admin->id]);
+            $this->actingAs($admin)->delete('/admin/users/'.$account->id, [
+                'confirmation' => $account->email,
+            ])->assertSessionHasNoErrors();
+
+            $this->assertDatabaseMissing('users', ['id' => $account->id]);
+        }
+    }
+
+    public function test_account_deletion_requires_the_exact_email_confirmation(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+
+        $this->actingAs($admin)->from('/admin/users/'.$facilitator->id.'/delete')
+            ->delete('/admin/users/'.$facilitator->id, ['confirmation' => 'wrong@example.test'])
+            ->assertRedirect('/admin/users/'.$facilitator->id.'/delete')
+            ->assertSessionHasErrors('confirmation');
+
+        $this->assertDatabaseHas('users', ['id' => $facilitator->id]);
+    }
+
+    public function test_deleting_a_student_removes_private_profile_and_document_files(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $student = User::factory()->create([
+            'role' => 'student',
+            'status' => 'active',
+            'profile_photo_path' => 'profile-photos/student.jpg',
+        ]);
+        $student->studentProfile()->create([
+            'last_name' => 'Student',
+            'first_name' => 'Imported',
+            'province' => 'Pangasinan',
+            'province_code' => '015500000',
+            'city_municipality' => 'Lingayen',
+            'city_municipality_code' => '015522000',
+            'barangay' => 'Poblacion',
+            'barangay_code' => '015522001',
+            'date_of_birth' => '2006-05-20',
+            'birth_province' => 'Pangasinan',
+            'birth_province_code' => '015500000',
+            'birth_city_municipality' => 'Lingayen',
+            'birth_city_municipality_code' => '015522000',
+            'religion' => 'Roman Catholic',
+            'sex' => 'Male',
+            'blood_type' => 'O+',
+            'contact_number' => '09171234567',
+            'emergency_contact_name' => 'Maria Student',
+            'emergency_relationship' => 'Mother',
+            'emergency_contact_number' => '09981234567',
+            'emergency_same_address' => true,
+            'student_number' => '2026000011',
+            'college' => 'College of Engineering and Technology',
+            'course' => 'Bachelor of Science in Information Technology',
+            'year_section' => '1A',
+            'cor_path' => 'student-imports/cor/student.pdf',
+            'formal_photo_path' => 'student-imports/formal-photos/student.jpg',
+        ]);
+
+        foreach (['profile-photos/student.jpg', 'student-imports/cor/student.pdf', 'student-imports/formal-photos/student.jpg'] as $path) {
+            Storage::disk('local')->put($path, 'private file');
+        }
+
+        $this->actingAs($admin)->delete('/admin/users/'.$student->id, [
+            'confirmation' => $student->email,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('users', ['id' => $student->id]);
+        $this->assertDatabaseMissing('student_profiles', ['user_id' => $student->id]);
+        Storage::disk('local')->assertMissing('profile-photos/student.jpg');
+        Storage::disk('local')->assertMissing('student-imports/cor/student.pdf');
+        Storage::disk('local')->assertMissing('student-imports/formal-photos/student.jpg');
+    }
+
+    public function test_admin_accounts_are_not_available_to_the_permanent_account_delete_function(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+
+        foreach ([$admin, $nstpAdmin] as $protectedAccount) {
+            $this->actingAs($admin)->get('/admin/users/'.$protectedAccount->id.'/delete')->assertNotFound();
+            $this->actingAs($admin)->delete('/admin/users/'.$protectedAccount->id, [
+                'confirmation' => $protectedAccount->email,
+            ])->assertNotFound();
+            $this->assertDatabaseHas('users', ['id' => $protectedAccount->id]);
+        }
     }
 }

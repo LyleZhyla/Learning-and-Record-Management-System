@@ -57,7 +57,7 @@
                 <td>@if($enrollment?->component)<span class="component-mini-badge">{{ $enrollment->component->code }}</span><small class="student-term-label">{{ $enrollment->academic_year }}</small>@else<span class="muted-cell">Not assigned</span>@endif</td>
                 <td><span class="status-badge {{ $student->status }}"><i></i>{{ $student->statusLabel() }}</span></td>
                 <td class="muted-cell">{{ $student->last_login_at?->format('M d, Y · h:i A') ?? 'Never' }}</td>
-                <td class="align-right"><a class="table-action" href="{{ $routePrefix === 'admin' ? route('admin.users.edit', $student) : route('nstp_admin.accounts.show', $student) }}">{{ $routePrefix === 'admin' ? 'Manage' : 'View records' }} →</a></td>
+                <td class="align-right"><div class="account-row-actions"><a class="table-action" href="{{ $routePrefix === 'admin' ? route('admin.users.edit', $student) : route('nstp_admin.accounts.show', $student) }}">{{ $routePrefix === 'admin' ? 'Manage' : 'View records' }} →</a>@if($routePrefix === 'admin')<a class="link-danger" href="{{ route('admin.users.delete', $student) }}">Delete</a>@endif</div></td>
             </tr>
         @empty<tr><td colspan="7"><div class="empty-state"><strong>No student accounts found</strong><span>Import a student list or change the filters.</span></div></td></tr>@endforelse</tbody>
     </table></div>

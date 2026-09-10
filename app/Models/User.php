@@ -30,6 +30,8 @@ class User extends Authenticatable
         'inactive' => 'Inactive',
     ];
 
+    public const PERMANENTLY_DELETABLE_ROLES = ['student', 'facilitator', 'coordinator'];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -120,6 +122,11 @@ class User extends Authenticatable
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    public function canBePermanentlyDeleted(): bool
+    {
+        return in_array($this->role, self::PERMANENTLY_DELETABLE_ROLES, true);
     }
 
     public function roleLabel(): string

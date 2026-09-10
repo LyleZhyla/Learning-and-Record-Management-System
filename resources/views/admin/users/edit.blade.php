@@ -52,14 +52,12 @@
                 </form>
             </section>
 
-            <section class="card danger-zone-card">
-                <div class="card-heading"><div><span class="eyebrow">Danger zone</span><h3>Delete account</h3><p>Permanently removes this user's login and personal records. Existing institutional content they created will be preserved under your account.</p></div></div>
-                @if(auth()->user()->is($user))
-                    <button class="danger-button" type="button" disabled>You cannot delete your own account</button>
-                @else
-                    <form method="POST" action="{{ route('admin.users.destroy', $user) }}" onsubmit="return confirm('Permanently delete this account? This cannot be undone.')">@csrf @method('DELETE')<button class="danger-button" type="submit">Delete account permanently</button></form>
-                @endif
-            </section>
+            @if($user->canBePermanentlyDeleted())
+                <section class="card danger-zone-card">
+                    <div class="card-heading"><div><span class="eyebrow">Danger zone</span><h3>Delete account</h3><p>Permanently removes this {{ strtolower($user->roleLabel()) }} account. Existing institutional content created by staff will be preserved under your account.</p></div></div>
+                    <a class="danger-button" href="{{ route('admin.users.delete', $user) }}">Delete account permanently</a>
+                </section>
+            @endif
         </div>
     </div>
     <script src="{{ asset('js/staff-account-form.js') }}?v={{ filemtime(public_path('js/staff-account-form.js')) }}"></script>
