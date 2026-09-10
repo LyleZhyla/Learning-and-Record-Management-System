@@ -20,9 +20,15 @@ class StudentAccountController extends Controller
 {
     public function index(Request $request): View
     {
+        $componentFilterValues = NstpComponent::query()
+            ->pluck('id')
+            ->map(fn (int $id): string => (string) $id)
+            ->push('unassigned')
+            ->all();
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', Rule::in(array_keys(User::STATUS_LABELS))],
+            'component' => ['nullable', Rule::in($componentFilterValues)],
         ]);
         $prefix = $this->routePrefix($request);
 
@@ -34,6 +40,18 @@ class StudentAccountController extends Controller
                     ->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")))
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
+            ->when($filters['component'] ?? null, function ($query, string $component): void {
+                if ($component === 'unassigned') {
+                    $query->whereDoesntHave('latestNstpEnrollment');
+
+                    return;
+                }
+
+                $query->whereHas(
+                    'latestNstpEnrollment',
+                    fn ($enrollment) => $enrollment->where('component_id', (int) $component)
+                );
+            })
             ->orderBy('name')
             ->paginate(12)
             ->withQueryString();
@@ -45,6 +63,7 @@ class StudentAccountController extends Controller
             'filters' => $filters,
             'activeCount' => User::where('role', 'student')->where('status', 'active')->count(),
             'inactiveCount' => User::where('role', 'student')->where('status', 'inactive')->count(),
+            'filterComponents' => NstpComponent::orderBy('code')->get(),
             'availableComponents' => $prefix === 'nstp_admin'
                 ? NstpComponent::where('is_active', true)->orderBy('code')->get()
                 : collect(),

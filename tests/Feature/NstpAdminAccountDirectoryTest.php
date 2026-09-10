@@ -116,6 +116,57 @@ class NstpAdminAccountDirectoryTest extends TestCase
         }
     }
 
+    public function test_student_accounts_can_be_filtered_by_component_or_unassigned_status(): void
+    {
+        [$nstpAdmin, , , $cwtsStudent] = $this->records();
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $lts = NstpComponent::create([
+            'code' => 'LTS',
+            'name' => 'Literacy Training Service',
+            'default_section_capacity' => 40,
+            'is_active' => true,
+        ]);
+        $ltsStudent = User::factory()->create(['name' => 'LTS Filter Student', 'role' => 'student', 'status' => 'active']);
+        $unassignedStudent = User::factory()->create(['name' => 'Unassigned Filter Student', 'role' => 'student', 'status' => 'active']);
+        NstpEnrollment::create([
+            'student_id' => $ltsStudent->id,
+            'component_id' => $lts->id,
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'status' => 'enrolled',
+        ]);
+        $cwts = $cwtsStudent->latestNstpEnrollment->component;
+
+        foreach ([
+            [$nstpAdmin, '/nstp-admin/students'],
+            [$superAdmin, '/admin/students'],
+        ] as [$viewer, $url]) {
+            $this->actingAs($viewer)->get($url)
+                ->assertOk()
+                ->assertSee('Filter by NSTP component')
+                ->assertSee('All components')
+                ->assertSee('Without component');
+
+            $this->actingAs($viewer)->get($url.'?component='.$cwts->id)
+                ->assertOk()
+                ->assertSee($cwtsStudent->name)
+                ->assertDontSee($ltsStudent->name)
+                ->assertDontSee($unassignedStudent->name);
+
+            $this->actingAs($viewer)->get($url.'?component='.$lts->id)
+                ->assertOk()
+                ->assertSee($ltsStudent->name)
+                ->assertDontSee($cwtsStudent->name)
+                ->assertDontSee($unassignedStudent->name);
+
+            $this->actingAs($viewer)->get($url.'?component=unassigned')
+                ->assertOk()
+                ->assertSee($unassignedStudent->name)
+                ->assertDontSee($cwtsStudent->name)
+                ->assertDontSee($ltsStudent->name);
+        }
+    }
+
     public function test_nstp_admin_can_assign_an_ms_level_to_a_rotc_student(): void
     {
         [$nstpAdmin, , , $student] = $this->records();

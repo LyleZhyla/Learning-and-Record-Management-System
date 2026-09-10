@@ -30,8 +30,9 @@
     <form class="filter-bar" method="GET" action="{{ route($routePrefix.'.students.index') }}">
         <label class="search-field"><span aria-hidden="true">⌕</span><input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search student name or email"></label>
         <select name="status" aria-label="Filter by account status"><option value="">All statuses</option>@foreach(\App\Models\User::STATUS_LABELS as $value => $label)<option value="{{ $value }}" @selected(($filters['status'] ?? '') === $value)>{{ $label }}</option>@endforeach</select>
+        <select name="component" aria-label="Filter by NSTP component"><option value="">All components</option>@foreach($filterComponents as $component)<option value="{{ $component->id }}" @selected(($filters['component'] ?? '') === (string) $component->id)>{{ $component->code }} — {{ $component->name }}</option>@endforeach<option value="unassigned" @selected(($filters['component'] ?? '') === 'unassigned')>Without component</option></select>
         <button class="filter-button" type="submit">Apply filters</button>
-        @if(request()->hasAny(['search', 'status']))<a class="clear-filter" href="{{ route($routePrefix.'.students.index') }}">Clear</a>@endif
+        @if(request()->hasAny(['search', 'status', 'component']))<a class="clear-filter" href="{{ route($routePrefix.'.students.index') }}">Clear</a>@endif
     </form>
 
     <form method="POST" action="{{ route($routePrefix.'.students.email-access') }}" id="bulk-student-form" data-bulk-student-form>
