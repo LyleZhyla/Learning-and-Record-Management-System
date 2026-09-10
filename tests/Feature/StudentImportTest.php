@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\AccountCreatedMail;
+use App\Models\StudentProfile;
 use App\Models\User;
 use App\Services\StudentImportService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,7 +56,13 @@ class StudentImportTest extends TestCase
             $email = str_replace('_', '.', $index).'@import.test';
             $file = $this->excelFile([
                 StudentImportService::HEADERS,
-                ['Imported '.ucwords(str_replace('_', ' ', $index)), $email],
+                $this->validStudentRow([
+                    'last_name' => ucwords(str_replace('_', ' ', $index)),
+                    'first_name' => 'Imported',
+                    'middle_name' => '',
+                    'email' => $email,
+                    'student_number' => $index === 'super_admin' ? '2026000001' : '2026000002',
+                ]),
             ]);
 
             $response = $this->actingAs($user)->post($url, ['file' => $file, 'credential_delivery' => 'download']);
@@ -78,6 +85,13 @@ class StudentImportTest extends TestCase
             $this->assertTrue($student->must_change_password);
             $this->assertNotEmpty($student->student_qr_token);
             $this->assertTrue(Hash::check($credentials['password'], $student->password));
+            $this->assertInstanceOf(StudentProfile::class, $student->studentProfile);
+            $this->assertSame(
+                $index === 'super_admin' ? '2026000001' : '2026000002',
+                $student->studentProfile?->student_number,
+            );
+            $this->assertSame('College of Engineering and Technology', $student->studentProfile?->college);
+            $this->assertSame('Bachelor of Science in Information Technology', $student->studentProfile?->course);
 
             $directory = $index === 'super_admin' ? '/admin/students' : '/nstp-admin/students';
             $this->actingAs($user)->get($directory)
@@ -109,10 +123,17 @@ class StudentImportTest extends TestCase
 
     public function test_authorized_user_can_view_generated_credentials_instead_of_downloading_them(): void
     {
+        Mail::fake();
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $file = $this->excelFile([
             StudentImportService::HEADERS,
-            ['Viewed Student', 'viewed.student@import.test'],
+            $this->validStudentRow([
+                'last_name' => 'Student',
+                'first_name' => 'Viewed',
+                'middle_name' => '',
+                'email' => 'viewed.student@import.test',
+                'student_number' => '2026000003',
+            ]),
         ]);
 
         $response = $this->actingAs($admin)->post('/admin/students/import', [
@@ -144,8 +165,20 @@ class StudentImportTest extends TestCase
 
         $file = $this->excelFile([
             StudentImportService::HEADERS,
-            ['Valid Student', 'valid@example.test'],
-            ['Duplicate Student', 'existing@example.test'],
+            $this->validStudentRow([
+                'last_name' => 'Student',
+                'first_name' => 'Valid',
+                'middle_name' => '',
+                'email' => 'valid@example.test',
+                'student_number' => '2026000004',
+            ]),
+            $this->validStudentRow([
+                'last_name' => 'Student',
+                'first_name' => 'Duplicate',
+                'middle_name' => '',
+                'email' => 'existing@example.test',
+                'student_number' => '2026000005',
+            ]),
         ]);
 
         $this->actingAs($admin)->from('/admin/students/import')->post('/admin/students/import', ['file' => $file, 'credential_delivery' => 'view'])
@@ -153,6 +186,44 @@ class StudentImportTest extends TestCase
             ->assertSessionHasErrors('import_rows');
 
         $this->assertDatabaseMissing('users', ['email' => 'valid@example.test']);
+        $this->assertDatabaseMissing('student_profiles', ['student_number' => '2026000004']);
+    }
+
+    public function test_import_rejects_a_row_when_required_student_profile_data_is_missing(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $file = $this->excelFile([
+            StudentImportService::HEADERS,
+            $this->validStudentRow([
+                'email' => 'missing-contact@example.test',
+                'student_number' => '2026000006',
+                'contact_number' => '',
+            ]),
+        ]);
+
+        $this->actingAs($admin)
+            ->from('/admin/students/import')
+            ->post('/admin/students/import', ['file' => $file])
+            ->assertRedirect('/admin/students/import')
+            ->assertSessionHasErrors('import_rows');
+
+        $this->assertDatabaseMissing('users', ['email' => 'missing-contact@example.test']);
+        $this->assertDatabaseMissing('student_profiles', ['student_number' => '2026000006']);
+    }
+
+    public function test_downloaded_template_contains_every_student_profile_column_and_instruction(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $response = $this->actingAs($admin)->get('/admin/students/import/template');
+        $path = tempnam(sys_get_temp_dir(), 'student-template-').'.xlsx';
+        file_put_contents($path, $response->streamedContent());
+
+        $spreadsheet = IOFactory::load($path);
+        $this->assertSame(StudentImportService::HEADERS, $spreadsheet->getSheetByName('Student Import')->rangeToArray('A1:AD1')[0]);
+        $this->assertSame('last_name', $spreadsheet->getSheetByName('Instructions')->getCell('A2')->getValue());
+        $this->assertSame('year_section', $spreadsheet->getSheetByName('Instructions')->getCell('A31')->getValue());
+        $spreadsheet->disconnectWorksheets();
+        unlink($path);
     }
 
     public function test_other_account_roles_cannot_import_students(): void
@@ -182,6 +253,45 @@ class StudentImportTest extends TestCase
             null,
             true,
         );
+    }
+
+    /** @return array<int, string> */
+    private function validStudentRow(array $overrides = []): array
+    {
+        $data = array_replace([
+            'last_name' => 'Dela Cruz',
+            'first_name' => 'Juan',
+            'middle_name' => 'Santos',
+            'extension_name' => '',
+            'province' => 'Pangasinan',
+            'province_code' => '015500000',
+            'city_municipality' => 'Lingayen',
+            'city_municipality_code' => '015522000',
+            'barangay' => 'Poblacion',
+            'barangay_code' => '015522001',
+            'date_of_birth' => '2006-05-20',
+            'birth_province' => 'Pangasinan',
+            'birth_province_code' => '015500000',
+            'birth_city_municipality' => 'Lingayen',
+            'birth_city_municipality_code' => '015522000',
+            'religion' => 'Roman Catholic',
+            'sex' => 'Male',
+            'blood_type' => 'O+',
+            'contact_number' => '09171234567',
+            'email' => 'juan@example.test',
+            'emergency_contact_name' => 'Maria Dela Cruz',
+            'emergency_relationship' => 'Mother',
+            'emergency_contact_number' => '09981234567',
+            'emergency_same_address' => 'Yes',
+            'emergency_address' => '',
+            'student_number' => '2026000099',
+            'college' => 'College of Engineering and Technology',
+            'course' => 'Bachelor of Science in Information Technology',
+            'major' => 'N/A',
+            'year_section' => '1A',
+        ], $overrides);
+
+        return array_map(fn (string $header): string => (string) $data[$header], StudentImportService::HEADERS);
     }
 
     /** @return array{email: string, password: string, qr_heading: string, qr_images: int} */

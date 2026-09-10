@@ -10,7 +10,7 @@
         <div>
             <span class="eyebrow">Bulk student accounts</span>
             <h2>Upload an Excel student list</h2>
-            <p>The entire file is checked first. Temporary passwords and permanent attendance QR codes are generated automatically after validation.</p>
+            <p>The entire file is checked first. Each valid row creates both the student account and its complete profile before credentials are generated.</p>
         </div>
         <a class="secondary-outline-button" href="{{ route($routePrefix.'.students.import.template') }}">↓ Download Excel template</a>
     </section>
@@ -55,11 +55,13 @@
         </section>
 
         <aside class="card import-guide-card">
-            <div class="card-heading"><div><h3>Required columns</h3><p>Keep the column names from the template unchanged.</p></div></div>
+            <div class="card-heading"><div><h3>Student profile columns</h3><p>Keep every column name from the template unchanged. Blank required values will stop the entire import.</p></div></div>
             <ol class="import-column-list">
-                <li><strong>name</strong><span>Student's complete name</span></li>
-                <li><strong>email</strong><span>Unique login email</span></li>
+                @foreach ($importColumns as [$column, $requirement])
+                    <li><strong>{{ $column }}</strong><span>{{ $requirement }}</span></li>
+                @endforeach
             </ol>
+            <div class="import-security-note"><strong>Documents are uploaded separately</strong><p>The COR and formal photo remain file uploads, so they are not spreadsheet columns. All required text-based student information is included in the template.</p></div>
             <div class="import-security-note"><strong>Choose download or on-screen viewing</strong><p>Download an Excel copy, or view and copy the temporary credentials directly in the browser. Passwords are shown only in the selected result.</p></div>
         </aside>
     </div>

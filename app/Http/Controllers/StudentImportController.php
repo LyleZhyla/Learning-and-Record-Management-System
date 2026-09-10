@@ -8,8 +8,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\MemoryDrawing;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -42,26 +44,36 @@ class StudentImportController extends Controller
         $sheet->setTitle('Student Import');
         $sheet->fromArray([StudentImportService::HEADERS], null, 'A1');
         $sheet->freezePane('A2');
-        $sheet->getStyle('A1:B1')->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
-        $sheet->getStyle('A1:B1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF174D84');
-        $sheet->getStyle('A1:B1')->getAlignment()->setWrapText(true);
+        $lastColumn = Coordinate::stringFromColumnIndex(count(StudentImportService::HEADERS));
+        $headerRange = "A1:{$lastColumn}1";
+        $sheet->setAutoFilter($headerRange);
+        $sheet->getStyle($headerRange)->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
+        $sheet->getStyle($headerRange)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF174D84');
+        $sheet->getStyle($headerRange)->getAlignment()->setWrapText(true);
+        $sheet->getRowDimension(1)->setRowHeight(32);
 
-        foreach (['A' => 32, 'B' => 38] as $column => $width) {
-            $sheet->getColumnDimension($column)->setWidth($width);
+        for ($index = 1; $index <= count(StudentImportService::HEADERS); $index++) {
+            $sheet->getColumnDimension(Coordinate::stringFromColumnIndex($index))->setWidth(22);
+        }
+
+        foreach (['F', 'H', 'J', 'M', 'O', 'S', 'W', 'Z'] as $textColumn) {
+            $sheet->getStyle("{$textColumn}2:{$textColumn}1001")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
         }
 
         $instructions = $spreadsheet->createSheet();
         $instructions->setTitle('Instructions');
-        $instructions->fromArray([
-            ['Column', 'Requirement', 'Example'],
-            ['name', 'Required; maximum 100 characters', 'Juan Dela Cruz'],
-            ['email', 'Required; must be unique', 'juan@example.edu.ph'],
-        ], null, 'A1');
+        $instructions->fromArray(array_merge(
+            [['Column', 'Requirement', 'Example']],
+            StudentImportService::templateInstructions(),
+        ), null, 'A1');
+        $instructions->freezePane('A2');
+        $instructions->setAutoFilter('A1:C'.(count(StudentImportService::templateInstructions()) + 1));
         $instructions->getStyle('A1:C1')->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
         $instructions->getStyle('A1:C1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF174D84');
+        $instructions->getStyle('A:C')->getAlignment()->setWrapText(true)->setVertical('top');
         $instructions->getColumnDimension('A')->setWidth(24);
         $instructions->getColumnDimension('B')->setWidth(70);
-        $instructions->getColumnDimension('C')->setWidth(28);
+        $instructions->getColumnDimension('C')->setWidth(40);
 
         return response()->streamDownload(function () use ($spreadsheet): void {
             (new Xlsx($spreadsheet))->save('php://output');
@@ -161,7 +173,7 @@ class StudentImportController extends Controller
         ]);
     }
 
-    /** @return array{layout: string, routePrefix: string, backRoute: string} */
+    /** @return array{layout: string, routePrefix: string, backRoute: string, importColumns: array<int, array<int, string>>} */
     private function viewData(Request $request): array
     {
         $prefix = $this->routePrefix($request);
@@ -170,6 +182,7 @@ class StudentImportController extends Controller
             'layout' => $prefix === 'admin' ? 'layouts.admin' : 'layouts.nstp-admin',
             'routePrefix' => $prefix,
             'backRoute' => $prefix.'.students.index',
+            'importColumns' => StudentImportService::templateInstructions(),
         ];
     }
 
