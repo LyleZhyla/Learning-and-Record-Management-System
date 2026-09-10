@@ -17,6 +17,7 @@
             <label class="field-group"><span>Maximum score</span><input type="number" step="0.01" min="1" name="max_score" value="{{ old('max_score',100) }}" required></label>
             <label class="field-group"><span>Due date (optional)</span><input type="datetime-local" name="due_at" value="{{ old('due_at') }}"></label>
             <label class="field-group full"><span>Instructions</span><textarea name="instructions" rows="5">{{ old('instructions') }}</textarea></label>
+            <label class="field-group full"><span>AI scoring rubric (optional)</span><textarea name="rubric" rows="7" placeholder="Example: Accuracy — 40 points; Use of NSTP concepts — 30 points; Feasibility — 20 points; Clarity — 10 points. Describe what earns full, partial, and zero credit.">{{ old('rubric') }}</textarea><small class="form-help">Required only when using AI-assisted scoring. Give clear criteria and point allocations totaling the maximum score.</small></label>
         </div>
 
         @if($canCreateAnswerSheet)

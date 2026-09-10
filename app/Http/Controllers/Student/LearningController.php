@@ -26,6 +26,7 @@ class LearningController extends Controller
                 ->where(fn ($q) => $q->whereNull('section_id')->orWhere('section_id', $enrollment->section_id))
                 ->latest('published_at')->paginate(15);
         }
+
         return view('student.materials.index', compact('enrollment', 'materials'));
     }
 
@@ -37,6 +38,7 @@ class LearningController extends Controller
             $assessments = Assessment::with(['section.component', 'submissions' => fn ($q) => $q->where('student_id', $request->user()->id)])
                 ->where('section_id', $enrollment->section_id)->where('status', 'published')->latest()->paginate(15);
         }
+
         return view('student.assessments.index', compact('enrollment', 'assessments'));
     }
 
@@ -45,6 +47,7 @@ class LearningController extends Controller
         $enrollment = $this->access->currentEnrollment($request->user());
         abort_unless($enrollment && $assessment->section_id === $enrollment->section_id && $assessment->status === 'published', 403);
         $submission = $assessment->submissions()->where('student_id', $request->user()->id)->first();
+
         return view('student.assessments.show', compact('assessment', 'submission', 'enrollment'));
     }
 
@@ -67,8 +70,12 @@ class LearningController extends Controller
                 'file_path' => $file?->store('assessment-submissions') ?? $existingSubmission?->file_path,
                 'original_filename' => $file?->getClientOriginalName() ?? $existingSubmission?->original_filename,
                 'submitted_at' => now(), 'score' => null, 'feedback' => null, 'graded_by' => null, 'graded_at' => null,
+                'ai_suggested_score' => null, 'ai_feedback' => null, 'ai_breakdown' => null,
+                'ai_confidence' => null, 'ai_model' => null, 'ai_generated_at' => null,
+                'ai_approved_by' => null, 'ai_approved_at' => null,
             ],
         );
+
         return back()->with('status', 'Your work was submitted successfully.');
     }
 
@@ -76,6 +83,7 @@ class LearningController extends Controller
     {
         $enrollment = $this->access->currentEnrollment($request->user());
         $summary = $enrollment?->section_id ? $this->grades->summary($request->user(), $enrollment->section_id) : null;
+
         return view('student.grades.index', compact('enrollment', 'summary'));
     }
 }

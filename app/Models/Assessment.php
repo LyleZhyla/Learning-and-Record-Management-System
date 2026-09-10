@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Assessment extends Model
 {
-    protected $fillable = ['section_id', 'grading_category_id', 'created_by', 'title', 'type', 'instructions', 'max_score', 'weight', 'sort_order', 'due_at', 'published_at', 'status'];
+    protected $fillable = ['section_id', 'grading_category_id', 'created_by', 'title', 'type', 'instructions', 'rubric', 'max_score', 'weight', 'sort_order', 'due_at', 'published_at', 'status'];
 
     protected function casts(): array
     {

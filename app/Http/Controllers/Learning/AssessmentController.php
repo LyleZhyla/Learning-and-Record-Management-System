@@ -12,8 +12,10 @@ use App\Models\NstpSection;
 use App\Models\OmrSheet;
 use App\Models\User;
 use App\Services\GradeService;
+use App\Services\OpenAiAssessmentScoringService;
 use App\Services\PortalAccessService;
 use App\Services\StudentNotificationService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +23,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use RuntimeException;
+use Throwable;
 
 class AssessmentController extends Controller
 {
@@ -28,6 +32,7 @@ class AssessmentController extends Controller
         private PortalAccessService $access,
         private GradeService $grades,
         private StudentNotificationService $studentNotifications,
+        private OpenAiAssessmentScoringService $aiScoring,
     ) {}
 
     public function index(Request $request): View
@@ -60,6 +65,7 @@ class AssessmentController extends Controller
             'title' => ['required', 'string', 'max:180'],
             'type' => ['required', Rule::in(['quiz', 'activity', 'project', 'exam'])],
             'instructions' => ['nullable', 'string'],
+            'rubric' => ['nullable', 'string', 'max:20000'],
             'max_score' => ['required', 'numeric', 'min:1', 'max:10000'],
             'weight' => ['nullable', 'numeric', 'min:0.01', 'max:100'],
             'due_at' => ['nullable', 'date'],
@@ -126,11 +132,91 @@ class AssessmentController extends Controller
 
     public function show(Request $request, Assessment $assessment): View
     {
-        $assessment->load(['section.component', 'gradingCategory', 'submissions.student', 'submissions.grader']);
+        $assessment->load(['section.component', 'gradingCategory', 'submissions.student', 'submissions.grader', 'submissions.aiApprover']);
         $this->access->ensureCanManageSection($request->user(), $assessment->section);
         $students = NstpEnrollment::with('student')->where('section_id', $assessment->section_id)->get()->sortBy(fn ($item) => $item->student->name);
 
         return view('learning.assessments.show', $this->context($request) + compact('assessment', 'students'));
+    }
+
+    public function updateRubric(Request $request, Assessment $assessment): RedirectResponse
+    {
+        abort_unless($request->user()->isFacilitator(), 403);
+        $this->access->ensureCanManageSection($request->user(), $assessment->section);
+        $validated = $request->validate([
+            'rubric' => ['required', 'string', 'max:20000'],
+        ]);
+        $assessment->update($validated);
+
+        return back()->with('status', 'AI scoring rubric saved. Existing AI suggestions should be regenerated.');
+    }
+
+    public function generateAiScore(Request $request, Assessment $assessment, AssessmentSubmission $submission): RedirectResponse
+    {
+        abort_unless($request->user()->isFacilitator(), 403);
+        $this->access->ensureCanManageSection($request->user(), $assessment->section);
+        abort_unless($submission->assessment_id === $assessment->id, 404);
+        $submission->loadMissing('assessment');
+
+        try {
+            $suggestion = $this->aiScoring->suggest($request->user(), $submission);
+        } catch (Throwable $exception) {
+            if (! $exception instanceof RuntimeException) {
+                report($exception);
+            }
+
+            return back()->withErrors([
+                'ai_scoring' => $exception instanceof RuntimeException
+                    ? $exception->getMessage()
+                    : 'AI scoring is temporarily unavailable. Please try again later.',
+            ]);
+        }
+
+        $submission->update([
+            'ai_suggested_score' => $suggestion['total_score'],
+            'ai_feedback' => $suggestion['feedback'],
+            'ai_breakdown' => [
+                'criteria' => $suggestion['criteria'],
+                'needs_manual_review' => (bool) $suggestion['needs_manual_review'],
+            ],
+            'ai_confidence' => $suggestion['confidence'],
+            'ai_model' => $suggestion['model'],
+            'ai_generated_at' => now(),
+            'ai_approved_by' => null,
+            'ai_approved_at' => null,
+        ]);
+
+        return back()->with('status', 'AI score suggestion generated. Review it carefully before approval.');
+    }
+
+    public function approveAiScore(Request $request, Assessment $assessment, AssessmentSubmission $submission): RedirectResponse
+    {
+        abort_unless($request->user()->isFacilitator(), 403);
+        $this->access->ensureCanManageSection($request->user(), $assessment->section);
+        abort_unless($submission->assessment_id === $assessment->id, 404);
+        abort_unless($submission->ai_generated_at !== null, 422);
+        $validated = $request->validate([
+            'score' => ['required', 'numeric', 'min:0', 'max:'.$assessment->max_score],
+            'feedback' => ['nullable', 'string', 'max:3000'],
+            'suggestion_generated_at' => ['required', 'date'],
+        ]);
+
+        if (! $submission->ai_generated_at->equalTo(Carbon::parse($validated['suggestion_generated_at']))) {
+            throw ValidationException::withMessages([
+                'ai_scoring' => 'This AI suggestion has changed. Review the latest suggestion before approving it.',
+            ]);
+        }
+
+        $submission->update([
+            'score' => $validated['score'],
+            'feedback' => $validated['feedback'] ?? null,
+            'graded_by' => $request->user()->id,
+            'graded_at' => now(),
+            'ai_approved_by' => $request->user()->id,
+            'ai_approved_at' => now(),
+        ]);
+
+        return back()->with('status', 'AI-assisted score reviewed and approved as the official score.');
     }
 
     public function grade(Request $request, Assessment $assessment, AssessmentSubmission $submission): RedirectResponse
@@ -138,7 +224,13 @@ class AssessmentController extends Controller
         $this->access->ensureCanManageSection($request->user(), $assessment->section);
         abort_unless($submission->assessment_id === $assessment->id, 404);
         $validated = $request->validate(['score' => ['required', 'numeric', 'min:0', 'max:'.$assessment->max_score], 'feedback' => ['nullable', 'string', 'max:3000']]);
-        $submission->update([...$validated, 'graded_by' => $request->user()->id, 'graded_at' => now()]);
+        $submission->update([
+            ...$validated,
+            'graded_by' => $request->user()->id,
+            'graded_at' => now(),
+            'ai_approved_by' => null,
+            'ai_approved_at' => null,
+        ]);
 
         return back()->with('status', 'Submission graded successfully.');
     }
@@ -169,6 +261,8 @@ class AssessmentController extends Controller
             'submitted_at' => $submission->submitted_at ?? now(),
             'graded_by' => $request->user()->id,
             'graded_at' => now(),
+            'ai_approved_by' => null,
+            'ai_approved_at' => null,
         ])->save();
 
         return back()->with(
@@ -339,11 +433,16 @@ class AssessmentController extends Controller
         if (($validated['score'] ?? null) === null) {
             AssessmentSubmission::where('assessment_id', $assessment->id)->where('student_id', $validated['student_id'])->update([
                 'score' => null, 'graded_by' => null, 'graded_at' => null,
+                'ai_approved_by' => null, 'ai_approved_at' => null,
             ]);
         } else {
             AssessmentSubmission::updateOrCreate(
                 ['assessment_id' => $assessment->id, 'student_id' => $validated['student_id']],
-                ['submitted_at' => now(), 'score' => $validated['score'], 'graded_by' => $request->user()->id, 'graded_at' => now()],
+                [
+                    'submitted_at' => now(), 'score' => $validated['score'],
+                    'graded_by' => $request->user()->id, 'graded_at' => now(),
+                    'ai_approved_by' => null, 'ai_approved_at' => null,
+                ],
             );
         }
 

@@ -75,6 +75,9 @@ $learningManagementRoutes = function (): void {
     Route::get('/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
     Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store');
     Route::get('/assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');
+    Route::put('/assessments/{assessment}/rubric', [AssessmentController::class, 'updateRubric'])->name('assessments.rubric.update');
+    Route::post('/assessments/{assessment}/submissions/{submission}/ai-score', [AssessmentController::class, 'generateAiScore'])->middleware('throttle:5,1')->name('assessments.ai-score.generate');
+    Route::put('/assessments/{assessment}/submissions/{submission}/ai-score/approve', [AssessmentController::class, 'approveAiScore'])->name('assessments.ai-score.approve');
     Route::put('/assessments/{assessment}/submissions/{submission}', [AssessmentController::class, 'grade'])->name('assessments.grade');
     Route::put('/assessments/{assessment}/students/{student}/score', [AssessmentController::class, 'scoreStudent'])->name('assessments.score');
     Route::get('/grades', [AssessmentController::class, 'grades'])->name('grades.index');
