@@ -1,0 +1,46 @@
+.page-action-buttons {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+.create-account-button {
+    flex: none;
+    gap: 9px;
+    white-space: nowrap;
+}
+
+.create-account-button::before {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    place-items: center;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, .16);
+    content: '+';
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1;
+}
+
+.secondary-button.create-account-button::before {
+    background: #e7f0fc;
+    color: #2468ca;
+}
+
+@media (max-width: 1100px) {
+    .account-directory-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .account-directory-actions .page-action-buttons {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 760px) {
+    .page-action-buttons button {
+        width: 100%;
+    }
+}

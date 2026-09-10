@@ -4,14 +4,14 @@
 @section('page-title', 'Staff Account Management')
 
 @section('content')
-    <section class="page-actions">
+    <section class="page-actions account-directory-actions">
         <div>
             <span class="eyebrow">Account administration</span>
             <h2>Manage staff and administrator accounts</h2>
             <p>Create and manage facilitators, coordinators, NSTP Admins, and Super Admins separately from students.</p>
         </div>
         <div class="page-action-buttons">
-            <a class="primary-button compact" href="{{ route('admin.users.create') }}">+ Create staff account</a>
+            <a class="primary-button compact create-account-button" href="{{ route('admin.users.create') }}">Create staff account</a>
         </div>
     </section>
 

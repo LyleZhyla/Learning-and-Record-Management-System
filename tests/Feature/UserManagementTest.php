@@ -32,7 +32,12 @@ class UserManagementTest extends TestCase
             ->assertSee('Delete');
 
         $this->actingAs($admin)->get('/admin/students')
-            ->assertOk()->assertSee($student->name)->assertDontSee($staff->name)->assertSee('Download QR');
+            ->assertOk()
+            ->assertSee($student->name)
+            ->assertDontSee($staff->name)
+            ->assertSee('Download QR')
+            ->assertSee('Create student account')
+            ->assertSee('href="'.route('admin.users.create', ['role' => 'student']).'"', false);
     }
 
     public function test_staff_directory_uses_one_creation_button_with_role_choices(): void
@@ -42,11 +47,14 @@ class UserManagementTest extends TestCase
         $this->actingAs($admin)->get('/admin/users')
             ->assertOk()
             ->assertSee('href="'.route('admin.users.create').'"', false)
-            ->assertSee('Create staff account');
+            ->assertSee('Create staff account')
+            ->assertSee('create-account-button', false)
+            ->assertSee('account-create-button.css', false);
 
         $this->actingAs($admin)->get('/admin/users/create')
             ->assertOk()
             ->assertSee('New staff account')
+            ->assertSee('Create staff account')
             ->assertSee('NSTP Admin')
             ->assertSee('Coordinator')
             ->assertSee('Facilitator')

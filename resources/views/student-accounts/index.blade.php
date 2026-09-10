@@ -4,7 +4,7 @@
 @section('page-title', 'Student Account Management')
 
 @section('content')
-<section class="page-actions">
+<section class="page-actions account-directory-actions">
     <div>
         <span class="eyebrow">Student directory</span>
         <h2>Manage student accounts and QR codes</h2>
@@ -13,7 +13,7 @@
     <div class="page-action-buttons">
         <button class="secondary-outline-button bulk-email-button" type="submit" form="bulk-student-form" formnovalidate data-bulk-email-button disabled><span aria-hidden="true">✉</span> Email selected students</button>
         <a class="import-students-button" href="{{ route($routePrefix.'.students.import.create') }}" aria-label="Import students from Excel"><span aria-hidden="true">⇧</span> Import Students</a>
-        @if($routePrefix === 'admin')<a class="primary-button compact" href="{{ route('admin.users.create', ['role' => 'student']) }}">+ Create student</a>@endif
+        @if($routePrefix === 'admin')<a class="primary-button compact create-account-button" href="{{ route('admin.users.create', ['role' => 'student']) }}">Create student account</a>@endif
     </div>
 </section>
 

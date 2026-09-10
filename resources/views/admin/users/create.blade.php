@@ -13,7 +13,7 @@
                 @include('admin.users._form', ['user' => null])
                 <div class="form-actions split-actions">
                     <a class="cancel-button" href="{{ $initialRole === 'student' ? route('admin.students.index') : route('admin.users.index') }}">Cancel</a>
-                    <button class="primary-button compact" type="submit">Create account</button>
+                    <button class="primary-button compact create-account-button" type="submit">Create {{ $initialRole === 'student' ? 'student' : 'staff' }} account</button>
                 </div>
             </form>
         </section>
