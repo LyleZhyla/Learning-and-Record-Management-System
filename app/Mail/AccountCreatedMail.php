@@ -17,6 +17,7 @@ class AccountCreatedMail extends Mailable
         public readonly string $accountEmail,
         public readonly string $temporaryPassword,
         public readonly string $roleLabel,
+        public readonly bool $requiresStudentDocuments = false,
     ) {}
 
     public function envelope(): Envelope

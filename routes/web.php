@@ -42,6 +42,7 @@ use App\Http\Controllers\Student\DashboardController as StudentDashboardControll
 use App\Http\Controllers\Student\LearningController as StudentLearningController;
 use App\Http\Controllers\Student\ProfileController as StudentProfileController;
 use App\Http\Controllers\Student\ReportController as StudentReportController;
+use App\Http\Controllers\Student\RequiredDocumentController as StudentRequiredDocumentController;
 use App\Http\Controllers\StudentAccountController;
 use App\Http\Controllers\StudentImportController;
 use Illuminate\Support\Facades\Route;
@@ -174,6 +175,11 @@ Route::middleware('auth')->group(function () {
 Route::get('/profile-photo', ProfilePhotoController::class)
     ->middleware('auth')
     ->name('profile.photo');
+
+Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () {
+    Route::get('/required-documents', [StudentRequiredDocumentController::class, 'create'])->name('required-documents.create');
+    Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
+});
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');

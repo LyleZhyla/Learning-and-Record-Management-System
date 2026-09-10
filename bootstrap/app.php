@@ -7,6 +7,7 @@ use App\Http\Middleware\EnsureUserIsFacilitator;
 use App\Http\Middleware\EnsureUserIsNstpAdmin;
 use App\Http\Middleware\EnsureUserIsStudent;
 use App\Http\Middleware\EnsureUserIsSuperAdmin;
+use App\Http\Middleware\RequireImportedStudentDocuments;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -21,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             AuditUserActivity::class,
             EnforceInactivityTimeout::class,
+            RequireImportedStudentDocuments::class,
         ]);
 
         $middleware->alias([

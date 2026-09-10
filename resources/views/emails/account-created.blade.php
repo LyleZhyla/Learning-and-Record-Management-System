@@ -27,10 +27,8 @@
                     <td class="email-pad" style="padding:24px 40px; background:#174d84;">
                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                             <tr>
-                                <td width="54" valign="middle">
-                                    <table role="presentation" width="46" height="46" cellspacing="0" cellpadding="0" border="0" style="width:46px; height:46px; background:#ffffff; border-radius:14px;">
-                                        <tr><td align="center" valign="middle" style="color:#174d84; font-size:20px; font-weight:800;">S</td></tr>
-                                    </table>
+                                <td width="58" valign="middle">
+                                    <img src="{{ $message->embed(public_path('images/characters/snapie-email-face.png')) }}" width="50" height="50" alt="Snapie profile head" style="display:block; width:50px; height:50px; border:0; border-radius:14px; background:#ffffff; padding:2px; object-fit:contain;">
                                 </td>
                                 <td valign="middle" style="padding-left:12px; color:#ffffff;">
                                     <div style="font-size:20px; font-weight:800; line-height:1.2;">SNAPIE</div>
@@ -51,7 +49,7 @@
                                 <td valign="middle" style="padding-right:16px;">
                                     <div style="color:#2468ca; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1.1px;">Account ready</div>
                                     <h1 style="margin:10px 0 14px; color:#163657; font-size:29px; line-height:1.25;">Welcome to Smart NSTP, {{ $recipientName }}!</h1>
-                                    <p style="margin:0; color:#53657a; font-size:16px; line-height:1.7;">Your {{ strtolower($roleLabel) }} account has been created. Use the temporary credentials below to access the platform.</p>
+                                    <p style="margin:0; color:#53657a; font-size:16px; line-height:1.7;">Your {{ strtolower($roleLabel) }} account has been created. Use the temporary credentials below to sign in.</p>
                                 </td>
                                 <td width="142" align="right" valign="bottom" style="width:142px;">
                                     <img src="{{ $message->embed(public_path('images/characters/snapie-email-wave.png')) }}" width="132" alt="Snapie waving hello" style="display:block; width:132px; max-width:132px; height:auto; border:0;">
@@ -96,7 +94,13 @@
                     <td class="email-pad" style="padding:0 40px 32px;">
                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%; background:#fff8e6; border-left:4px solid #f2b84b; border-radius:8px;">
                             <tr>
-                                <td style="padding:14px 16px; color:#624b18; font-size:13px; line-height:1.6;"><strong>Keep your account secure.</strong> You will be asked to create a new password after your first sign-in. Never share your password with anyone.</td>
+                                <td style="padding:14px 16px; color:#624b18; font-size:13px; line-height:1.6;">
+                                    @if ($requiresStudentDocuments)
+                                        <strong>Complete your student requirements first.</strong> After signing in, upload your COR and formal photo before the student portal becomes available. You will also be asked to create a new password.
+                                    @else
+                                        <strong>Keep your account secure.</strong> You will be asked to create a new password after your first sign-in. Never share your password with anyone.
+                                    @endif
+                                </td>
                             </tr>
                         </table>
                     </td>

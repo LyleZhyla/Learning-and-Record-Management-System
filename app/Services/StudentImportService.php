@@ -238,6 +238,7 @@ class StudentImportService
                     'role' => 'student',
                     'status' => 'active',
                     'must_change_password' => true,
+                    'must_upload_student_documents' => true,
                 ]);
                 $student->studentProfile()->create(collect($data)->except('email')->all());
 

@@ -83,6 +83,7 @@ class StudentImportTest extends TestCase
             $this->assertSame('student', $student->role);
             $this->assertSame('active', $student->status);
             $this->assertTrue($student->must_change_password);
+            $this->assertTrue($student->must_upload_student_documents);
             $this->assertNotEmpty($student->student_qr_token);
             $this->assertTrue(Hash::check($credentials['password'], $student->password));
             $this->assertInstanceOf(StudentProfile::class, $student->studentProfile);

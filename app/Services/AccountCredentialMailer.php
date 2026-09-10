@@ -18,6 +18,7 @@ class AccountCredentialMailer
                 accountEmail: $user->email,
                 temporaryPassword: $temporaryPassword,
                 roleLabel: $user->roleLabel(),
+                requiresStudentDocuments: (bool) $user->must_upload_student_documents,
             );
 
             return true;

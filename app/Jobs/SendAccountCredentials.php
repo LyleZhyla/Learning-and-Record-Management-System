@@ -28,6 +28,7 @@ class SendAccountCredentials implements ShouldBeEncrypted, ShouldQueue
         public readonly string $accountEmail,
         public readonly string $temporaryPassword,
         public readonly string $roleLabel,
+        public readonly bool $requiresStudentDocuments = false,
     ) {}
 
     public function handle(): void
@@ -37,6 +38,7 @@ class SendAccountCredentials implements ShouldBeEncrypted, ShouldQueue
             accountEmail: $this->accountEmail,
             temporaryPassword: $this->temporaryPassword,
             roleLabel: $this->roleLabel,
+            requiresStudentDocuments: $this->requiresStudentDocuments,
         ));
     }
 

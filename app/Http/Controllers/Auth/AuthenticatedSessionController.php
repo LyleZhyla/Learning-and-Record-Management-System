@@ -73,6 +73,10 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
         $user->forceFill(['last_login_at' => now()])->save();
 
+        if ($user->isStudent() && $user->must_upload_student_documents) {
+            return redirect()->route('student.required-documents.create');
+        }
+
         return redirect()->route($user->dashboardRouteName());
     }
 

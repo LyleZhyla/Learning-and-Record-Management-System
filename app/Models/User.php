@@ -45,6 +45,7 @@ class User extends Authenticatable
         'profile_photo_path',
         'status',
         'must_change_password',
+        'must_upload_student_documents',
         'last_login_at',
     ];
 
@@ -70,6 +71,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'must_change_password' => 'boolean',
+            'must_upload_student_documents' => 'boolean',
             'last_login_at' => 'datetime',
         ];
     }
