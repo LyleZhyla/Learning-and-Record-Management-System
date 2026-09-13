@@ -10,6 +10,65 @@ use RuntimeException;
 
 class OpenAiAssessmentScoringService
 {
+    public function suggestRubric(User $facilitator, array $assessment): array
+    {
+        $apiKey = config('services.openai.api_key');
+        if (blank($apiKey)) {
+            throw new RuntimeException('AI rubric suggestions are not configured yet. Add OPENAI_API_KEY to the server environment.');
+        }
+
+        $maxScore = (float) $assessment['max_score'];
+        $model = config('services.openai.model', 'gpt-5-mini');
+        $response = Http::withToken($apiKey)->acceptJson()->timeout(90)
+            ->post('https://api.openai.com/v1/responses', [
+                'model' => $model,
+                'instructions' => 'You design clear, fair scoring rubrics for Philippine NSTP assessments. Suggest 3 to 6 distinct criteria. Make descriptions observable and specific. Allocate exactly 100 percent and exactly the stated maximum score. The facilitator will review and edit everything before saving.',
+                'input' => [[
+                    'role' => 'user',
+                    'content' => [[
+                        'type' => 'input_text',
+                        'text' => "ASSESSMENT TITLE: {$assessment['title']}\nTYPE: {$assessment['type']}\nMAXIMUM SCORE: {$maxScore}\nINSTRUCTIONS:\n".($assessment['instructions'] ?: 'No instructions provided.'),
+                    ]],
+                ]],
+                'text' => ['format' => $this->rubricOutputFormat($maxScore)],
+                'max_output_tokens' => 1200,
+                'store' => false,
+                'safety_identifier' => hash('sha256', 'smart-nstp-facilitator-'.$facilitator->id),
+            ]);
+
+        if (! $response->successful()) {
+            report(new RuntimeException('OpenAI rubric suggestion returned HTTP '.$response->status().'.'));
+            throw new RuntimeException('AI rubric suggestion is temporarily unavailable. Please try again later.');
+        }
+
+        $suggestion = json_decode($this->outputText($response->json('output', [])), true);
+        $criteria = collect($suggestion['criteria'] ?? [])->filter(fn ($item) => is_array($item))
+            ->map(fn ($item) => [
+                'title' => mb_substr(trim((string) ($item['title'] ?? '')), 0, 120),
+                'description' => mb_substr(trim((string) ($item['description'] ?? '')), 0, 1000),
+                'percentage' => max(0, (float) ($item['percentage'] ?? 0)),
+            ])->filter(fn ($item) => $item['title'] !== '' && $item['description'] !== '' && $item['percentage'] > 0)
+            ->take(10)->values();
+
+        if ($criteria->isEmpty() || $criteria->sum('percentage') <= 0) {
+            throw new RuntimeException('AI returned an invalid rubric suggestion. Please try again.');
+        }
+
+        $percentageTotal = (float) $criteria->sum('percentage');
+        $runningPercentage = 0.0;
+        $runningScore = 0.0;
+        $lastIndex = $criteria->count() - 1;
+
+        return $criteria->map(function (array $criterion, int $index) use ($percentageTotal, $maxScore, $lastIndex, &$runningPercentage, &$runningScore): array {
+            $percentage = $index === $lastIndex ? round(100 - $runningPercentage, 2) : round(($criterion['percentage'] / $percentageTotal) * 100, 2);
+            $score = $index === $lastIndex ? round($maxScore - $runningScore, 2) : round(($percentage / 100) * $maxScore, 2);
+            $runningPercentage += $percentage;
+            $runningScore += $score;
+
+            return [...$criterion, 'percentage' => $percentage, 'score' => $score];
+        })->all();
+    }
+
     public function suggest(User $facilitator, AssessmentSubmission $submission): array
     {
         $apiKey = config('services.openai.api_key');
@@ -118,6 +177,7 @@ class OpenAiAssessmentScoringService
     private function assessmentPrompt(AssessmentSubmission $submission): string
     {
         $assessment = $submission->assessment;
+        $formattedRubric = $assessment->formattedRubric();
 
         return <<<PROMPT
 ASSESSMENT TITLE: {$assessment->title}
@@ -127,7 +187,7 @@ INSTRUCTIONS:
 {$assessment->instructions}
 
 OFFICIAL SCORING RUBRIC:
-{$assessment->rubric}
+{$formattedRubric}
 
 Evaluate only the submitted work against the official rubric. Return a conservative score and cite specific evidence from the work for every criterion. If the rubric or submission is insufficient, lower confidence and require manual review.
 PROMPT;
@@ -161,6 +221,45 @@ Use only the facilitator's official rubric and the evidence in the student's sub
 Do not infer identity, disability, socioeconomic status, ethnicity, religion, gender, or any other sensitive trait. Do not reward writing style unless the rubric explicitly requires it. Be conservative, specific, and consistent. Set needs_manual_review to true when the work is unreadable, incomplete, ambiguous, outside the rubric, or your confidence is below 70.
 Never describe the recommendation as a final or official grade.
 PROMPT;
+    }
+
+    private function outputText(array $output): string
+    {
+        return collect($output)->where('type', 'message')
+            ->flatMap(fn ($item) => $item['content'] ?? [])
+            ->where('type', 'output_text')->pluck('text')->filter()->implode("\n");
+    }
+
+    private function rubricOutputFormat(float $maxScore): array
+    {
+        return [
+            'type' => 'json_schema',
+            'name' => 'rubric_suggestion',
+            'strict' => true,
+            'schema' => [
+                'type' => 'object',
+                'additionalProperties' => false,
+                'properties' => [
+                    'criteria' => [
+                        'type' => 'array',
+                        'minItems' => 3,
+                        'maxItems' => 6,
+                        'items' => [
+                            'type' => 'object',
+                            'additionalProperties' => false,
+                            'properties' => [
+                                'title' => ['type' => 'string'],
+                                'description' => ['type' => 'string'],
+                                'percentage' => ['type' => 'number', 'minimum' => 0, 'maximum' => 100],
+                                'score' => ['type' => 'number', 'minimum' => 0, 'maximum' => $maxScore],
+                            ],
+                            'required' => ['title', 'description', 'percentage', 'score'],
+                        ],
+                    ],
+                ],
+                'required' => ['criteria'],
+            ],
+        ];
     }
 
     private function outputFormat(float $maxScore): array

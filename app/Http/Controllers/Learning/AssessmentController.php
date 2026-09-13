@@ -61,13 +61,18 @@ class AssessmentController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $request->merge(['create_answer_sheet' => $request->boolean('create_answer_sheet')]);
+        $this->removeEmptyRubricRows($request);
         $validated = $request->validate([
             'section_id' => ['required', 'exists:nstp_sections,id'],
             'grading_category_id' => ['required', 'integer', 'exists:grading_categories,id'],
             'title' => ['required', 'string', 'max:180'],
             'type' => ['required', Rule::in(['quiz', 'activity', 'project', 'exam'])],
             'instructions' => ['nullable', 'string'],
-            'rubric' => ['nullable', 'string', 'max:20000'],
+            'rubric_criteria' => ['nullable', 'array', 'max:10'],
+            'rubric_criteria.*.title' => ['required', 'string', 'max:120'],
+            'rubric_criteria.*.description' => ['required', 'string', 'max:1000'],
+            'rubric_criteria.*.percentage' => ['required', 'numeric', 'gt:0', 'max:100'],
+            'rubric_criteria.*.score' => ['required', 'numeric', 'gt:0', 'max:10000'],
             'max_score' => ['required', 'numeric', 'min:1', 'max:10000'],
             'weight' => ['nullable', 'numeric', 'min:0.01', 'max:100'],
             'due_at' => ['nullable', 'date'],
@@ -78,6 +83,8 @@ class AssessmentController extends Controller
             'answers' => ['nullable', 'required_if:create_answer_sheet,1', 'array'],
             'answers.*' => ['required', Rule::in(['A', 'B', 'C', 'D', 'E'])],
         ]);
+        $validated['rubric'] = $this->encodeRubric($validated['rubric_criteria'] ?? [], (float) $validated['max_score']);
+        unset($validated['rubric_criteria']);
         $section = NstpSection::findOrFail($validated['section_id']);
         $this->access->ensureCanAccessGradebookSection($request->user(), $section);
         $this->ensureGradingStructure($section);
@@ -149,12 +156,42 @@ class AssessmentController extends Controller
     {
         abort_unless($request->user()->isFacilitator(), 403);
         $this->access->ensureCanManageSection($request->user(), $assessment->section);
+        $this->removeEmptyRubricRows($request);
         $validated = $request->validate([
-            'rubric' => ['required', 'string', 'max:20000'],
+            'rubric_criteria' => ['required', 'array', 'min:1', 'max:10'],
+            'rubric_criteria.*.title' => ['required', 'string', 'max:120'],
+            'rubric_criteria.*.description' => ['required', 'string', 'max:1000'],
+            'rubric_criteria.*.percentage' => ['required', 'numeric', 'gt:0', 'max:100'],
+            'rubric_criteria.*.score' => ['required', 'numeric', 'gt:0', 'max:'.$assessment->max_score],
         ]);
-        $assessment->update($validated);
+        $assessment->update(['rubric' => $this->encodeRubric($validated['rubric_criteria'], (float) $assessment->max_score)]);
 
         return back()->with('status', 'AI scoring rubric saved. Existing AI suggestions should be regenerated.');
+    }
+
+    public function suggestRubric(Request $request): JsonResponse
+    {
+        abort_unless($request->user()->isFacilitator(), 403);
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:180'],
+            'type' => ['required', Rule::in(['quiz', 'activity', 'project', 'exam'])],
+            'instructions' => ['nullable', 'string', 'max:10000'],
+            'max_score' => ['required', 'numeric', 'min:1', 'max:10000'],
+        ]);
+
+        try {
+            return response()->json(['criteria' => $this->aiScoring->suggestRubric($request->user(), $validated)]);
+        } catch (Throwable $exception) {
+            if (! $exception instanceof RuntimeException) {
+                report($exception);
+            }
+
+            return response()->json([
+                'message' => $exception instanceof RuntimeException
+                    ? $exception->getMessage()
+                    : 'AI rubric suggestion is temporarily unavailable. Please try again later.',
+            ], 422);
+        }
     }
 
     public function generateAiScore(Request $request, Assessment $assessment, AssessmentSubmission $submission): RedirectResponse
@@ -498,5 +535,39 @@ class AssessmentController extends Controller
     private function context(Request $request): array
     {
         return ['layout' => $this->access->layout($request->user()), 'routePrefix' => $this->access->routePrefix($request->user())];
+    }
+
+    private function removeEmptyRubricRows(Request $request): void
+    {
+        $criteria = collect($request->input('rubric_criteria', []))
+            ->filter(fn ($item) => is_array($item) && collect($item)->contains(fn ($value) => filled($value)))
+            ->values()->all();
+        $request->merge(['rubric_criteria' => $criteria]);
+    }
+
+    private function encodeRubric(array $criteria, float $maxScore): ?string
+    {
+        if ($criteria === []) {
+            return null;
+        }
+
+        $percentageTotal = collect($criteria)->sum(fn ($criterion) => (float) $criterion['percentage']);
+        $scoreTotal = collect($criteria)->sum(fn ($criterion) => (float) $criterion['score']);
+        if (abs($percentageTotal - 100) > 0.01) {
+            throw ValidationException::withMessages(['rubric_criteria' => 'Rubric percentages must total exactly 100%. Current total: '.number_format($percentageTotal, 2).'%.']);
+        }
+        if (abs($scoreTotal - $maxScore) > 0.01) {
+            throw ValidationException::withMessages(['rubric_criteria' => 'Rubric scores must total the assessment maximum of '.number_format($maxScore, 2).'. Current total: '.number_format($scoreTotal, 2).'.']);
+        }
+
+        return json_encode([
+            'version' => 1,
+            'criteria' => collect($criteria)->map(fn ($criterion) => [
+                'title' => trim($criterion['title']),
+                'description' => trim($criterion['description']),
+                'percentage' => round((float) $criterion['percentage'], 2),
+                'score' => round((float) $criterion['score'], 2),
+            ])->values()->all(),
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 }

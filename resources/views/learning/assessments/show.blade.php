@@ -30,7 +30,12 @@
     <form method="POST" action="{{ route($routePrefix.'.assessments.rubric.update', $assessment) }}">
         @csrf
         @method('PUT')
-        <label class="field-group"><span>Rubric</span><textarea name="rubric" rows="7" required placeholder="Accuracy — 40 points...">{{ old('rubric', $assessment->rubric) }}</textarea></label>
+        @include('learning.assessments._rubric-builder', [
+            'rubricCriteria' => $assessment->rubricCriteria(),
+            'rubricRequired' => true,
+            'rubricMaxScore' => (float) $assessment->max_score,
+            'rubricContext' => ['title' => $assessment->title, 'type' => $assessment->type, 'instructions' => $assessment->instructions, 'max_score' => (float) $assessment->max_score],
+        ])
         <div class="form-actions"><button class="secondary-outline-button" type="submit">Save rubric</button></div>
     </form>
 </section>
@@ -39,7 +44,13 @@
     <div class="card-heading">
         <div><span class="eyebrow">View only</span><h3>Official AI scoring rubric</h3><p>The coordinator can monitor the rubric and AI-assisted scoring results but cannot change or approve them.</p></div>
     </div>
-    <div class="ai-readonly-rubric">{!! nl2br(e($assessment->rubric ?: 'No AI scoring rubric has been provided by the facilitator.')) !!}</div>
+    <div class="ai-readonly-rubric">
+        @forelse($assessment->rubricCriteria() as $criterion)
+            <article class="readonly-rubric-criterion"><div><strong>{{ $criterion['title'] }}</strong><b>{{ number_format((float) $criterion['percentage'], 2) }}% · {{ number_format((float) $criterion['score'], 2) }} pts</b></div><p>{{ $criterion['description'] }}</p></article>
+        @empty
+            No AI scoring rubric has been provided by the facilitator.
+        @endforelse
+    </div>
 </section>
 @endif
 
@@ -146,4 +157,5 @@
         </table>
     </div>
 </section>
+<script src="{{ asset('js/rubric-builder.js') }}?v={{ filemtime(public_path('js/rubric-builder.js')) }}"></script>
 @endsection

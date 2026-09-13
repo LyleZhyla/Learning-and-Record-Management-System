@@ -117,6 +117,78 @@ class AiAssessmentScoringTest extends TestCase
         });
     }
 
+    public function test_facilitator_can_save_a_structured_rubric_with_valid_totals(): void
+    {
+        $criteria = [
+            ['title' => 'Concept mastery', 'description' => 'Uses relevant NSTP concepts accurately.', 'percentage' => 60, 'score' => 60],
+            ['title' => 'Practical application', 'description' => 'Proposes a realistic community response.', 'percentage' => 40, 'score' => 40],
+        ];
+
+        $this->actingAs($this->facilitator)
+            ->put('/facilitator/assessments/'.$this->assessment->id.'/rubric', ['rubric_criteria' => $criteria])
+            ->assertRedirect()
+            ->assertSessionHas('status');
+
+        $this->assessment->refresh();
+        $this->assertSame('Concept mastery', $this->assessment->rubricCriteria()[0]['title']);
+        $this->assertSame(100.0, (float) collect($this->assessment->rubricCriteria())->sum('percentage'));
+        $this->assertStringContainsString('Maximum score: 60.00 points', $this->assessment->formattedRubric());
+
+        $this->actingAs($this->facilitator)
+            ->get('/facilitator/assessments/'.$this->assessment->id)
+            ->assertOk()
+            ->assertSee('Criterion title')
+            ->assertSee('Concept mastery')
+            ->assertSee('Percentage');
+    }
+
+    public function test_structured_rubric_rejects_incorrect_percentage_or_score_totals(): void
+    {
+        $this->actingAs($this->facilitator)
+            ->put('/facilitator/assessments/'.$this->assessment->id.'/rubric', [
+                'rubric_criteria' => [
+                    ['title' => 'Understanding', 'description' => 'Shows understanding.', 'percentage' => 70, 'score' => 50],
+                    ['title' => 'Application', 'description' => 'Applies the lesson.', 'percentage' => 20, 'score' => 40],
+                ],
+            ])
+            ->assertSessionHasErrors('rubric_criteria');
+    }
+
+    public function test_ai_can_suggest_editable_structured_rubric_criteria(): void
+    {
+        config(['services.openai.api_key' => 'test-key', 'services.openai.model' => 'gpt-5-mini']);
+        Http::fake(['api.openai.com/v1/responses' => Http::response([
+            'model' => 'gpt-5-mini',
+            'output' => [[
+                'type' => 'message',
+                'content' => [[
+                    'type' => 'output_text',
+                    'text' => json_encode(['criteria' => [
+                        ['title' => 'Understanding', 'description' => 'Explains the need accurately.', 'percentage' => 5, 'score' => 50],
+                        ['title' => 'Feasibility', 'description' => 'Offers practical actions.', 'percentage' => 3, 'score' => 30],
+                        ['title' => 'Clarity', 'description' => 'Communicates the proposal clearly.', 'percentage' => 2, 'score' => 20],
+                    ]]),
+                ]],
+            ]],
+        ])]);
+
+        $this->actingAs($this->facilitator)
+            ->postJson('/facilitator/assessments/rubric/ai-suggestion', [
+                'title' => $this->assessment->title,
+                'type' => $this->assessment->type,
+                'instructions' => $this->assessment->instructions,
+                'max_score' => 100,
+            ])
+            ->assertOk()
+            ->assertJsonCount(3, 'criteria')
+            ->assertJsonPath('criteria.0.title', 'Understanding')
+            ->assertJsonPath('criteria.2.percentage', 20)
+            ->assertJsonPath('criteria.2.score', 20);
+
+        Http::assertSent(fn (Request $request): bool => $request->data()['text']['format']['name'] === 'rubric_suggestion'
+            && str_contains(json_encode($request->data()), $this->assessment->instructions));
+    }
+
     public function test_facilitator_must_review_and_approve_ai_score_before_it_is_official(): void
     {
         config(['services.openai.api_key' => 'test-key']);
