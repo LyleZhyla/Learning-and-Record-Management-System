@@ -106,7 +106,12 @@ class AnnouncementController extends Controller
 
     private function authorizeCreator(Request $request): void
     {
-        abort_unless($request->user()->isNstpAdmin() || $request->user()->isCoordinator(), 403);
+        abort_unless(
+            $request->user()->isSuperAdmin()
+            || $request->user()->isNstpAdmin()
+            || $request->user()->isCoordinator(),
+            403,
+        );
 
         if ($request->user()->isCoordinator()) {
             abort_unless(
@@ -120,10 +125,15 @@ class AnnouncementController extends Controller
     private function authorizeOwner(Request $request, Announcement $announcement): void
     {
         $this->authorizeCreator($request);
+
+        if ($request->user()->isSuperAdmin()) {
+            return;
+        }
+
         abort_unless($announcement->author_id === $request->user()->id, 403);
     }
 
-    /** @return array{layout: string, routePrefix: string, canCreate: bool, deleteOnly: bool} */
+    /** @return array{layout: string, routePrefix: string, canCreate: bool, showAuthor: bool} */
     private function viewData(Request $request): array
     {
         $prefix = $this->routePrefix($request);
@@ -135,8 +145,8 @@ class AnnouncementController extends Controller
                 default => 'layouts.nstp-admin',
             },
             'routePrefix' => $prefix,
-            'canCreate' => ! $request->user()->isSuperAdmin(),
-            'deleteOnly' => $request->user()->isSuperAdmin(),
+            'canCreate' => true,
+            'showAuthor' => $request->user()->isSuperAdmin(),
         ];
     }
 

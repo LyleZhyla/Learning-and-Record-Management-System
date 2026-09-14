@@ -225,8 +225,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup.index');
     Route::post('/database-backup/download', [DatabaseBackupController::class, 'download'])->middleware('throttle:2,1')->name('database-backup.download');
     Route::get('/system-logs', [SystemLogController::class, 'index'])->name('system-logs.index');
-    Route::get('/announcements', [NstpAdminAnnouncementController::class, 'index'])->name('announcements.index');
-    Route::delete('/announcements/{announcement}', [NstpAdminAnnouncementController::class, 'destroy'])->name('announcements.destroy');
+    Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/archives', [ArchiveController::class, 'index'])->name('archives.index');
     Route::post('/archives/{type}', [ArchiveController::class, 'archiveAll'])->name('archives.archive');
     Route::patch('/archives/{type}/restore', [ArchiveController::class, 'restoreAll'])->name('archives.restore');

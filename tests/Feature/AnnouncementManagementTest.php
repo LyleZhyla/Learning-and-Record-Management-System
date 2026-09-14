@@ -63,7 +63,7 @@ class AnnouncementManagementTest extends TestCase
         $this->assertDatabaseHas('announcements', ['id' => $secondAnnouncement->id]);
     }
 
-    public function test_super_admin_can_delete_any_announcement_but_cannot_create_or_edit(): void
+    public function test_super_admin_has_full_access_to_all_announcements(): void
     {
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
@@ -77,9 +77,25 @@ class AnnouncementManagementTest extends TestCase
             ->assertSee($second->title)
             ->assertSee($nstpAdmin->name)
             ->assertSee($coordinator->name)
-            ->assertDontSee('+ New announcement');
+            ->assertSee('+ New announcement');
 
-        $this->actingAs($superAdmin)->get('/admin/announcements/create')->assertStatus(405);
+        $this->actingAs($superAdmin)->get('/admin/announcements/create')->assertOk();
+        $this->actingAs($superAdmin)->post('/admin/announcements', $this->payload('Created by Super Admin'))
+            ->assertRedirect();
+        $this->assertDatabaseHas('announcements', [
+            'title' => 'Created by Super Admin',
+            'author_id' => $superAdmin->id,
+        ]);
+
+        $this->actingAs($superAdmin)->get("/admin/announcements/{$first->id}/edit")->assertOk();
+        $this->actingAs($superAdmin)->put("/admin/announcements/{$first->id}", $this->payload('Updated by Super Admin'))
+            ->assertRedirect();
+        $this->assertDatabaseHas('announcements', [
+            'id' => $first->id,
+            'title' => 'Updated by Super Admin',
+            'author_id' => $nstpAdmin->id,
+        ]);
+
         $this->actingAs($superAdmin)->delete("/admin/announcements/{$first->id}")
             ->assertRedirect('/admin/announcements');
 
