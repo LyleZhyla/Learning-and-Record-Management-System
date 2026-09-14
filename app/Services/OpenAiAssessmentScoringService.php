@@ -198,8 +198,8 @@ PROMPT;
         if (! Storage::exists($submission->file_path)) {
             throw new RuntimeException('The submitted attachment is no longer available.');
         }
-        if (Storage::size($submission->file_path) > 10 * 1024 * 1024) {
-            throw new RuntimeException('The submitted attachment is too large for AI scoring.');
+        if (Storage::size($submission->file_path) > SubmissionPreviewService::MAX_PREVIEW_BYTES) {
+            throw new RuntimeException('This attachment is over 5 MB and requires download and manual checking.');
         }
 
         $mime = Storage::mimeType($submission->file_path) ?: 'application/octet-stream';

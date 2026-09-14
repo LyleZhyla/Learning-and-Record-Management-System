@@ -15,16 +15,19 @@ use App\Services\GradeService;
 use App\Services\OpenAiAssessmentScoringService;
 use App\Services\PortalAccessService;
 use App\Services\StudentNotificationService;
+use App\Services\SubmissionPreviewService;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use RuntimeException;
 use Throwable;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class AssessmentController extends Controller
 {
@@ -33,6 +36,7 @@ class AssessmentController extends Controller
         private GradeService $grades,
         private StudentNotificationService $studentNotifications,
         private OpenAiAssessmentScoringService $aiScoring,
+        private SubmissionPreviewService $submissionPreviews,
     ) {}
 
     public function index(Request $request): View
@@ -148,8 +152,31 @@ class AssessmentController extends Controller
             $this->access->ensureCanManageSection($request->user(), $assessment->section);
         }
         $students = NstpEnrollment::with('student')->where('section_id', $assessment->section_id)->get()->sortBy(fn ($item) => $item->student->name);
+        $submissionPreviews = $assessment->submissions->mapWithKeys(fn ($submission) => [$submission->id => $this->submissionPreviews->inspect($submission)]);
 
-        return view('learning.assessments.show', $this->context($request) + compact('assessment', 'students'));
+        return view('learning.assessments.show', $this->context($request) + compact('assessment', 'students', 'submissionPreviews'));
+    }
+
+    public function previewSubmissionFile(Request $request, Assessment $assessment, AssessmentSubmission $submission): BinaryFileResponse
+    {
+        $this->authorizeSubmissionFile($request, $assessment, $submission);
+        $preview = $this->submissionPreviews->inspect($submission);
+        abort_unless($preview['exists'], 404);
+        abort_if($preview['too_large'] || $preview['preview_type'] === 'download', 422, 'This attachment must be downloaded for manual review.');
+
+        return response()->file(Storage::path($submission->file_path), [
+            'Content-Type' => $preview['mime'],
+            'Content-Disposition' => 'inline; filename="'.str_replace('"', '', $submission->original_filename ?: 'submission').'"',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    public function downloadSubmissionFile(Request $request, Assessment $assessment, AssessmentSubmission $submission): BinaryFileResponse
+    {
+        $this->authorizeSubmissionFile($request, $assessment, $submission);
+        abort_unless($submission->file_path && Storage::exists($submission->file_path), 404);
+
+        return response()->download(Storage::path($submission->file_path), $submission->original_filename ?: 'student-submission');
     }
 
     public function updateRubric(Request $request, Assessment $assessment): RedirectResponse
@@ -229,7 +256,8 @@ class AssessmentController extends Controller
             'ai_approved_at' => null,
         ]);
 
-        return back()->with('status', 'AI score suggestion generated. Review it carefully before approval.');
+        return back()->with('status', 'AI score suggestion generated. Review it carefully before approval.')
+            ->with('open_submission_modal', $submission->id);
     }
 
     public function approveAiScore(Request $request, Assessment $assessment, AssessmentSubmission $submission): RedirectResponse
@@ -543,6 +571,13 @@ class AssessmentController extends Controller
             ->filter(fn ($item) => is_array($item) && collect($item)->contains(fn ($value) => filled($value)))
             ->values()->all();
         $request->merge(['rubric_criteria' => $criteria]);
+    }
+
+    private function authorizeSubmissionFile(Request $request, Assessment $assessment, AssessmentSubmission $submission): void
+    {
+        abort_unless($request->user()->isFacilitator(), 403);
+        $this->access->ensureCanManageSection($request->user(), $assessment->section);
+        abort_unless($submission->assessment_id === $assessment->id, 404);
     }
 
     private function encodeRubric(array $criteria, float $maxScore): ?string

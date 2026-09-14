@@ -86,13 +86,16 @@ class AiAssessmentScoringTest extends TestCase
             ->get('/facilitator/assessments/'.$this->assessment->id)
             ->assertOk()
             ->assertSee('AI-assisted scoring')
-            ->assertSee('Generate AI suggestion')
+            ->assertSee('View student work')
+            ->assertSee('Ask AI to suggest a score')
+            ->assertSee('data-submission-dialog', false)
             ->assertSee('AI suggestions never become official scores');
 
         $this->actingAs($this->facilitator)
             ->post('/facilitator/assessments/'.$this->assessment->id.'/submissions/'.$this->submission->id.'/ai-score')
             ->assertRedirect()
-            ->assertSessionHas('status');
+            ->assertSessionHas('status')
+            ->assertSessionHas('open_submission_modal', $this->submission->id);
 
         $this->submission->refresh();
         $this->assertNull($this->submission->score);
@@ -240,6 +243,72 @@ class AiAssessmentScoringTest extends TestCase
                 && $file['filename'] === 'reflection.pdf'
                 && str_starts_with($file['file_data'], 'data:application/pdf;base64,');
         });
+    }
+
+    public function test_facilitator_can_preview_and_download_a_safe_submission_inside_the_review_flow(): void
+    {
+        Storage::fake('local');
+        Storage::put('assessment-submissions/reflection.pdf', '%PDF-1.4 preview content');
+        $this->submission->update([
+            'file_path' => 'assessment-submissions/reflection.pdf',
+            'original_filename' => 'reflection.pdf',
+        ]);
+
+        $this->actingAs($this->facilitator)
+            ->get('/facilitator/assessments/'.$this->assessment->id)
+            ->assertOk()
+            ->assertSee('Review student work')
+            ->assertSee('submission-document-preview', false)
+            ->assertSee('AI scoring assistant');
+
+        $this->actingAs($this->facilitator)
+            ->get('/facilitator/assessments/'.$this->assessment->id.'/submissions/'.$this->submission->id.'/file')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+        $this->actingAs($this->facilitator)
+            ->get('/facilitator/assessments/'.$this->assessment->id.'/submissions/'.$this->submission->id.'/download')
+            ->assertOk()->assertDownload('reflection.pdf');
+    }
+
+    public function test_attachment_over_five_mb_requires_download_and_manual_scoring(): void
+    {
+        Storage::fake('local');
+        Storage::put('assessment-submissions/large.pdf', str_repeat('x', 5 * 1024 * 1024 + 1));
+        $this->submission->update([
+            'answer_text' => null,
+            'file_path' => 'assessment-submissions/large.pdf',
+            'original_filename' => 'large.pdf',
+        ]);
+        config(['services.openai.api_key' => 'test-key']);
+        Http::fake();
+
+        $this->actingAs($this->facilitator)
+            ->get('/facilitator/assessments/'.$this->assessment->id)
+            ->assertOk()
+            ->assertSee('Large file—manual checking required')
+            ->assertSee('Download student file')
+            ->assertSee('Manual scoring mode')
+            ->assertDontSee('Ask AI to suggest a score');
+
+        $this->actingAs($this->facilitator)
+            ->get('/facilitator/assessments/'.$this->assessment->id.'/submissions/'.$this->submission->id.'/file')
+            ->assertStatus(422);
+        $this->actingAs($this->facilitator)
+            ->post('/facilitator/assessments/'.$this->assessment->id.'/submissions/'.$this->submission->id.'/ai-score')
+            ->assertSessionHasErrors('ai_scoring');
+        Http::assertNothingSent();
+    }
+
+    public function test_submission_file_is_private_to_the_assigned_facilitator(): void
+    {
+        Storage::fake('local');
+        Storage::put('assessment-submissions/private.txt', 'Private student work');
+        $this->submission->update(['file_path' => 'assessment-submissions/private.txt', 'original_filename' => 'private.txt']);
+        $otherFacilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+
+        $this->actingAs($otherFacilitator)
+            ->get('/facilitator/assessments/'.$this->assessment->id.'/submissions/'.$this->submission->id.'/file')
+            ->assertForbidden();
     }
 
     public function test_ai_scoring_requires_a_rubric_and_is_restricted_to_the_assigned_facilitator(): void

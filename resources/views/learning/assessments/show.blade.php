@@ -66,8 +66,12 @@
                     <td>{{ $enrollment->student->name }}<br><small class="muted-cell">{{ $enrollment->student->email }}</small></td>
                     <td>
                         @if(filled($submission?->answer_text) || filled($submission?->original_filename))
-                            @if(filled($submission?->answer_text))<span>{{ Str::limit($submission->answer_text, 140) }}</span>@endif
-                            @if(filled($submission?->original_filename))<small class="submission-file-name">Attachment: {{ $submission->original_filename }}</small>@endif
+                            @if(auth()->user()->isFacilitator())
+                                <button class="submission-work-button" type="button" data-submission-open="submission-review-{{ $submission->id }}"><span>▤</span><div><strong>View student work</strong><small>{{ filled($submission->original_filename) ? $submission->original_filename : 'Written response' }}</small></div></button>
+                            @else
+                                @if(filled($submission?->answer_text))<span>{{ Str::limit($submission->answer_text, 140) }}</span>@endif
+                                @if(filled($submission?->original_filename))<small class="submission-file-name">Attachment: {{ $submission->original_filename }}</small>@endif
+                            @endif
                         @elseif($submission?->score !== null)
                             <span class="muted-cell">Score encoded by staff</span>
                         @else
@@ -77,40 +81,8 @@
                     <td>{{ $submission?->submitted_at?->format('M d, Y g:i A') ?? '—' }}</td>
                     <td>
                         @if(auth()->user()->isFacilitator() && $submission && (filled($submission->answer_text) || filled($submission->file_path)))
-                            <div class="ai-score-workspace">
-                                <form method="POST" action="{{ route($routePrefix.'.assessments.ai-score.generate', [$assessment, $submission]) }}">
-                                    @csrf
-                                    <button class="ai-score-button" type="submit" @disabled(blank($assessment->rubric) || blank(config('services.openai.api_key')))>{{ $submission->ai_generated_at ? 'Regenerate AI suggestion' : 'Generate AI suggestion' }}</button>
-                                </form>
-
-                                @if($submission->ai_generated_at)
-                                    @php($needsReview = ($submission->ai_breakdown['needs_manual_review'] ?? false) || (float) $submission->ai_confidence < 70)
-                                    <details class="ai-score-suggestion" open>
-                                        <summary>
-                                            <span><strong>Suggested {{ number_format((float) $submission->ai_suggested_score, 2) }} / {{ number_format((float) $assessment->max_score, 2) }}</strong><small>{{ number_format((float) $submission->ai_confidence, 0) }}% confidence</small></span>
-                                            <span class="status-badge {{ $needsReview ? 'inactive' : 'active' }}"><i></i>{{ $needsReview ? 'Manual review required' : 'Ready for review' }}</span>
-                                        </summary>
-                                        <div class="ai-criteria-list">
-                                            @foreach(($submission->ai_breakdown['criteria'] ?? []) as $criterion)
-                                                <article><div><strong>{{ $criterion['criterion'] }}</strong><b>{{ number_format((float) $criterion['points_awarded'], 2) }} / {{ number_format((float) $criterion['points_possible'], 2) }}</b></div><p>{{ $criterion['evidence'] }}</p></article>
-                                            @endforeach
-                                        </div>
-                                        <form class="ai-approval-form" method="POST" action="{{ route($routePrefix.'.assessments.ai-score.approve', [$assessment, $submission]) }}">
-                                            @csrf
-                                            @method('PUT')
-                                            <input type="hidden" name="suggestion_generated_at" value="{{ $submission->ai_generated_at->toIso8601String() }}">
-                                            <label><span>Reviewed score</span><input type="number" step="0.01" min="0" max="{{ $assessment->max_score }}" name="score" value="{{ $submission->ai_suggested_score }}" required></label>
-                                            <label><span>Reviewed feedback</span><textarea name="feedback" rows="4">{{ $submission->ai_feedback }}</textarea></label>
-                                            <small>Generated {{ $submission->ai_generated_at->diffForHumans() }}. You may edit the score and feedback before approval.</small>
-                                            <button class="primary-button compact" type="submit">Approve as official score</button>
-                                        </form>
-                                    </details>
-                                @elseif(blank($assessment->rubric))
-                                    <small class="ai-score-help">Save a rubric above to enable AI scoring.</small>
-                                @elseif(blank(config('services.openai.api_key')))
-                                    <small class="ai-score-help">Configure OPENAI_API_KEY to enable AI scoring.</small>
-                                @endif
-                            </div>
+                            <button class="review-score-button" type="button" data-submission-open="submission-review-{{ $submission->id }}"><span>{{ $submission->score === null ? 'Review & score' : 'Review scored work' }}</span><strong>{{ $submission->score === null ? 'Pending' : number_format((float) $submission->score, 2).' / '.number_format((float) $assessment->max_score, 2) }}</strong></button>
+                            @include('learning.assessments._submission-review-dialog', compact('submission', 'enrollment'))
                         @endif
 
                         @if(auth()->user()->isCoordinator())
@@ -135,7 +107,7 @@
                                 @endif
                             </div>
                             <div class="official-score-readonly"><strong>Official score</strong><span>{{ $submission?->score === null ? 'Pending' : number_format((float) $submission->score, 2).' / '.number_format((float) $assessment->max_score, 2) }}</span><p>{{ $submission?->feedback ?: 'No official feedback yet.' }}</p></div>
-                        @else
+                        @elseif(!auth()->user()->isFacilitator() || !$submission || (blank($submission->answer_text) && blank($submission->file_path)))
 
                         <form class="grade-form" method="POST" action="{{ route($routePrefix.'.assessments.score', [$assessment, $enrollment->student]) }}">
                             @csrf
@@ -158,4 +130,5 @@
     </div>
 </section>
 <script src="{{ asset('js/rubric-builder.js') }}?v={{ filemtime(public_path('js/rubric-builder.js')) }}"></script>
+<script src="{{ asset('js/submission-review-modal.js') }}?v={{ filemtime(public_path('js/submission-review-modal.js')) }}"></script>
 @endsection
