@@ -36,9 +36,7 @@ class StudentNotification extends Model
         };
 
         return match ($this->type) {
-            self::MATERIAL => $user->isCoordinator()
-                ? route('coordinator.dashboard')
-                : route($prefix.'.materials.index'),
+            self::MATERIAL => route($prefix.'.materials.index'),
             self::ASSESSMENT => $this->assessmentDestination($user, $prefix),
             self::LATE_ATTENDANCE, self::ABSENT_ATTENDANCE => $this->attendanceDestination($user, $prefix),
             default => route($user->dashboardRouteName()),

@@ -22,8 +22,10 @@ class MaterialController extends Controller
 
     public function index(Request $request): View
     {
-        $sectionIds = $this->access->manageableSections($request->user())->pluck('id');
-        $componentIds = NstpSection::whereIn('id', $sectionIds)->pluck('component_id')->unique();
+        $sectionIds = $this->access->materialSections($request->user())->pluck('id');
+        $componentIds = $request->user()->isCoordinator()
+            ? collect([$request->user()->nstp_component_id])->filter()
+            : NstpSection::whereIn('id', $sectionIds)->pluck('component_id')->unique();
         $materials = LearningMaterial::with(['component', 'section', 'creator'])
             ->where(function ($query) use ($sectionIds, $componentIds) {
                 $query->whereIn('section_id', $sectionIds)
@@ -37,8 +39,10 @@ class MaterialController extends Controller
     public function create(Request $request): View
     {
         return view('learning.materials.create', $this->context($request) + [
-            'components' => NstpComponent::where('is_active', true)->orderBy('code')->get(),
-            'sections' => $this->access->manageableSections($request->user())->with('component')->orderBy('code')->get(),
+            'components' => NstpComponent::where('is_active', true)
+                ->when($request->user()->isCoordinator(), fn ($query) => $query->whereKey($request->user()->nstp_component_id ?? 0))
+                ->orderBy('code')->get(),
+            'sections' => $this->access->materialSections($request->user())->with('component')->orderBy('code')->get(),
         ]);
     }
 
@@ -56,12 +60,14 @@ class MaterialController extends Controller
 
         if ($validated['section_id'] ?? null) {
             $section = NstpSection::findOrFail($validated['section_id']);
-            $this->access->ensureCanManageSection($request->user(), $section);
+            $this->access->ensureCanManageMaterialSection($request->user(), $section);
             if ((int) $section->component_id !== (int) $validated['component_id']) {
                 throw ValidationException::withMessages(['section_id' => 'The selected section does not belong to this component.']);
             }
         } elseif ($request->user()->isFacilitator()) {
             throw ValidationException::withMessages(['section_id' => 'Facilitators must select one of their assigned sections.']);
+        } else {
+            $this->access->ensureCanManageComponentMaterial($request->user(), (int) $validated['component_id']);
         }
 
         $file = $request->file('file');
@@ -98,9 +104,9 @@ class MaterialController extends Controller
         }
 
         if ($material->section) {
-            $this->access->ensureCanManageSection($user, $material->section);
+            $this->access->ensureCanManageMaterialSection($user, $material->section);
         } else {
-            abort_unless($user->isSuperAdmin() || $user->isNstpAdmin(), 403);
+            $this->access->ensureCanManageComponentMaterial($user, (int) $material->component_id);
         }
     }
 

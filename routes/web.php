@@ -280,6 +280,10 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');
     Route::patch('/attendance/{attendance}/scan-mode', [ManagementAttendanceController::class, 'updateScanMode'])->name('attendance.scan-mode');
     Route::post('/attendance/{attendance}/scan', [ManagementAttendanceController::class, 'scan'])->name('attendance.scan');
+    Route::get('/materials', [MaterialController::class, 'index'])->name('materials.index');
+    Route::get('/materials/create', [MaterialController::class, 'create'])->name('materials.create');
+    Route::post('/materials', [MaterialController::class, 'store'])->name('materials.store');
+    Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
     Route::get('/performance', [CoordinatorMonitoringController::class, 'performance'])->name('performance.index');
     Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');

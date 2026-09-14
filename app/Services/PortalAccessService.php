@@ -61,6 +61,42 @@ class PortalAccessService
         return $query;
     }
 
+    public function materialSections(User $user): Builder
+    {
+        $query = NstpSection::query();
+
+        if ($user->isFacilitator()) {
+            $query->where('facilitator_id', $user->id);
+        } elseif ($user->isCoordinator()) {
+            $query->where('component_id', $user->nstp_component_id ?? 0);
+        } elseif (! $user->isSuperAdmin() && ! $user->isNstpAdmin()) {
+            $query->whereRaw('1 = 0');
+        }
+
+        return $query;
+    }
+
+    public function ensureCanManageMaterialSection(User $user, NstpSection $section): void
+    {
+        abort_unless(
+            $user->isSuperAdmin()
+            || $user->isNstpAdmin()
+            || ($user->isCoordinator() && $section->component_id === $user->nstp_component_id)
+            || ($user->isFacilitator() && $section->facilitator_id === $user->id),
+            403,
+        );
+    }
+
+    public function ensureCanManageComponentMaterial(User $user, int $componentId): void
+    {
+        abort_unless(
+            $user->isSuperAdmin()
+            || $user->isNstpAdmin()
+            || ($user->isCoordinator() && $componentId === $user->nstp_component_id),
+            403,
+        );
+    }
+
     public function ensureCanManageSection(User $user, NstpSection $section): void
     {
         abort_unless(

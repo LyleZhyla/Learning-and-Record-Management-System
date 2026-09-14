@@ -126,10 +126,6 @@ class NotificationController extends Controller
 
     private function categoryDestination(User $user, string $category): string
     {
-        if ($category === 'materials' && $user->isCoordinator()) {
-            abort(404);
-        }
-
         if ($category === 'messages' && ! $user->isStudent() && ! $user->isFacilitator()) {
             abort(404);
         }

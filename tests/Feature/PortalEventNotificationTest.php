@@ -86,7 +86,7 @@ class PortalEventNotificationTest extends TestCase
 
         app(StudentNotificationService::class)->learningMaterialPublished($material);
 
-        foreach ([$this->student, $this->facilitator, $this->superAdmin] as $recipient) {
+        foreach ([$this->student, $this->facilitator, $this->coordinator, $this->superAdmin] as $recipient) {
             $this->assertDatabaseHas('student_notifications', [
                 'user_id' => $recipient->id,
                 'type' => StudentNotification::MATERIAL,
@@ -94,7 +94,6 @@ class PortalEventNotificationTest extends TestCase
             ]);
         }
         $this->assertDatabaseMissing('student_notifications', ['user_id' => $this->nstpAdmin->id, 'source_id' => $material->id]);
-        $this->assertDatabaseMissing('student_notifications', ['user_id' => $this->coordinator->id, 'source_id' => $material->id]);
 
         $facilitatorNotification = $this->notificationFor($this->facilitator, StudentNotification::MATERIAL);
         $this->actingAs($this->facilitator)
@@ -106,6 +105,11 @@ class PortalEventNotificationTest extends TestCase
         $this->actingAs($this->superAdmin)
             ->get('/notifications/events/'.$adminNotification->id.'/open')
             ->assertRedirect('/admin/materials');
+
+        $coordinatorNotification = $this->notificationFor($this->coordinator, StudentNotification::MATERIAL);
+        $this->actingAs($this->coordinator)
+            ->get('/notifications/events/'.$coordinatorNotification->id.'/open')
+            ->assertRedirect('/coordinator/materials');
     }
 
     public function test_assessment_notifies_relevant_accounts_and_coordinator_opens_section_grades(): void

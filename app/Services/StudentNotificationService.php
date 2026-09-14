@@ -19,7 +19,7 @@ class StudentNotificationService
         }
 
         $recipients = $this->studentIds($material->component_id, $material->section_id)
-            ->merge($this->staffIds($material->component_id, $material->section_id, false))
+            ->merge($this->staffIds($material->component_id, $material->section_id, true))
             ->reject(fn (int $id) => $id === (int) $material->created_by)
             ->unique()
             ->values();

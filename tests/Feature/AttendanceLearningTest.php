@@ -6,6 +6,7 @@ use App\Models\Assessment;
 use App\Models\AssessmentSubmission;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
+use App\Models\LearningMaterial;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
@@ -294,10 +295,16 @@ class AttendanceLearningTest extends TestCase
     public function test_each_authorized_portal_can_open_its_attendance_and_learning_pages(): void
     {
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $coordinator = User::factory()->create([
+            'role' => 'coordinator',
+            'status' => 'active',
+            'nstp_component_id' => $this->section->component_id,
+        ]);
 
         foreach ([
             [$superAdmin, '/admin/attendance', '/admin/materials/create', '/admin/assessments', '/admin/grades'],
             [$this->admin, '/nstp-admin/attendance', '/nstp-admin/materials/create', '/nstp-admin/assessments', '/nstp-admin/grades'],
+            [$coordinator, '/coordinator/materials', '/coordinator/materials/create'],
             [$this->facilitator, '/facilitator/students', '/facilitator/attendance', '/facilitator/materials/create', '/facilitator/assessments', '/facilitator/grades', '/facilitator/reports'],
             [$this->student, '/student/attendance', '/student/materials', '/student/assessments', '/student/grades'],
         ] as $portal) {
@@ -307,5 +314,63 @@ class AttendanceLearningTest extends TestCase
                 $this->actingAs($user)->get($path)->assertOk();
             }
         }
+    }
+
+    public function test_coordinator_can_review_and_create_materials_only_for_the_assigned_component(): void
+    {
+        $coordinator = User::factory()->create([
+            'role' => 'coordinator',
+            'status' => 'active',
+            'nstp_component_id' => $this->section->component_id,
+        ]);
+        $otherComponent = NstpComponent::create([
+            'code' => 'LTS',
+            'name' => 'Literacy Training Service',
+            'default_section_capacity' => 40,
+            'is_active' => true,
+        ]);
+        $visibleMaterial = LearningMaterial::create([
+            'component_id' => $this->section->component_id,
+            'created_by' => $this->admin->id,
+            'title' => 'CWTS Community Guide',
+            'external_url' => 'https://example.test/cwts-guide',
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+        LearningMaterial::create([
+            'component_id' => $otherComponent->id,
+            'created_by' => $this->admin->id,
+            'title' => 'LTS Literacy Guide',
+            'external_url' => 'https://example.test/lts-guide',
+            'status' => 'published',
+            'published_at' => now(),
+        ]);
+
+        $this->actingAs($coordinator)->get('/coordinator/materials')
+            ->assertOk()
+            ->assertSee($visibleMaterial->title)
+            ->assertDontSee('LTS Literacy Guide');
+
+        $this->actingAs($coordinator)->post('/coordinator/materials', [
+            'component_id' => $this->section->component_id,
+            'title' => 'Coordinator CWTS Resource',
+            'external_url' => 'https://example.test/coordinator-resource',
+            'status' => 'published',
+        ])->assertRedirect('/coordinator/materials');
+
+        $this->assertDatabaseHas('learning_materials', [
+            'component_id' => $this->section->component_id,
+            'created_by' => $coordinator->id,
+            'title' => 'Coordinator CWTS Resource',
+        ]);
+
+        $this->actingAs($coordinator)->post('/coordinator/materials', [
+            'component_id' => $otherComponent->id,
+            'title' => 'Unauthorized LTS Resource',
+            'external_url' => 'https://example.test/unauthorized',
+            'status' => 'published',
+        ])->assertForbidden();
+
+        $this->assertDatabaseMissing('learning_materials', ['title' => 'Unauthorized LTS Resource']);
     }
 }
