@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ChatMessage;
 use App\Models\NstpSection;
 use App\Models\User;
+use App\Services\PortalAccessService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -13,9 +14,14 @@ use Illuminate\View\View;
 
 class MessageController extends Controller
 {
+    private const STAFF_CHAT_ROLES = ['super_admin', 'nstp_admin', 'coordinator'];
+
+    public function __construct(private PortalAccessService $access) {}
+
     public function index(Request $request, ?User $contact = null): View
     {
         $actor = $request->user();
+        $isStaffChat = $this->isStaffChatUser($actor);
         $contactsQuery = $this->contactQuery($actor)
             ->withCount(['sentChatMessages as unread_messages_count' => fn ($query) => $query
                 ->where('recipient_id', $actor->id)
@@ -48,8 +54,10 @@ class MessageController extends Controller
 
         if ($contact) {
             abort_unless($contacts->contains('id', $contact->id), 404);
-            $section = $this->sharedSection($actor, $contact);
-            abort_unless($section, 404);
+            if (! $isStaffChat) {
+                $section = $this->sharedSection($actor, $contact);
+                abort_unless($section, 404);
+            }
 
             ChatMessage::query()
                 ->where('sender_id', $contact->id)
@@ -59,7 +67,8 @@ class MessageController extends Controller
             $contacts->firstWhere('id', $contact->id)?->setAttribute('unread_messages_count', 0);
 
             $messages = ChatMessage::query()
-                ->where('section_id', $section->id)
+                ->when($isStaffChat, fn ($query) => $query->whereNull('section_id'))
+                ->when(! $isStaffChat, fn ($query) => $query->where('section_id', $section->id))
                 ->where(fn ($query) => $query
                     ->where(fn ($pair) => $pair->where('sender_id', $actor->id)->where('recipient_id', $contact->id))
                     ->orWhere(fn ($pair) => $pair->where('sender_id', $contact->id)->where('recipient_id', $actor->id)))
@@ -70,11 +79,12 @@ class MessageController extends Controller
                 ->values();
         }
 
-        $routePrefix = $actor->isStudent() ? 'student' : 'facilitator';
+        $routePrefix = $this->access->routePrefix($actor);
 
         return view('portal.messages.index', [
-            'layout' => 'layouts.'.$routePrefix,
+            'layout' => $this->access->layout($actor),
             'routePrefix' => $routePrefix,
+            'isStaffChat' => $isStaffChat,
             'contacts' => $contacts,
             'contact' => $contact,
             'section' => $section,
@@ -87,21 +97,22 @@ class MessageController extends Controller
         $actor = $request->user();
         abort_unless($this->contactQuery($actor)->whereKey($recipient)->exists(), 404);
 
-        $section = $this->sharedSection($actor, $recipient);
-        abort_unless($section, 404);
+        $isStaffChat = $this->isStaffChatUser($actor);
+        $section = $isStaffChat ? null : $this->sharedSection($actor, $recipient);
+        abort_unless($isStaffChat || $section, 404);
 
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:2000'],
         ]);
 
         ChatMessage::create([
-            'section_id' => $section->id,
+            'section_id' => $section?->id,
             'sender_id' => $actor->id,
             'recipient_id' => $recipient->id,
             'body' => trim($validated['body']),
         ]);
 
-        $routePrefix = $actor->isStudent() ? 'student' : 'facilitator';
+        $routePrefix = $this->access->routePrefix($actor);
 
         return redirect()->route($routePrefix.'.messages.index', ['contact' => $recipient])
             ->with('status', 'Message sent.');
@@ -109,6 +120,13 @@ class MessageController extends Controller
 
     private function contactQuery(User $actor): Builder
     {
+        if ($this->isStaffChatUser($actor)) {
+            return User::query()
+                ->whereKeyNot($actor->id)
+                ->whereIn('role', self::STAFF_CHAT_ROLES)
+                ->where('status', 'active');
+        }
+
         if ($actor->isStudent()) {
             return User::query()
                 ->where('role', 'facilitator')
@@ -146,5 +164,10 @@ class MessageController extends Controller
             ->latest('academic_year')
             ->latest('id')
             ->first();
+    }
+
+    private function isStaffChatUser(User $user): bool
+    {
+        return in_array($user->role, self::STAFF_CHAT_ROLES, true);
     }
 }

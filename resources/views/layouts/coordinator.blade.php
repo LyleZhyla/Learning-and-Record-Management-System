@@ -30,6 +30,7 @@
             <a class="nav-link {{ request()->routeIs('coordinator.reports.*') ? 'active' : '' }}" href="{{ route('coordinator.reports.index') }}"><span class="nav-icon">▤</span> Reports Center</a>
             <p class="nav-label">Communication</p>
             <a class="nav-link {{ request()->routeIs('coordinator.announcements.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'announcements') }}"><span class="nav-icon">◫</span> Announcements @if($sidebarPortalNotificationCounts['announcements'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['announcements'] > 99 ? '99+' : $sidebarPortalNotificationCounts['announcements'] }}</span>@endif</a>
+            <a class="nav-link {{ request()->routeIs('coordinator.messages.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'messages') }}"><span class="nav-icon">◇</span> Messages @if($sidebarUnreadMessageCount > 0)<span class="nav-count" data-unread-message-count="{{ $sidebarUnreadMessageCount }}">{{ $sidebarUnreadMessageCount > 99 ? '99+' : $sidebarUnreadMessageCount }}</span>@endif</a>
             <a class="nav-link {{ request()->routeIs('ai-assistant.*') ? 'active' : '' }}" href="{{ route('ai-assistant.index') }}"><span class="nav-icon">✦</span> AI Assistant</a>
             <p class="nav-label">Account</p>
             <a class="nav-link {{ request()->routeIs('coordinator.profile.*') ? 'active' : '' }}" href="{{ route('coordinator.profile.edit') }}"><span class="nav-icon">⚙</span> Profile & Security</a>

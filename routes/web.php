@@ -114,6 +114,8 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [NstpAdminProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [NstpAdminProfileController::class, 'updatePassword'])->name('password.update');
+    Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::get('/accounts', [NstpAdminAccountController::class, 'index'])->name('accounts.index');
     Route::get('/students', [StudentAccountController::class, 'index'])->name('students.index');
     Route::get('/students/import', [StudentImportController::class, 'create'])->name('students.import.create');
@@ -198,6 +200,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
+    Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/students', [StudentAccountController::class, 'index'])->name('students.index');
     Route::get('/students/import', [StudentImportController::class, 'create'])->name('students.import.create');
@@ -264,6 +268,8 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
 
 Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
+    Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [CoordinatorMonitoringController::class, 'components'])->name('components.index');
     Route::get('/accounts', [CoordinatorAccountController::class, 'index'])->name('accounts.index');

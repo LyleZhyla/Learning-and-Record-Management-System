@@ -69,7 +69,7 @@ class AppServiceProvider extends ServiceProvider
             $view->with('sidebarNotificationCounts', $sidebarNotificationCounts);
         });
 
-        View::composer(['layouts.student', 'layouts.facilitator'], function ($view): void {
+        View::composer(['layouts.admin', 'layouts.nstp-admin', 'layouts.coordinator', 'layouts.facilitator', 'layouts.student'], function ($view): void {
             $user = auth()->user();
             $sidebarUnreadMessageCount = $user?->receivedChatMessages()->whereNull('read_at')->count() ?? 0;
 

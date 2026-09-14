@@ -7,15 +7,15 @@
 <section class="page-actions chat-page-heading">
     <div>
         <span class="eyebrow">Private communication</span>
-        <h2>Student–facilitator chat</h2>
-        <p>Messages are limited to students and facilitators who share an active NSTP section.</p>
+        <h2>{{ $isStaffChat ? 'Administrative staff chat' : 'Student–facilitator chat' }}</h2>
+        <p>{{ $isStaffChat ? 'Private messaging for Super Admins, NSTP Admins, and Coordinators.' : 'Messages are limited to students and facilitators who share an active NSTP section.' }}</p>
     </div>
 </section>
 
 <section class="card chat-shell chat-shell-{{ $routePrefix }}">
     <aside class="chat-contacts" aria-label="Conversations">
         <div class="chat-contacts-heading">
-            <strong>{{ $routePrefix === 'student' ? 'My facilitator' : 'My students' }}</strong>
+            <strong>{{ $isStaffChat ? 'Staff contacts' : ($routePrefix === 'student' ? 'My facilitator' : 'My students') }}</strong>
             <span>{{ $contacts->count() }} contact(s)</span>
         </div>
         <div class="chat-contact-list">
@@ -26,16 +26,16 @@
                     @if($person->unread_messages_count > 0)<span class="chat-unread" aria-label="{{ $person->unread_messages_count }} unread messages">{{ $person->unread_messages_count > 99 ? '99+' : $person->unread_messages_count }}</span>@endif
                 </a>
             @empty
-                <div class="chat-no-contacts"><strong>No available conversation</strong><span>{{ $routePrefix === 'student' ? 'You need an active section with an assigned facilitator.' : 'A student will appear here after starting a conversation with you.' }}</span></div>
+                <div class="chat-no-contacts"><strong>No available conversation</strong><span>{{ $isStaffChat ? 'No other active administrative staff accounts are available.' : ($routePrefix === 'student' ? 'You need an active section with an assigned facilitator.' : 'A student will appear here after starting a conversation with you.') }}</span></div>
             @endforelse
         </div>
     </aside>
 
     <div class="chat-conversation">
-        @if($contact && $section)
+        @if($contact && ($section || $isStaffChat))
             <header class="chat-conversation-heading">
                 <span class="chat-avatar">{{ strtoupper(substr($contact->name, 0, 1)) }}</span>
-                <div><strong>{{ $contact->name }}</strong><small>{{ $section->code }} · {{ $section->semesterLabel() }} · {{ $section->academic_year }}</small></div>
+                <div><strong>{{ $contact->name }}</strong><small>{{ $isStaffChat ? $contact->roleLabel() : $section->code.' · '.$section->semesterLabel().' · '.$section->academic_year }}</small></div>
             </header>
 
             <div class="chat-messages" data-chat-messages aria-live="polite">
@@ -45,7 +45,7 @@
                         <small>{{ $message->created_at->format('M d · h:i A') }}@if($message->sender_id === auth()->id()) · {{ $message->read_at ? 'Read' : 'Sent' }}@endif</small>
                     </article>
                 @empty
-                    <div class="chat-empty-thread"><strong>Start the conversation</strong><span>Send a message about your NSTP class or activities.</span></div>
+                    <div class="chat-empty-thread"><strong>Start the conversation</strong><span>{{ $isStaffChat ? 'Send a private administrative message.' : 'Send a message about your NSTP class or activities.' }}</span></div>
                 @endforelse
             </div>
 

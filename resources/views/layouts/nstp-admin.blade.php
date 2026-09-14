@@ -47,6 +47,7 @@
                 <a class="nav-link {{ request()->routeIs('nstp_admin.reports.*') ? 'active' : '' }}" href="{{ route('nstp_admin.reports.index') }}"><span class="nav-icon">▤</span> Reports</a>
                 <p class="nav-label">Communication</p>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.announcements.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'announcements') }}"><span class="nav-icon">◫</span> Announcements @if($sidebarPortalNotificationCounts['announcements'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['announcements'] > 99 ? '99+' : $sidebarPortalNotificationCounts['announcements'] }}</span>@endif</a>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.messages.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'messages') }}"><span class="nav-icon">◇</span> Messages @if($sidebarUnreadMessageCount > 0)<span class="nav-count" data-unread-message-count="{{ $sidebarUnreadMessageCount }}">{{ $sidebarUnreadMessageCount > 99 ? '99+' : $sidebarUnreadMessageCount }}</span>@endif</a>
                 <a class="nav-link {{ request()->routeIs('ai-assistant.*') ? 'active' : '' }}" href="{{ route('ai-assistant.index') }}"><span class="nav-icon">✦</span> AI Assistant</a>
                 <p class="nav-label">Account</p>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.profile.*') ? 'active' : '' }}" href="{{ route('nstp_admin.profile.edit') }}">

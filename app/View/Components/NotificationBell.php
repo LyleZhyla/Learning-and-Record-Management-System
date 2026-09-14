@@ -25,7 +25,12 @@ class NotificationBell extends Component
             ->withExists(['readers as is_read' => fn ($readers) => $readers->whereKey($user->id)])
             ->latest('published_at')->limit(6)->get();
 
-        $messageRoutePrefix = $user->isStudent() ? 'student' : ($user->isFacilitator() ? 'facilitator' : null);
+        $messageRoutePrefix = match ($user->role) {
+            'super_admin' => 'admin',
+            'nstp_admin' => 'nstp_admin',
+            'coordinator', 'facilitator', 'student' => $user->role,
+            default => null,
+        };
         $unreadMessageCount = 0;
         $messageNotifications = collect();
         $eventNotificationQuery = StudentNotification::where('user_id', $user->id)->whereNull('read_at');

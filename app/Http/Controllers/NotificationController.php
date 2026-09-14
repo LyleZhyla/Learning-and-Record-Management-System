@@ -126,10 +126,6 @@ class NotificationController extends Controller
 
     private function categoryDestination(User $user, string $category): string
     {
-        if ($category === 'messages' && ! $user->isStudent() && ! $user->isFacilitator()) {
-            abort(404);
-        }
-
         $prefix = match ($user->role) {
             'super_admin' => 'admin',
             'nstp_admin' => 'nstp_admin',
