@@ -69,6 +69,11 @@ class NstpSection extends Model
         return $this->hasOne(GradingSetting::class, 'section_id');
     }
 
+    public function schedule(): HasOne
+    {
+        return $this->hasOne(SectionSchedule::class, 'section_id');
+    }
+
     public function chatMessages(): HasMany
     {
         return $this->hasMany(ChatMessage::class, 'section_id');

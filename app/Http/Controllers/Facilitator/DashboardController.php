@@ -13,7 +13,7 @@ class DashboardController extends Controller
 {
     public function __invoke(Request $request): View
     {
-        $sections = $request->user()->facilitatedSections()->with('component')->withCount('enrollments')->get();
+        $sections = $request->user()->facilitatedSections()->with(['component', 'schedule'])->withCount('enrollments')->get();
         $sectionIds = $sections->pluck('id');
         $stats = [
             'sections' => $sections->count(),

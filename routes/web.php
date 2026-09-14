@@ -20,6 +20,7 @@ use App\Http\Controllers\Coordinator\RotcApprovalController as CoordinatorRotcAp
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
 use App\Http\Controllers\Facilitator\StudentController as FacilitatorStudentController;
 use App\Http\Controllers\Learning\AssessmentController;
+use App\Http\Controllers\Learning\ScheduleController;
 use App\Http\Controllers\Learning\AttendanceController as ManagementAttendanceController;
 use App\Http\Controllers\Learning\MaterialController;
 use App\Http\Controllers\Learning\OmrScannerController;
@@ -78,6 +79,8 @@ $learningManagementRoutes = function (): void {
     Route::post('/assessments/rubric/ai-suggestion', [AssessmentController::class, 'suggestRubric'])->middleware('throttle:5,1')->name('assessments.rubric.suggest');
     Route::get('/assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');
     Route::put('/assessments/{assessment}/rubric', [AssessmentController::class, 'updateRubric'])->name('assessments.rubric.update');
+    Route::get('/assessments/{assessment}/submissions/{submission}/file', [AssessmentController::class, 'previewSubmissionFile'])->name('assessments.submissions.file');
+    Route::get('/assessments/{assessment}/submissions/{submission}/download', [AssessmentController::class, 'downloadSubmissionFile'])->name('assessments.submissions.download');
     Route::post('/assessments/{assessment}/submissions/{submission}/ai-score', [AssessmentController::class, 'generateAiScore'])->middleware('throttle:5,1')->name('assessments.ai-score.generate');
     Route::put('/assessments/{assessment}/submissions/{submission}/ai-score/approve', [AssessmentController::class, 'approveAiScore'])->name('assessments.ai-score.approve');
     Route::put('/assessments/{assessment}/submissions/{submission}', [AssessmentController::class, 'grade'])->name('assessments.grade');
@@ -99,7 +102,14 @@ $omrScannerRoutes = function (): void {
     Route::post('/answer-sheet-scanner/{sheet}/grade', [OmrScannerController::class, 'grade'])->name('omr.grade');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes) {
+$scheduleRoutes = function (): void {
+    Route::get('/schedules', [ScheduleController::class, 'index'])->name('schedules.index');
+    Route::put('/schedules/settings', [ScheduleController::class, 'updateSettings'])->name('schedules.settings.update');
+    Route::post('/schedules/generate', [ScheduleController::class, 'generate'])->name('schedules.generate');
+    Route::put('/schedules/sections/{section}', [ScheduleController::class, 'updateSection'])->name('schedules.sections.update');
+};
+
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [NstpAdminProfileController::class, 'update'])->name('profile.update');
@@ -133,6 +143,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/sectioning', [NstpAdminSectioningController::class, 'index'])->name('sectioning.index');
     Route::post('/sectioning/automate', [NstpAdminSectioningController::class, 'automate'])->name('sectioning.automate');
     $learningManagementRoutes();
+    $scheduleRoutes();
 });
 
 Route::middleware('guest')->group(function () {
@@ -182,7 +193,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -230,6 +241,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/sectioning', [NstpAdminSectioningController::class, 'index'])->name('sectioning.index');
     Route::post('/sectioning/automate', [NstpAdminSectioningController::class, 'automate'])->name('sectioning.automate');
     $learningManagementRoutes();
+    $scheduleRoutes();
 });
 
 Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes) {
@@ -250,7 +262,7 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     $omrScannerRoutes();
 });
 
-Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes) {
+Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [CoordinatorMonitoringController::class, 'components'])->name('components.index');
@@ -263,6 +275,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/rotc-approvals/{enrollment}/proof/download', [CoordinatorRotcApprovalController::class, 'downloadProof'])->name('rotc-approvals.proof.download');
     Route::patch('/rotc-approvals/{enrollment}/approve', [CoordinatorRotcApprovalController::class, 'approve'])->name('rotc-approvals.approve');
     Route::get('/sections', [CoordinatorMonitoringController::class, 'sections'])->name('sections.index');
+    $scheduleRoutes();
     Route::get('/attendance', [CoordinatorMonitoringController::class, 'attendance'])->name('attendance.index');
     Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');
     Route::patch('/attendance/{attendance}/scan-mode', [ManagementAttendanceController::class, 'updateScanMode'])->name('attendance.scan-mode');
