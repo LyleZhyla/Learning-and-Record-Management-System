@@ -49,10 +49,44 @@ class SuperAdminReportsTest extends TestCase
             ->assertOk()
             ->assertSee('PDF document')
             ->assertSee('Excel workbook')
-            ->assertSee('Choose folder &amp; save', false)
+            ->assertSee('Download report')
+            ->assertSee('Open a clean, printer-friendly preview')
+            ->assertSee('Choose data to include')
+            ->assertSee('Downloadable data')
+            ->assertSee('Student')
+            ->assertSee('Email')
+            ->assertSee('Component')
+            ->assertSee('Section')
+            ->assertSee('Term')
+            ->assertSee('Facilitator')
+            ->assertSee('Status')
+            ->assertSee('Save PDF report')
+            ->assertSee('data-report-save-label', false)
             ->assertSee('data-pdf-url="'.url('/admin/reports/students/pdf').'"', false)
             ->assertSee('data-excel-url="'.url('/admin/reports/students/export').'"', false)
             ->assertSee('js/report-download.js', false);
+    }
+
+    public function test_downloaded_report_contains_only_selected_data_columns(): void
+    {
+        $response = $this->actingAs($this->superAdmin)
+            ->get('/admin/reports/attendance/export?columns[]=0&columns[]=4');
+        $response->assertOk();
+
+        $temporaryFile = tempnam(sys_get_temp_dir(), 'smart-nstp-selected-columns-');
+        file_put_contents($temporaryFile, $response->streamedContent());
+        $sheet = IOFactory::load($temporaryFile)->getActiveSheet();
+
+        $this->assertSame('Student', $sheet->getCell('A6')->getValue());
+        $this->assertSame('Date', $sheet->getCell('B6')->getValue());
+        $this->assertNull($sheet->getCell('C6')->getValue());
+        $this->assertSame('Demo Student', $sheet->getCell('A7')->getValue());
+
+        unlink($temporaryFile);
+
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/reports/attendance/export?columns[]=99')
+            ->assertSessionHasErrors('columns.0');
     }
 
     public function test_super_admin_can_download_excel_and_open_print_view(): void

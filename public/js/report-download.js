@@ -38,28 +38,89 @@
         link.remove();
     };
 
-    controls.forEach((control) => {
-        const formatSelect = control.querySelector('[data-report-format]');
-        const saveButton = control.querySelector('[data-report-save]');
-        const status = control.querySelector('[data-report-save-status]');
+    const withSelectedColumns = (url, fields) => {
+        const downloadUrl = new URL(url, window.location.origin);
+        downloadUrl.searchParams.delete('columns');
+        downloadUrl.searchParams.delete('columns[]');
+        fields.filter((field) => field.checked).forEach((field) => {
+            downloadUrl.searchParams.append('columns[]', field.value);
+        });
 
-        if (!formatSelect || !saveButton || !status) {
+        return downloadUrl.toString();
+    };
+
+    controls.forEach((control) => {
+        const formatInputs = Array.from(control.querySelectorAll('[data-report-format]'));
+        const saveButton = control.querySelector('[data-report-save]');
+        const saveButtonLabel = control.querySelector('[data-report-save-label]');
+        const status = control.querySelector('[data-report-save-status]');
+        const fieldInputs = Array.from(control.querySelectorAll('[data-report-field]'));
+        const fieldCount = control.querySelector('[data-report-field-count]');
+        const selectAllButton = control.querySelector('[data-report-fields-all]');
+        const clearAllButton = control.querySelector('[data-report-fields-clear]');
+
+        if (!formatInputs.length || !saveButton || !status) {
             return;
         }
 
+        const selectedFormat = () => formatDetails[formatInputs.find((input) => input.checked)?.value] || formatDetails.pdf;
+
+        const updateSaveButton = () => {
+            const selected = selectedFormat();
+            const action = canChooseLocation ? 'Save' : 'Download';
+            if (saveButtonLabel) {
+                saveButtonLabel.textContent = `${action} ${selected.extension.slice(1).toUpperCase()} report`;
+            }
+        };
+
+        const updateFieldCount = () => {
+            const selectedCount = fieldInputs.filter((field) => field.checked).length;
+            const selected = selectedFormat();
+            fieldCount.textContent = `${selectedCount} selected`;
+            saveButton.disabled = selectedCount === 0;
+            status.textContent = selectedCount === 0
+                ? 'Select at least one data field to download.'
+                : (canChooseLocation
+                    ? `${selected.description} · ${selectedCount} field${selectedCount === 1 ? '' : 's'} selected. You will choose the save folder next.`
+                    : `${selected.description} · ${selectedCount} field${selectedCount === 1 ? '' : 's'} selected. Your browser will use its Downloads location.`);
+        };
+
+        fieldInputs.forEach((field) => field.addEventListener('change', updateFieldCount));
+        formatInputs.forEach((input) => input.addEventListener('change', () => {
+            updateSaveButton();
+            updateFieldCount();
+        }));
+        selectAllButton?.addEventListener('click', () => {
+            fieldInputs.forEach((field) => { field.checked = true; });
+            updateFieldCount();
+        });
+        clearAllButton?.addEventListener('click', () => {
+            fieldInputs.forEach((field) => { field.checked = false; });
+            updateFieldCount();
+        });
+
         if (!canChooseLocation) {
-            saveButton.textContent = 'Download records';
-            status.textContent = 'Your browser will use its configured Downloads location or Save As prompt.';
+            updateSaveButton();
         }
 
-        saveButton.addEventListener('click', async () => {
-            const selected = formatDetails[formatSelect.value] || formatDetails.pdf;
-            const url = control.dataset[selected.urlAttribute];
+        updateFieldCount();
 
-            if (!url) {
+        saveButton.addEventListener('click', async () => {
+            const selected = selectedFormat();
+            const selectedFields = fieldInputs.filter((field) => field.checked);
+            const baseUrl = control.dataset[selected.urlAttribute];
+
+            if (!selectedFields.length) {
+                status.textContent = 'Select at least one data field to download.';
+                return;
+            }
+
+            if (!baseUrl) {
                 status.textContent = 'The selected download is not available.';
                 return;
             }
+
+            const url = withSelectedColumns(baseUrl, fieldInputs);
 
             if (!canChooseLocation) {
                 startBrowserDownload(url);
@@ -77,7 +138,7 @@
                 });
 
                 saveButton.disabled = true;
-                formatSelect.disabled = true;
+                formatInputs.forEach((input) => { input.disabled = true; });
                 status.textContent = `Preparing the ${selected.description}...`;
 
                 const response = await fetch(url, {
@@ -101,8 +162,8 @@
                     console.error('Report save failed:', error);
                 }
             } finally {
-                saveButton.disabled = false;
-                formatSelect.disabled = false;
+                formatInputs.forEach((input) => { input.disabled = false; });
+                saveButton.disabled = fieldInputs.every((field) => !field.checked);
             }
         });
     });

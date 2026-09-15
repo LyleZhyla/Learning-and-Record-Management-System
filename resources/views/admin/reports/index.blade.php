@@ -47,23 +47,60 @@
         <div class="report-result-heading">
             <div><span class="eyebrow">Generated report</span><h3>{{ $report['title'] }}</h3><p>{{ $report['rows']->count() }} record{{ $report['rows']->count() === 1 ? '' : 's' }} matched the selected filters.</p></div>
             <div class="report-output-actions">
-                <a class="secondary-outline-button" target="_blank" href="{{ route($routePrefix.'.reports.print', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Print report</a>
+                <a class="report-print-action" target="_blank" href="{{ route($routePrefix.'.reports.print', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">
+                    <span class="report-output-icon" aria-hidden="true">⎙</span>
+                    <span><strong>Print report</strong><small>Open a clean, printer-friendly preview</small></span>
+                    <span class="report-action-arrow" aria-hidden="true">↗</span>
+                </a>
                 <div
-                    class="report-save-control"
+                    class="report-save-control report-download-panel"
                     data-report-download
                     data-pdf-url="{{ route($routePrefix.'.reports.pdf', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}"
                     data-excel-url="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}"
                     data-base-filename="{{ str($report['title'])->slug() }}"
                 >
-                    <label class="report-format-field">
-                        <span>File format</span>
-                        <select data-report-format aria-label="Select download file format">
-                            <option value="pdf">PDF document</option>
-                            <option value="xlsx">Excel workbook</option>
-                        </select>
-                    </label>
-                    <button class="primary-button compact" type="button" data-report-save>Choose folder &amp; save</button>
-                    <small class="report-save-status" data-report-save-status aria-live="polite">Select PDF or Excel, then choose where to save the file.</small>
+                    <div class="report-download-heading">
+                        <span class="report-output-icon" aria-hidden="true">↓</span>
+                        <span><strong>Download report</strong><small>Choose the format and columns before saving</small></span>
+                    </div>
+                    <fieldset class="report-format-field">
+                        <legend>File format</legend>
+                        <div class="report-format-options">
+                            <label>
+                                <input type="radio" name="report_format_{{ $filters['type'] }}" value="pdf" checked data-report-format>
+                                <span><b>PDF</b><strong>PDF document</strong><small>Best for printing and sharing</small></span>
+                            </label>
+                            <label>
+                                <input type="radio" name="report_format_{{ $filters['type'] }}" value="xlsx" data-report-format>
+                                <span><b>XLSX</b><strong>Excel workbook</strong><small>Best for sorting and analysis</small></span>
+                            </label>
+                        </div>
+                    </fieldset>
+                    <details class="report-field-selector" data-report-fields>
+                        <summary>
+                            <span><strong>Choose data to include</strong><small>Customize the columns in the downloaded file</small></span>
+                            <b data-report-field-count>{{ count($report['headers']) }} selected</b>
+                        </summary>
+                        <fieldset>
+                            <legend>Downloadable data</legend>
+                            <div class="report-field-toolbar">
+                                <span>Downloadable data</span>
+                                <div>
+                                    <button type="button" data-report-fields-all>Select all</button>
+                                    <button type="button" data-report-fields-clear>Clear all</button>
+                                </div>
+                            </div>
+                            <div class="report-field-grid">
+                                @foreach($report['headers'] as $columnIndex => $header)
+                                    <label><input type="checkbox" value="{{ $columnIndex }}" checked data-report-field> <span>{{ $header }}</span></label>
+                                @endforeach
+                            </div>
+                        </fieldset>
+                    </details>
+                    <div class="report-save-footer">
+                        <button class="primary-button compact" type="button" data-report-save><span aria-hidden="true">↓</span><span data-report-save-label>Save PDF report</span></button>
+                        <small class="report-save-status" data-report-save-status aria-live="polite">PDF document · {{ count($report['headers']) }} fields selected.</small>
+                    </div>
                     <noscript>
                         <a href="{{ route($routePrefix.'.reports.pdf', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download PDF</a>
                         <a href="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download Excel</a>

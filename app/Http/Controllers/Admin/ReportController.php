@@ -94,7 +94,7 @@ class ReportController extends Controller
     {
         abort_unless(array_key_exists($type, $this->availableReportTypes($request)), 404);
         $filters = $this->filters($request, $type);
-        $report = $this->buildReport($filters);
+        $report = $this->selectDownloadColumns($request, $this->buildReport($filters));
         $spreadsheet = $this->spreadsheets->create($report, $this->filterSummary($filters));
         $filename = str($report['title'])->slug().'-'.now()->format('Y-m-d-His').'.xlsx';
 
@@ -122,7 +122,7 @@ class ReportController extends Controller
     {
         abort_unless(array_key_exists($type, $this->availableReportTypes($request)), 404);
         $filters = $this->filters($request, $type);
-        $report = $this->buildReport($filters);
+        $report = $this->selectDownloadColumns($request, $this->buildReport($filters));
         $logoPath = public_path('images/snapie-logo-160.png');
         $logo = is_file($logoPath) ? 'data:image/png;base64,'.base64_encode((string) file_get_contents($logoPath)) : null;
 
@@ -189,6 +189,35 @@ class ReportController extends Controller
             'sections' => $this->sectionReport($filters),
             default => $this->studentReport($filters),
         };
+    }
+
+    private function selectDownloadColumns(Request $request, array $report): array
+    {
+        if (! $request->has('columns')) {
+            return $report;
+        }
+
+        $validated = $request->validate([
+            'columns' => ['required', 'array', 'min:1'],
+            'columns.*' => ['required', 'integer', 'distinct', 'min:0', 'max:'.(count($report['headers']) - 1)],
+        ]);
+        $indexes = collect($validated['columns'])->map(fn ($index) => (int) $index)->sort()->values();
+        $selectValues = fn (array $row): array => $indexes
+            ->map(fn (int $index) => array_values($row)[$index])
+            ->all();
+
+        $report['headers'] = $indexes->map(fn (int $index) => $report['headers'][$index])->all();
+        $report['rows'] = $report['rows']->map($selectValues);
+
+        if (array_key_exists('groups', $report)) {
+            $report['groups'] = $report['groups']->map(function (array $group) use ($selectValues): array {
+                $group['rows'] = $group['rows']->map($selectValues);
+
+                return $group;
+            });
+        }
+
+        return $report;
     }
 
     private function studentReport(array $filters): array
