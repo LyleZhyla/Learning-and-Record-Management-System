@@ -49,7 +49,7 @@
             <div class="report-output-actions">
                 <a class="report-print-action" target="_blank" href="{{ route($routePrefix.'.reports.print', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">
                     <span class="report-output-icon" aria-hidden="true">⎙</span>
-                    <span><strong>Print report</strong><small>Open a clean, printer-friendly preview</small></span>
+                    <span><strong>Print report</strong><small>Printer-friendly preview</small></span>
                     <span class="report-action-arrow" aria-hidden="true">↗</span>
                 </a>
                 <div
@@ -61,24 +61,18 @@
                 >
                     <div class="report-download-heading">
                         <span class="report-output-icon" aria-hidden="true">↓</span>
-                        <span><strong>Download report</strong><small>Choose the format and columns before saving</small></span>
+                        <span><strong>Download report</strong><small>Choose format and columns</small></span>
                     </div>
-                    <fieldset class="report-format-field">
-                        <legend>File format</legend>
-                        <div class="report-format-options">
-                            <label>
-                                <input type="radio" name="report_format_{{ $filters['type'] }}" value="pdf" checked data-report-format>
-                                <span><b>PDF</b><strong>PDF document</strong><small>Best for printing and sharing</small></span>
-                            </label>
-                            <label>
-                                <input type="radio" name="report_format_{{ $filters['type'] }}" value="xlsx" data-report-format>
-                                <span><b>XLSX</b><strong>Excel workbook</strong><small>Best for sorting and analysis</small></span>
-                            </label>
-                        </div>
-                    </fieldset>
+                    <label class="report-format-field">
+                        <span>File format</span>
+                        <select data-report-format aria-label="Select download file format">
+                            <option value="pdf">PDF document</option>
+                            <option value="xlsx">Excel workbook</option>
+                        </select>
+                    </label>
                     <details class="report-field-selector" data-report-fields>
                         <summary>
-                            <span><strong>Choose data to include</strong><small>Customize the columns in the downloaded file</small></span>
+                            <span><strong>Choose data to include</strong><small>Customize downloaded columns</small></span>
                             <b data-report-field-count>{{ count($report['headers']) }} selected</b>
                         </summary>
                         <fieldset>
@@ -99,7 +93,7 @@
                     </details>
                     <div class="report-save-footer">
                         <button class="primary-button compact" type="button" data-report-save><span aria-hidden="true">↓</span><span data-report-save-label>Save PDF report</span></button>
-                        <small class="report-save-status" data-report-save-status aria-live="polite">PDF document · {{ count($report['headers']) }} fields selected.</small>
+                        <small class="report-save-status" data-report-save-status aria-live="polite">PDF · {{ count($report['headers']) }} fields selected. Choose the save folder next.</small>
                     </div>
                     <noscript>
                         <a href="{{ route($routePrefix.'.reports.pdf', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download PDF</a>

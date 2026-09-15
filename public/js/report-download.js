@@ -50,7 +50,7 @@
     };
 
     controls.forEach((control) => {
-        const formatInputs = Array.from(control.querySelectorAll('[data-report-format]'));
+        const formatSelect = control.querySelector('[data-report-format]');
         const saveButton = control.querySelector('[data-report-save]');
         const saveButtonLabel = control.querySelector('[data-report-save-label]');
         const status = control.querySelector('[data-report-save-status]');
@@ -59,11 +59,11 @@
         const selectAllButton = control.querySelector('[data-report-fields-all]');
         const clearAllButton = control.querySelector('[data-report-fields-clear]');
 
-        if (!formatInputs.length || !saveButton || !status) {
+        if (!formatSelect || !saveButton || !status) {
             return;
         }
 
-        const selectedFormat = () => formatDetails[formatInputs.find((input) => input.checked)?.value] || formatDetails.pdf;
+        const selectedFormat = () => formatDetails[formatSelect.value] || formatDetails.pdf;
 
         const updateSaveButton = () => {
             const selected = selectedFormat();
@@ -81,15 +81,15 @@
             status.textContent = selectedCount === 0
                 ? 'Select at least one data field to download.'
                 : (canChooseLocation
-                    ? `${selected.description} · ${selectedCount} field${selectedCount === 1 ? '' : 's'} selected. You will choose the save folder next.`
-                    : `${selected.description} · ${selectedCount} field${selectedCount === 1 ? '' : 's'} selected. Your browser will use its Downloads location.`);
+                    ? `${selected.extension.slice(1).toUpperCase()} · ${selectedCount} field${selectedCount === 1 ? '' : 's'} selected. Choose the save folder next.`
+                    : `${selected.extension.slice(1).toUpperCase()} · ${selectedCount} field${selectedCount === 1 ? '' : 's'} selected. Saves to Downloads.`);
         };
 
         fieldInputs.forEach((field) => field.addEventListener('change', updateFieldCount));
-        formatInputs.forEach((input) => input.addEventListener('change', () => {
+        formatSelect.addEventListener('change', () => {
             updateSaveButton();
             updateFieldCount();
-        }));
+        });
         selectAllButton?.addEventListener('click', () => {
             fieldInputs.forEach((field) => { field.checked = true; });
             updateFieldCount();
@@ -138,7 +138,7 @@
                 });
 
                 saveButton.disabled = true;
-                formatInputs.forEach((input) => { input.disabled = true; });
+                formatSelect.disabled = true;
                 status.textContent = `Preparing the ${selected.description}...`;
 
                 const response = await fetch(url, {
@@ -162,7 +162,7 @@
                     console.error('Report save failed:', error);
                 }
             } finally {
-                formatInputs.forEach((input) => { input.disabled = false; });
+                formatSelect.disabled = false;
                 saveButton.disabled = fieldInputs.every((field) => !field.checked);
             }
         });
