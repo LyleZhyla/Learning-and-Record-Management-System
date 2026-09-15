@@ -47,6 +47,11 @@ class ThemeModeTest extends TestCase
         $this->assertStringContainsString('localStorage.setItem(storageKey, theme)', $script);
         $this->assertStringContainsString('prefers-color-scheme: dark', $script);
         $this->assertStringContainsString('root.dataset.theme', $script);
+        $this->assertStringContainsString("toggle.setAttribute('aria-checked', String(dark))", $script);
+
+        $control = file_get_contents(resource_path('views/components/theme-toggle.blade.php'));
+        $this->assertStringContainsString('role="switch"', $control);
+        $this->assertStringContainsString('theme-toggle-thumb', $control);
     }
 
     public function test_student_dashboard_includes_dark_mode_specific_surfaces(): void

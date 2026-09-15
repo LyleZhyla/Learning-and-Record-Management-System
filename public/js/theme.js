@@ -16,11 +16,7 @@
             toggle.setAttribute('aria-label', label);
             toggle.setAttribute('title', label);
             toggle.setAttribute('aria-pressed', String(dark));
-
-            const icon = toggle.querySelector('[data-theme-icon]');
-            if (icon) {
-                icon.textContent = dark ? '☀' : '☾';
-            }
+            toggle.setAttribute('aria-checked', String(dark));
         });
     }
 
