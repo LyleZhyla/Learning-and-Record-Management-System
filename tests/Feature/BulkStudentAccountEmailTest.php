@@ -93,6 +93,7 @@ class BulkStudentAccountEmailTest extends TestCase
                 && $mail->accountEmail === $student->email
                 && str_contains($mail->setupUrl, '/reset-password/')
                 && str_contains($html, 'Set password &amp; access account')
+                && str_contains($html, 'Snapie profile head')
                 && str_contains($html, 'Snapie waving hello')
                 && str_contains($html, $student->email);
         });

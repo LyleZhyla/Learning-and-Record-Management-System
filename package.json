@@ -3,7 +3,8 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "system": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-system.ps1"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.0.0",

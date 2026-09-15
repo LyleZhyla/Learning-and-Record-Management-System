@@ -25,10 +25,8 @@
                     <td class="email-pad" style="padding:24px 40px; background:#174d84;">
                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                             <tr>
-                                <td width="54" valign="middle">
-                                    <table role="presentation" width="46" height="46" cellspacing="0" cellpadding="0" border="0" style="width:46px; height:46px; background:#ffffff; border-radius:14px;">
-                                        <tr><td align="center" valign="middle" style="color:#174d84; font-size:20px; font-weight:800;">S</td></tr>
-                                    </table>
+                                <td width="58" valign="middle">
+                                    <img src="{{ $message->embed(public_path('images/characters/snapie-email-face.png')) }}" width="50" height="50" alt="Snapie profile head" style="display:block; width:50px; height:50px; border:0; border-radius:14px; background:#ffffff; padding:2px; object-fit:contain;">
                                 </td>
                                 <td valign="middle" style="padding-left:12px; color:#ffffff;">
                                     <div style="font-size:20px; font-weight:800; line-height:1.2;">SNAPIE</div>

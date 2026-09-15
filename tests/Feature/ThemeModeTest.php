@@ -52,6 +52,8 @@ class ThemeModeTest extends TestCase
         $control = file_get_contents(resource_path('views/components/theme-toggle.blade.php'));
         $this->assertStringContainsString('role="switch"', $control);
         $this->assertStringContainsString('theme-toggle-thumb', $control);
+        $this->assertStringContainsString('theme-moon-crescent', $control);
+        $this->assertStringContainsString('theme-moon-star', $control);
     }
 
     public function test_student_dashboard_includes_dark_mode_specific_surfaces(): void
