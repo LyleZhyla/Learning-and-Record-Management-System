@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Models\ChatGroup;
+use App\Models\ChatGroupMessage;
 use App\Models\ChatMessage;
 use App\Models\NstpSection;
 use App\Models\User;
@@ -10,6 +12,8 @@ use App\Services\PortalAccessService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class MessageController extends Controller
@@ -89,7 +93,125 @@ class MessageController extends Controller
             'contact' => $contact,
             'section' => $section,
             'messages' => $messages,
+            'groupChats' => $this->groupChats($actor),
+            'activeGroup' => null,
+            'groupMessages' => collect(),
+            'availableSections' => $this->availableGroupSections($actor),
         ]);
+    }
+
+    public function group(Request $request, ChatGroup $group): View
+    {
+        $actor = $request->user();
+        $activeGroup = $this->groupQuery($actor)
+            ->with(['section.component', 'members'])
+            ->findOrFail($group->id);
+
+        DB::table('chat_group_members')
+            ->where('chat_group_id', $activeGroup->id)
+            ->where('user_id', $actor->id)
+            ->update(['last_read_at' => now(), 'updated_at' => now()]);
+
+        $groupMessages = $activeGroup->messages()
+            ->with('sender')
+            ->latest()
+            ->limit(300)
+            ->get()
+            ->reverse()
+            ->values();
+
+        $routePrefix = $this->access->routePrefix($actor);
+
+        return view('portal.messages.index', [
+            'layout' => $this->access->layout($actor),
+            'routePrefix' => $routePrefix,
+            'isStaffChat' => false,
+            'contacts' => collect(),
+            'contact' => null,
+            'section' => null,
+            'messages' => collect(),
+            'groupChats' => $this->groupChats($actor),
+            'activeGroup' => $activeGroup,
+            'groupMessages' => $groupMessages,
+            'availableSections' => $this->availableGroupSections($actor),
+        ]);
+    }
+
+    public function storeGroup(Request $request): RedirectResponse
+    {
+        $actor = $request->user();
+        abort_unless($actor->isFacilitator(), 403);
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'section_id' => ['required', 'integer'],
+            'student_ids' => ['required', 'array', 'min:1'],
+            'student_ids.*' => ['required', 'integer', 'distinct'],
+        ]);
+
+        $section = NstpSection::query()
+            ->whereKey($validated['section_id'])
+            ->where('facilitator_id', $actor->id)
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $studentIds = collect($validated['student_ids'])->map(fn ($id) => (int) $id)->unique()->values();
+        $allowedStudentIds = User::query()
+            ->whereKey($studentIds)
+            ->where('role', 'student')
+            ->where('status', 'active')
+            ->whereHas('nstpEnrollments', fn ($enrollments) => $enrollments
+                ->where('section_id', $section->id)
+                ->where('status', 'enrolled'))
+            ->pluck('id');
+
+        if ($allowedStudentIds->count() !== $studentIds->count()) {
+            throw ValidationException::withMessages([
+                'student_ids' => 'Every selected student must be actively enrolled in the selected section.',
+            ]);
+        }
+
+        $group = DB::transaction(function () use ($actor, $section, $validated, $allowedStudentIds): ChatGroup {
+            $group = ChatGroup::create([
+                'section_id' => $section->id,
+                'facilitator_id' => $actor->id,
+                'name' => trim($validated['name']),
+            ]);
+
+            $memberRows = $allowedStudentIds->push($actor->id)->unique()->mapWithKeys(fn ($userId) => [
+                $userId => ['last_read_at' => now()],
+            ])->all();
+            $group->members()->attach($memberRows);
+
+            return $group;
+        });
+
+        return redirect()->route('facilitator.messages.groups.show', $group)
+            ->with('status', 'Group chat created.');
+    }
+
+    public function storeGroupMessage(Request $request, ChatGroup $group): RedirectResponse
+    {
+        $actor = $request->user();
+        $group = $this->groupQuery($actor)->findOrFail($group->id);
+        $validated = $request->validate(['body' => ['required', 'string', 'max:2000']]);
+
+        DB::transaction(function () use ($actor, $group, $validated): void {
+            ChatGroupMessage::create([
+                'chat_group_id' => $group->id,
+                'sender_id' => $actor->id,
+                'body' => trim($validated['body']),
+            ]);
+            DB::table('chat_group_members')
+                ->where('chat_group_id', $group->id)
+                ->where('user_id', $actor->id)
+                ->update(['last_read_at' => now(), 'updated_at' => now()]);
+        });
+
+        $routePrefix = $this->access->routePrefix($actor);
+
+        return redirect()->route($routePrefix.'.messages.groups.show', $group)
+            ->with('status', 'Message sent.');
     }
 
     public function store(Request $request, User $recipient): RedirectResponse
@@ -164,6 +286,58 @@ class MessageController extends Controller
             ->latest('academic_year')
             ->latest('id')
             ->first();
+    }
+
+    private function groupQuery(User $actor): Builder
+    {
+        abort_unless($actor->isFacilitator() || $actor->isStudent(), 403);
+
+        return ChatGroup::query()
+            ->whereHas('members', fn ($members) => $members->whereKey($actor->id))
+            ->when($actor->isFacilitator(), fn ($groups) => $groups->where('facilitator_id', $actor->id))
+            ->when($actor->isStudent(), fn ($groups) => $groups
+                ->whereHas('section.enrollments', fn ($enrollments) => $enrollments
+                    ->where('student_id', $actor->id)
+                    ->where('status', 'enrolled')));
+    }
+
+    private function groupChats(User $actor): \Illuminate\Support\Collection
+    {
+        if (! $actor->isFacilitator() && ! $actor->isStudent()) {
+            return collect();
+        }
+
+        return $this->groupQuery($actor)
+            ->with(['section', 'members' => fn ($members) => $members->whereKey($actor->id)])
+            ->withCount('members')
+            ->withMax('messages', 'created_at')
+            ->orderByDesc('messages_max_created_at')
+            ->latest('id')
+            ->get()
+            ->each(function (ChatGroup $group) use ($actor): void {
+                $lastReadAt = $group->members->first()?->pivot?->last_read_at;
+                $group->setAttribute('unread_messages_count', $group->messages()
+                    ->where('sender_id', '!=', $actor->id)
+                    ->when($lastReadAt, fn ($messages) => $messages->where('created_at', '>', $lastReadAt))
+                    ->count());
+            });
+    }
+
+    private function availableGroupSections(User $actor): \Illuminate\Support\Collection
+    {
+        if (! $actor->isFacilitator()) {
+            return collect();
+        }
+
+        return NstpSection::query()
+            ->where('facilitator_id', $actor->id)
+            ->where('status', 'active')
+            ->with(['component', 'enrollments' => fn ($enrollments) => $enrollments
+                ->where('status', 'enrolled')
+                ->whereHas('student', fn ($students) => $students->where('status', 'active'))
+                ->with('student')])
+            ->orderBy('code')
+            ->get();
     }
 
     private function isStaffChatUser(User $user): bool

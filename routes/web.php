@@ -250,7 +250,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
 Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes) {
     Route::get('/dashboard', FacilitatorDashboardController::class)->name('dashboard');
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
-    Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
+    Route::post('/messages/groups', [PortalMessageController::class, 'storeGroup'])->name('messages.groups.store');
+    Route::get('/messages/groups/{group}', [PortalMessageController::class, 'group'])->name('messages.groups.show');
+    Route::post('/messages/groups/{group}', [PortalMessageController::class, 'storeGroupMessage'])->name('messages.groups.messages.store');
+    Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->whereNumber('contact')->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::get('/students', [FacilitatorStudentController::class, 'index'])->name('students.index');
     Route::get('/students/{student}', [FacilitatorStudentController::class, 'show'])->name('students.show');
@@ -314,7 +317,9 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
 Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () {
     Route::get('/dashboard', StudentDashboardController::class)->name('dashboard');
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
-    Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
+    Route::get('/messages/groups/{group}', [PortalMessageController::class, 'group'])->name('messages.groups.show');
+    Route::post('/messages/groups/{group}', [PortalMessageController::class, 'storeGroupMessage'])->name('messages.groups.messages.store');
+    Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->whereNumber('contact')->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::get('/profile', [StudentProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [PortalProfileController::class, 'update'])->name('profile.update');

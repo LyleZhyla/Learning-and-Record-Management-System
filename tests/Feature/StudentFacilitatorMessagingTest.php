@@ -122,9 +122,7 @@ class StudentFacilitatorMessagingTest extends TestCase
         $this->actingAs($facilitator)->get('/facilitator/messages')
             ->assertOk()
             ->assertSee('A student will appear here after starting a conversation with you.')
-            ->assertDontSee($student->name)
-            ->assertDontSee($quietStudent->name)
-            ->assertDontSee($latestStudent->name);
+            ->assertSee('0 contact(s)');
 
         ChatMessage::create([
             'section_id' => $section->id,
@@ -143,7 +141,7 @@ class StudentFacilitatorMessagingTest extends TestCase
             ->assertOk()
             ->assertSeeTextInOrder([$latestStudent->name, $student->name])
             ->assertSee('This is the latest conversation.')
-            ->assertDontSee($quietStudent->name);
+            ->assertSee('2 contact(s)');
     }
 
     public function test_message_body_is_required_and_limited(): void

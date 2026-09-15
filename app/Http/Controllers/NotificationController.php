@@ -80,7 +80,9 @@ class NotificationController extends Controller
             'messages' => DB::table('chat_messages')
                 ->where('recipient_id', $user->id)
                 ->whereNull('read_at')
-                ->update(['read_at' => $now]),
+                ->update(['read_at' => $now]) + DB::table('chat_group_members')
+                    ->where('user_id', $user->id)
+                    ->update(['last_read_at' => $now, 'updated_at' => $now]),
         };
 
         return redirect()->to($destination);
@@ -101,6 +103,9 @@ class NotificationController extends Controller
             ->where('recipient_id', $request->user()->id)
             ->whereNull('read_at')
             ->update(['read_at' => $now]);
+        DB::table('chat_group_members')
+            ->where('user_id', $request->user()->id)
+            ->update(['last_read_at' => $now, 'updated_at' => $now]);
         StudentNotification::where('user_id', $request->user()->id)
             ->whereNull('read_at')
             ->update(['read_at' => $now]);

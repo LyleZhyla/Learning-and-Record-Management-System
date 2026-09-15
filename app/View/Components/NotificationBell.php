@@ -3,6 +3,7 @@
 namespace App\View\Components;
 
 use App\Models\ChatMessage;
+use App\Models\ChatGroupMessage;
 use App\Models\StudentNotification;
 use App\Services\NotificationService;
 use Closure;
@@ -33,6 +34,7 @@ class NotificationBell extends Component
         };
         $unreadMessageCount = 0;
         $messageNotifications = collect();
+        $groupMessageNotifications = collect();
         $eventNotificationQuery = StudentNotification::where('user_id', $user->id)->whereNull('read_at');
         $unreadEventNotificationCount = (clone $eventNotificationQuery)->count();
         $eventNotifications = $eventNotificationQuery->latest()->limit(8)->get();
@@ -58,6 +60,26 @@ class NotificationBell extends Component
 
                 return $message?->setAttribute('unread_from_sender', (int) $group->unread_from_sender);
             })->filter()->values();
+
+            if ($user->isFacilitator() || $user->isStudent()) {
+                $unreadGroupMessages = ChatGroupMessage::unreadFor($user);
+                $unreadMessageCount += (clone $unreadGroupMessages)->count();
+                $groupMessageSummaries = (clone $unreadGroupMessages)
+                    ->select('chat_group_messages.chat_group_id')
+                    ->selectRaw('MAX(chat_group_messages.id) as latest_id, COUNT(*) as unread_from_group')
+                    ->groupBy('chat_group_messages.chat_group_id')
+                    ->orderByDesc('latest_id')
+                    ->limit(6)
+                    ->get();
+                $latestGroupMessages = ChatGroupMessage::with(['sender', 'group.section'])
+                    ->whereIn('id', $groupMessageSummaries->pluck('latest_id'))
+                    ->get()
+                    ->keyBy('id');
+                $groupMessageNotifications = $groupMessageSummaries->map(function ($summary) use ($latestGroupMessages) {
+                    return $latestGroupMessages->get((int) $summary->latest_id)
+                        ?->setAttribute('unread_from_group', (int) $summary->unread_from_group);
+                })->filter()->values();
+            }
         }
 
         $unreadCount = $unreadAnnouncementCount + $unreadMessageCount + $unreadEventNotificationCount;
@@ -65,6 +87,7 @@ class NotificationBell extends Component
         return view('components.notification-bell', compact(
             'notifications',
             'messageNotifications',
+            'groupMessageNotifications',
             'eventNotifications',
             'messageRoutePrefix',
             'unreadCount',

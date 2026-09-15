@@ -10,6 +10,13 @@
                     <span class="notification-open" aria-hidden="true">→</span>
                 </a>
             @endforeach
+            @foreach($groupMessageNotifications as $message)
+                <a class="notification-item notification-message unread" href="{{ route($messageRoutePrefix.'.messages.groups.show', $message->group) }}" aria-label="Open group message in {{ $message->group->name }}">
+                    <i></i>
+                    <div><strong>{{ $message->group->name }}</strong><p><b>{{ $message->sender->name }}:</b> {{ str($message->body)->limit(80) }}</p><small>{{ $message->group->section->code }} · {{ $message->unread_from_group }} unread · {{ $message->created_at->diffForHumans() }}</small></div>
+                    <span class="notification-open" aria-hidden="true">→</span>
+                </a>
+            @endforeach
             @foreach($eventNotifications as $notification)
                 <a class="notification-item notification-event {{ $notification->read_at ? '' : 'unread' }}" href="{{ route('notifications.events.open', $notification) }}">
                     <i></i>
@@ -20,7 +27,7 @@
             @foreach($notifications as $notification)
                 <a class="notification-item notification-announcement {{ $notification->is_read ? '' : 'unread' }}" href="{{ route('notifications.announcements.open', $notification) }}"><i></i><div><strong>{{ $notification->title }}</strong><p>{{ str($notification->body)->limit(90) }}</p><small>Announcement · {{ $notification->component?->code ?? 'All components' }} · {{ $notification->published_at?->diffForHumans() }}</small></div><span class="notification-open" aria-hidden="true">→</span></a>
             @endforeach
-            @if($messageNotifications->isEmpty() && $eventNotifications->isEmpty() && $notifications->isEmpty())<div class="notification-empty">No notifications yet.</div>@endif
+            @if($messageNotifications->isEmpty() && $groupMessageNotifications->isEmpty() && $eventNotifications->isEmpty() && $notifications->isEmpty())<div class="notification-empty">No notifications yet.</div>@endif
         </div>
     </div>
 </details>

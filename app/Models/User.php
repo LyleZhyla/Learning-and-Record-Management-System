@@ -201,6 +201,18 @@ class User extends Authenticatable
         return $this->hasMany(ChatMessage::class, 'recipient_id');
     }
 
+    public function chatGroups(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(ChatGroup::class, 'chat_group_members')
+            ->withPivot('last_read_at')
+            ->withTimestamps();
+    }
+
+    public function sentChatGroupMessages(): HasMany
+    {
+        return $this->hasMany(ChatGroupMessage::class, 'sender_id');
+    }
+
     public function aiChatMessages(): HasMany
     {
         return $this->hasMany(AiChatMessage::class);

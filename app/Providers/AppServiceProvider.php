@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Models\Assessment;
+use App\Models\ChatGroupMessage;
 use App\Models\StudentNotification;
 use App\Services\NotificationService;
 use App\Services\PortalAccessService;
@@ -71,7 +72,9 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer(['layouts.admin', 'layouts.nstp-admin', 'layouts.coordinator', 'layouts.facilitator', 'layouts.student'], function ($view): void {
             $user = auth()->user();
-            $sidebarUnreadMessageCount = $user?->receivedChatMessages()->whereNull('read_at')->count() ?? 0;
+            $sidebarUnreadMessageCount = $user
+                ? $user->receivedChatMessages()->whereNull('read_at')->count() + ChatGroupMessage::unreadFor($user)->count()
+                : 0;
 
             $view->with('sidebarUnreadMessageCount', $sidebarUnreadMessageCount);
         });

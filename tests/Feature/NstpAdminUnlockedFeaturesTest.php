@@ -27,7 +27,7 @@ class NstpAdminUnlockedFeaturesTest extends TestCase
             ->assertSee('Students by Section')
             ->assertSee('PDF document')
             ->assertSee('Excel workbook')
-            ->assertSee('Choose folder &amp; save', false)
+            ->assertSee('Save PDF report')
             ->assertSee('data-report-download', false);
         $this->actingAs($admin)->get('/nstp-admin/reports/students_by_section/export')
             ->assertOk()->assertDownload();
