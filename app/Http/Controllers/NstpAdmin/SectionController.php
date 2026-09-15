@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NstpComponent;
 use App\Models\NstpSection;
 use App\Models\User;
+use App\Services\AutomaticScheduleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -14,6 +15,8 @@ use Illuminate\View\View;
 
 class SectionController extends Controller
 {
+    public function __construct(private AutomaticScheduleService $scheduler) {}
+
     public function index(Request $request): View
     {
         $filters = $request->validate([
@@ -104,6 +107,25 @@ class SectionController extends Controller
             throw ValidationException::withMessages([
                 'status' => 'Move all assigned students before deactivating this section.',
             ]);
+        }
+
+        $schedule = $section->schedule()->first();
+        if ($schedule && $validated['facilitator_id']) {
+            $conflict = $this->scheduler->conflictingSchedule(
+                (int) $validated['facilitator_id'],
+                $validated['academic_year'],
+                $validated['semester'],
+                $schedule->day_of_week,
+                $schedule->starts_at,
+                $schedule->ends_at,
+                $section->id,
+            );
+
+            if ($conflict) {
+                throw ValidationException::withMessages([
+                    'facilitator_id' => 'This facilitator cannot be assigned because the section schedule conflicts with '.$conflict->section->code.' in the same academic term.',
+                ]);
+            }
         }
 
         $section->update($validated);

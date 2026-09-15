@@ -80,6 +80,36 @@ class AutomaticSchedulingTest extends TestCase
         $this->assertDatabaseHas('section_schedules', ['section_id' => $section->id, 'starts_at' => '08:00:00', 'ends_at' => '17:00:00']);
     }
 
+    public function test_facilitator_cannot_be_reassigned_to_an_already_conflicting_section_schedule(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $firstFacilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $secondFacilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'is_active' => true]);
+        $first = $this->section($component, $firstFacilitator, 'CWTS-01');
+        $second = $this->section($component, $secondFacilitator, 'CWTS-02');
+        ScheduleSetting::create([...$this->term($component), 'day_of_week' => 6, 'day_start' => '08:00', 'day_end' => '17:00', 'break_start' => '12:00', 'break_end' => '13:00', 'session_minutes' => 240]);
+
+        foreach ([$first, $second] as $section) {
+            $this->actingAs($admin)->put('/nstp-admin/schedules/sections/'.$section->id, [
+                ...$this->term($component), 'day_of_week' => 6, 'starts_at' => '08:00', 'ends_at' => '12:00',
+            ])->assertSessionHasNoErrors();
+        }
+
+        $this->actingAs($admin)->put('/nstp-admin/sections/'.$second->id, [
+            'component_id' => $component->id,
+            'facilitator_id' => $firstFacilitator->id,
+            'code' => $second->code,
+            'name' => $second->name,
+            'academic_year' => $second->academic_year,
+            'semester' => $second->semester,
+            'capacity' => $second->capacity,
+            'status' => $second->status,
+        ])->assertSessionHasErrors('facilitator_id');
+
+        $this->assertSame($secondFacilitator->id, $second->fresh()->facilitator_id);
+    }
+
     private function section(NstpComponent $component, User $facilitator, string $code): NstpSection
     {
         return NstpSection::create(['component_id' => $component->id, 'facilitator_id' => $facilitator->id, 'code' => $code, 'name' => $code, 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);

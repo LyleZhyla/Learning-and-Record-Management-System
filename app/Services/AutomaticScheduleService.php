@@ -12,6 +12,32 @@ use Illuminate\Validation\ValidationException;
 
 class AutomaticScheduleService
 {
+    public function conflictingSchedule(
+        int $facilitatorId,
+        string $academicYear,
+        string $semester,
+        int $dayOfWeek,
+        string $startsAt,
+        string $endsAt,
+        ?int $exceptSectionId = null,
+    ): ?SectionSchedule
+    {
+        $startsAt = $this->normalizeTime($startsAt);
+        $endsAt = $this->normalizeTime($endsAt);
+
+        return SectionSchedule::query()
+            ->when($exceptSectionId, fn ($query) => $query->where('section_id', '!=', $exceptSectionId))
+            ->where('day_of_week', $dayOfWeek)
+            ->where('starts_at', '<', $endsAt)
+            ->where('ends_at', '>', $startsAt)
+            ->whereHas('section', fn ($query) => $query
+                ->where('facilitator_id', $facilitatorId)
+                ->where('academic_year', $academicYear)
+                ->where('semester', $semester))
+            ->with('section:id,code,facilitator_id,academic_year,semester')
+            ->first();
+    }
+
     public function generate(ScheduleSetting $setting, User $actor): int
     {
         $sections = NstpSection::query()
@@ -111,6 +137,11 @@ class AutomaticScheduleService
 
     private function time(string $value): CarbonImmutable
     {
-        return CarbonImmutable::createFromFormat('H:i:s', strlen($value) === 5 ? $value.':00' : $value);
+        return CarbonImmutable::createFromFormat('H:i:s', $this->normalizeTime($value));
+    }
+
+    private function normalizeTime(string $value): string
+    {
+        return strlen($value) === 5 ? $value.':00' : $value;
     }
 }

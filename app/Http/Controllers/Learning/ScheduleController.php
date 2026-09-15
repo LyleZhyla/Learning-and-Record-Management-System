@@ -105,12 +105,15 @@ class ScheduleController extends Controller
         }
 
         if ($section->facilitator_id) {
-            $conflict = SectionSchedule::query()->where('section_id', '!=', $section->id)
-                ->where('day_of_week', $validated['day_of_week'])
-                ->where('starts_at', '<', $validated['ends_at'].':00')->where('ends_at', '>', $validated['starts_at'].':00')
-                ->whereHas('section', fn ($query) => $query->where('facilitator_id', $section->facilitator_id)
-                    ->where('academic_year', $section->academic_year)->where('semester', $section->semester))
-                ->with('section')->first();
+            $conflict = $this->scheduler->conflictingSchedule(
+                $section->facilitator_id,
+                $section->academic_year,
+                $section->semester,
+                (int) $validated['day_of_week'],
+                $validated['starts_at'],
+                $validated['ends_at'],
+                $section->id,
+            );
             if ($conflict) {
                 throw ValidationException::withMessages(['starts_at' => 'This conflicts with '.$conflict->section->code.', which is handled by the same facilitator.']);
             }
