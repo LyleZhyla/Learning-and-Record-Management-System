@@ -185,6 +185,82 @@ class AttendanceLearningTest extends TestCase
             ->assertSee('data-pending-assessment-count="1"', false);
     }
 
+    public function test_student_dashboard_and_reports_show_completed_items_out_of_the_current_total(): void
+    {
+        $pastSessions = collect(range(1, 3))->map(fn (int $number) => AttendanceSession::create([
+            'section_id' => $this->section->id,
+            'created_by' => $this->facilitator->id,
+            'title' => 'Session '.$number,
+            'starts_at' => now()->subDays(4 - $number),
+            'ends_at' => now()->subDays(4 - $number)->addHour(),
+            'token' => str()->random(48),
+            'qr_payload' => '',
+            'qr_svg' => '',
+            'status' => 'closed',
+        ]));
+        AttendanceSession::create([
+            'section_id' => $this->section->id,
+            'created_by' => $this->facilitator->id,
+            'title' => 'Future Session',
+            'starts_at' => now()->addDay(),
+            'ends_at' => now()->addDay()->addHour(),
+            'token' => str()->random(48),
+            'qr_payload' => '',
+            'qr_svg' => '',
+            'status' => 'open',
+        ]);
+        foreach ($pastSessions->take(2) as $index => $session) {
+            AttendanceRecord::create([
+                'attendance_session_id' => $session->id,
+                'student_id' => $this->student->id,
+                'status' => $index === 0 ? 'present' : 'late',
+                'checked_in_at' => $session->starts_at,
+                'recorded_by' => $this->facilitator->id,
+            ]);
+        }
+
+        $assessments = collect(range(1, 3))->map(fn (int $number) => Assessment::create([
+            'section_id' => $this->section->id,
+            'created_by' => $this->facilitator->id,
+            'title' => 'Progress Activity '.$number,
+            'type' => 'activity',
+            'max_score' => 20,
+            'weight' => 10,
+            'status' => 'published',
+            'published_at' => now(),
+        ]));
+        foreach ($assessments->take(2) as $assessment) {
+            AssessmentSubmission::create([
+                'assessment_id' => $assessment->id,
+                'student_id' => $this->student->id,
+                'answer_text' => 'Completed',
+                'submitted_at' => now(),
+            ]);
+        }
+
+        $expectedProgress = fn (array $values): bool => $values['attendance_completed'] === 2
+            && $values['attendance_total'] === 3
+            && $values['attendance_remaining'] === 1
+            && $values['assessments_completed'] === 2
+            && $values['assessments_total'] === 3
+            && $values['assessments_remaining'] === 1;
+
+        $this->actingAs($this->student)->get('/student/dashboard')
+            ->assertOk()
+            ->assertViewHas('stats', $expectedProgress)
+            ->assertSee('ATTENDED SESSIONS')
+            ->assertSee('ASSESSMENTS SUBMITTED')
+            ->assertSee('2/3', false)
+            ->assertSee('1 session not attended')
+            ->assertSee('1 assessment remaining');
+
+        $this->actingAs($this->student)->get('/student/reports')
+            ->assertOk()
+            ->assertViewHas('metrics', $expectedProgress)
+            ->assertSee('2/3', false)
+            ->assertSee('66.7%');
+    }
+
     public function test_student_can_open_classroom_style_assessment_and_keep_attachment_when_resubmitting_text(): void
     {
         $assessment = Assessment::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'Community Reflection', 'type' => 'activity', 'instructions' => 'Upload your reflection.', 'max_score' => 100, 'weight' => 20, 'status' => 'published', 'published_at' => now()]);

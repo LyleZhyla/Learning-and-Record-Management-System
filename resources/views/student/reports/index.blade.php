@@ -14,9 +14,9 @@
     </section>
 
     <section class="metric-grid" aria-label="Personal report overview">
-        <article class="metric-card"><span class="metric-icon blue">▣</span><div><small>ATTENDANCE RECORDS</small><strong>{{ $metrics['attendance_records'] }}</strong><p>Your recorded NSTP sessions</p></div></article>
+        <article class="metric-card"><span class="metric-icon blue">▣</span><div><small>ATTENDED SESSIONS</small><strong>{{ $metrics['attendance_completed'] }}/{{ $metrics['attendance_total'] }}</strong><p>{{ $metrics['attendance_remaining'] }} session{{ $metrics['attendance_remaining'] === 1 ? '' : 's' }} not attended</p></div></article>
         <article class="metric-card"><span class="metric-icon green">✓</span><div><small>ATTENDANCE RATE</small><strong>{{ number_format($metrics['attendance_rate'], 1) }}%</strong><p>Present and late records</p></div></article>
-        <article class="metric-card"><span class="metric-icon orange">▤</span><div><small>SUBMISSIONS</small><strong>{{ $metrics['submissions'] }}</strong><p>Assessment work submitted</p></div></article>
+        <article class="metric-card"><span class="metric-icon orange">▤</span><div><small>ASSESSMENTS SUBMITTED</small><strong>{{ $metrics['assessments_completed'] }}/{{ $metrics['assessments_total'] }}</strong><p>{{ $metrics['assessments_remaining'] }} assessment{{ $metrics['assessments_remaining'] === 1 ? '' : 's' }} remaining</p></div></article>
         <article class="metric-card"><span class="metric-icon violet">◎</span><div><small>CURRENT GRADE</small><strong>{{ $gradeSummary && $gradeSummary['grade'] !== null ? number_format($gradeSummary['grade'], 2) : '—' }}</strong><p>{{ $metrics['graded_submissions'] }} graded submission{{ $metrics['graded_submissions'] === 1 ? '' : 's' }}</p></div></article>
     </section>
 
