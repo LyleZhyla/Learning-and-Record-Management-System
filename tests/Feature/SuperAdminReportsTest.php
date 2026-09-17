@@ -48,6 +48,7 @@ class SuperAdminReportsTest extends TestCase
         $this->actingAs($this->superAdmin)->get('/admin/reports?type=students')
             ->assertOk()
             ->assertSee('PDF document')
+            ->assertSee('Word document with official NSTP template')
             ->assertSee('Excel workbook')
             ->assertSee('Select download file format')
             ->assertSee('data-report-format', false)
@@ -65,6 +66,7 @@ class SuperAdminReportsTest extends TestCase
             ->assertSee('Save PDF report')
             ->assertSee('data-report-save-label', false)
             ->assertSee('data-pdf-url="'.url('/admin/reports/students/pdf').'"', false)
+            ->assertSee('data-word-url="'.url('/admin/reports/students/document').'"', false)
             ->assertSee('data-excel-url="'.url('/admin/reports/students/export').'"', false)
             ->assertSee('js/report-download.js', false);
     }
@@ -124,6 +126,32 @@ class SuperAdminReportsTest extends TestCase
         $this->assertStringContainsString('.pdf', $response->headers->get('content-disposition'));
         $this->assertStringStartsWith('%PDF-', $response->getContent());
         $this->assertGreaterThan(1000, strlen($response->getContent()));
+    }
+
+    public function test_super_admin_can_download_a_word_report_using_the_official_template(): void
+    {
+        $response = $this->actingAs($this->superAdmin)
+            ->get('/admin/reports/attendance/document?columns[]=0&columns[]=4');
+
+        $response->assertOk()
+            ->assertDownload()
+            ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        $this->assertStringContainsString('.docx', $response->headers->get('content-disposition'));
+
+        $archive = new \ZipArchive;
+        $this->assertTrue($archive->open($response->getFile()->getPathname()));
+        $documentXml = $archive->getFromName('word/document.xml');
+        $headerXml = $archive->getFromName('word/header1.xml');
+        $footerRelationshipsXml = $archive->getFromName('word/_rels/footer1.xml.rels');
+        $archive->close();
+
+        $this->assertStringContainsString('Attendance Report', $documentXml);
+        $this->assertStringContainsString('Student', $documentXml);
+        $this->assertStringContainsString('Date', $documentXml);
+        $this->assertStringContainsString('Demo Student', $documentXml);
+        $this->assertStringNotContainsString('Time In', $documentXml);
+        $this->assertStringContainsString('NATIONAL SERVICE TRAINING PROGRAM', $headerXml);
+        $this->assertStringContainsString('media/image3.png', $footerRelationshipsXml);
     }
 
     public function test_super_admin_can_download_students_segregated_into_section_worksheets(): void

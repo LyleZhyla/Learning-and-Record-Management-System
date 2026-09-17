@@ -21,6 +21,12 @@
             mime: 'application/pdf',
             urlAttribute: 'pdfUrl',
         },
+        docx: {
+            description: 'Word document with official NSTP template',
+            extension: '.docx',
+            mime: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            urlAttribute: 'wordUrl',
+        },
         xlsx: {
             description: 'Excel workbook',
             extension: '.xlsx',

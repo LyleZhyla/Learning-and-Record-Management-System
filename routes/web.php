@@ -20,10 +20,10 @@ use App\Http\Controllers\Coordinator\RotcApprovalController as CoordinatorRotcAp
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
 use App\Http\Controllers\Facilitator\StudentController as FacilitatorStudentController;
 use App\Http\Controllers\Learning\AssessmentController;
-use App\Http\Controllers\Learning\ScheduleController;
 use App\Http\Controllers\Learning\AttendanceController as ManagementAttendanceController;
 use App\Http\Controllers\Learning\MaterialController;
 use App\Http\Controllers\Learning\OmrScannerController;
+use App\Http\Controllers\Learning\ScheduleController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NstpAdmin\AccountController as NstpAdminAccountController;
 use App\Http\Controllers\NstpAdmin\AnnouncementController as NstpAdminAnnouncementController;
@@ -130,6 +130,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/accounts/{user}', [NstpAdminAccountController::class, 'show'])->name('accounts.show');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/document', [ReportController::class, 'document'])->name('reports.document');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
@@ -220,6 +221,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/document', [ReportController::class, 'document'])->name('reports.document');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup.index');
@@ -262,6 +264,7 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     Route::put('/password', [PortalProfileController::class, 'updatePassword'])->name('password.update');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/document', [ReportController::class, 'document'])->name('reports.document');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     $learningManagementRoutes();
@@ -296,6 +299,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/assessments', [AssessmentController::class, 'index'])->name('assessments.index');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}/export', [ReportController::class, 'export'])->name('reports.export');
+    Route::get('/reports/{type}/document', [ReportController::class, 'document'])->name('reports.document');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');

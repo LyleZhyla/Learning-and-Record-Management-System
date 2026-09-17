@@ -10,6 +10,7 @@ use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
 use App\Services\GradeService;
+use App\Services\ReportDocumentService;
 use App\Services\ReportSpreadsheetService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -19,6 +20,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ReportController extends Controller
@@ -34,6 +36,7 @@ class ReportController extends Controller
     public function __construct(
         private GradeService $grades,
         private ReportSpreadsheetService $spreadsheets,
+        private ReportDocumentService $documents,
     ) {}
 
     public function index(Request $request): View
@@ -116,6 +119,19 @@ class ReportController extends Controller
             'filters' => $filters,
             'routePrefix' => $this->routePrefix($request),
         ]);
+    }
+
+    public function document(Request $request, string $type): BinaryFileResponse
+    {
+        abort_unless(array_key_exists($type, $this->availableReportTypes($request)), 404);
+        $filters = $this->filters($request, $type);
+        $report = $this->selectDownloadColumns($request, $this->buildReport($filters));
+        $document = $this->documents->create($report, $this->filterSummary($filters));
+        $filename = str($report['title'])->slug().'-'.now()->format('Y-m-d-His').'.docx';
+
+        return response()->download($document, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ])->deleteFileAfterSend(true);
     }
 
     public function pdf(Request $request, string $type): Response

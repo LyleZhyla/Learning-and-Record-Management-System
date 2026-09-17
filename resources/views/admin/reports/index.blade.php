@@ -10,7 +10,7 @@
         <div>
             <span class="eyebrow">{{ $isFacilitatorReport ? 'Assigned section reporting center' : ($isCoordinatorReport ? 'Assigned component reporting center' : 'Central reporting center') }}</span>
             <h2>{{ $isFacilitatorReport ? 'My section reports' : ($isCoordinatorReport ? $reportScope.' operational reports' : 'Operational reports, ready when needed.') }}</h2>
-            <p>{{ $isFacilitatorReport ? 'Review student, attendance, grade, and section data limited to the sections assigned to you.' : ($isCoordinatorReport ? 'Review student, attendance, grade, and section data limited to your assigned component.' : 'Review institution-wide student, attendance, grade, component, and section data.') }} Apply filters before printing or downloading an Excel or PDF file.</p>
+            <p>{{ $isFacilitatorReport ? 'Review student, attendance, grade, and section data limited to the sections assigned to you.' : ($isCoordinatorReport ? 'Review student, attendance, grade, and section data limited to your assigned component.' : 'Review institution-wide student, attendance, grade, component, and section data.') }} Apply filters before printing or downloading a Word, Excel, or PDF file.</p>
         </div>
         <span class="workspace-date">Last generated<strong>{{ $report['generated_at']->format('M d, Y · h:i A') }}</strong></span>
     </section>
@@ -56,6 +56,7 @@
                     class="report-save-control report-download-panel"
                     data-report-download
                     data-pdf-url="{{ route($routePrefix.'.reports.pdf', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}"
+                    data-word-url="{{ route($routePrefix.'.reports.document', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}"
                     data-excel-url="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}"
                     data-base-filename="{{ str($report['title'])->slug() }}"
                 >
@@ -67,6 +68,7 @@
                         <span>File format</span>
                         <select data-report-format aria-label="Select download file format">
                             <option value="pdf">PDF document</option>
+                            <option value="docx">Word document with official NSTP template</option>
                             <option value="xlsx">Excel workbook</option>
                         </select>
                     </label>
@@ -97,6 +99,7 @@
                     </div>
                     <noscript>
                         <a href="{{ route($routePrefix.'.reports.pdf', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download PDF</a>
+                        <a href="{{ route($routePrefix.'.reports.document', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download Word</a>
                         <a href="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download Excel</a>
                     </noscript>
                 </div>

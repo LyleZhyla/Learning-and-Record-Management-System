@@ -26,6 +26,7 @@ class NstpAdminUnlockedFeaturesTest extends TestCase
             ->assertSee('Operational reports')
             ->assertSee('Students by Section')
             ->assertSee('PDF document')
+            ->assertSee('Word document with official NSTP template')
             ->assertSee('Excel workbook')
             ->assertSee('Save PDF report')
             ->assertSee('data-report-download', false);
