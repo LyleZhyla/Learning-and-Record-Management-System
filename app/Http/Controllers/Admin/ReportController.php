@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\GradeService;
 use App\Services\ReportDocumentService;
 use App\Services\ReportSpreadsheetService;
+use Carbon\Carbon;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Http\Request;
@@ -61,6 +62,12 @@ class ReportController extends Controller
             ->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))
             ->when($isFacilitator, fn ($query) => $query->where('facilitator_id', $facilitatorId))
             ->distinct()->orderByDesc('academic_year')->pluck('academic_year');
+        $attendanceTrend = $this->attendanceTrend($filters);
+        $enrollmentBreakdown = $this->enrollmentBreakdown($filters, $components);
+        $largestEnrollmentCount = max(1, (int) $enrollmentBreakdown->max('count'));
+        $enrollmentBreakdown = $enrollmentBreakdown->map(fn (array $component): array => $component + [
+            'percentage' => $component['count'] > 0 ? max(8, ($component['count'] / $largestEnrollmentCount) * 100) : 0,
+        ]);
 
         return view('admin.reports.index', [
             'layout' => $layout,
@@ -71,6 +78,9 @@ class ReportController extends Controller
             'components' => $components,
             'sections' => $sections,
             'academicYears' => $academicYears,
+            'attendanceChart' => $this->attendanceChart($attendanceTrend),
+            'enrollmentBreakdown' => $enrollmentBreakdown,
+            'enrollmentTotal' => (int) $enrollmentBreakdown->sum('count'),
             'isCoordinatorReport' => $isCoordinator,
             'isFacilitatorReport' => $isFacilitator,
             'reportScope' => $isCoordinator ? ($request->user()->nstpComponent?->code ?? 'Unassigned component') : ($isFacilitator ? 'Assigned sections' : 'Institution-wide'),
@@ -405,6 +415,100 @@ class ReportController extends Controller
         $total = (clone $records)->count();
 
         return $total ? round(((clone $records)->whereIn('status', ['present', 'late'])->count() / $total) * 100, 1) : 0;
+    }
+
+    private function attendanceTrend(array $filters): Collection
+    {
+        return AttendanceRecord::query()
+            ->select(['id', 'attendance_session_id', 'status'])
+            ->with('attendanceSession:id,section_id,starts_at')
+            ->whereHas('attendanceSession.section', fn ($query) => $this->applySectionFilters($query, $filters))
+            ->whereHas('attendanceSession', function ($query) use ($filters): void {
+                $query->when($filters['date_from'] ?? null, fn ($attendance, $date) => $attendance->whereDate('starts_at', '>=', $date))
+                    ->when($filters['date_to'] ?? null, fn ($attendance, $date) => $attendance->whereDate('starts_at', '<=', $date));
+            })
+            ->get()
+            ->filter(fn (AttendanceRecord $record): bool => $record->attendanceSession?->starts_at !== null)
+            ->groupBy(fn (AttendanceRecord $record): string => $record->attendanceSession->starts_at->toDateString())
+            ->sortKeys()
+            ->take(-12)
+            ->map(function (Collection $records, string $date): array {
+                $attended = $records->whereIn('status', ['present', 'late'])->count();
+                $total = $records->count();
+
+                return [
+                    'date' => $date,
+                    'label' => Carbon::parse($date)->format('M j'),
+                    'rate' => $total > 0 ? round(($attended / $total) * 100, 1) : 0,
+                    'attended' => $attended,
+                    'total' => $total,
+                ];
+            })
+            ->values();
+    }
+
+    private function attendanceChart(Collection $trend): array
+    {
+        $left = 52;
+        $right = 700;
+        $top = 22;
+        $bottom = 210;
+        $points = $trend->values()->map(function (array $point, int $index) use ($trend, $left, $right, $top, $bottom): array {
+            $x = $trend->count() === 1
+                ? ($left + $right) / 2
+                : $left + (($right - $left) * ($index / ($trend->count() - 1)));
+            $y = $bottom - (($bottom - $top) * ($point['rate'] / 100));
+
+            return $point + ['x' => round($x, 2), 'y' => round($y, 2)];
+        });
+        $pointString = $points->map(fn (array $point): string => $point['x'].','.$point['y'])->implode(' ');
+
+        return [
+            'width' => 720,
+            'height' => 260,
+            'left' => $left,
+            'right' => $right,
+            'bottom' => $bottom,
+            'points' => $points,
+            'point_string' => $pointString,
+            'area_points' => $points->isEmpty()
+                ? ''
+                : $points->first()['x'].','.$bottom.' '.$pointString.' '.$points->last()['x'].','.$bottom,
+            'average_rate' => $trend->isEmpty() ? 0 : round($trend->avg('rate'), 1),
+            'ticks' => collect([100, 75, 50, 25, 0])->map(fn (int $value): array => [
+                'value' => $value,
+                'y' => $bottom - (($bottom - $top) * ($value / 100)),
+            ]),
+        ];
+    }
+
+    private function enrollmentBreakdown(array $filters, Collection $components): Collection
+    {
+        $totals = NstpEnrollment::query()
+            ->where('status', 'enrolled')
+            ->when($filters['academic_year'] ?? null, fn ($query, $year) => $query->where('academic_year', $year))
+            ->when($filters['semester'] ?? null, fn ($query, $semester) => $query->where('semester', $semester))
+            ->when($filters['component_id'] ?? null, fn ($query, $componentId) => $query->where('component_id', $componentId))
+            ->when($filters['section_id'] ?? null, fn ($query, $sectionId) => $query->where('section_id', $sectionId))
+            ->when($filters['facilitator_id'] ?? null, fn ($query, $facilitatorId) => $query->whereHas('section', fn ($section) => $section->where('facilitator_id', $facilitatorId)))
+            ->selectRaw('component_id, COUNT(DISTINCT student_id) as enrollment_count')
+            ->groupBy('component_id')
+            ->pluck('enrollment_count', 'component_id');
+
+        $selectedComponentId = isset($filters['component_id']) ? (int) $filters['component_id'] : null;
+
+        if (($filters['section_id'] ?? null) && $selectedComponentId === null) {
+            $selectedComponentId = NstpSection::whereKey($filters['section_id'])->value('component_id');
+        }
+
+        return $components
+            ->when($selectedComponentId !== null, fn (Collection $items) => $items->where('id', $selectedComponentId))
+            ->map(fn (NstpComponent $component): array => [
+                'code' => $component->code,
+                'name' => $component->name,
+                'count' => (int) ($totals[$component->id] ?? 0),
+            ])
+            ->values();
     }
 
     private function routePrefix(Request $request): string

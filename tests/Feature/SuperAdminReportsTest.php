@@ -71,6 +71,24 @@ class SuperAdminReportsTest extends TestCase
             ->assertSee('js/report-download.js', false);
     }
 
+    public function test_report_page_shows_filtered_attendance_and_enrollment_graphs(): void
+    {
+        $component = NstpComponent::where('code', 'CWTS')->firstOrFail();
+
+        $this->actingAs($this->superAdmin)
+            ->get('/admin/reports?type=attendance&academic_year=2026-2027&component_id='.$component->id)
+            ->assertOk()
+            ->assertSee('Attendance and enrollment overview')
+            ->assertSee('Daily attendance rate')
+            ->assertSee('Enrollees per component')
+            ->assertSee('Attendance rate line graph')
+            ->assertSee('Bar graph of enrollees per NSTP component')
+            ->assertSee('100.0%')
+            ->assertSee('Demo Student')
+            ->assertSee('CWTS')
+            ->assertSee('1 enrollees');
+    }
+
     public function test_downloaded_report_contains_only_selected_data_columns(): void
     {
         $response = $this->actingAs($this->superAdmin)
