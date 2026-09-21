@@ -7,6 +7,7 @@ use App\Services\DatabaseBackupService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -43,6 +44,31 @@ class DatabaseBackupController extends Controller
         $archive = $this->backups->archive();
 
         return back()->with('status', 'Database archive '.$archive['name'].' created successfully.');
+    }
+
+    public function upload(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'database_file' => ['required', 'file', 'extensions:sql', 'max:102400'],
+            'action' => ['required', Rule::in(['archive', 'restore'])],
+            'confirmation' => ['nullable', 'required_if:action,restore', 'in:RESTORE'],
+        ], [
+            'database_file.extensions' => 'The uploaded database backup must use the .sql extension.',
+            'confirmation.required_if' => 'Type RESTORE to upload and restore this database backup.',
+            'confirmation.in' => 'Type RESTORE exactly to upload and restore this database backup.',
+        ]);
+        $archive = $this->backups->import($request->file('database_file'));
+
+        if ($validated['action'] === 'restore') {
+            $safetyArchive = $this->backups->restore($archive['name']);
+
+            return redirect()->route('admin.database-backup.index')->with(
+                'status',
+                'Uploaded and restored '.$archive['name'].'. A pre-restore safety archive was saved as '.$safetyArchive['name'].'.'
+            );
+        }
+
+        return back()->with('status', 'Uploaded database backup saved as '.$archive['name'].'.');
     }
 
     public function downloadArchive(string $archive): StreamedResponse

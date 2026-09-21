@@ -15,6 +15,21 @@
     <article><span class="metric-icon violet">◎</span><div><strong>{{ strtoupper($database['driver']) }}</strong><small>{{ $database['name'] }}</small></div></article>
 </section>
 
+<section class="card form-card">
+    <div class="card-heading"><div><span class="eyebrow">External recovery file</span><h3>Upload database backup</h3><p>Upload a SNAPIE-generated SQL backup to keep it as an archive or restore it immediately.</p></div><span class="settings-clock">↑</span></div>
+    <form method="POST" enctype="multipart/form-data" action="{{ route('admin.database-backup.upload') }}">
+        @csrf
+        <div class="form-grid">
+            <label class="field-group full"><span>SNAPIE SQL backup</span><input type="file" name="database_file" accept=".sql" required><small class="form-help">Maximum size: 100 MB. The backup driver must match the active database.</small>@error('database_file')<small class="field-error">{{ $message }}</small>@enderror</label>
+            <label class="field-group"><span>Restore confirmation</span><input name="confirmation" value="" autocomplete="off" placeholder="Type RESTORE for immediate restore"><small class="form-help">Leave blank when uploading to the archive list only.</small>@error('confirmation')<small class="field-error">{{ $message }}</small>@enderror</label>
+        </div>
+        <div class="form-actions">
+            <button class="secondary-outline-button" type="submit" name="action" value="archive">Upload to archives</button>
+            <button class="danger-button" type="submit" name="action" value="restore" onclick="return confirm('Upload this file and replace the live database? A safety archive will be created first.')">Upload &amp; restore</button>
+        </div>
+    </form>
+</section>
+
 <section class="card user-table-card">
     <div class="sectioning-toolbar">
         <div><span class="eyebrow">Recovery snapshots</span><h3>Database archives</h3><p class="muted-cell">Every restore automatically saves the current database as a new safety archive first.</p></div>

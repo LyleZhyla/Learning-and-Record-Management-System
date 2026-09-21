@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Services\DatabaseBackupService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -109,5 +111,45 @@ class DatabaseBackupTest extends TestCase
 
         $this->assertDatabaseHas('users', ['id' => $admin->id, 'name' => 'Archived Admin Name']);
         $this->assertCount(2, Storage::disk('local')->files('database-archives'));
+    }
+
+    public function test_super_admin_can_upload_a_snapie_backup_to_the_archive_list(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $sql = implode('', iterator_to_array(app(DatabaseBackupService::class)->stream(), false));
+
+        $this->actingAs($admin)->post('/admin/database-backup/upload', [
+            'database_file' => UploadedFile::fake()->createWithContent('external-backup.sql', $sql),
+            'action' => 'archive',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertCount(1, Storage::disk('local')->files('database-archives'));
+    }
+
+    public function test_uploaded_file_can_restore_the_database_and_rejects_non_snapie_sql(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->create([
+            'role' => 'super_admin',
+            'status' => 'active',
+            'name' => 'Name From Uploaded Backup',
+        ]);
+        $sql = implode('', iterator_to_array(app(DatabaseBackupService::class)->stream(), false));
+        $admin->update(['name' => 'Changed Before Upload Restore']);
+
+        $this->actingAs($admin)->post('/admin/database-backup/upload', [
+            'database_file' => UploadedFile::fake()->createWithContent('uploaded-restore.sql', $sql),
+            'action' => 'restore',
+            'confirmation' => 'RESTORE',
+        ])->assertRedirect('/admin/database-backup')->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('users', ['id' => $admin->id, 'name' => 'Name From Uploaded Backup']);
+        $this->assertCount(2, Storage::disk('local')->files('database-archives'));
+
+        $this->actingAs(User::findOrFail($admin->id))->post('/admin/database-backup/upload', [
+            'database_file' => UploadedFile::fake()->createWithContent('malicious.sql', 'DROP TABLE users;'),
+            'action' => 'archive',
+        ])->assertSessionHasErrors('database_file');
     }
 }
