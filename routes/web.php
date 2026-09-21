@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\ArchiveController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
+use App\Http\Controllers\Admin\DirectoryExportController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SystemLogController;
@@ -124,6 +125,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::post('/students/email-access', [StudentAccountController::class, 'bulkEmailAccess'])->middleware('throttle:3,1')->name('students.email-access');
     Route::get('/students/{student}/qr', [StudentAccountController::class, 'qr'])->name('students.qr');
     Route::get('/students/{student}/qr/download', [StudentAccountController::class, 'downloadQr'])->name('students.qr.download');
+    Route::get('/students/export', [DirectoryExportController::class, 'students'])->name('students.export');
     Route::post('/accounts/students/component', [NstpAdminAccountController::class, 'bulkAssignStudents'])->name('accounts.students.component.bulk');
     Route::patch('/accounts/{user}/component', [NstpAdminAccountController::class, 'updateComponent'])->name('accounts.component.update');
     Route::patch('/accounts/{user}/enrollments/{enrollment}/rotc-category', [NstpAdminAccountController::class, 'updateRotcCategory'])->name('accounts.rotc-category.update');
@@ -135,10 +137,12 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
+    Route::get('/components/export', [DirectoryExportController::class, 'components'])->name('components.export');
     Route::patch('/components/selection-availability', [NstpAdminComponentController::class, 'updateSelectionAvailability'])->name('components.selection-availability');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
     Route::get('/sections', [NstpAdminSectioningController::class, 'index'])->name('sections.index');
+    Route::get('/sections/export', [DirectoryExportController::class, 'sections'])->name('sections.export');
     Route::get('/sections/create', [NstpAdminSectionController::class, 'create'])->name('sections.create');
     Route::post('/sections', [NstpAdminSectionController::class, 'store'])->name('sections.store');
     Route::get('/sections/{section}/edit', [NstpAdminSectionController::class, 'edit'])->name('sections.edit');
@@ -175,6 +179,7 @@ Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])
 
 Route::middleware('auth')->group(function () {
     Route::get('/notifications/announcements/{announcement}/open', [NotificationController::class, 'openAnnouncement'])->name('notifications.announcements.open');
+    Route::get('/announcements/{announcement}/attachment', [PortalAnnouncementController::class, 'downloadAttachment'])->name('announcements.attachment.download');
     Route::get('/notifications/events/{notification}/open', [NotificationController::class, 'openEvent'])->name('notifications.events.open');
     Route::get('/notifications/categories/{category}/open', [NotificationController::class, 'openCategory'])
         ->whereIn('category', ['announcements', 'materials', 'assessments', 'attendance', 'messages'])
@@ -204,6 +209,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
+    Route::get('/users/export', [DirectoryExportController::class, 'staff'])->name('users.export');
     Route::get('/students', [StudentAccountController::class, 'index'])->name('students.index');
     Route::get('/students/import', [StudentImportController::class, 'create'])->name('students.import.create');
     Route::post('/students/import', [StudentImportController::class, 'store'])->name('students.import.store');
@@ -211,6 +217,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::post('/students/email-access', [StudentAccountController::class, 'bulkEmailAccess'])->middleware('throttle:3,1')->name('students.email-access');
     Route::get('/students/{student}/qr', [StudentAccountController::class, 'qr'])->name('students.qr');
     Route::get('/students/{student}/qr/download', [StudentAccountController::class, 'downloadQr'])->name('students.qr.download');
+    Route::get('/students/export', [DirectoryExportController::class, 'students'])->name('students.export');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::get('/users/{user}/delete', [UserController::class, 'confirmDestroy'])->name('users.delete');
@@ -227,18 +234,22 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup.index');
     Route::post('/database-backup/download', [DatabaseBackupController::class, 'download'])->middleware('throttle:2,1')->name('database-backup.download');
     Route::get('/system-logs', [SystemLogController::class, 'index'])->name('system-logs.index');
+    Route::get('/system-logs/export', [SystemLogController::class, 'export'])->name('system-logs.export');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/archives', [ArchiveController::class, 'index'])->name('archives.index');
+    Route::get('/archives/{type}/export', [ArchiveController::class, 'export'])->name('archives.export');
     Route::post('/archives/{type}', [ArchiveController::class, 'archiveAll'])->name('archives.archive');
     Route::patch('/archives/{type}/restore', [ArchiveController::class, 'restoreAll'])->name('archives.restore');
     Route::delete('/archives/{type}', [ArchiveController::class, 'destroyAll'])->name('archives.destroy');
     Route::get('/settings', [SystemSettingController::class, 'edit'])->name('settings.edit');
     Route::put('/settings', [SystemSettingController::class, 'update'])->name('settings.update');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
+    Route::get('/components/export', [DirectoryExportController::class, 'components'])->name('components.export');
     Route::patch('/components/selection-availability', [NstpAdminComponentController::class, 'updateSelectionAvailability'])->name('components.selection-availability');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
     Route::get('/sections', [NstpAdminSectioningController::class, 'index'])->name('sections.index');
+    Route::get('/sections/export', [DirectoryExportController::class, 'sections'])->name('sections.export');
     Route::get('/sections/create', [NstpAdminSectionController::class, 'create'])->name('sections.create');
     Route::post('/sections', [NstpAdminSectionController::class, 'store'])->name('sections.store');
     Route::get('/sections/{section}/edit', [NstpAdminSectionController::class, 'edit'])->name('sections.edit');
@@ -277,6 +288,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [CoordinatorMonitoringController::class, 'components'])->name('components.index');
+    Route::get('/components/export', [DirectoryExportController::class, 'components'])->name('components.export');
     Route::get('/accounts', [CoordinatorAccountController::class, 'index'])->name('accounts.index');
     Route::patch('/accounts/{user}/enrollments/{enrollment}/rotc-category', [CoordinatorAccountController::class, 'updateRotcCategory'])->name('accounts.rotc-category.update');
     Route::get('/accounts/{user}', [CoordinatorAccountController::class, 'show'])->name('accounts.show');
@@ -286,6 +298,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/rotc-approvals/{enrollment}/proof/download', [CoordinatorRotcApprovalController::class, 'downloadProof'])->name('rotc-approvals.proof.download');
     Route::patch('/rotc-approvals/{enrollment}/approve', [CoordinatorRotcApprovalController::class, 'approve'])->name('rotc-approvals.approve');
     Route::get('/sections', [CoordinatorMonitoringController::class, 'sections'])->name('sections.index');
+    Route::get('/sections/export', [DirectoryExportController::class, 'sections'])->name('sections.export');
     $scheduleRoutes();
     Route::get('/attendance', [CoordinatorMonitoringController::class, 'attendance'])->name('attendance.index');
     Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');
@@ -341,4 +354,5 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/assessments/{assessment}/submit', [StudentLearningController::class, 'submit'])->name('assessments.submit');
     Route::get('/grades', [StudentLearningController::class, 'grades'])->name('grades.index');
     Route::get('/reports', StudentReportController::class)->name('reports.index');
+    Route::get('/reports/download/{type}', [StudentReportController::class, 'download'])->name('reports.download');
 });

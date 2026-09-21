@@ -20,7 +20,7 @@ class Announcement extends Model
     ];
 
     protected $fillable = [
-        'author_id', 'component_id', 'title', 'body', 'audience', 'status', 'published_at', 'expires_at',
+        'author_id', 'component_id', 'title', 'body', 'attachment_path', 'attachment_original_name', 'audience', 'status', 'published_at', 'expires_at',
     ];
 
     protected function casts(): array

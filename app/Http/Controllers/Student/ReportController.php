@@ -9,7 +9,11 @@ use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Services\GradeService;
 use App\Services\PortalAccessService;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class ReportController extends Controller
@@ -20,6 +24,47 @@ class ReportController extends Controller
     ) {}
 
     public function __invoke(Request $request): View
+    {
+        return view('student.reports.index', $this->reportData($request));
+    }
+
+    public function download(Request $request, string $type): Response
+    {
+        $request->merge(['download_type' => $type]);
+        $request->validate(['download_type' => ['required', Rule::in(['grades', 'attendance', 'assessments', 'certificate'])]]);
+        $data = $this->reportData($request);
+        $student = $request->user();
+
+        if ($type === 'certificate') {
+            $summary = $data['gradeSummary'];
+            $eligible = $data['enrollment']
+                && $summary
+                && $summary['total_count'] > 0
+                && $summary['graded_count'] === $summary['total_count']
+                && $summary['percentage'] !== null
+                && $summary['percentage'] >= (float) $summary['settings']->passing_percentage;
+            abort_unless($eligible, 422, 'The completion certificate becomes available after all graded requirements are complete and passing.');
+        }
+
+        $options = new Options;
+        $options->set('defaultFont', 'Helvetica');
+        $options->set('isRemoteEnabled', false);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml(view($type === 'certificate' ? 'student.reports.certificate' : 'student.reports.pdf', $data + [
+            'downloadType' => $type,
+            'student' => $student,
+        ])->render());
+        $dompdf->setPaper($type === 'certificate' ? 'a4' : 'a4', $type === 'certificate' ? 'landscape' : 'portrait');
+        $dompdf->render();
+        $filename = str($student->name.' '.$type)->slug().'-'.now()->format('Y-m-d').'.pdf';
+
+        return response($dompdf->output(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+        ]);
+    }
+
+    private function reportData(Request $request): array
     {
         $student = $request->user();
         $enrollment = $this->access->currentEnrollment($student)?->load(['component', 'section.facilitator']);
@@ -56,12 +101,19 @@ class ReportController extends Controller
             ->whereIn('assessment_id', $assessmentIds)
             ->unique('assessment_id')
             ->count();
+        $certificateEligible = $enrollment
+            && $gradeSummary
+            && $gradeSummary['total_count'] > 0
+            && $gradeSummary['graded_count'] === $gradeSummary['total_count']
+            && $gradeSummary['percentage'] !== null
+            && $gradeSummary['percentage'] >= (float) $gradeSummary['settings']->passing_percentage;
 
-        return view('student.reports.index', [
+        return [
             'enrollment' => $enrollment,
             'attendanceRecords' => $attendanceRecords,
             'submissions' => $submissions,
             'gradeSummary' => $gradeSummary,
+            'certificateEligible' => $certificateEligible,
             'metrics' => [
                 'attendance_rate' => $attendanceTotal === 0
                     ? 0
@@ -74,6 +126,6 @@ class ReportController extends Controller
                 'assessments_remaining' => max(0, $assessmentIds->count() - $submittedCount),
                 'graded_submissions' => $submissions->whereNotNull('score')->count(),
             ],
-        ]);
+        ];
     }
 }

@@ -13,6 +13,7 @@
             <div class="archive-group-title"><span>{{ $group['icon'] }}</span><div><h3>{{ $group['label'] }}</h3><p>{{ $group['description'] }}</p></div></div>
             <dl><div><dt>Active</dt><dd>{{ number_format($group['active_count']) }}</dd></div><div><dt>Archived</dt><dd>{{ number_format($group['archived_count']) }}</dd></div></dl>
             <div class="archive-actions">
+                <a class="secondary-outline-button" href="{{ route('admin.archives.export', $group['type']) }}">Download archived</a>
                 <form method="POST" action="{{ route('admin.archives.archive', $group['type']) }}" onsubmit="return confirm('Archive all active {{ strtolower($group['label']) }}? They will disappear from normal screens but can be restored here.')">@csrf<button class="secondary-outline-button" type="submit" @disabled(!$group['active_count'])>Archive all active</button></form>
                 <form method="POST" action="{{ route('admin.archives.restore', $group['type']) }}" onsubmit="return confirm('Restore all archived {{ strtolower($group['label']) }} to active screens?')">@csrf @method('PATCH')<button class="clear-filter" type="submit" @disabled(!$group['archived_count'])>Restore all</button></form>
             </div>

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Assessment;
 use App\Models\AssessmentSubmission;
 use App\Models\AttendanceRecord;
 use App\Models\NstpComponent;
@@ -31,6 +32,8 @@ class ReportController extends Controller
         'students_by_section' => 'Students by Section',
         'attendance' => 'Attendance Report',
         'grades' => 'Grade Report',
+        'attendance_sheet' => 'Class Attendance Sheet',
+        'grade_sheet' => 'Class Grade Sheet',
         'sections' => 'Component and Section Report',
     ];
 
@@ -212,6 +215,8 @@ class ReportController extends Controller
             'students_by_section' => $this->studentsBySectionReport($filters),
             'attendance' => $this->attendanceReport($filters),
             'grades' => $this->gradeReport($filters),
+            'attendance_sheet' => $this->attendanceSheetReport($filters),
+            'grade_sheet' => $this->gradeSheetReport($filters),
             'sections' => $this->sectionReport($filters),
             default => $this->studentReport($filters),
         };
@@ -342,6 +347,65 @@ class ReportController extends Controller
             })->values();
 
         return $this->report('Grade Report', ['Student', 'Component', 'Section', 'Graded Score Items', 'Raw Score Rate', 'Weighted Total', 'Final Grade', 'Status'], $rows);
+    }
+
+    private function attendanceSheetReport(array $filters): array
+    {
+        $rows = NstpEnrollment::with(['student', 'component', 'section'])
+            ->whereNotNull('section_id')
+            ->whereHas('section', fn ($query) => $this->applySectionFilters($query, $filters))
+            ->get()->sortBy(fn ($enrollment) => $enrollment->section?->code.'|'.$enrollment->student?->name)
+            ->map(function (NstpEnrollment $enrollment): array {
+                $sessionIds = $enrollment->section->attendanceSessions()
+                    ->where('starts_at', '<=', now())->pluck('id');
+                $records = AttendanceRecord::where('student_id', $enrollment->student_id)
+                    ->whereIn('attendance_session_id', $sessionIds)->get();
+                $present = $records->where('status', 'present')->count();
+                $late = $records->where('status', 'late')->count();
+                $absent = max(0, $sessionIds->count() - $present - $late);
+                $rate = $sessionIds->isEmpty() ? 0 : (($present + $late) / $sessionIds->count()) * 100;
+
+                return [
+                    'student' => $enrollment->student->name,
+                    'component' => $enrollment->component->code,
+                    'section' => $enrollment->section->code,
+                    'sessions' => $sessionIds->count(),
+                    'present' => $present,
+                    'late' => $late,
+                    'absent' => $absent,
+                    'attendance_rate' => number_format($rate, 2).'%',
+                ];
+            })->values();
+
+        return $this->report('Class Attendance Sheet', ['Student', 'Component', 'Section', 'Sessions', 'Present', 'Late', 'Absent', 'Attendance Rate'], $rows);
+    }
+
+    private function gradeSheetReport(array $filters): array
+    {
+        $assessments = Assessment::with(['section.component', 'submissions.student'])
+            ->whereHas('section', fn ($query) => $this->applySectionFilters($query, $filters))
+            ->where('status', 'published')->orderBy('section_id')->orderBy('title')->get();
+        $rows = $assessments->flatMap(fn (Assessment $assessment) => $assessment->submissions
+            ->sortBy(fn ($submission) => $submission->student?->name)
+            ->map(function ($submission) use ($assessment): array {
+                $percentage = $submission->score === null || (float) $assessment->max_score <= 0
+                    ? '—'
+                    : number_format(((float) $submission->score / (float) $assessment->max_score) * 100, 2).'%';
+
+                return [
+                    'student' => $submission->student?->name ?? 'Deleted student',
+                    'component' => $assessment->section->component->code,
+                    'section' => $assessment->section->code,
+                    'assessment' => $assessment->title,
+                    'type' => str($assessment->type)->headline(),
+                    'score' => $submission->score === null ? 'Pending' : number_format((float) $submission->score, 2),
+                    'maximum' => number_format((float) $assessment->max_score, 2),
+                    'percentage' => $percentage,
+                    'status' => $submission->score === null ? 'Pending' : 'Graded',
+                ];
+            }))->values();
+
+        return $this->report('Class Grade Sheet', ['Student', 'Component', 'Section', 'Assessment', 'Type', 'Score', 'Maximum', 'Percentage', 'Status'], $rows);
     }
 
     private function sectionReport(array $filters): array

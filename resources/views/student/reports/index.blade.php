@@ -10,7 +10,12 @@
             <h2>My NSTP report</h2>
             <p>Review your current enrollment, attendance, submissions, and grade standing in one private page. Only records belonging to your account are shown.</p>
         </div>
-        <span class="workspace-date">Generated<strong>{{ now()->format('M d, Y · h:i A') }}</strong></span>
+        <div class="page-action-buttons">
+            <a class="secondary-outline-button" href="{{ route('student.reports.download', 'grades') }}">Download grades</a>
+            <a class="secondary-outline-button" href="{{ route('student.reports.download', 'attendance') }}">Download attendance</a>
+            <a class="secondary-outline-button" href="{{ route('student.reports.download', 'assessments') }}">Download assessments</a>
+            @if($certificateEligible)<a class="primary-button compact" href="{{ route('student.reports.download', 'certificate') }}">Download certificate</a>@endif
+        </div>
     </section>
 
     <section class="metric-grid" aria-label="Personal report overview">

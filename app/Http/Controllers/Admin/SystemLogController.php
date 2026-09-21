@@ -5,40 +5,23 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
 use App\Models\User;
+use App\Services\SpreadsheetDownloadService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SystemLogController extends Controller
 {
+    public function __construct(private SpreadsheetDownloadService $downloads) {}
+
     public function index(Request $request): View
     {
         $availableActions = AuditLog::query()->distinct()->orderBy('action')->pluck('action');
-        $filters = $request->validate([
-            'search' => ['nullable', 'string', 'max:100'],
-            'role' => ['nullable', Rule::in(array_keys(User::ROLE_LABELS))],
-            'action' => ['nullable', 'string', 'max:60'],
-            'status' => ['nullable', Rule::in(['success', 'error'])],
-            'date_from' => ['nullable', 'date'],
-            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
-        ]);
+        $filters = $this->filters($request);
 
-        $logs = AuditLog::query()
-            ->when($filters['search'] ?? null, function ($query, string $search): void {
-                $query->where(function ($query) use ($search): void {
-                    $query->where('actor_name', 'like', "%{$search}%")
-                        ->orWhere('actor_email', 'like', "%{$search}%")
-                        ->orWhere('description', 'like', "%{$search}%")
-                        ->orWhere('route_name', 'like', "%{$search}%")
-                        ->orWhere('ip_address', 'like', "%{$search}%");
-                });
-            })
-            ->when($filters['role'] ?? null, fn ($query, string $role) => $query->where('actor_role', $role))
-            ->when($filters['action'] ?? null, fn ($query, string $action) => $query->where('action', $action))
-            ->when(($filters['status'] ?? null) === 'success', fn ($query) => $query->where('status_code', '<', 400))
-            ->when(($filters['status'] ?? null) === 'error', fn ($query) => $query->where('status_code', '>=', 400))
-            ->when($filters['date_from'] ?? null, fn ($query, string $date) => $query->whereDate('created_at', '>=', $date))
-            ->when($filters['date_to'] ?? null, fn ($query, string $date) => $query->whereDate('created_at', '<=', $date))
+        $logs = $this->query($filters)
             ->latest('created_at')
             ->paginate(25)
             ->withQueryString();
@@ -57,5 +40,56 @@ class SystemLogController extends Controller
             'roles' => User::ROLE_LABELS,
             'availableActions' => $availableActions,
         ]);
+    }
+
+    public function export(Request $request): StreamedResponse
+    {
+        $filters = $this->filters($request);
+        $rows = $this->query($filters)->latest('created_at')->get()->map(fn (AuditLog $log) => [
+            'date_time' => $log->created_at?->format('M d, Y h:i:s A'),
+            'actor' => $log->actor_name,
+            'email' => $log->actor_email,
+            'role' => User::ROLE_LABELS[$log->actor_role] ?? str($log->actor_role)->headline(),
+            'action' => str($log->action)->replace('_', ' ')->headline(),
+            'description' => $log->description,
+            'request' => $log->method.' '.($log->route_name ?? $log->path),
+            'status' => $log->status_code,
+            'duration' => $log->duration_ms.' ms',
+            'ip_address' => $log->ip_address ?? '—',
+        ]);
+
+        return $this->downloads->download('System Activity Logs', ['Date & Time', 'Actor', 'Email', 'Role', 'Action', 'Description', 'Request', 'Status', 'Duration', 'IP Address'], $rows, 'Current log filters');
+    }
+
+    private function filters(Request $request): array
+    {
+        return $request->validate([
+            'search' => ['nullable', 'string', 'max:100'],
+            'role' => ['nullable', Rule::in(array_keys(User::ROLE_LABELS))],
+            'action' => ['nullable', 'string', 'max:60'],
+            'status' => ['nullable', Rule::in(['success', 'error'])],
+            'date_from' => ['nullable', 'date'],
+            'date_to' => ['nullable', 'date', 'after_or_equal:date_from'],
+        ]);
+    }
+
+    private function query(array $filters): Builder
+    {
+        return AuditLog::query()
+            ->when($filters['search'] ?? null, function ($query, string $search): void {
+                $query->where(function ($query) use ($search): void {
+                    $query->where('actor_name', 'like', "%{$search}%")
+                        ->orWhere('actor_email', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('route_name', 'like', "%{$search}%")
+                        ->orWhere('ip_address', 'like', "%{$search}%");
+                });
+            })
+            ->when($filters['role'] ?? null, fn ($query, string $role) => $query->where('actor_role', $role))
+            ->when($filters['action'] ?? null, fn ($query, string $action) => $query->where('action', $action))
+            ->when(($filters['status'] ?? null) === 'success', fn ($query) => $query->where('status_code', '<', 400))
+            ->when(($filters['status'] ?? null) === 'error', fn ($query) => $query->where('status_code', '>=', 400))
+            ->when($filters['date_from'] ?? null, fn ($query, string $date) => $query->whereDate('created_at', '>=', $date))
+            ->when($filters['date_to'] ?? null, fn ($query, string $date) => $query->whereDate('created_at', '<=', $date));
     }
 }

@@ -6,7 +6,7 @@
 @section('content')
     <section class="page-actions component-analytics-heading">
         <div><span class="eyebrow">Enrollment analytics</span><h2>NSTP component insights</h2><p>Compare component enrollment and review student demographics for a selected component and term.</p></div>
-        <a class="secondary-outline-button" href="{{ route($routePrefix.'.sections.index') }}">Manage sectioning →</a>
+        <div class="page-action-buttons"><a class="secondary-outline-button" href="{{ route($routePrefix.'.components.export') }}">Download components</a><a class="secondary-outline-button" href="{{ route($routePrefix.'.sections.index') }}">Manage sectioning →</a></div>
     </section>
 
     <section class="card component-selection-control {{ $componentSelectionOpen ? 'is-open' : 'is-closed' }}">

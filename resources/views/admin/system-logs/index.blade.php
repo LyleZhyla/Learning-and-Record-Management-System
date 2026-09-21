@@ -5,6 +5,7 @@
 @section('content')
 <div class="page-actions">
     <div><span class="eyebrow">Audit trail</span><h2>User activity logs</h2><p>Review authenticated activity across SNAPIE. Form contents and passwords are never stored in these logs.</p></div>
+    <a class="secondary-outline-button" href="{{ route('admin.system-logs.export', $filters) }}">Download Excel</a>
 </div>
 
 <section class="system-log-metrics">

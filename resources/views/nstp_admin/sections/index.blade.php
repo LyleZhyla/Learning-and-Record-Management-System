@@ -4,7 +4,7 @@
 @section('page-title', 'NSTP Sections')
 
 @section('content')
-    <section class="page-actions"><div><span class="eyebrow">Section management</span><h2>Manage NSTP sections</h2><p>Organize sections by component and term, set capacity, and assign facilitators.</p></div><a class="primary-button compact" href="{{ route($routePrefix.'.sections.create', request()->only('component')) }}">+ Create section</a></section>
+    <section class="page-actions"><div><span class="eyebrow">Section management</span><h2>Manage NSTP sections</h2><p>Organize sections by component and term, set capacity, and assign facilitators.</p></div><div class="page-action-buttons"><a class="secondary-outline-button" href="{{ route($routePrefix.'.sections.export') }}">Download sections</a><a class="primary-button compact" href="{{ route($routePrefix.'.sections.create', request()->only('component')) }}">+ Create section</a></div></section>
     <section class="card user-table-card">
         <form class="filter-bar" method="GET" action="{{ route($routePrefix.'.sections.index') }}">
             <select name="component" aria-label="Filter by component"><option value="">All components</option>@foreach($components as $component)<option value="{{ $component->id }}" @selected((int)($filters['component'] ?? 0) === $component->id)>{{ $component->code }}</option>@endforeach</select>

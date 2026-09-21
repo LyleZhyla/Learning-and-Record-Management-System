@@ -11,6 +11,7 @@
             <p>Create and manage facilitators, coordinators, NSTP Admins, and Super Admins separately from students.</p>
         </div>
         <div class="page-action-buttons">
+            <a class="secondary-outline-button" href="{{ route('admin.users.export', request()->only(['search','role','status'])) }}">Download directory</a>
             <a class="primary-button compact create-account-button" href="{{ route('admin.users.create') }}">Create staff account</a>
         </div>
     </section>

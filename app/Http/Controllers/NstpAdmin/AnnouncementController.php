@@ -7,6 +7,7 @@ use App\Models\Announcement;
 use App\Models\NstpComponent;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -54,7 +55,13 @@ class AnnouncementController extends Controller
     public function update(Request $request, Announcement $announcement): RedirectResponse
     {
         $this->authorizeOwner($request, $announcement);
-        $announcement->update($this->payload($request->validate($this->rules()), $request, $announcement));
+        $oldAttachment = $announcement->attachment_path;
+        $validated = $request->validate($this->rules());
+        $announcement->update($this->payload($validated, $request, $announcement));
+
+        if ($oldAttachment && (($validated['remove_attachment'] ?? false) || $request->hasFile('attachment'))) {
+            Storage::disk('local')->delete($oldAttachment);
+        }
 
         return back()->with('status', 'Announcement updated successfully.');
     }
@@ -65,6 +72,9 @@ class AnnouncementController extends Controller
             $this->authorizeOwner($request, $announcement);
         }
 
+        if ($announcement->attachment_path) {
+            Storage::disk('local')->delete($announcement->attachment_path);
+        }
         $announcement->delete();
 
         return redirect()->route($this->routePrefix($request).'.announcements.index')->with('status', 'Announcement deleted.');
@@ -75,6 +85,8 @@ class AnnouncementController extends Controller
         return [
             'title' => ['required', 'string', 'max:180'],
             'body' => ['required', 'string', 'max:10000'],
+            'attachment' => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,jpg,jpeg,png', 'max:10240'],
+            'remove_attachment' => ['nullable', 'boolean'],
             'audience' => ['required', Rule::in(array_keys(Announcement::AUDIENCES))],
             'component_id' => ['nullable', 'integer', 'exists:nstp_components,id'],
             'status' => ['required', Rule::in(['draft', 'published'])],
@@ -86,6 +98,15 @@ class AnnouncementController extends Controller
     {
         if ($request->user()->isCoordinator()) {
             $validated['component_id'] = $request->user()->nstp_component_id;
+        }
+
+        unset($validated['attachment'], $validated['remove_attachment']);
+        if ($request->hasFile('attachment')) {
+            $validated['attachment_path'] = $request->file('attachment')->store('announcement-attachments');
+            $validated['attachment_original_name'] = $request->file('attachment')->getClientOriginalName();
+        } elseif ($request->boolean('remove_attachment')) {
+            $validated['attachment_path'] = null;
+            $validated['attachment_original_name'] = null;
         }
 
         return $validated + [

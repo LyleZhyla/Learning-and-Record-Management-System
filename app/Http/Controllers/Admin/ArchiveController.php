@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
+use App\Services\SpreadsheetDownloadService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ArchiveController extends Controller
 {
@@ -20,6 +22,8 @@ class ArchiveController extends Controller
         'system-logs' => ['label' => 'System logs', 'description' => 'Authenticated activity and security audit trail entries.', 'icon' => '☷'],
         'notifications' => ['label' => 'Notifications', 'description' => 'Published announcements currently shown in notification bells.', 'icon' => '🔔'],
     ];
+
+    public function __construct(private SpreadsheetDownloadService $downloads) {}
 
     public function index(): View
     {
@@ -75,6 +79,54 @@ class ArchiveController extends Controller
             'status',
             number_format($count).' archived '.$details['label'].' permanently deleted. These records can no longer be restored.'
         );
+    }
+
+    public function export(string $type): StreamedResponse
+    {
+        $details = $this->details($type);
+        $records = $this->records($type, true)->get();
+
+        [$headers, $rows] = match ($type) {
+            'attendance' => [
+                ['Student', 'Session', 'Status', 'Checked In', 'Checked Out', 'Source', 'Archived At'],
+                $records->load(['student', 'attendanceSession'])->map(fn (AttendanceRecord $record) => [
+                    'student' => $record->student?->name ?? 'Deleted student',
+                    'session' => $record->attendanceSession?->title ?? 'Deleted session',
+                    'status' => ucfirst($record->status),
+                    'checked_in' => $record->checked_in_at?->format('M d, Y h:i A') ?? '—',
+                    'checked_out' => $record->checked_out_at?->format('M d, Y h:i A') ?? '—',
+                    'source' => strtoupper($record->source),
+                    'archived_at' => $record->archived_at?->format('M d, Y h:i A') ?? '—',
+                ]),
+            ],
+            'system-logs' => [
+                ['Actor', 'Email', 'Action', 'Description', 'Request', 'Status', 'Created At', 'Archived At'],
+                $records->map(fn (AuditLog $log) => [
+                    'actor' => $log->actor_name,
+                    'email' => $log->actor_email,
+                    'action' => str($log->action)->headline(),
+                    'description' => $log->description,
+                    'request' => $log->method.' '.($log->route_name ?? $log->path),
+                    'status' => $log->status_code,
+                    'created_at' => $log->created_at?->format('M d, Y h:i A') ?? '—',
+                    'archived_at' => $log->archived_at?->format('M d, Y h:i A') ?? '—',
+                ]),
+            ],
+            'notifications' => [
+                ['Title', 'Audience', 'Component', 'Status', 'Published At', 'Expires At', 'Archived At'],
+                $records->load('component')->map(fn (Announcement $announcement) => [
+                    'title' => $announcement->title,
+                    'audience' => $announcement->audienceLabel(),
+                    'component' => $announcement->component?->code ?? 'All',
+                    'status' => ucfirst($announcement->status),
+                    'published_at' => $announcement->published_at?->format('M d, Y h:i A') ?? '—',
+                    'expires_at' => $announcement->expires_at?->format('M d, Y h:i A') ?? '—',
+                    'archived_at' => $announcement->archived_at?->format('M d, Y h:i A') ?? '—',
+                ]),
+            ],
+        };
+
+        return $this->downloads->download('Archived '.$details['label'], $headers, $rows, 'Archived records only');
     }
 
     private function details(string $type): array
