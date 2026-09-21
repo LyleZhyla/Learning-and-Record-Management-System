@@ -43,61 +43,6 @@
         </form>
     </section>
 
-    <section class="report-analytics-section" aria-labelledby="report-analytics-title">
-        <div class="report-analytics-heading">
-            <div><span class="eyebrow">Filtered analytics</span><h3 id="report-analytics-title">Attendance and enrollment overview</h3><p>The graphs follow the academic year, semester, component, section, and date filters above.</p></div>
-        </div>
-        <div class="report-analytics-grid">
-            <article class="card report-chart-card">
-                <div class="report-chart-heading">
-                    <div><span class="eyebrow">Attendance trend</span><h4>Daily attendance rate</h4><p>Present and late records across the latest 12 attendance dates.</p></div>
-                    <span class="report-chart-total"><strong>{{ number_format($attendanceChart['average_rate'], 1) }}%</strong><small>Average rate</small></span>
-                </div>
-                @if($attendanceChart['points']->isNotEmpty())
-                    <div class="attendance-line-chart">
-                        <svg viewBox="0 0 {{ $attendanceChart['width'] }} {{ $attendanceChart['height'] }}" role="img" aria-labelledby="attendance-chart-title attendance-chart-description">
-                            <title id="attendance-chart-title">Attendance rate line graph</title>
-                            <desc id="attendance-chart-description">Daily percentage of present and late attendance records for the selected report scope.</desc>
-                            @foreach($attendanceChart['ticks'] as $tick)
-                                <line class="attendance-grid-line" x1="{{ $attendanceChart['left'] }}" y1="{{ $tick['y'] }}" x2="{{ $attendanceChart['right'] }}" y2="{{ $tick['y'] }}" />
-                                <text class="attendance-axis-label" x="{{ $attendanceChart['left'] - 10 }}" y="{{ $tick['y'] + 4 }}" text-anchor="end">{{ $tick['value'] }}%</text>
-                            @endforeach
-                            <polygon class="attendance-area" points="{{ $attendanceChart['area_points'] }}" />
-                            <polyline class="attendance-line" points="{{ $attendanceChart['point_string'] }}" />
-                            @foreach($attendanceChart['points'] as $point)
-                                <circle class="attendance-point" cx="{{ $point['x'] }}" cy="{{ $point['y'] }}" r="5">
-                                    <title>{{ $point['label'] }}: {{ number_format($point['rate'], 1) }}% ({{ $point['attended'] }} of {{ $point['total'] }})</title>
-                                </circle>
-                                <text class="attendance-date-label" x="{{ $point['x'] }}" y="238" text-anchor="middle">{{ $point['label'] }}</text>
-                            @endforeach
-                        </svg>
-                    </div>
-                @else
-                    <div class="empty-state report-chart-empty"><strong>No attendance data yet</strong><span>Attendance trends will appear after records are created within this scope.</span></div>
-                @endif
-            </article>
-
-            <article class="card report-chart-card">
-                <div class="report-chart-heading">
-                    <div><span class="eyebrow">Enrollment distribution</span><h4>Enrollees per component</h4><p>Unique enrolled students within the selected academic scope.</p></div>
-                    <span class="report-chart-total green"><strong>{{ number_format($enrollmentTotal) }}</strong><small>Total enrollees</small></span>
-                </div>
-                @if($enrollmentBreakdown->isNotEmpty())
-                    <div class="report-bar-chart" role="list" aria-label="Bar graph of enrollees per NSTP component" style="--report-bar-columns: {{ max(1, $enrollmentBreakdown->count()) }}">
-                        @foreach($enrollmentBreakdown as $component)
-                            <article class="report-bar-column" role="listitem" aria-label="{{ $component['code'] }}: {{ number_format($component['count']) }} enrollees">
-                                <div class="report-bar-track" aria-hidden="true"><span class="component-{{ strtolower($component['code']) }}" style="height: {{ $component['percentage'] }}%"><b>{{ number_format($component['count']) }}</b></span></div>
-                                <div class="report-bar-label"><strong>{{ $component['code'] }}</strong><small>{{ $component['name'] }}</small></div>
-                            </article>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="empty-state report-chart-empty"><strong>No enrollment data yet</strong><span>Enrollment totals will appear when components are available within this scope.</span></div>
-                @endif
-            </article>
-        </div>
-    </section>
-
     <section class="card user-table-card report-result-card">
         <div class="report-result-heading">
             <div><span class="eyebrow">Generated report</span><h3>{{ $report['title'] }}</h3><p>{{ $report['rows']->count() }} record{{ $report['rows']->count() === 1 ? '' : 's' }} matched the selected filters.</p></div>

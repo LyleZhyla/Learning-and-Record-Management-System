@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\AttendanceRecord;
+use App\Models\AttendanceSession;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
+use App\Models\NstpSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -115,7 +118,8 @@ class SuperAdminAuthenticationTest extends TestCase
 
         $this->actingAs($superAdmin)->get('/admin/dashboard')
             ->assertOk()
-            ->assertSee('Students per component and ROTC category')
+            ->assertSee('Enrollees per component and ROTC category')
+            ->assertSee('Daily attendance rate')
             ->assertSee('data-chart-orientation="vertical"', false)
             ->assertSee('aria-label="CWTS: 2 enrollees"', false)
             ->assertSee('aria-label="LTS: 1 enrollees"', false)
@@ -131,6 +135,55 @@ class SuperAdminAuthenticationTest extends TestCase
                 && $components->firstWhere('code', 'MS-31')['count'] === 2
                 && $components->firstWhere('code', 'MS-41')['count'] === 1
             );
+    }
+
+    public function test_super_admin_dashboard_shows_current_term_attendance_line_graph(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'is_active' => true]);
+        $year = now()->year;
+        $start = now()->month >= 6 ? $year : $year - 1;
+        $academicYear = $start.'-'.($start + 1);
+        $semester = now()->month >= 6 ? 'first' : 'second';
+        $section = NstpSection::create([
+            'component_id' => $component->id,
+            'facilitator_id' => $facilitator->id,
+            'code' => 'CWTS-DASH',
+            'name' => 'Dashboard Section',
+            'academic_year' => $academicYear,
+            'semester' => $semester,
+            'capacity' => 40,
+            'status' => 'active',
+        ]);
+        $session = AttendanceSession::create([
+            'section_id' => $section->id,
+            'created_by' => $facilitator->id,
+            'title' => 'Dashboard Attendance',
+            'starts_at' => now()->subDay(),
+            'ends_at' => now()->subDay()->addHours(3),
+            'token' => str()->random(48),
+            'qr_payload' => 'dashboard-test',
+            'qr_svg' => '<svg></svg>',
+            'status' => 'closed',
+        ]);
+        AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'student_id' => $student->id,
+            'status' => 'present',
+            'checked_in_at' => now()->subDay(),
+            'source' => 'qr',
+        ]);
+
+        $this->actingAs($superAdmin)->get('/admin/dashboard')
+            ->assertOk()
+            ->assertSee('Attendance and enrollment overview')
+            ->assertSee('Attendance rate line graph')
+            ->assertSee(now()->subDay()->format('M j'))
+            ->assertSee('100.0%')
+            ->assertViewHas('attendanceChart', fn (array $chart): bool => $chart['points']->count() === 1
+                && $chart['points']->first()['rate'] === 100.0);
     }
 
     public function test_super_admin_dashboard_shows_active_students_without_a_current_component(): void
