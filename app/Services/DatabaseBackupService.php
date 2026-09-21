@@ -6,10 +6,13 @@ use DateTimeInterface;
 use Generator;
 use Illuminate\Database\Connection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 
 class DatabaseBackupService
 {
+    private const ARCHIVE_DIRECTORY = 'database-archives';
+
     public function information(): array
     {
         $connection = DB::connection();
@@ -24,7 +27,115 @@ class DatabaseBackupService
 
     public function filename(): string
     {
-        return 'snapie-database-'.now()->format('Y-m-d_His').'.sql';
+        return 'snapie-database-'.now()->format('Y-m-d_His_u').'.sql';
+    }
+
+    /** @return array{name: string, path: string, size: int, created_at: \Carbon\CarbonInterface} */
+    public function archive(): array
+    {
+        $name = $this->filename();
+        $path = self::ARCHIVE_DIRECTORY.'/'.$name;
+        $disk = Storage::disk('local');
+        $disk->makeDirectory(self::ARCHIVE_DIRECTORY);
+        $handle = fopen($disk->path($path), 'wb');
+
+        if ($handle === false) {
+            throw new RuntimeException('The database archive could not be created.');
+        }
+
+        try {
+            foreach ($this->stream() as $chunk) {
+                if (fwrite($handle, $chunk) === false) {
+                    throw new RuntimeException('The database archive could not be written completely.');
+                }
+            }
+        } catch (\Throwable $exception) {
+            fclose($handle);
+            $disk->delete($path);
+            throw $exception;
+        }
+
+        fclose($handle);
+
+        return $this->details($name);
+    }
+
+    public function archives(): \Illuminate\Support\Collection
+    {
+        $disk = Storage::disk('local');
+
+        return collect($disk->files(self::ARCHIVE_DIRECTORY))
+            ->filter(fn (string $path): bool => str_ends_with($path, '.sql'))
+            ->map(fn (string $path): array => $this->details(basename($path)))
+            ->sortByDesc('created_at')
+            ->values();
+    }
+
+    /** @return array{name: string, path: string, size: int, created_at: \Carbon\CarbonInterface} */
+    public function details(string $name): array
+    {
+        $path = $this->path($name);
+        $disk = Storage::disk('local');
+        abort_unless($disk->exists($path), 404);
+
+        return [
+            'name' => $name,
+            'path' => $path,
+            'size' => $disk->size($path),
+            'created_at' => now()->createFromTimestamp($disk->lastModified($path)),
+        ];
+    }
+
+    public function delete(string $name): void
+    {
+        $path = $this->path($name);
+        abort_unless(Storage::disk('local')->exists($path), 404);
+        Storage::disk('local')->delete($path);
+    }
+
+    /** @return array{name: string, path: string, size: int, created_at: \Carbon\CarbonInterface} */
+    public function restore(string $name): array
+    {
+        $path = $this->path($name);
+        $disk = Storage::disk('local');
+        abort_unless($disk->exists($path), 404);
+        $sql = $disk->get($path);
+        $safetyArchive = $this->archive();
+        $connection = DB::connection();
+        $driver = $connection->getDriverName();
+
+        if (! in_array($driver, ['mysql', 'mariadb', 'sqlite'], true)) {
+            throw new RuntimeException("Database restores are not available for the {$driver} driver.");
+        }
+
+        if ($driver === 'sqlite') {
+            $connection->statement('PRAGMA foreign_keys=OFF');
+        } else {
+            $connection->statement('SET FOREIGN_KEY_CHECKS=0');
+        }
+
+        try {
+            foreach ($this->statements($sql) as $statement) {
+                $normalized = strtoupper(trim($statement));
+                if ($normalized === ''
+                    || str_starts_with($normalized, 'PRAGMA FOREIGN_KEYS')
+                    || str_starts_with($normalized, 'SET FOREIGN_KEY_CHECKS')
+                    || str_starts_with($normalized, 'SET NAMES')
+                    || in_array($normalized, ['BEGIN TRANSACTION', 'START TRANSACTION', 'COMMIT'], true)) {
+                    continue;
+                }
+
+                $connection->unprepared($statement);
+            }
+        } finally {
+            if ($driver === 'sqlite') {
+                $connection->statement('PRAGMA foreign_keys=ON');
+            } else {
+                $connection->statement('SET FOREIGN_KEY_CHECKS=1');
+            }
+        }
+
+        return $safetyArchive;
     }
 
     public function stream(): Generator
@@ -135,5 +246,66 @@ class DatabaseBackupService
         }
 
         return $quoted;
+    }
+
+    private function path(string $name): string
+    {
+        abort_unless((bool) preg_match('/\Asnapie-database-\d{4}-\d{2}-\d{2}_\d{6}(?:_\d{6})?\.sql\z/', $name), 404);
+
+        return self::ARCHIVE_DIRECTORY.'/'.$name;
+    }
+
+    /** @return array<int, string> */
+    private function statements(string $sql): array
+    {
+        $statements = [];
+        $buffer = '';
+        $quote = null;
+        $escaped = false;
+        $length = strlen($sql);
+
+        for ($index = 0; $index < $length; $index++) {
+            $character = $sql[$index];
+            $buffer .= $character;
+
+            if ($escaped) {
+                $escaped = false;
+
+                continue;
+            }
+            if ($quote !== null && $character === '\\') {
+                $escaped = true;
+
+                continue;
+            }
+            if (in_array($character, ["'", '"', '`'], true)) {
+                if ($quote === null) {
+                    $quote = $character;
+                } elseif ($quote === $character) {
+                    $next = $sql[$index + 1] ?? null;
+                    if ($next === $character && $character !== '`') {
+                        $buffer .= $next;
+                        $index++;
+                    } else {
+                        $quote = null;
+                    }
+                }
+
+                continue;
+            }
+            if ($character === ';' && $quote === null) {
+                $statement = trim(substr($buffer, 0, -1));
+                if ($statement !== '') {
+                    $statements[] = $statement;
+                }
+                $buffer = '';
+            }
+        }
+
+        if (trim($buffer) !== '') {
+            $statements[] = trim($buffer);
+        }
+
+        return $statements;
     }
 }

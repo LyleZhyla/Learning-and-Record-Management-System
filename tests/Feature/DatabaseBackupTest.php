@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class DatabaseBackupTest extends TestCase
@@ -16,11 +17,12 @@ class DatabaseBackupTest extends TestCase
 
         $this->actingAs($admin)->get('/admin/database-backup')
             ->assertOk()
-            ->assertSee('Download SQL backup')
+            ->assertSee('Archive current database')
+            ->assertSee('Database archives')
             ->assertSeeTextInOrder([
                 'Administration',
                 'Reports',
-                'Database Backup',
+                'Database Management',
                 'System Logs',
                 'Attendance & Learning',
             ]);
@@ -55,5 +57,57 @@ class DatabaseBackupTest extends TestCase
 
         $this->actingAs($nstpAdmin)->get('/admin/database-backup')->assertForbidden();
         $this->actingAs($nstpAdmin)->post('/admin/database-backup/download')->assertForbidden();
+        $this->actingAs($nstpAdmin)->post('/admin/database-backup/archive')->assertForbidden();
+    }
+
+    public function test_super_admin_can_archive_download_and_delete_a_database_snapshot(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($admin)->post('/admin/database-backup/archive')->assertRedirect();
+        $path = collect(Storage::disk('local')->files('database-archives'))->sole();
+        $name = basename($path);
+
+        $this->actingAs($admin)->get('/admin/database-backup')
+            ->assertOk()->assertSee($name)->assertSee('Restore')->assertSee('Delete');
+        $this->actingAs($admin)->get('/admin/database-backup/archives/'.$name.'/download')
+            ->assertOk()->assertDownload($name);
+        $this->actingAs($admin)->delete('/admin/database-backup/archives/'.$name, ['confirmation' => 'WRONG'])
+            ->assertSessionHasErrors('confirmation');
+        Storage::disk('local')->assertExists($path);
+        $this->actingAs($admin)->delete('/admin/database-backup/archives/'.$name, ['confirmation' => 'DELETE'])
+            ->assertRedirect();
+        Storage::disk('local')->assertMissing($path);
+    }
+
+    public function test_restore_requires_explicit_confirmation(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $this->actingAs($admin)->post('/admin/database-backup/archive')->assertRedirect();
+        $name = basename(collect(Storage::disk('local')->files('database-archives'))->sole());
+
+        $this->actingAs($admin)->post('/admin/database-backup/archives/'.$name.'/restore', ['confirmation' => 'WRONG'])
+            ->assertSessionHasErrors('confirmation');
+    }
+
+    public function test_restore_replaces_database_contents_and_creates_a_safety_archive(): void
+    {
+        Storage::fake('local');
+        $admin = User::factory()->create([
+            'role' => 'super_admin',
+            'status' => 'active',
+            'name' => 'Archived Admin Name',
+        ]);
+        $this->actingAs($admin)->post('/admin/database-backup/archive')->assertRedirect();
+        $name = basename(collect(Storage::disk('local')->files('database-archives'))->sole());
+        $admin->update(['name' => 'Changed After Archive']);
+
+        $this->actingAs($admin)->post('/admin/database-backup/archives/'.$name.'/restore', ['confirmation' => 'RESTORE'])
+            ->assertRedirect('/admin/database-backup');
+
+        $this->assertDatabaseHas('users', ['id' => $admin->id, 'name' => 'Archived Admin Name']);
+        $this->assertCount(2, Storage::disk('local')->files('database-archives'));
     }
 }

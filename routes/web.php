@@ -233,6 +233,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     Route::get('/database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup.index');
     Route::post('/database-backup/download', [DatabaseBackupController::class, 'download'])->middleware('throttle:2,1')->name('database-backup.download');
+    Route::post('/database-backup/archive', [DatabaseBackupController::class, 'archive'])->middleware('throttle:2,1')->name('database-backup.archive');
+    Route::get('/database-backup/archives/{archive}/download', [DatabaseBackupController::class, 'downloadArchive'])->name('database-backup.archives.download');
+    Route::post('/database-backup/archives/{archive}/restore', [DatabaseBackupController::class, 'restore'])->middleware('throttle:2,1')->name('database-backup.archives.restore');
+    Route::delete('/database-backup/archives/{archive}', [DatabaseBackupController::class, 'destroy'])->name('database-backup.archives.destroy');
     Route::get('/system-logs', [SystemLogController::class, 'index'])->name('system-logs.index');
     Route::get('/system-logs/export', [SystemLogController::class, 'export'])->name('system-logs.export');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');

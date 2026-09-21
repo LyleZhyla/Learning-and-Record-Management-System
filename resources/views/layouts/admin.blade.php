@@ -43,7 +43,7 @@
                 <a class="nav-link {{ request()->routeIs('admin.sections.*', 'admin.sectioning.*') ? 'active' : '' }}" href="{{ route('admin.sections.index') }}"><span class="nav-icon">▦</span> Sectioning</a>
                 <a class="nav-link {{ request()->routeIs('admin.schedules.*') ? 'active' : '' }}" href="{{ route('admin.schedules.index') }}"><span class="nav-icon">◷</span> Scheduling</a>
                 <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}"><span class="nav-icon">◫</span> Reports</a>
-                <a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}"><span class="nav-icon">⇩</span> Database Backup</a>
+                <a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}"><span class="nav-icon">⇩</span> Database Management</a>
                 <a class="nav-link {{ request()->routeIs('admin.system-logs.*') ? 'active' : '' }}" href="{{ route('admin.system-logs.index') }}"><span class="nav-icon">☷</span> System Logs</a>
                 <a class="nav-link {{ request()->routeIs('admin.archives.*') ? 'active' : '' }}" href="{{ route('admin.archives.index') }}"><span class="nav-icon">▱</span> Records Archive</a>
                 <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.edit') }}"><span class="nav-icon">⚙</span> System Settings</a>
