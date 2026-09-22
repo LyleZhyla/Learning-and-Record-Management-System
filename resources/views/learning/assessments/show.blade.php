@@ -128,6 +128,7 @@
             </tbody>
         </table>
     </div>
+    @if($students->hasPages())<div class="pagination-row"><span>Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }} students</span>{{ $students->links() }}</div>@endif
 </section>
 <script src="{{ asset('js/rubric-builder.js') }}?v={{ filemtime(public_path('js/rubric-builder.js')) }}"></script>
 <script src="{{ asset('js/submission-review-modal.js') }}?v={{ filemtime(public_path('js/submission-review-modal.js')) }}"></script>

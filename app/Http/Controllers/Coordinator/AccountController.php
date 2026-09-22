@@ -51,22 +51,33 @@ class AccountController extends Controller
         abort_unless($this->visibleAccounts($componentId)->whereKey($user)->exists(), 404);
 
         if ($user->isStudent()) {
-            $user->load([
-                'nstpEnrollments' => fn ($query) => $query->where('component_id', $componentId)->with(['component', 'section']),
-                'attendanceRecords' => fn ($query) => $query
-                    ->whereHas('attendanceSession.section', fn ($section) => $section->where('component_id', $componentId))
-                    ->with('attendanceSession.section.component')->latest('checked_in_at'),
-                'assessmentSubmissions' => fn ($query) => $query
-                    ->whereHas('assessment.section', fn ($section) => $section->where('component_id', $componentId))
-                    ->with('assessment.section.component')->latest('submitted_at'),
-            ]);
+            $enrollments = $user->nstpEnrollments()->where('component_id', $componentId)
+                ->with(['component', 'section'])->latest('academic_year')
+                ->paginate(10, ['*'], 'enrollments_page')->withQueryString();
+            $attendanceRecords = $user->attendanceRecords()
+                ->whereHas('attendanceSession.section', fn ($section) => $section->where('component_id', $componentId))
+                ->with('attendanceSession.section.component')->latest('checked_in_at')
+                ->paginate(15, ['*'], 'attendance_page')->withQueryString();
+            $submissions = $user->assessmentSubmissions()
+                ->whereHas('assessment.section', fn ($section) => $section->where('component_id', $componentId))
+                ->with('assessment.section.component')->latest('submitted_at')
+                ->paginate(15, ['*'], 'submissions_page')->withQueryString();
+            $user->setRelation('nstpEnrollments', $enrollments->getCollection());
+            $user->setRelation('attendanceRecords', $attendanceRecords->getCollection());
+            $user->setRelation('assessmentSubmissions', $submissions->getCollection());
         } else {
-            $user->load(['facilitatedSections' => fn ($query) => $query->where('component_id', $componentId)->with('component')]);
+            $handledSections = $user->facilitatedSections()->where('component_id', $componentId)->with('component')
+                ->orderBy('code')->paginate(15, ['*'], 'sections_page')->withQueryString();
+            $user->setRelation('facilitatedSections', $handledSections->getCollection());
         }
 
         return view('coordinator.accounts.show', [
             'user' => $user,
             'rotcCategories' => NstpEnrollment::ROTC_CATEGORIES,
+            'enrollments' => $enrollments ?? null,
+            'attendanceRecords' => $attendanceRecords ?? null,
+            'submissions' => $submissions ?? null,
+            'handledSections' => $handledSections ?? null,
         ]);
     }
 

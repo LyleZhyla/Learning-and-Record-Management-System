@@ -43,17 +43,22 @@ class StudentController extends Controller
         $sectionIds = $request->user()->facilitatedSections()->pluck('id');
         abort_unless($this->assignedStudents($sectionIds->all())->whereKey($student)->exists(), 404);
 
-        $student->load([
-            'nstpEnrollments' => fn ($query) => $query->whereIn('section_id', $sectionIds)->with(['component', 'section']),
-            'attendanceRecords' => fn ($query) => $query
-                ->whereHas('attendanceSession', fn ($sessions) => $sessions->whereIn('section_id', $sectionIds))
-                ->with('attendanceSession.section.component')->latest('checked_in_at'),
-            'assessmentSubmissions' => fn ($query) => $query
-                ->whereHas('assessment', fn ($assessments) => $assessments->whereIn('section_id', $sectionIds))
-                ->with('assessment.section.component')->latest('submitted_at'),
-        ]);
+        $enrollments = $student->nstpEnrollments()->whereIn('section_id', $sectionIds)
+            ->with(['component', 'section'])->latest('academic_year')
+            ->paginate(10, ['*'], 'enrollments_page')->withQueryString();
+        $attendanceRecords = $student->attendanceRecords()
+            ->whereHas('attendanceSession', fn ($sessions) => $sessions->whereIn('section_id', $sectionIds))
+            ->with('attendanceSession.section.component')->latest('checked_in_at')
+            ->paginate(15, ['*'], 'attendance_page')->withQueryString();
+        $submissions = $student->assessmentSubmissions()
+            ->whereHas('assessment', fn ($assessments) => $assessments->whereIn('section_id', $sectionIds))
+            ->with('assessment.section.component')->latest('submitted_at')
+            ->paginate(15, ['*'], 'submissions_page')->withQueryString();
+        $student->setRelation('nstpEnrollments', $enrollments->getCollection());
+        $student->setRelation('attendanceRecords', $attendanceRecords->getCollection());
+        $student->setRelation('assessmentSubmissions', $submissions->getCollection());
 
-        return view('facilitator.students.show', compact('student'));
+        return view('facilitator.students.show', compact('student', 'enrollments', 'attendanceRecords', 'submissions'));
     }
 
     /** @param array<int, int> $sectionIds */

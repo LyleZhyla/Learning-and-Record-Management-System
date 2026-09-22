@@ -10,7 +10,7 @@
 
 <section class="system-log-metrics">
     <article><span class="metric-icon blue">▣</span><div><strong>{{ $database['tables'] }}</strong><small>Database tables</small></div></article>
-    <article><span class="metric-icon green">⇩</span><div><strong>{{ $archives->count() }}</strong><small>Stored archives</small></div></article>
+    <article><span class="metric-icon green">⇩</span><div><strong>{{ $archives->total() }}</strong><small>Stored archives</small></div></article>
     <article><span class="metric-icon orange">◫</span><div><strong>{{ number_format($archiveSize / 1048576, 2) }} MB</strong><small>Archive storage</small></div></article>
     <article><span class="metric-icon violet">◎</span><div><strong>{{ strtoupper($database['driver']) }}</strong><small>{{ $database['name'] }}</small></div></article>
 </section>
@@ -71,5 +71,6 @@
             <tr><td colspan="5"><div class="empty-state"><strong>No database archives yet</strong><span>Create an archive before a major update or data operation.</span></div></td></tr>
         @endforelse
     </tbody></table></div>
+    @if($archives->hasPages())<div class="pagination-row"><span>Showing {{ $archives->firstItem() }}–{{ $archives->lastItem() }} of {{ $archives->total() }}</span>{{ $archives->links() }}</div>@endif
 </section>
 @endsection

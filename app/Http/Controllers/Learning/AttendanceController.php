@@ -88,7 +88,7 @@ class AttendanceController extends Controller
 
     public function show(Request $request, AttendanceSession $attendance): View
     {
-        $attendance->load(['section.component', 'creator', 'records.student']);
+        $attendance->load(['section.component', 'creator']);
         if ($request->user()->isCoordinator()) {
             $this->access->ensureCanScanSection($request->user(), $attendance->section);
         } else {
@@ -96,8 +96,13 @@ class AttendanceController extends Controller
         }
         $enrolledStudents = NstpEnrollment::with('student')
             ->where('section_id', $attendance->section_id)
-            ->get()
-            ->sortBy(fn ($enrollment) => $enrollment->student->name);
+            ->join('users', 'users.id', '=', 'nstp_enrollments.student_id')
+            ->select('nstp_enrollments.*')
+            ->orderBy('users.name')
+            ->paginate(20)
+            ->withQueryString();
+        $attendance->loadCount('records');
+        $attendance->load(['records' => fn ($query) => $query->whereIn('student_id', $enrolledStudents->pluck('student_id'))]);
 
         return view('learning.attendance.show', $this->context($request) + [
             'attendance' => $attendance,

@@ -26,8 +26,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 use RuntimeException;
-use Throwable;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Throwable;
 
 class AssessmentController extends Controller
 {
@@ -145,13 +145,22 @@ class AssessmentController extends Controller
 
     public function show(Request $request, Assessment $assessment): View
     {
-        $assessment->load(['section.component', 'gradingCategory', 'submissions.student', 'submissions.grader', 'submissions.aiApprover']);
+        $assessment->load(['section.component', 'gradingCategory']);
         if ($request->user()->isCoordinator()) {
             $this->access->ensureCanAccessGradebookSection($request->user(), $assessment->section);
         } else {
             $this->access->ensureCanManageSection($request->user(), $assessment->section);
         }
-        $students = NstpEnrollment::with('student')->where('section_id', $assessment->section_id)->get()->sortBy(fn ($item) => $item->student->name);
+        $students = NstpEnrollment::with('student')
+            ->where('section_id', $assessment->section_id)
+            ->join('users', 'users.id', '=', 'nstp_enrollments.student_id')
+            ->select('nstp_enrollments.*')
+            ->orderBy('users.name')
+            ->paginate(15)
+            ->withQueryString();
+        $assessment->load(['submissions' => fn ($query) => $query
+            ->whereIn('student_id', $students->pluck('student_id'))
+            ->with(['student', 'grader', 'aiApprover'])]);
         $submissionPreviews = $assessment->submissions->mapWithKeys(fn ($submission) => [$submission->id => $this->submissionPreviews->inspect($submission)]);
 
         return view('learning.assessments.show', $this->context($request) + compact('assessment', 'students', 'submissionPreviews'));
@@ -344,9 +353,9 @@ class AssessmentController extends Controller
 
     public function grades(Request $request): View
     {
-        $sections = $this->access->gradebookSections($request->user())->with(['component', 'enrollments.student'])->orderBy('code')->get();
+        $sections = $this->access->gradebookSections($request->user())->with('component')->orderBy('code')->get();
         $section = $sections->firstWhere('id', $request->integer('section')) ?? $sections->first();
-        $summaries = collect();
+        $summaries = null;
         $categories = collect();
         $settings = null;
 
@@ -355,9 +364,13 @@ class AssessmentController extends Controller
             $section->load(['gradingCategories.assessments.submissions', 'gradingSetting']);
             $categories = $section->gradingCategories;
             $settings = $section->gradingSetting;
-            $summaries = $section->enrollments->sortBy(fn ($enrollment) => $enrollment->student->name)->map(
+            $summaries = $section->enrollments()->with('student')
+                ->join('users', 'users.id', '=', 'nstp_enrollments.student_id')
+                ->select('nstp_enrollments.*')
+                ->orderBy('users.name')->paginate(15)->withQueryString();
+            $summaries->setCollection($summaries->getCollection()->map(
                 fn ($enrollment) => ['student' => $enrollment->student] + $this->grades->summary($enrollment->student, $section->id),
-            )->values();
+            ));
         }
 
         return view('learning.grades.index', $this->context($request) + compact('sections', 'section', 'summaries', 'categories', 'settings'));

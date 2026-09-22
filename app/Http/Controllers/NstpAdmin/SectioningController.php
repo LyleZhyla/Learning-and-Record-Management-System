@@ -38,7 +38,8 @@ class SectioningController extends Controller
             ->where('semester', $semester)
             ->when($componentId, fn ($query) => $query->where('component_id', $componentId))
             ->orderBy('code')
-            ->get();
+            ->paginate(12)
+            ->withQueryString();
 
         $unsectionedCounts = NstpEnrollment::query()
             ->select('component_id', DB::raw('count(*) as total'))

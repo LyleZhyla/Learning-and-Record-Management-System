@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Services\DatabaseBackupService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -15,13 +16,18 @@ class DatabaseBackupController extends Controller
 {
     public function __construct(private DatabaseBackupService $backups) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $archives = $this->backups->archives();
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $pagedArchives = new LengthAwarePaginator($archives->forPage($page, 15)->values(), $archives->count(), 15, $page, [
+            'path' => $request->url(),
+            'query' => $request->query(),
+        ]);
 
         return view('admin.database-backup', [
             'database' => $this->backups->information(),
-            'archives' => $archives,
+            'archives' => $pagedArchives,
             'archiveSize' => (int) $archives->sum('size'),
         ]);
     }

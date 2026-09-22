@@ -53,7 +53,7 @@
             <div><dt>Available time</dt><dd>{{ $timeLabel($setting->day_start) }} – {{ $timeLabel($setting->day_end) }}</dd></div>
             <div><dt>Noon break</dt><dd>{{ $setting->break_start ? $timeLabel($setting->break_start).' – '.$timeLabel($setting->break_end) : 'No break' }}</dd></div>
             <div><dt>Each section</dt><dd>{{ number_format($setting->session_minutes / 60, 1) }} hours</dd></div>
-            <div><dt>Active sections</dt><dd>{{ $sections->count() }}</dd></div>
+            <div><dt>Active sections</dt><dd>{{ $sections->total() }}</dd></div>
         </dl>
         @error('schedule')<div class="schedule-error">{{ $message }}</div>@enderror
         <form method="POST" action="{{ route($routePrefix.'.schedules.generate') }}">
@@ -61,7 +61,7 @@
             <input type="hidden" name="component_id" value="{{ $componentId }}">
             <input type="hidden" name="academic_year" value="{{ $academicYear }}">
             <input type="hidden" name="semester" value="{{ $semester }}">
-            <button class="primary-button compact" type="submit" @disabled(!$setting->exists || $sections->isEmpty())>Run automatic scheduling</button>
+            <button class="primary-button compact" type="submit" @disabled(!$setting->exists || $sections->total() === 0)>Run automatic scheduling</button>
         </form>
         @if(!$setting->exists)<small class="schedule-note">Save the scheduling hours first.</small>@endif
     </article>
@@ -94,5 +94,6 @@
             <tr><td colspan="5"><div class="empty-state"><strong>No active sections in this term</strong><span>Create or activate sections before generating a schedule.</span></div></td></tr>
         @endforelse
     </tbody></table></div>
+    @if($sections->hasPages())<div class="pagination-row"><span>Showing {{ $sections->firstItem() }}–{{ $sections->lastItem() }} of {{ $sections->total() }}</span>{{ $sections->links() }}</div>@endif
 </section>
 @endsection

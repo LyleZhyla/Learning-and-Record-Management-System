@@ -8,6 +8,7 @@ use App\Models\NstpComponent;
 use App\Models\NstpSection;
 use App\Services\GradeService;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
@@ -15,14 +16,19 @@ class MonitoringController extends Controller
 {
     public function __construct(private GradeService $grades) {}
 
-    public function components(): View
+    public function components(Request $request): View
     {
         $components = NstpComponent::withCount(['sections', 'enrollments'])
-            ->with(['sections' => fn ($query) => $query->with(['facilitator'])->withCount('enrollments')->orderBy('code')])
             ->whereKey(request()->user()->nstp_component_id ?? 0)
             ->orderBy('code')->get();
+        $component = $components->first();
+        $componentSections = $component?->sections()->with('facilitator')->withCount('enrollments')
+            ->orderBy('code')->paginate(10)->withQueryString();
+        if ($component) {
+            $component->setRelation('sections', $componentSections->getCollection());
+        }
 
-        return view('coordinator.components', compact('components'));
+        return view('coordinator.components', compact('components', 'componentSections'));
     }
 
     public function sections(Request $request): View
@@ -75,7 +81,15 @@ class MonitoringController extends Controller
             ])->sortBy(fn ($item) => $item['student']->name)->values();
         }
 
-        return view('coordinator.performance', compact('sections', 'section', 'summaries', 'filters'));
+        $totalStudents = $summaries->count();
+        $gradedStudents = $summaries->where('grade', '!==', null)->count();
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $summaries = new LengthAwarePaginator($summaries->forPage($page, 15)->values(), $totalStudents, 15, $page, [
+            'path' => $request->url(),
+            'query' => $request->query(),
+        ]);
+
+        return view('coordinator.performance', compact('sections', 'section', 'summaries', 'filters', 'totalStudents', 'gradedStudents'));
     }
 
     private function filters(Request $request, bool $dates = false): array

@@ -29,7 +29,7 @@
 
 <section class="sectioning-sections-step">
     <div class="sectioning-list-heading sectioning-main-list-heading">
-        <div><span class="eyebrow">Sections</span><strong>{{ $showAllComponents ? 'All component sections' : $selectedComponent->code.' sections' }}</strong><span>{{ $sections->count() }} total</span></div>
+        <div><span class="eyebrow">Sections</span><strong>{{ $showAllComponents ? 'All component sections' : $selectedComponent->code.' sections' }}</strong><span>{{ $sections->total() }} total</span></div>
         <div class="sectioning-list-actions"><small>{{ $academicYear }} · {{ \App\Models\NstpSection::SEMESTERS[$semester] }}</small><a class="secondary-outline-button" href="{{ route($routePrefix.'.sections.create', $selectedComponent ? ['component' => $componentId] : []) }}">+ Create section</a></div>
     </div>
     <div class="section-summary-grid">
@@ -39,6 +39,7 @@
             <article class="section-summary-card empty-summary"><strong>No sections found</strong><span>{{ $showAllComponents ? 'No sections exist for any active component in this term.' : 'Create a section manually or run automatic sectioning after assigning students from Student Accounts.' }}</span></article>
         @endforelse
     </div>
+    @if($sections->hasPages())<div class="pagination-row"><span>Showing {{ $sections->firstItem() }}–{{ $sections->lastItem() }} of {{ $sections->total() }}</span>{{ $sections->links() }}</div>@endif
 </section>
 @else
 <section class="card empty-state sectioning-no-component"><strong>No active NSTP component is available</strong><span>Activate at least one component before using automatic sectioning.</span></section>

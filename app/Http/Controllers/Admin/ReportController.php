@@ -17,6 +17,7 @@ use Dompdf\Dompdf;
 use Dompdf\Options;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -64,12 +65,27 @@ class ReportController extends Controller
             ->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))
             ->when($isFacilitator, fn ($query) => $query->where('facilitator_id', $facilitatorId))
             ->distinct()->orderByDesc('academic_year')->pluck('academic_year');
+        $previewRows = array_key_exists('groups', $report) && $report['groups']->isNotEmpty()
+            ? $report['groups']->flatMap(fn (array $group, int $index) => $group['rows']->map(fn (array $row) => [
+                'row' => $row,
+                'group_index' => $index,
+                'group_title' => $group['title'],
+                'group_subtitle' => $group['subtitle'],
+                'group_total' => $group['rows']->count(),
+            ]))->values()
+            : $report['rows']->map(fn (array $row) => ['row' => $row]);
+        $page = LengthAwarePaginator::resolveCurrentPage();
+        $preview = new LengthAwarePaginator($previewRows->forPage($page, 20)->values(), $previewRows->count(), 20, $page, [
+            'path' => $request->url(),
+            'query' => $request->query(),
+        ]);
 
         return view('admin.reports.index', [
             'layout' => $layout,
             'routePrefix' => $routePrefix,
             'filters' => $filters,
             'report' => $report,
+            'preview' => $preview,
             'reportTypes' => $this->availableReportTypes($request),
             'components' => $components,
             'sections' => $sections,

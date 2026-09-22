@@ -38,7 +38,7 @@ class ScheduleController extends Controller
         );
         $sections = NstpSection::with(['component', 'facilitator', 'schedule'])
             ->where('component_id', $componentId)->where('academic_year', $academicYear)->where('semester', $semester)
-            ->where('status', 'active')->orderBy('code')->get();
+            ->where('status', 'active')->orderBy('code')->paginate(15)->withQueryString();
 
         return view('learning.schedules.index', [
             'layout' => $this->layout($request),
@@ -100,7 +100,7 @@ class ScheduleController extends Controller
         if ($minutes !== $setting->session_minutes) {
             throw ValidationException::withMessages(['ends_at' => 'The schedule must contain exactly '.$this->durationLabel($setting->session_minutes).' of class time, excluding the noon break.']);
         }
-        if ($validated['starts_at'].':00' < $setting->day_start || $validated['ends_at'].':00' > $setting->day_end) {
+        if ($setting->day_start > $validated['starts_at'].':00' || $setting->day_end < $validated['ends_at'].':00') {
             throw ValidationException::withMessages(['starts_at' => 'The section schedule must stay within the configured daily start and end time.']);
         }
 
@@ -161,6 +161,7 @@ class ScheduleController extends Controller
             if ($request->filled('component_id')) {
                 abort_unless($request->integer('component_id') === $request->user()->nstp_component_id, 403);
             }
+
             return (int) $request->user()->nstp_component_id;
         }
         abort_unless($request->user()->isSuperAdmin() || $request->user()->isNstpAdmin(), 403);

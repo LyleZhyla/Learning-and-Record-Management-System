@@ -71,7 +71,7 @@
     <section class="card attendance-record-panel {{ $canScan ? '' : 'full-width' }}">
         <div class="card-heading">
             <div><h3>Attendance records</h3><p>Scanned students appear here. Duplicate scans do not create duplicate records.</p></div>
-            <span class="pill" data-attendance-record-count="{{ $attendance->records->count() }}">{{ $attendance->records->count() }} recorded</span>
+            <span class="pill" data-attendance-record-count="{{ $attendance->records_count }}">{{ $attendance->records_count }} recorded</span>
         </div>
         @php($recordColumnCount = 4 + ($canScan ? 0 : 1) + ($canManage ? 1 : 0))
         <div class="table-wrap">
@@ -96,6 +96,7 @@
                 </tbody>
             </table>
         </div>
+        @if($enrolledStudents->hasPages())<div class="pagination-row"><span>Showing {{ $enrolledStudents->firstItem() }}–{{ $enrolledStudents->lastItem() }} of {{ $enrolledStudents->total() }} students</span>{{ $enrolledStudents->links() }}</div>@endif
     </section>
 </div>
 

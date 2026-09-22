@@ -19,12 +19,12 @@ class LearningController extends Controller
     public function materials(Request $request): View
     {
         $enrollment = $this->access->currentEnrollment($request->user());
-        $materials = LearningMaterial::with(['component', 'section', 'creator'])->whereRaw('1 = 0')->paginate();
+        $materials = LearningMaterial::with(['component', 'section', 'creator'])->whereRaw('1 = 0')->paginate(15)->withQueryString();
         if ($enrollment) {
             $materials = LearningMaterial::with(['component', 'section', 'creator'])->where('status', 'published')
                 ->where('component_id', $enrollment->component_id)
                 ->where(fn ($q) => $q->whereNull('section_id')->orWhere('section_id', $enrollment->section_id))
-                ->latest('published_at')->paginate(15);
+                ->latest('published_at')->paginate(15)->withQueryString();
         }
 
         return view('student.materials.index', compact('enrollment', 'materials'));

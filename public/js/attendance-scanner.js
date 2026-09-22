@@ -43,25 +43,24 @@
 
     function updateAttendanceRecord(result) {
         const row = document.querySelector(`[data-attendance-student="${result.student_id}"]`);
-        if (!row) return;
+        if (row) {
+            const statusBadge = row.querySelector('[data-record-status]');
+            const checkInCell = row.querySelector('[data-record-check-in]');
+            const checkOutCell = row.querySelector('[data-record-check-out]');
+            const manualStatus = row.querySelector('select[name="status"]');
 
-        const wasRecorded = row.dataset.attendanceRecorded === '1';
-        const statusBadge = row.querySelector('[data-record-status]');
-        const checkInCell = row.querySelector('[data-record-check-in]');
-        const checkOutCell = row.querySelector('[data-record-check-out]');
-        const manualStatus = row.querySelector('select[name="status"]');
-
-        row.dataset.attendanceRecorded = '1';
-        if (statusBadge) {
-            statusBadge.className = `status-badge ${['present', 'late'].includes(result.status) ? 'active' : 'inactive'}`;
-            statusBadge.replaceChildren(document.createElement('i'), document.createTextNode(result.status_label));
+            row.dataset.attendanceRecorded = '1';
+            if (statusBadge) {
+                statusBadge.className = `status-badge ${['present', 'late'].includes(result.status) ? 'active' : 'inactive'}`;
+                statusBadge.replaceChildren(document.createElement('i'), document.createTextNode(result.status_label));
+            }
+            if (checkInCell) checkInCell.textContent = result.checked_in_at || '—';
+            if (checkOutCell) checkOutCell.textContent = result.checked_out_at || '—';
+            if (manualStatus) manualStatus.value = result.status;
         }
-        if (checkInCell) checkInCell.textContent = result.checked_in_at || '—';
-        if (checkOutCell) checkOutCell.textContent = result.checked_out_at || '—';
-        if (manualStatus) manualStatus.value = result.status;
 
         const counter = document.querySelector('[data-attendance-record-count]');
-        if (counter && result.recorded && !wasRecorded) {
+        if (counter && result.recorded && result.scan_mode === 'time_in') {
             const total = Number(counter.dataset.attendanceRecordCount || 0) + 1;
             counter.dataset.attendanceRecordCount = String(total);
             counter.textContent = `${total} recorded`;
