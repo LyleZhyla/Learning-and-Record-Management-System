@@ -33,6 +33,8 @@ class SuperAdminSystemGuideTest extends TestCase
             ->assertSee('Set up and use the system')
             ->assertSee('Know what each role does')
             ->assertSee('Super Admin safety checklist')
+            ->assertSee('Start interactive guided tour')
+            ->assertSee('admin-tour.js')
             ->assertSee(route('admin.users.create'), false)
             ->assertSee(route('admin.database-backup.index'), false);
     }
@@ -44,7 +46,8 @@ class SuperAdminSystemGuideTest extends TestCase
         $this->actingAs($user)
             ->get('/admin/dashboard')
             ->assertOk()
-            ->assertSee('Open system guide')
+            ->assertSee('Start guided tour')
+            ->assertSee('data-start-admin-tour', false)
             ->assertSee(route('admin.system-guide'), false);
     }
 }

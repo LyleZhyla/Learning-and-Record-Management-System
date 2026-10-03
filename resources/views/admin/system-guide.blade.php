@@ -10,7 +10,7 @@
             <h2>Run Smart NSTP with confidence.</h2>
             <p>This guide follows the recommended order for preparing a term, managing daily operations, and protecting institutional records.</p>
             <div class="system-guide-hero-actions">
-                <a class="primary-button" href="#setup-workflow">Start with the setup workflow</a>
+                <button class="primary-button" type="button" data-start-admin-tour>Start interactive guided tour</button>
                 <a class="secondary-outline-button" href="{{ route('admin.dashboard') }}">Return to dashboard</a>
             </div>
         </div>

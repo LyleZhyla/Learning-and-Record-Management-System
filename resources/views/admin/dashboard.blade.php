@@ -28,7 +28,10 @@
             <h3 id="admin-guide-preview-title">Not sure where to begin?</h3>
             <p>Follow the recommended setup order, understand every account role, and open each Super Admin tool from one guided overview.</p>
         </div>
-        <a class="primary-button" href="{{ route('admin.system-guide') }}">Open system guide <span aria-hidden="true">→</span></a>
+        <div class="admin-guide-preview-actions">
+            <button class="primary-button" type="button" data-start-admin-tour>Start guided tour <span aria-hidden="true">→</span></button>
+            <a href="{{ route('admin.system-guide') }}">Read the full guide</a>
+        </div>
     </section>
 
     <section class="report-analytics-section dashboard-analytics" aria-labelledby="dashboard-analytics-title">

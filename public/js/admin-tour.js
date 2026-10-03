@@ -1,0 +1,190 @@
+(function () {
+    const root = document.querySelector('[data-admin-tour-root]');
+
+    if (!root) {
+        return;
+    }
+
+    const activeKey = 'snapie.adminTour.active';
+    const stepKey = 'snapie.adminTour.step';
+    const steps = [
+        { target: 'dashboard', title: 'Your command center', text: 'Start here to monitor student enrollment, attendance trends, sections, and current-term activity.' },
+        { target: 'staff', title: 'Build your NSTP team', text: 'Create Super Admin, NSTP Admin, coordinator, and facilitator accounts. Assign only the access each person needs.' },
+        { target: 'students', title: 'Manage student access', text: 'Review registrations, import student lists, send account access, and download student QR codes.' },
+        { target: 'components', title: 'Prepare NSTP components', text: 'Configure CWTS, LTS, and ROTC capacities and control when component selection is open.' },
+        { target: 'sectioning', title: 'Organize students into classes', text: 'Create sections, assign facilitators, check capacity, and run automatic sectioning.' },
+        { target: 'scheduling', title: 'Set conflict-aware schedules', text: 'Generate schedules, review conflicts, and adjust each section before operations begin.' },
+        { target: 'attendance', title: 'Run attendance sessions', text: 'Open QR attendance sessions, scan student codes, review records, and close completed sessions.' },
+        { target: 'reports', title: 'Create official reports', text: 'Filter institution-wide data and export the results to Excel, Word, PDF, or print view.' },
+        { target: 'backup', title: 'Protect the database', text: 'Download or archive a restorable backup before bulk updates and end-of-term maintenance.' },
+        { target: 'logs', title: 'Keep actions accountable', text: 'Review the audit trail to see who performed important changes and when they happened.' },
+        { target: 'ai', title: 'Ask SNAPIE AI', text: 'Use the assistant for NSTP and system guidance. Never enter passwords, API keys, or unnecessary private data.' },
+        { target: 'guide', title: 'Return to the full guide anytime', text: 'Open the written workflow, role boundaries, and safety checklist whenever you need a reference.' },
+    ];
+
+    let currentStep = 0;
+    let backdrop;
+    let highlight;
+    let dialog;
+    let title;
+    let description;
+    let progress;
+    let backButton;
+    let nextButton;
+    let openButton;
+    let activeTarget;
+
+    function buildTour() {
+        if (dialog) {
+            return;
+        }
+
+        backdrop = document.createElement('div');
+        backdrop.className = 'admin-tour-backdrop';
+        backdrop.setAttribute('aria-hidden', 'true');
+
+        highlight = document.createElement('div');
+        highlight.className = 'admin-tour-highlight';
+        highlight.setAttribute('aria-hidden', 'true');
+
+        dialog = document.createElement('section');
+        dialog.className = 'admin-tour-dialog';
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.setAttribute('aria-labelledby', 'admin-tour-title');
+        dialog.innerHTML = `
+            <div class="admin-tour-dialog-heading">
+                <span class="admin-tour-progress"></span>
+                <button class="admin-tour-close" type="button" aria-label="Exit guided tour">×</button>
+            </div>
+            <h2 id="admin-tour-title"></h2>
+            <p class="admin-tour-description"></p>
+            <div class="admin-tour-actions">
+                <button class="admin-tour-back" type="button">Back</button>
+                <a class="admin-tour-open" href="#">Open page</a>
+                <button class="admin-tour-next" type="button">Next</button>
+            </div>`;
+
+        document.body.append(backdrop, highlight, dialog);
+        title = dialog.querySelector('#admin-tour-title');
+        description = dialog.querySelector('.admin-tour-description');
+        progress = dialog.querySelector('.admin-tour-progress');
+        backButton = dialog.querySelector('.admin-tour-back');
+        nextButton = dialog.querySelector('.admin-tour-next');
+        openButton = dialog.querySelector('.admin-tour-open');
+
+        dialog.querySelector('.admin-tour-close').addEventListener('click', stopTour);
+        backButton.addEventListener('click', () => showStep(currentStep - 1));
+        nextButton.addEventListener('click', () => {
+            if (currentStep === steps.length - 1) {
+                stopTour();
+                return;
+            }
+
+            showStep(currentStep + 1);
+        });
+        openButton.addEventListener('click', () => {
+            sessionStorage.setItem(activeKey, 'true');
+            sessionStorage.setItem(stepKey, String(Math.min(currentStep + 1, steps.length - 1)));
+        });
+    }
+
+    function placeTour() {
+        if (!activeTarget || !dialog || dialog.hidden) {
+            return;
+        }
+
+        const targetBox = activeTarget.getBoundingClientRect();
+        const gap = 14;
+        const padding = 5;
+
+        Object.assign(highlight.style, {
+            top: `${targetBox.top - padding}px`,
+            left: `${targetBox.left - padding}px`,
+            width: `${targetBox.width + (padding * 2)}px`,
+            height: `${targetBox.height + (padding * 2)}px`,
+        });
+
+        if (window.innerWidth <= 760) {
+            dialog.style.top = 'auto';
+            dialog.style.right = '14px';
+            dialog.style.bottom = '14px';
+            dialog.style.left = '14px';
+            return;
+        }
+
+        const dialogBox = dialog.getBoundingClientRect();
+        const left = Math.min(targetBox.right + gap, window.innerWidth - dialogBox.width - 18);
+        const top = Math.max(18, Math.min(targetBox.top, window.innerHeight - dialogBox.height - 18));
+
+        dialog.style.top = `${top}px`;
+        dialog.style.right = 'auto';
+        dialog.style.bottom = 'auto';
+        dialog.style.left = `${left}px`;
+    }
+
+    function showStep(index) {
+        buildTour();
+        currentStep = Math.max(0, Math.min(index, steps.length - 1));
+        const step = steps[currentStep];
+        activeTarget = document.querySelector(`[data-admin-tour="${step.target}"]`);
+
+        if (!activeTarget) {
+            stopTour();
+            return;
+        }
+
+        document.body.classList.remove('sidebar-collapsed');
+        document.getElementById('sidebar')?.classList.add('open');
+        activeTarget.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+        title.textContent = step.title;
+        description.textContent = step.text;
+        progress.textContent = `Step ${currentStep + 1} of ${steps.length}`;
+        backButton.disabled = currentStep === 0;
+        nextButton.textContent = currentStep === steps.length - 1 ? 'Finish' : 'Next';
+        openButton.href = activeTarget.href;
+        openButton.textContent = `Open ${activeTarget.textContent.replace(/\s+/g, ' ').trim()}`;
+
+        backdrop.hidden = false;
+        highlight.hidden = false;
+        dialog.hidden = false;
+        document.body.classList.add('admin-tour-active');
+        sessionStorage.setItem(activeKey, 'true');
+        sessionStorage.setItem(stepKey, String(currentStep));
+        window.setTimeout(placeTour, 260);
+        nextButton.focus({ preventScroll: true });
+    }
+
+    function startTour() {
+        showStep(0);
+    }
+
+    function stopTour() {
+        sessionStorage.removeItem(activeKey);
+        sessionStorage.removeItem(stepKey);
+        document.body.classList.remove('admin-tour-active');
+        document.getElementById('sidebar')?.classList.remove('open');
+
+        if (backdrop) backdrop.hidden = true;
+        if (highlight) highlight.hidden = true;
+        if (dialog) dialog.hidden = true;
+        activeTarget = null;
+    }
+
+    document.querySelectorAll('[data-start-admin-tour]').forEach((button) => {
+        button.addEventListener('click', startTour);
+    });
+
+    window.addEventListener('resize', placeTour);
+    document.querySelector('.main-nav')?.addEventListener('scroll', placeTour);
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && document.body.classList.contains('admin-tour-active')) {
+            stopTour();
+        }
+    });
+
+    if (sessionStorage.getItem(activeKey) === 'true') {
+        showStep(Number(sessionStorage.getItem(stepKey) || 0));
+    }
+})();
