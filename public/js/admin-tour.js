@@ -141,6 +141,8 @@
         title.textContent = step.title;
         description.textContent = step.text;
         progress.textContent = `Step ${currentStep + 1} of ${steps.length}`;
+        highlight.innerHTML = activeTarget.innerHTML;
+        highlight.setAttribute('aria-label', `Highlighted menu: ${activeTarget.textContent.replace(/\s+/g, ' ').trim()}`);
         backButton.disabled = currentStep === 0;
         nextButton.textContent = currentStep === steps.length - 1 ? 'Finish' : 'Next';
         openButton.href = activeTarget.href;
