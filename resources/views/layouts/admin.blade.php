@@ -74,7 +74,7 @@
         <main class="main-content">
             <header class="topbar">
                 <button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button>
-                <div>
+                <div data-admin-tour-page-title>
                     <small>Smart NSTP / Super Admin</small>
                     <h1>@yield('page-title', 'Dashboard')</h1>
                 </div>

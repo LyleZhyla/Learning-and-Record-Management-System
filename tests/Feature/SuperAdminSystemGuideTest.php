@@ -35,6 +35,7 @@ class SuperAdminSystemGuideTest extends TestCase
             ->assertSee('Super Admin safety checklist')
             ->assertSee('Start interactive guided tour')
             ->assertSee('admin-tour.js')
+            ->assertSee('data-admin-tour-page-title', false)
             ->assertSee(route('admin.users.create'), false)
             ->assertSee(route('admin.database-backup.index'), false);
     }

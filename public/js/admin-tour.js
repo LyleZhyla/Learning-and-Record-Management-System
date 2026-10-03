@@ -7,6 +7,7 @@
 
     const activeKey = 'snapie.adminTour.active';
     const stepKey = 'snapie.adminTour.step';
+    const modeKey = 'snapie.adminTour.mode';
     const steps = [
         { target: 'dashboard', title: 'Your command center', text: 'Start here to monitor student enrollment, attendance trends, sections, and current-term activity.' },
         { target: 'staff', title: 'Build your NSTP team', text: 'Create Super Admin, NSTP Admin, coordinator, and facilitator accounts. Assign only the access each person needs.' },
@@ -33,6 +34,7 @@
     let nextButton;
     let openButton;
     let activeTarget;
+    let currentMode = 'menu';
 
     function buildTour() {
         if (dialog) {
@@ -74,7 +76,14 @@
         openButton = dialog.querySelector('.admin-tour-open');
 
         dialog.querySelector('.admin-tour-close').addEventListener('click', stopTour);
-        backButton.addEventListener('click', () => showStep(currentStep - 1));
+        backButton.addEventListener('click', () => {
+            if (currentMode === 'page') {
+                showStep(currentStep);
+                return;
+            }
+
+            showStep(currentStep - 1);
+        });
         nextButton.addEventListener('click', () => {
             if (currentStep === steps.length - 1) {
                 stopTour();
@@ -85,7 +94,8 @@
         });
         openButton.addEventListener('click', () => {
             sessionStorage.setItem(activeKey, 'true');
-            sessionStorage.setItem(stepKey, String(Math.min(currentStep + 1, steps.length - 1)));
+            sessionStorage.setItem(stepKey, String(currentStep));
+            sessionStorage.setItem(modeKey, 'page');
         });
     }
 
@@ -125,6 +135,7 @@
 
     function showStep(index) {
         buildTour();
+        currentMode = 'menu';
         currentStep = Math.max(0, Math.min(index, steps.length - 1));
         const step = steps[currentStep];
         activeTarget = document.querySelector(`[data-admin-tour="${step.target}"]`);
@@ -141,10 +152,13 @@
         title.textContent = step.title;
         description.textContent = step.text;
         progress.textContent = `Step ${currentStep + 1} of ${steps.length}`;
+        highlight.classList.remove('is-page');
         highlight.innerHTML = activeTarget.innerHTML;
         highlight.setAttribute('aria-label', `Highlighted menu: ${activeTarget.textContent.replace(/\s+/g, ' ').trim()}`);
+        backButton.textContent = 'Back';
         backButton.disabled = currentStep === 0;
         nextButton.textContent = currentStep === steps.length - 1 ? 'Finish' : 'Next';
+        openButton.hidden = false;
         openButton.href = activeTarget.href;
         openButton.textContent = `Open ${activeTarget.textContent.replace(/\s+/g, ' ').trim()}`;
 
@@ -154,6 +168,46 @@
         document.body.classList.add('admin-tour-active');
         sessionStorage.setItem(activeKey, 'true');
         sessionStorage.setItem(stepKey, String(currentStep));
+        sessionStorage.setItem(modeKey, 'menu');
+        window.setTimeout(placeTour, 260);
+        nextButton.focus({ preventScroll: true });
+    }
+
+    function showPageStep(index) {
+        buildTour();
+        currentMode = 'page';
+        currentStep = Math.max(0, Math.min(index, steps.length - 1));
+        const step = steps[currentStep];
+        activeTarget = document.querySelector('[data-admin-tour-page-title]');
+
+        if (!activeTarget) {
+            showStep(currentStep);
+            return;
+        }
+
+        document.getElementById('sidebar')?.classList.remove('open');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        const pageName = activeTarget.querySelector('h1')?.textContent.trim()
+            || document.title.split('·')[0].trim();
+        title.textContent = `${pageName} is now open`;
+        description.textContent = `${step.text} The spotlight has moved to this page. Explore it now, then select Next module when you are ready to continue.`;
+        progress.textContent = `Step ${currentStep + 1} of ${steps.length} · Page opened`;
+        highlight.classList.add('is-page');
+        highlight.innerHTML = activeTarget.innerHTML;
+        highlight.setAttribute('aria-label', `Current page: ${pageName}`);
+        backButton.disabled = false;
+        backButton.textContent = 'Back to menu';
+        nextButton.textContent = currentStep === steps.length - 1 ? 'Finish' : 'Next module';
+        openButton.hidden = true;
+
+        backdrop.hidden = false;
+        highlight.hidden = false;
+        dialog.hidden = false;
+        document.body.classList.add('admin-tour-active');
+        sessionStorage.setItem(activeKey, 'true');
+        sessionStorage.setItem(stepKey, String(currentStep));
+        sessionStorage.setItem(modeKey, 'page');
         window.setTimeout(placeTour, 260);
         nextButton.focus({ preventScroll: true });
     }
@@ -165,6 +219,7 @@
     function stopTour() {
         sessionStorage.removeItem(activeKey);
         sessionStorage.removeItem(stepKey);
+        sessionStorage.removeItem(modeKey);
         document.body.classList.remove('admin-tour-active');
         document.getElementById('sidebar')?.classList.remove('open');
 
@@ -187,6 +242,12 @@
     });
 
     if (sessionStorage.getItem(activeKey) === 'true') {
-        showStep(Number(sessionStorage.getItem(stepKey) || 0));
+        const savedStep = Number(sessionStorage.getItem(stepKey) || 0);
+
+        if (sessionStorage.getItem(modeKey) === 'page') {
+            showPageStep(savedStep);
+        } else {
+            showStep(savedStep);
+        }
     }
 })();
