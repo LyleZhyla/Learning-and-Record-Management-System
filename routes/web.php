@@ -203,6 +203,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');

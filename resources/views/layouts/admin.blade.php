@@ -33,6 +33,9 @@
                 <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
                     <span class="nav-icon">⌂</span> Dashboard
                 </a>
+                <a class="nav-link {{ request()->routeIs('admin.system-guide') ? 'active' : '' }}" href="{{ route('admin.system-guide') }}">
+                    <span class="nav-icon">?</span> System Guide
+                </a>
                 <p class="nav-label">Administration</p>
                 @php($managingStudentAccount = request()->routeIs('admin.students.*') || (request()->routeIs('admin.users.edit') && request()->route('user')?->isStudent()) || (request()->routeIs('admin.users.create') && request('role') === 'student'))
                 <a class="nav-link {{ request()->routeIs('admin.users.*') && !$managingStudentAccount ? 'active' : '' }}" href="{{ route('admin.users.index') }}">

@@ -21,6 +21,16 @@
         <article class="metric-card" data-unassigned-student-count="{{ $unassignedStudentCount }}"><span class="metric-icon violet">!</span><div><small>Without component</small><strong>{{ $unassignedStudentCount }}</strong><p>Active students this term</p></div></article>
     </section>
 
+    <section class="card admin-guide-preview" aria-labelledby="admin-guide-preview-title">
+        <div class="admin-guide-preview-icon" aria-hidden="true">?</div>
+        <div>
+            <span class="eyebrow">New administrator guide</span>
+            <h3 id="admin-guide-preview-title">Not sure where to begin?</h3>
+            <p>Follow the recommended setup order, understand every account role, and open each Super Admin tool from one guided overview.</p>
+        </div>
+        <a class="primary-button" href="{{ route('admin.system-guide') }}">Open system guide <span aria-hidden="true">→</span></a>
+    </section>
+
     <section class="report-analytics-section dashboard-analytics" aria-labelledby="dashboard-analytics-title">
         <div class="report-analytics-heading">
             <div><span class="eyebrow">Current-term analytics</span><h3 id="dashboard-analytics-title">Attendance and enrollment overview</h3><p>{{ $academicTerm }} institution-wide activity.</p></div>
