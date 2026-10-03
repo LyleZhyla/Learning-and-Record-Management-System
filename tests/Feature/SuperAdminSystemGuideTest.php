@@ -36,6 +36,7 @@ class SuperAdminSystemGuideTest extends TestCase
             ->assertSee('Start interactive guided tour')
             ->assertSee('admin-tour.js')
             ->assertSee('data-admin-tour-page-title', false)
+            ->assertSeeInOrder(['<p class="nav-label">Account</p>', 'Profile &amp; Security', 'System Guide'], false)
             ->assertSee(route('admin.users.create'), false)
             ->assertSee(route('admin.database-backup.index'), false);
     }
