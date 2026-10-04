@@ -12,6 +12,11 @@
         Your NSTP enrollment and section have not been assigned yet.
     @endif
 </p></div><img class="snapie-character snapie-banner-character" src="{{ asset('images/characters/snapie-wave.webp') }}" alt="SNAPIE mascot waving"><a class="secondary-button" href="{{ route('student.assessments.index') }}">View assessments</a></section>
+<section class="card admin-guide-preview">
+    <span class="admin-guide-preview-icon" aria-hidden="true">?</span>
+    <div><span class="eyebrow">Student portal tutorial</span><h3>New to Smart NSTP?</h3><p>Take an interactive tour that highlights the actual pages for enrollment, attendance, learning, assessments, grades, communication, AI assistance, and account security.</p></div>
+    <div class="admin-guide-preview-actions"><button class="primary-button" type="button" data-start-student-tour>Start guided tour</button><a href="{{ route('student.system-guide') }}">Read the full system guide →</a></div>
+</section>
 <div class="metric-grid student-dashboard-metrics">
     <article class="metric-card"><span class="metric-icon blue">▣</span><div><small>ATTENDED SESSIONS</small><strong>{{ $stats['attendance_completed'] }}/{{ $stats['attendance_total'] }}</strong><p>{{ $stats['attendance_remaining'] }} session{{ $stats['attendance_remaining'] === 1 ? '' : 's' }} not attended</p></div></article>
     <article class="metric-card"><span class="metric-icon green">▤</span><div><small>LEARNING MATERIALS</small><strong>{{ $stats['materials'] }}</strong><p>Available resources</p></div></article>

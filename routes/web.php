@@ -339,6 +339,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
 
 Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () {
     Route::get('/dashboard', StudentDashboardController::class)->name('dashboard');
+    Route::view('/system-guide', 'student.system-guide')->name('system-guide');
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/messages/groups/{group}', [PortalMessageController::class, 'group'])->name('messages.groups.show');
     Route::post('/messages/groups/{group}', [PortalMessageController::class, 'storeGroupMessage'])->name('messages.groups.messages.store');

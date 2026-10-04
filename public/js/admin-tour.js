@@ -1,14 +1,13 @@
 (function () {
-    const root = document.querySelector('[data-admin-tour-root]');
+    const adminRoot = document.querySelector('[data-admin-tour-root]');
+    const studentRoot = document.querySelector('[data-student-tour-root]');
+    const root = adminRoot || studentRoot;
 
     if (!root) {
         return;
     }
 
-    const activeKey = 'snapie.adminTour.active';
-    const stepKey = 'snapie.adminTour.step';
-    const modeKey = 'snapie.adminTour.mode';
-    const steps = [
+    const adminSteps = [
         { target: 'dashboard', title: 'Your command center', text: 'Start here to monitor student enrollment, attendance trends, sections, and current-term activity.' },
         { target: 'staff', title: 'Build your NSTP team', text: 'Create Super Admin, NSTP Admin, coordinator, and facilitator accounts. Assign only the access each person needs.' },
         { target: 'students', title: 'Manage student access', text: 'Review registrations, import student lists, send account access, and download student QR codes.' },
@@ -22,6 +21,29 @@
         { target: 'ai', title: 'Ask SNAPIE AI', text: 'Use the assistant for NSTP and system guidance. Never enter passwords, API keys, or unnecessary private data.' },
         { target: 'guide', title: 'Return to the full guide anytime', text: 'Open the written workflow, role boundaries, and safety checklist whenever you need a reference.' },
     ];
+    const studentSteps = [
+        { target: 'dashboard', title: 'Your student dashboard', text: 'Start here to see your NSTP enrollment, attendance, learning materials, pending assessments, and current grade.' },
+        { target: 'component', title: 'Choose your NSTP component', text: 'Review your CWTS, LTS, or ROTC selection and check whether it is pending, approved, or already assigned to a section.' },
+        { target: 'attendance', title: 'Track your attendance', text: 'Use the attendance page to view your QR details and review Present, Late, and Absent records.' },
+        { target: 'materials', title: 'Open learning materials', text: 'Find the files and resources published for your NSTP component and assigned section.' },
+        { target: 'assessments', title: 'Complete assessments', text: 'Check instructions and deadlines, open each activity, and submit your work before it closes.' },
+        { target: 'grades', title: 'Review your grades', text: 'See graded activities, scores, and your computed performance based on released results.' },
+        { target: 'reports', title: 'Download your records', text: 'Open your personal student reports and download the available official summaries.' },
+        { target: 'announcements', title: 'Follow announcements', text: 'Read official updates from the NSTP team so you do not miss schedules, deadlines, or instructions.' },
+        { target: 'messages', title: 'Use authorized messages', text: 'Contact the NSTP staff and groups available to your account, and check unread conversations.' },
+        { target: 'ai', title: 'Ask SNAPIE AI', text: 'Use the assistant for NSTP and system guidance. Never enter passwords, API keys, or unnecessary private information.' },
+        { target: 'profile', title: 'Protect your account', text: 'Keep your student details accurate and use a strong, private password for your account.' },
+        { target: 'guide', title: 'Return to the full guide anytime', text: 'Open the written student workflow and safety checklist whenever you need a quick reference.' },
+    ];
+    const isStudentTour = Boolean(studentRoot);
+    const storagePrefix = isStudentTour ? 'snapie.studentTour' : 'snapie.adminTour';
+    const activeKey = `${storagePrefix}.active`;
+    const stepKey = `${storagePrefix}.step`;
+    const modeKey = `${storagePrefix}.mode`;
+    const targetAttribute = isStudentTour ? 'data-student-tour' : 'data-admin-tour';
+    const pageTitleSelector = isStudentTour ? '[data-student-tour-page-title]' : '[data-admin-tour-page-title]';
+    const startSelector = isStudentTour ? '[data-start-student-tour]' : '[data-start-admin-tour]';
+    const steps = isStudentTour ? studentSteps : adminSteps;
 
     let currentStep = 0;
     let backdrop;
@@ -138,7 +160,7 @@
         currentMode = 'menu';
         currentStep = Math.max(0, Math.min(index, steps.length - 1));
         const step = steps[currentStep];
-        activeTarget = document.querySelector(`[data-admin-tour="${step.target}"]`);
+        activeTarget = document.querySelector(`[${targetAttribute}="${step.target}"]`);
 
         if (!activeTarget) {
             stopTour();
@@ -178,7 +200,7 @@
         currentMode = 'page';
         currentStep = Math.max(0, Math.min(index, steps.length - 1));
         const step = steps[currentStep];
-        activeTarget = document.querySelector('[data-admin-tour-page-title]');
+        activeTarget = document.querySelector(pageTitleSelector);
 
         if (!activeTarget) {
             showStep(currentStep);
@@ -229,7 +251,7 @@
         activeTarget = null;
     }
 
-    document.querySelectorAll('[data-start-admin-tour]').forEach((button) => {
+    document.querySelectorAll(startSelector).forEach((button) => {
         button.addEventListener('click', startTour);
     });
 
