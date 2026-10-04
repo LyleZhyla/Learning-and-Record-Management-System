@@ -42,6 +42,7 @@ use App\Http\Controllers\Student\AttendanceController as StudentAttendanceContro
 use App\Http\Controllers\Student\ComponentController as StudentComponentController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\LearningController as StudentLearningController;
+use App\Http\Controllers\Student\LearningRecommendationController as StudentLearningRecommendationController;
 use App\Http\Controllers\Student\ProfileController as StudentProfileController;
 use App\Http\Controllers\Student\ProjectProposalGuideController as StudentProjectProposalGuideController;
 use App\Http\Controllers\Student\ReportController as StudentReportController;
@@ -357,6 +358,8 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::get('/student-id', [StudentAttendanceController::class, 'studentId'])->name('id-card');
     Route::get('/materials', [StudentLearningController::class, 'materials'])->name('materials.index');
     Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
+    Route::get('/learning-recommendations', [StudentLearningRecommendationController::class, 'index'])->name('recommendations.index');
+    Route::post('/learning-recommendations', [StudentLearningRecommendationController::class, 'generate'])->middleware('throttle:5,1')->name('recommendations.generate');
     Route::get('/project-proposal-guide', [StudentProjectProposalGuideController::class, 'index'])->name('proposal-guide.index');
     Route::post('/project-proposal-guide', [StudentProjectProposalGuideController::class, 'generate'])->middleware('throttle:5,1')->name('proposal-guide.generate');
     Route::get('/assessments', [StudentLearningController::class, 'assessments'])->name('assessments.index');

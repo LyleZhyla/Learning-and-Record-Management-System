@@ -44,7 +44,7 @@
             </article>
             <article class="system-workflow-step">
                 <span class="workflow-number">4</span>
-                <div class="workflow-content"><span class="workflow-category">Learning</span><h4>Open your learning materials</h4><p>Use the resources published for your component and section. Download only the files you need and follow the facilitator's instructions.</p><div class="workflow-links"><a href="{{ route('student.materials.index') }}">Learning Materials →</a></div></div>
+                <div class="workflow-content"><span class="workflow-category">Learning</span><h4>Open and prioritize learning materials</h4><p>Use resources published for your component and section, then ask AI to build a practical learning path from only the materials you are authorized to access.</p><div class="workflow-links"><a href="{{ route('student.materials.index') }}">Learning Materials →</a><a href="{{ route('student.recommendations.index') }}">AI Recommendations →</a></div></div>
             </article>
             <article class="system-workflow-step">
                 <span class="workflow-number">5</span>
