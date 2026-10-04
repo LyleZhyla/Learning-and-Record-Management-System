@@ -48,7 +48,7 @@
             </article>
             <article class="system-workflow-step">
                 <span class="workflow-number">5</span>
-                <div class="workflow-content"><span class="workflow-category">Requirements</span><h4>Complete assessments before the deadline</h4><p>Read the instructions, check the due date, attach the correct response or file, and confirm that your submission was received.</p><div class="workflow-links"><a href="{{ route('student.assessments.index') }}">Assessments →</a></div></div>
+                <div class="workflow-content"><span class="workflow-category">Requirements</span><h4>Improve proposals and complete assessments</h4><p>Use the advisory proposal guide to strengthen a project idea, then follow official facilitator instructions when completing and submitting assessed work.</p><div class="workflow-links"><a href="{{ route('student.proposal-guide.index') }}">Project Proposal Guide →</a><a href="{{ route('student.assessments.index') }}">Assessments →</a></div></div>
             </article>
             <article class="system-workflow-step">
                 <span class="workflow-number">6</span>

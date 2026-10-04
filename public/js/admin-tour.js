@@ -26,6 +26,7 @@
         { target: 'component', title: 'Choose your NSTP component', text: 'Review your CWTS, LTS, or ROTC selection and check whether it is pending, approved, or already assigned to a section.' },
         { target: 'attendance', title: 'Track your attendance', text: 'Use the attendance page to view your QR details and review Present, Late, and Absent records.' },
         { target: 'materials', title: 'Open learning materials', text: 'Find the files and resources published for your NSTP component and assigned section.' },
+        { target: 'proposal', title: 'Improve a project proposal', text: 'Describe your community project idea and receive structured AI guidance. Your facilitator still makes every official decision.' },
         { target: 'assessments', title: 'Complete assessments', text: 'Check instructions and deadlines, open each activity, and submit your work before it closes.' },
         { target: 'grades', title: 'Review your grades', text: 'See graded activities, scores, and your computed performance based on released results.' },
         { target: 'reports', title: 'Download your records', text: 'Open your personal student reports and download the available official summaries.' },

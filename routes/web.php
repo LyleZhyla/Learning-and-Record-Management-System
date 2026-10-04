@@ -43,6 +43,7 @@ use App\Http\Controllers\Student\ComponentController as StudentComponentControll
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
 use App\Http\Controllers\Student\LearningController as StudentLearningController;
 use App\Http\Controllers\Student\ProfileController as StudentProfileController;
+use App\Http\Controllers\Student\ProjectProposalGuideController as StudentProjectProposalGuideController;
 use App\Http\Controllers\Student\ReportController as StudentReportController;
 use App\Http\Controllers\Student\RequiredDocumentController as StudentRequiredDocumentController;
 use App\Http\Controllers\StudentAccountController;
@@ -356,6 +357,8 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::get('/student-id', [StudentAttendanceController::class, 'studentId'])->name('id-card');
     Route::get('/materials', [StudentLearningController::class, 'materials'])->name('materials.index');
     Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
+    Route::get('/project-proposal-guide', [StudentProjectProposalGuideController::class, 'index'])->name('proposal-guide.index');
+    Route::post('/project-proposal-guide', [StudentProjectProposalGuideController::class, 'generate'])->middleware('throttle:5,1')->name('proposal-guide.generate');
     Route::get('/assessments', [StudentLearningController::class, 'assessments'])->name('assessments.index');
     Route::get('/assessments/{assessment}', [StudentLearningController::class, 'show'])->name('assessments.show');
     Route::post('/assessments/{assessment}/submit', [StudentLearningController::class, 'submit'])->name('assessments.submit');
