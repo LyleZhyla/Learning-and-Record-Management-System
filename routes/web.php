@@ -38,6 +38,7 @@ use App\Http\Controllers\Portal\AnnouncementController as PortalAnnouncementCont
 use App\Http\Controllers\Portal\MessageController as PortalMessageController;
 use App\Http\Controllers\Portal\ProfileController as PortalProfileController;
 use App\Http\Controllers\ProfilePhotoController;
+use App\Http\Controllers\RegistrationReviewController;
 use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
 use App\Http\Controllers\Student\ComponentController as StudentComponentController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
@@ -128,6 +129,11 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/students/{student}/qr', [StudentAccountController::class, 'qr'])->name('students.qr');
     Route::get('/students/{student}/qr/download', [StudentAccountController::class, 'downloadQr'])->name('students.qr.download');
     Route::get('/students/export', [DirectoryExportController::class, 'students'])->name('students.export');
+    Route::get('/registrations', [RegistrationReviewController::class, 'index'])->name('registrations.index');
+    Route::get('/registrations/{registration}/documents/{document}', [RegistrationReviewController::class, 'preview'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.show');
+    Route::get('/registrations/{registration}/documents/{document}/download', [RegistrationReviewController::class, 'download'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.download');
+    Route::patch('/registrations/{registration}/review', [RegistrationReviewController::class, 'update'])->name('registrations.review');
+    Route::get('/registrations/{registration}', [RegistrationReviewController::class, 'show'])->name('registrations.show');
     Route::post('/accounts/students/component', [NstpAdminAccountController::class, 'bulkAssignStudents'])->name('accounts.students.component.bulk');
     Route::patch('/accounts/{user}/component', [NstpAdminAccountController::class, 'updateComponent'])->name('accounts.component.update');
     Route::patch('/accounts/{user}/enrollments/{enrollment}/rotc-category', [NstpAdminAccountController::class, 'updateRotcCategory'])->name('accounts.rotc-category.update');
@@ -221,6 +227,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/students/{student}/qr', [StudentAccountController::class, 'qr'])->name('students.qr');
     Route::get('/students/{student}/qr/download', [StudentAccountController::class, 'downloadQr'])->name('students.qr.download');
     Route::get('/students/export', [DirectoryExportController::class, 'students'])->name('students.export');
+    Route::get('/registrations', [RegistrationReviewController::class, 'index'])->name('registrations.index');
+    Route::get('/registrations/{registration}/documents/{document}', [RegistrationReviewController::class, 'preview'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.show');
+    Route::get('/registrations/{registration}/documents/{document}/download', [RegistrationReviewController::class, 'download'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.download');
+    Route::patch('/registrations/{registration}/review', [RegistrationReviewController::class, 'update'])->name('registrations.review');
+    Route::get('/registrations/{registration}', [RegistrationReviewController::class, 'show'])->name('registrations.show');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::get('/users/{user}/delete', [UserController::class, 'confirmDestroy'])->name('users.delete');

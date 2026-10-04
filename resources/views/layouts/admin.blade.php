@@ -11,6 +11,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/account-create-button.css') }}?v={{ filemtime(public_path('css/account-create-button.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/registration-review.css') }}?v={{ filemtime(public_path('css/registration-review.css')) }}">
     <x-theme-init />
 </head>
 <body class="admin-body portal-super-admin" data-admin-tour-root>
@@ -39,6 +40,7 @@
                     <span class="nav-icon">♙</span> Staff Accounts
                 </a>
                 <a class="nav-link {{ $managingStudentAccount ? 'active' : '' }}" href="{{ route('admin.students.index') }}" data-admin-tour="students"><span class="nav-icon">♟</span> Student Accounts</a>
+                <a class="nav-link {{ request()->routeIs('admin.registrations.*') ? 'active' : '' }}" href="{{ route('admin.registrations.index') }}"><span class="nav-icon">▣</span> Registration Reviews</a>
                 <a class="nav-link {{ request()->routeIs('admin.components.*') ? 'active' : '' }}" href="{{ route('admin.components.index') }}" data-admin-tour="components"><span class="nav-icon">◉</span> NSTP Components</a>
                 <a class="nav-link {{ request()->routeIs('admin.sections.*', 'admin.sectioning.*') ? 'active' : '' }}" href="{{ route('admin.sections.index') }}" data-admin-tour="sectioning"><span class="nav-icon">▦</span> Sectioning</a>
                 <a class="nav-link {{ request()->routeIs('admin.schedules.*') ? 'active' : '' }}" href="{{ route('admin.schedules.index') }}" data-admin-tour="scheduling"><span class="nav-icon">◷</span> Scheduling</a>

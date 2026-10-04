@@ -28,6 +28,8 @@ class StudentRegistrationTest extends TestCase
         $this->assertSame('1A', $registration->year_section);
         $this->assertTrue($registration->emergency_same_address);
         $this->assertNull($registration->emergency_address);
+        $this->assertSame('certificate-of-registration.pdf', $registration->cor_original_name);
+        $this->assertSame('formal-photo.jpg', $registration->formal_photo_original_name);
         Storage::disk('local')->assertExists($registration->cor_path);
         Storage::disk('local')->assertExists($registration->formal_photo_path);
     }

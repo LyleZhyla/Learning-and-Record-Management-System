@@ -35,8 +35,10 @@ class StudentRegistrationController extends Controller
         try {
             $corPath = $request->file('cor')->store('student-registrations/cor', 'local');
             $photoPath = $request->file('formal_photo')->store('student-registrations/formal-photos', 'local');
+            $corOriginalName = $request->file('cor')->getClientOriginalName();
+            $photoOriginalName = $request->file('formal_photo')->getClientOriginalName();
 
-            $registration = DB::transaction(function () use ($validated, $corPath, $photoPath): StudentRegistration {
+            $registration = DB::transaction(function () use ($validated, $corPath, $photoPath, $corOriginalName, $photoOriginalName): StudentRegistration {
                 $validated['religion'] = $validated['religion_selection'] === 'Others'
                     ? $validated['religion_other']
                     : $validated['religion_selection'];
@@ -55,7 +57,9 @@ class StudentRegistrationController extends Controller
                     'reference_code' => $this->referenceCode(),
                     'status' => 'pending',
                     'cor_path' => $corPath,
+                    'cor_original_name' => $corOriginalName,
                     'formal_photo_path' => $photoPath,
+                    'formal_photo_original_name' => $photoOriginalName,
                 ]);
             });
         } catch (Throwable $exception) {

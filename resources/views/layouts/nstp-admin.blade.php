@@ -10,6 +10,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/registration-review.css') }}?v={{ filemtime(public_path('css/registration-review.css')) }}">
     <x-theme-init />
 </head>
 <body class="admin-body portal-nstp-admin">
@@ -36,6 +37,7 @@
                 @php($managingStudentAccount = request()->routeIs('nstp_admin.students.*') || (request()->routeIs('nstp_admin.accounts.show') && request()->route('user')?->isStudent()))
                 <a class="nav-link {{ request()->routeIs('nstp_admin.accounts.*') && !$managingStudentAccount ? 'active' : '' }}" href="{{ route('nstp_admin.accounts.index') }}"><span class="nav-icon">♙</span> Staff Accounts</a>
                 <a class="nav-link {{ $managingStudentAccount ? 'active' : '' }}" href="{{ route('nstp_admin.students.index') }}"><span class="nav-icon">♟</span> Student Accounts</a>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.registrations.*') ? 'active' : '' }}" href="{{ route('nstp_admin.registrations.index') }}"><span class="nav-icon">▣</span> Registration Reviews</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.components.*') ? 'active' : '' }}" href="{{ route('nstp_admin.components.index') }}"><span class="nav-icon">◉</span> NSTP Components</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.sections.*', 'nstp_admin.sectioning.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sections.index') }}"><span class="nav-icon">▦</span> Sectioning</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.schedules.*') ? 'active' : '' }}" href="{{ route('nstp_admin.schedules.index') }}"><span class="nav-icon">◷</span> Scheduling</a>
