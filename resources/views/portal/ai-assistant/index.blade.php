@@ -58,5 +58,5 @@
     </div>
 </section>
 
-<script src="{{ asset('js/ai-assistant.js') }}"></script>
+<script src="{{ asset('js/ai-assistant.js') }}?v={{ filemtime(public_path('js/ai-assistant.js')) }}"></script>
 @endsection

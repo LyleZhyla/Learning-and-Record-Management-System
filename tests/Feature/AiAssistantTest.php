@@ -60,6 +60,18 @@ class AiAssistantTest extends TestCase
             ->assertDontSee('data-ai-widget', false);
     }
 
+    public function test_full_ai_page_serializes_the_message_before_disabling_its_textarea(): void
+    {
+        $script = file_get_contents(public_path('js/ai-assistant.js'));
+        $payloadPosition = strpos($script, 'const payload = new FormData(form);');
+        $disabledPosition = strpos($script, 'input.disabled = true;');
+
+        $this->assertNotFalse($payloadPosition);
+        $this->assertNotFalse($disabledPosition);
+        $this->assertLessThan($disabledPosition, $payloadPosition);
+        $this->assertStringContainsString('body: payload', $script);
+    }
+
     public function test_every_account_role_can_open_the_ai_assistant_from_communication(): void
     {
         config(['services.openai.api_key' => 'test-key']);
@@ -120,6 +132,8 @@ class AiAssistantTest extends TestCase
             return $request->url() === 'https://api.openai.com/v1/responses'
                 && $request['model'] === 'gpt-5-mini'
                 && $request['store'] === false
+                && $request['reasoning']['effort'] === 'minimal'
+                && $request['text']['verbosity'] === 'low'
                 && $request['input'][0]['content'] === 'What is NSTP?'
                 && $request['safety_identifier'] === hash('sha256', 'smart-nstp-user-'.$student->id)
                 && ! str_contains($request['instructions'], $student->email);
@@ -159,6 +173,39 @@ class AiAssistantTest extends TestCase
 
         $this->actingAs($student)->postJson('/ai-assistant', ['message' => 'Try again'])
             ->assertStatus(503);
+
+        $this->assertDatabaseCount('ai_chat_messages', 0);
+    }
+
+    public function test_api_errors_are_translated_into_actionable_chat_messages(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        config(['services.openai.api_key' => 'test-key']);
+
+        Http::fake(['api.openai.com/v1/responses' => Http::response([
+            'error' => ['type' => 'insufficient_quota', 'code' => 'credit_balance_exhausted'],
+        ], 429)]);
+
+        $this->actingAs($student)->postJson('/ai-assistant', ['message' => 'Hello'])
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'The AI Assistant has reached its OpenAI usage or credit limit. Please contact the system administrator.');
+
+        $this->assertDatabaseCount('ai_chat_messages', 0);
+    }
+
+    public function test_incomplete_api_response_without_text_does_not_store_the_message(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        config(['services.openai.api_key' => 'test-key']);
+        Http::fake(['api.openai.com/v1/responses' => Http::response([
+            'status' => 'incomplete',
+            'incomplete_details' => ['reason' => 'max_output_tokens'],
+            'output' => [['type' => 'reasoning']],
+        ])]);
+
+        $this->actingAs($student)->postJson('/ai-assistant', ['message' => 'Hello'])
+            ->assertStatus(503)
+            ->assertJsonPath('message', 'The AI Assistant could not finish its reply. Please send the message again.');
 
         $this->assertDatabaseCount('ai_chat_messages', 0);
     }

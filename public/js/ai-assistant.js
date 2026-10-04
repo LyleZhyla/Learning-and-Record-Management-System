@@ -45,6 +45,8 @@
         event.preventDefault();
         if (!input.value.trim() || submit.disabled) return;
 
+        const payload = new FormData(form);
+
         submit.disabled = true;
         input.disabled = true;
         typing.hidden = false;
@@ -52,10 +54,10 @@
         try {
             const response = await fetch(form.action, {
                 method: 'POST',
-                headers: { Accept: 'application/json' },
-                body: new FormData(form),
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: payload,
             });
-            const data = await response.json();
+            const data = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(data.message || Object.values(data.errors || {}).flat()[0] || 'Unable to reach the AI Assistant.');
             appendMessage(data.user_message);
             appendMessage(data.assistant_message);
