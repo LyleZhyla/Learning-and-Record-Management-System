@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AttendanceSession;
 use App\Models\NstpComponent;
 use App\Models\NstpSection;
-use App\Services\GradeService;
+use App\Services\ProgressMonitoringService;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
@@ -14,7 +14,7 @@ use Illuminate\View\View;
 
 class MonitoringController extends Controller
 {
-    public function __construct(private GradeService $grades) {}
+    public function __construct(private ProgressMonitoringService $progress) {}
 
     public function components(Request $request): View
     {
@@ -77,19 +77,31 @@ class MonitoringController extends Controller
             $section->load(['component', 'enrollments.student']);
             $summaries = $section->enrollments->map(fn ($enrollment) => [
                 'student' => $enrollment->student,
-                ...$this->grades->summary($enrollment->student, $section->id),
+                ...$this->progress->summary($enrollment->student, $section->id),
             ])->sortBy(fn ($item) => $item['student']->name)->values();
         }
 
         $totalStudents = $summaries->count();
         $gradedStudents = $summaries->where('grade', '!==', null)->count();
+        $onTrackStudents = $summaries->where('overall_status', 'on_track')->count();
+        $atRiskStudents = $summaries->whereIn('overall_status', ['at_risk', 'needs_improvement'])->count();
+        $completedStudents = $summaries->where('overall_status', 'completed')->count();
+        $averageStanding = $summaries->whereNotNull('current_percentage')->avg('current_percentage');
+        $averageAttendance = $summaries->whereNotNull('attendance_rate')->avg('attendance_rate');
+        $search = trim((string) ($filters['search'] ?? ''));
+        if ($search !== '') {
+            $summaries = $summaries->filter(fn ($item) => str_contains(strtolower($item['student']->name.' '.$item['student']->email), strtolower($search)))->values();
+        }
+        if (filled($filters['progress_status'] ?? null)) {
+            $summaries = $summaries->where('overall_status', $filters['progress_status'])->values();
+        }
         $page = LengthAwarePaginator::resolveCurrentPage();
-        $summaries = new LengthAwarePaginator($summaries->forPage($page, 15)->values(), $totalStudents, 15, $page, [
+        $summaries = new LengthAwarePaginator($summaries->forPage($page, 15)->values(), $summaries->count(), 15, $page, [
             'path' => $request->url(),
             'query' => $request->query(),
         ]);
 
-        return view('coordinator.performance', compact('sections', 'section', 'summaries', 'filters', 'totalStudents', 'gradedStudents'));
+        return view('coordinator.performance', compact('sections', 'section', 'summaries', 'filters', 'totalStudents', 'gradedStudents', 'onTrackStudents', 'atRiskStudents', 'completedStudents', 'averageStanding', 'averageAttendance'));
     }
 
     private function filters(Request $request, bool $dates = false): array
@@ -99,6 +111,8 @@ class MonitoringController extends Controller
             'section_id' => ['nullable', 'integer', 'exists:nstp_sections,id'],
             'academic_year' => ['nullable', 'string', 'max:9'],
             'semester' => ['nullable', Rule::in(array_keys(NstpSection::SEMESTERS))],
+            'search' => ['nullable', 'string', 'max:100'],
+            'progress_status' => ['nullable', Rule::in(['not_started', 'on_track', 'at_risk', 'completed', 'needs_improvement'])],
             'date_from' => [$dates ? 'nullable' : 'prohibited', 'date'],
             'date_to' => [$dates ? 'nullable' : 'prohibited', 'date', 'after_or_equal:date_from'],
         ]);

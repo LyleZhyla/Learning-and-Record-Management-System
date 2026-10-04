@@ -14,6 +14,13 @@
 </section>
 
 @if($section)
+<section class="progress-metric-grid" aria-label="Gradebook progress summary">
+    <article class="progress-metric"><span>Students</span><strong>{{ $gradebookMetrics['students'] }}</strong><small>Enrolled in {{ $section->code }}</small></article>
+    <article class="progress-metric on-track"><span>On track</span><strong>{{ $gradebookMetrics['on_track'] }}</strong><small>Current standing meets the target</small></article>
+    <article class="progress-metric attention"><span>Needs attention</span><strong>{{ $gradebookMetrics['needs_attention'] }}</strong><small>Below target or incomplete</small></article>
+    <article class="progress-metric completed"><span>Completed</span><strong>{{ $gradebookMetrics['completed'] }}</strong><small>All score items recorded</small></article>
+    <article class="progress-metric"><span>Encoding progress</span><strong>{{ number_format($gradebookMetrics['average_completion'], 1) }}%</strong><small>Average score-item completion</small></article>
+</section>
 @if(! auth()->user()->isFacilitator())
 <details class="card grade-settings-card">
     <summary><span><strong>Grading setup</strong><small>Edit category percentages and the transmutation scale</small></span><span class="settings-chevron">⌄</span></summary>
@@ -91,7 +98,7 @@
                 <tr>
                     <th class="student-column" rowspan="3">Student</th>
                     @foreach($categories as $category)<th class="category-band" style="--category-color:{{ $category->color }}" colspan="{{ $category->assessments->count() + 2 }}">{{ $category->name }} · {{ number_format($category->weight, 2) }}%</th>@endforeach
-                    <th class="total-band" rowspan="3">Grand<br>Total</th><th class="final-band" rowspan="3">Final<br>Grade</th>
+                    <th class="total-band" rowspan="3">Recorded<br>Weighted</th><th class="final-band" rowspan="3">Computed<br>Grade</th><th class="progress-band" rowspan="3">Progress</th>
                 </tr>
                 <tr>
                     @foreach($categories as $category)
@@ -121,9 +128,10 @@
                     @endforeach
                     <td class="grand-total-cell" data-percentage>{{ $row['percentage'] === null ? '—' : number_format($row['percentage'], 2).'%' }}</td>
                     <td class="final-grade-cell" data-final-grade>{{ $row['grade'] === null ? '—' : number_format($row['grade'], 2) }}</td>
+                    <td class="grade-progress-cell" data-progress-cell><span class="progress-status {{ $row['progress_status'] }}" data-progress-status>{{ $row['progress_label'] }}</span><small data-progress-detail>{{ number_format($row['completion_percentage'], 0) }}% encoded · {{ $row['pending_count'] }} pending</small></td>
                 </tr>
                 @empty
-                <tr><td colspan="{{ $categories->sum(fn($category) => $category->assessments->count() + 2) + 3 }}"><div class="empty-state"><strong>No enrolled students</strong><span>Add students to this section to begin encoding scores.</span></div></td></tr>
+                <tr><td colspan="{{ $categories->sum(fn($category) => $category->assessments->count() + 2) + 4 }}"><div class="empty-state"><strong>No enrolled students</strong><span>Add students to this section to begin encoding scores.</span></div></td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -159,6 +167,10 @@
                 const row = input.closest('tr');
                 row.querySelector('[data-percentage]').textContent = data.percentage === null ? '—' : Number(data.percentage).toFixed(2) + '%';
                 row.querySelector('[data-final-grade]').textContent = data.grade === null ? '—' : Number(data.grade).toFixed(2);
+                const progress = row.querySelector('[data-progress-status]');
+                progress.textContent = data.progress_label;
+                progress.className = `progress-status ${data.progress_status}`;
+                row.querySelector('[data-progress-detail]').textContent = `${Number(data.completion_percentage).toFixed(0)}% encoded · ${data.pending_count} pending`;
                 Object.entries(data.categories).forEach(([id, value]) => {
                     const cell = row.querySelector(`[data-category-result="${id}"]`);
                     const totalCell = row.querySelector(`[data-category-total="${id}"]`);

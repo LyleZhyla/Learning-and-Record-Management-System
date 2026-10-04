@@ -6,15 +6,15 @@ use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\AssessmentSubmission;
 use App\Models\LearningMaterial;
-use App\Services\GradeService;
 use App\Services\PortalAccessService;
+use App\Services\ProgressMonitoringService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class LearningController extends Controller
 {
-    public function __construct(private PortalAccessService $access, private GradeService $grades) {}
+    public function __construct(private PortalAccessService $access, private ProgressMonitoringService $progress) {}
 
     public function materials(Request $request): View
     {
@@ -82,7 +82,7 @@ class LearningController extends Controller
     public function grades(Request $request): View
     {
         $enrollment = $this->access->currentEnrollment($request->user());
-        $summary = $enrollment?->section_id ? $this->grades->summary($request->user(), $enrollment->section_id) : null;
+        $summary = $enrollment?->section_id ? $this->progress->summary($request->user(), $enrollment->section_id) : null;
 
         return view('student.grades.index', compact('enrollment', 'summary'));
     }

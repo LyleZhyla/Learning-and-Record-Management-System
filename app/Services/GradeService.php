@@ -23,24 +23,43 @@ class GradeService
         $total = 0;
         $rawEarned = 0.0;
         $rawMaximum = 0.0;
+        $currentWeighted = 0.0;
+        $activeWeight = 0.0;
+        $submitted = 0;
+        $awaitingGrading = 0;
+        $missing = 0;
 
-        $categorySummaries = $categories->map(function (GradingCategory $category) use (&$earnedPercentage, &$graded, &$total, &$rawEarned, &$rawMaximum) {
+        $categorySummaries = $categories->map(function (GradingCategory $category) use (&$earnedPercentage, &$graded, &$total, &$rawEarned, &$rawMaximum, &$currentWeighted, &$activeWeight, &$submitted, &$awaitingGrading, &$missing) {
             $maximum = (float) $category->assessments->sum('max_score');
             $earned = 0.0;
             $categoryGraded = 0;
+            $gradedMaximum = 0.0;
 
             foreach ($category->assessments as $assessment) {
                 $submission = $assessment->submissions->first();
+                if ($submission?->submitted_at) {
+                    $submitted++;
+                }
                 if ($submission?->score !== null) {
                     $earned += (float) $submission->score;
                     $rawEarned += (float) $submission->score;
                     $rawMaximum += (float) $assessment->max_score;
+                    $gradedMaximum += (float) $assessment->max_score;
                     $categoryGraded++;
+                } elseif ($submission?->submitted_at) {
+                    $awaitingGrading++;
+                } elseif ($assessment->due_at?->isPast()) {
+                    $missing++;
                 }
             }
 
             $weighted = $maximum > 0 ? ($earned / $maximum) * (float) $category->weight : 0.0;
+            $currentCategoryWeighted = $gradedMaximum > 0 ? ($earned / $gradedMaximum) * (float) $category->weight : null;
             $earnedPercentage += $weighted;
+            if ($currentCategoryWeighted !== null) {
+                $currentWeighted += $currentCategoryWeighted;
+                $activeWeight += (float) $category->weight;
+            }
             $graded += $categoryGraded;
             $total += $category->assessments->count();
 
@@ -48,22 +67,39 @@ class GradeService
                 'category' => $category,
                 'earned' => round($earned, 2),
                 'maximum' => round($maximum, 2),
+                'graded_maximum' => round($gradedMaximum, 2),
                 'weighted_score' => round($weighted, 2),
+                'current_weighted_score' => $currentCategoryWeighted === null ? null : round($currentCategoryWeighted, 2),
                 'graded_count' => $categoryGraded,
                 'total_count' => $category->assessments->count(),
+                'completion_percentage' => $category->assessments->isEmpty()
+                    ? 0.0
+                    : round(($categoryGraded / $category->assessments->count()) * 100, 2),
             ];
         });
 
         $percentage = $graded > 0 ? round($earnedPercentage, 2) : null;
+        $currentPercentage = $activeWeight > 0 ? round(($currentWeighted / $activeWeight) * 100, 2) : null;
+        $completionPercentage = $total > 0 ? round(($graded / $total) * 100, 2) : 0.0;
+        $progressStatus = $this->progressStatus($graded, $total, $percentage, $currentPercentage, (float) $setting->passing_percentage);
 
         return [
             'assessments' => $categories->flatMap->assessments,
             'categories' => $categorySummaries,
             'grade' => $percentage === null ? null : $this->transmute($percentage, $setting),
             'percentage' => $percentage,
+            'current_percentage' => $currentPercentage,
+            'current_grade' => $currentPercentage === null ? null : $this->transmute($currentPercentage, $setting),
             'raw_percentage' => $graded > 0 && $rawMaximum > 0 ? round(($rawEarned / $rawMaximum) * 100, 2) : null,
             'graded_count' => $graded,
             'total_count' => $total,
+            'pending_count' => max(0, $total - $graded),
+            'submitted_count' => $submitted,
+            'awaiting_grading_count' => $awaitingGrading,
+            'missing_count' => $missing,
+            'completion_percentage' => $completionPercentage,
+            'progress_status' => $progressStatus['key'],
+            'progress_label' => $progressStatus['label'],
             'total_weight' => (float) $categories->sum('weight'),
             'settings' => $setting,
         ];
@@ -93,6 +129,26 @@ class GradeService
             'passing_grade' => 3,
             'failing_grade' => 5,
         ];
+    }
+
+    /** @return array{key: string, label: string} */
+    private function progressStatus(int $graded, int $total, ?float $percentage, ?float $currentPercentage, float $passingPercentage): array
+    {
+        if ($total === 0) {
+            return ['key' => 'no_items', 'label' => 'No score items'];
+        }
+        if ($graded === 0) {
+            return ['key' => 'not_started', 'label' => 'Not started'];
+        }
+        if ($graded < $total) {
+            return ($currentPercentage ?? 0) >= $passingPercentage
+                ? ['key' => 'on_track', 'label' => 'On track']
+                : ['key' => 'at_risk', 'label' => 'At risk'];
+        }
+
+        return ($percentage ?? 0) >= $passingPercentage
+            ? ['key' => 'completed', 'label' => 'Completed']
+            : ['key' => 'needs_improvement', 'label' => 'Needs improvement'];
     }
 
     private function ensureStructure(int $sectionId): void

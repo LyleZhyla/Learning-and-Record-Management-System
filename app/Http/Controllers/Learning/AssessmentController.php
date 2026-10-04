@@ -20,6 +20,7 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -358,22 +359,40 @@ class AssessmentController extends Controller
         $summaries = null;
         $categories = collect();
         $settings = null;
+        $gradebookMetrics = [
+            'students' => 0,
+            'on_track' => 0,
+            'needs_attention' => 0,
+            'completed' => 0,
+            'average_completion' => 0,
+        ];
 
         if ($section) {
             $this->ensureGradingStructure($section);
             $section->load(['gradingCategories.assessments.submissions', 'gradingSetting']);
             $categories = $section->gradingCategories;
             $settings = $section->gradingSetting;
-            $summaries = $section->enrollments()->with('student')
+            $allSummaries = $section->enrollments()->with('student')
                 ->join('users', 'users.id', '=', 'nstp_enrollments.student_id')
                 ->select('nstp_enrollments.*')
-                ->orderBy('users.name')->paginate(15)->withQueryString();
-            $summaries->setCollection($summaries->getCollection()->map(
-                fn ($enrollment) => ['student' => $enrollment->student] + $this->grades->summary($enrollment->student, $section->id),
-            ));
+                ->orderBy('users.name')->get()->map(
+                    fn ($enrollment) => ['student' => $enrollment->student] + $this->grades->summary($enrollment->student, $section->id),
+                );
+            $gradebookMetrics = [
+                'students' => $allSummaries->count(),
+                'on_track' => $allSummaries->where('progress_status', 'on_track')->count(),
+                'needs_attention' => $allSummaries->whereIn('progress_status', ['at_risk', 'needs_improvement'])->count(),
+                'completed' => $allSummaries->where('progress_status', 'completed')->count(),
+                'average_completion' => round((float) ($allSummaries->avg('completion_percentage') ?? 0), 1),
+            ];
+            $page = LengthAwarePaginator::resolveCurrentPage();
+            $summaries = new LengthAwarePaginator($allSummaries->forPage($page, 15)->values(), $allSummaries->count(), 15, $page, [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]);
         }
 
-        return view('learning.grades.index', $this->context($request) + compact('sections', 'section', 'summaries', 'categories', 'settings'));
+        return view('learning.grades.index', $this->context($request) + compact('sections', 'section', 'summaries', 'categories', 'settings', 'gradebookMetrics'));
     }
 
     public function updateGradeStructure(Request $request, NstpSection $section): RedirectResponse
@@ -537,6 +556,11 @@ class AssessmentController extends Controller
             'message' => 'Score saved.',
             'percentage' => $summary['percentage'],
             'grade' => $summary['grade'],
+            'current_percentage' => $summary['current_percentage'],
+            'completion_percentage' => $summary['completion_percentage'],
+            'progress_status' => $summary['progress_status'],
+            'progress_label' => $summary['progress_label'],
+            'pending_count' => $summary['pending_count'],
             'categories' => $summary['categories']->mapWithKeys(fn ($item) => [(string) $item['category']->id => [
                 'earned' => $item['earned'],
                 'maximum' => $item['maximum'],
