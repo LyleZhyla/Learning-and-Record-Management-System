@@ -54,6 +54,7 @@
             <button type="submit" class="nav-link logout"><span class="nav-icon">↪</span> Sign out</button>
         </form>
     </aside>
+    <button class="sidebar-backdrop" type="button" aria-label="Close navigation" data-sidebar-backdrop hidden></button>
 
     <main class="main-content">
         <header class="topbar">

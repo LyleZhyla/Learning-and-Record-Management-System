@@ -8,6 +8,7 @@
     const desktopQuery = window.matchMedia('(min-width: 761px)');
     const collapseButton = sidebar.querySelector('.sidebar-toggle');
     const menuButton = document.querySelector('.menu-button');
+    const backdrop = document.querySelector('[data-sidebar-backdrop]');
     const storageKey = 'snapie.sidebar.collapsed';
 
     const navItems = sidebar.querySelectorAll('.nav-link');
@@ -25,6 +26,11 @@
     function syncControls() {
         const desktop = desktopQuery.matches;
         const expanded = desktop ? !isCollapsed() : sidebar.classList.contains('open');
+
+        document.body.classList.toggle('mobile-nav-open', !desktop && expanded);
+        if (backdrop) {
+            backdrop.hidden = desktop || !expanded;
+        }
 
         if (collapseButton) {
             collapseButton.setAttribute('aria-expanded', String(expanded));
@@ -56,6 +62,27 @@
 
     collapseButton?.addEventListener('click', toggleSidebar);
     menuButton?.addEventListener('click', toggleSidebar);
+    backdrop?.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        syncControls();
+    });
+
+    sidebar.querySelectorAll('a.nav-link').forEach((link) => {
+        link.addEventListener('click', () => {
+            if (!desktopQuery.matches) {
+                sidebar.classList.remove('open');
+                syncControls();
+            }
+        });
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && !desktopQuery.matches && sidebar.classList.contains('open')) {
+            sidebar.classList.remove('open');
+            menuButton?.focus();
+            syncControls();
+        }
+    });
 
     desktopQuery.addEventListener('change', () => {
         sidebar.classList.remove('open');
