@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\FacilitatorProfile;
 use App\Models\NstpComponent;
 use App\Models\User;
 use App\Services\AccountCredentialMailer;
@@ -29,12 +30,15 @@ class UserController extends Controller
             'status' => ['nullable', Rule::in(array_keys(User::STATUS_LABELS))],
         ]);
 
-        $users = User::query()
+        $users = User::query()->with('facilitatorProfile')
             ->whereIn('role', self::STAFF_ROLES)
             ->when($filters['search'] ?? null, function ($query, string $search): void {
                 $query->where(function ($query) use ($search): void {
                     $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('email', 'like', "%{$search}%");
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhereHas('facilitatorProfile', fn ($profile) => $profile
+                            ->where('employee_number', 'like', "%{$search}%")
+                            ->orWhere('department', 'like', "%{$search}%"));
                 });
             })
             ->when($filters['role'] ?? null, fn ($query, string $role) => $query->where('role', $role))
@@ -72,15 +76,23 @@ class UserController extends Controller
         $validated = $request->validate($this->accountRules());
         $temporaryPassword = $this->generateTemporaryPassword();
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => str($validated['email'])->lower()->toString(),
-            'password' => $temporaryPassword,
-            'role' => $validated['role'],
-            'status' => $validated['status'],
-            'nstp_component_id' => in_array($validated['role'], ['coordinator', 'facilitator'], true) ? ($validated['nstp_component_id'] ?? null) : null,
-            'must_change_password' => true,
-        ]);
+        $user = DB::transaction(function () use ($validated, $temporaryPassword): User {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => str($validated['email'])->lower()->toString(),
+                'password' => $temporaryPassword,
+                'role' => $validated['role'],
+                'status' => $validated['status'],
+                'nstp_component_id' => in_array($validated['role'], ['coordinator', 'facilitator'], true) ? ($validated['nstp_component_id'] ?? null) : null,
+                'must_change_password' => true,
+            ]);
+
+            if ($user->isFacilitator()) {
+                $user->facilitatorProfile()->create($this->facilitatorProfileData($validated));
+            }
+
+            return $user;
+        });
 
         $emailSent = $credentialMailer->send($user, $temporaryPassword);
 
@@ -100,6 +112,8 @@ class UserController extends Controller
 
     public function edit(User $user): View
     {
+        $user->load('facilitatorProfile');
+
         return view('admin.users.edit', ['user' => $user, 'components' => NstpComponent::where('is_active', true)->orderBy('code')->get()]);
     }
 
@@ -117,19 +131,25 @@ class UserController extends Controller
 
         $this->ensureActiveSuperAdminRemains($user, $validated['role'], $validated['status']);
 
-        $user->fill([
-            'name' => $validated['name'],
-            'email' => str($validated['email'])->lower()->toString(),
-            'role' => $validated['role'],
-            'status' => $validated['status'],
-            'nstp_component_id' => in_array($validated['role'], ['coordinator', 'facilitator'], true) ? ($validated['nstp_component_id'] ?? null) : null,
-        ]);
+        DB::transaction(function () use ($user, $validated): void {
+            $user->fill([
+                'name' => $validated['name'],
+                'email' => str($validated['email'])->lower()->toString(),
+                'role' => $validated['role'],
+                'status' => $validated['status'],
+                'nstp_component_id' => in_array($validated['role'], ['coordinator', 'facilitator'], true) ? ($validated['nstp_component_id'] ?? null) : null,
+            ]);
 
-        if ($user->isDirty('email')) {
-            $user->email_verified_at = null;
-        }
+            if ($user->isDirty('email')) {
+                $user->email_verified_at = null;
+            }
 
-        $user->save();
+            $user->save();
+
+            if ($user->isFacilitator()) {
+                $user->facilitatorProfile()->updateOrCreate([], $this->facilitatorProfileData($validated));
+            }
+        });
 
         return back()->with('status', 'The user account was updated successfully.');
     }
@@ -229,7 +249,28 @@ class UserController extends Controller
             'role' => ['required', Rule::in(array_keys(User::ROLE_LABELS))],
             'status' => ['required', Rule::in(array_keys(User::STATUS_LABELS))],
             'nstp_component_id' => ['nullable', 'required_if:role,coordinator', 'integer', Rule::exists('nstp_components', 'id')->where('is_active', true)],
+            'employee_number' => ['nullable', 'required_if:role,facilitator', 'string', 'max:50', Rule::unique('facilitator_profiles', 'employee_number')->ignore($user?->facilitatorProfile?->id)],
+            'department' => ['nullable', 'required_if:role,facilitator', 'string', 'max:150'],
+            'designation' => ['nullable', 'required_if:role,facilitator', 'string', 'max:120'],
+            'employment_status' => ['nullable', 'required_if:role,facilitator', Rule::in(array_keys(FacilitatorProfile::EMPLOYMENT_STATUS_LABELS))],
+            'contact_number' => ['nullable', 'regex:/^09[0-9]{9}$/'],
+            'specialization' => ['nullable', 'string', 'max:255'],
+            'professional_summary' => ['nullable', 'string', 'max:2000'],
         ];
+    }
+
+    /** @param array<string, mixed> $validated */
+    private function facilitatorProfileData(array $validated): array
+    {
+        return collect([
+            'employee_number' => $validated['employee_number'] ?? null,
+            'department' => $validated['department'] ?? null,
+            'designation' => $validated['designation'] ?? null,
+            'employment_status' => $validated['employment_status'] ?? null,
+            'contact_number' => $validated['contact_number'] ?? null,
+            'specialization' => $validated['specialization'] ?? null,
+            'professional_summary' => $validated['professional_summary'] ?? null,
+        ])->map(fn ($value) => is_string($value) ? trim($value) : $value)->all();
     }
 
     private function generateTemporaryPassword(): string

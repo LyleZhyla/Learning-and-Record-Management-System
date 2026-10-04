@@ -42,13 +42,14 @@ class NstpAdminAccountDirectoryTest extends TestCase
         $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts/'.$superAdmin->id)->assertNotFound();
     }
 
-    public function test_staff_details_are_limited_to_name_email_and_component_coverage(): void
+    public function test_staff_details_include_facilitator_record_without_password_controls(): void
     {
         [$nstpAdmin, $coordinator, $facilitator] = $this->records();
 
         $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts/'.$facilitator->id)
             ->assertOk()->assertSee($facilitator->name)->assertSee($facilitator->email)
-            ->assertSee('CWTS')->assertSee('Component assignment enabled')
+            ->assertSee('FAC-2026-001')->assertSee('NSTP Office')
+            ->assertSee('Community Development')->assertSee('CWTS')->assertSee('Component assignment enabled')
             ->assertDontSee('Reset password')->assertDontSee('Last sign in');
 
         $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts/'.$coordinator->id)
@@ -262,6 +263,15 @@ class NstpAdminAccountDirectoryTest extends TestCase
         $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
         $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active']);
         $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $facilitator->facilitatorProfile()->create([
+            'employee_number' => 'FAC-2026-001',
+            'department' => 'NSTP Office',
+            'designation' => 'NSTP Facilitator',
+            'employment_status' => 'full_time',
+            'contact_number' => '09171234567',
+            'specialization' => 'Community Development',
+            'professional_summary' => 'Facilitates community-based NSTP projects.',
+        ]);
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
         $coordinator->update(['nstp_component_id' => $component->id]);

@@ -18,21 +18,33 @@ class ProfileController extends Controller
 
     public function edit(Request $request): View
     {
+        $user = $request->user()->loadMissing('facilitatorProfile');
+
         return view('portal.profile', [
-            'user' => $request->user(),
-            'layout' => $this->access->layout($request->user()),
-            'routePrefix' => $this->access->routePrefix($request->user()),
+            'user' => $user,
+            'layout' => $this->access->layout($user),
+            'routePrefix' => $this->access->routePrefix($user),
         ]);
     }
 
     public function update(Request $request, ProfilePhotoService $photos): RedirectResponse
     {
         $user = $request->user();
-        $validated = $request->validate([
+        $rules = [
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'profile_photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120', 'dimensions:max_width=4096,max_height=4096'],
-        ]);
+        ];
+
+        if ($user->isFacilitator()) {
+            $rules += [
+                'contact_number' => ['nullable', 'regex:/^09[0-9]{9}$/'],
+                'specialization' => ['nullable', 'string', 'max:255'],
+                'professional_summary' => ['nullable', 'string', 'max:2000'],
+            ];
+        }
+
+        $validated = $request->validate($rules);
         $user->fill(['name' => $validated['name'], 'email' => $validated['email']]);
         if ($user->isDirty('email')) {
             $user->email_verified_at = null;
@@ -40,6 +52,16 @@ class ProfileController extends Controller
         $user->save();
         if ($request->hasFile('profile_photo')) {
             $photos->replace($user, $request->file('profile_photo'));
+        }
+        if ($user->isFacilitator()) {
+            $user->facilitatorProfile()->updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'contact_number' => filled($validated['contact_number'] ?? null) ? trim($validated['contact_number']) : null,
+                    'specialization' => filled($validated['specialization'] ?? null) ? trim($validated['specialization']) : null,
+                    'professional_summary' => filled($validated['professional_summary'] ?? null) ? trim($validated['professional_summary']) : null,
+                ]
+            );
         }
 
         return back()->with('status', 'Profile information updated successfully.');
@@ -58,5 +80,4 @@ class ProfileController extends Controller
 
         return back()->with('status', 'Your password has been changed successfully.');
     }
-
 }

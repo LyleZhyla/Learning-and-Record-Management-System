@@ -73,13 +73,24 @@ class UserManagementTest extends TestCase
         $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
 
         foreach (array_keys(User::ROLE_LABELS) as $index => $role) {
-            $response = $this->actingAs($admin)->post('/admin/users', [
+            $payload = [
                 'name' => "Test User {$index}",
                 'email' => "role{$index}@example.test",
                 'role' => $role,
                 'status' => 'active',
                 'nstp_component_id' => $role === 'coordinator' ? $component->id : null,
-            ])->assertSessionHasNoErrors()->assertSessionHas('temporary_password');
+            ];
+            if ($role === 'facilitator') {
+                $payload += [
+                    'employee_number' => 'FAC-'.str_pad((string) $index, 4, '0', STR_PAD_LEFT),
+                    'department' => 'NSTP Office',
+                    'designation' => 'NSTP Facilitator',
+                    'employment_status' => 'full_time',
+                ];
+            }
+
+            $response = $this->actingAs($admin)->post('/admin/users', $payload)
+                ->assertSessionHasNoErrors()->assertSessionHas('temporary_password');
 
             $createdUser = User::where('email', "role{$index}@example.test")->firstOrFail();
             $temporaryPassword = $response->getSession()->get('temporary_password');
@@ -87,6 +98,13 @@ class UserManagementTest extends TestCase
             $this->assertTrue(Hash::check($temporaryPassword, $createdUser->password));
             $this->assertTrue($createdUser->must_change_password);
             $this->assertSame($role, $createdUser->role);
+            if ($role === 'facilitator') {
+                $this->assertDatabaseHas('facilitator_profiles', [
+                    'user_id' => $createdUser->id,
+                    'employee_number' => $payload['employee_number'],
+                    'department' => 'NSTP Office',
+                ]);
+            }
 
             Mail::assertSent(AccountCreatedMail::class, fn (AccountCreatedMail $mail): bool => $mail->hasTo($createdUser->email)
                 && $mail->recipientName === $createdUser->name

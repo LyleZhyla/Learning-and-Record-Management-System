@@ -23,6 +23,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const componentField = form.querySelector('[data-staff-component-field]');
         const component = form.querySelector('[data-staff-component-select]');
         const help = form.querySelector('[data-staff-component-help]');
+        const facilitatorFields = form.querySelector('[data-facilitator-record-fields]');
+        const facilitatorInputs = facilitatorFields?.querySelectorAll('[data-facilitator-record-input]') ?? [];
 
         if (!role || !componentField || !component || !help) return;
 
@@ -37,6 +39,14 @@ document.addEventListener('DOMContentLoaded', () => {
             help.textContent = isCoordinator
                 ? 'Required. The Coordinator can access records only for the selected component.'
                 : 'Optional. Select a component now or assign the Facilitator to sections later.';
+
+            if (facilitatorFields) {
+                facilitatorFields.hidden = !isFacilitator;
+                facilitatorInputs.forEach((input) => {
+                    input.disabled = !isFacilitator;
+                    input.required = isFacilitator && input.hasAttribute('data-facilitator-required');
+                });
+            }
 
             if (!usesComponent) component.value = '';
         };

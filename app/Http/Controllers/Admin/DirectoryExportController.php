@@ -22,20 +22,31 @@ class DirectoryExportController extends Controller
             'role' => ['nullable', Rule::in(['super_admin', 'nstp_admin', 'coordinator', 'facilitator'])],
             'status' => ['nullable', Rule::in(array_keys(User::STATUS_LABELS))],
         ]);
-        $rows = User::with('nstpComponent')->whereIn('role', ['super_admin', 'nstp_admin', 'coordinator', 'facilitator'])
-            ->when($filters['search'] ?? null, fn ($query, string $search) => $query->where(fn ($nested) => $nested->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")))
+        $rows = User::with(['nstpComponent', 'facilitatorProfile'])->whereIn('role', ['super_admin', 'nstp_admin', 'coordinator', 'facilitator'])
+            ->when($filters['search'] ?? null, fn ($query, string $search) => $query->where(fn ($nested) => $nested
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhereHas('facilitatorProfile', fn ($profile) => $profile
+                    ->where('employee_number', 'like', "%{$search}%")
+                    ->orWhere('department', 'like', "%{$search}%"))))
             ->when($filters['role'] ?? null, fn ($query, string $role) => $query->where('role', $role))
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
             ->orderBy('role')->orderBy('name')->get()->map(fn (User $user) => [
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->roleLabel(),
+                'employee_number' => $user->facilitatorProfile?->employee_number ?? '—',
+                'department' => $user->facilitatorProfile?->department ?? '—',
+                'designation' => $user->facilitatorProfile?->designation ?? '—',
+                'employment_status' => $user->facilitatorProfile?->employmentStatusLabel() ?? '—',
+                'contact_number' => $user->facilitatorProfile?->contact_number ?? '—',
+                'specialization' => $user->facilitatorProfile?->specialization ?? '—',
                 'component' => $user->nstpComponent?->code ?? '—',
                 'status' => $user->statusLabel(),
                 'last_sign_in' => $user->last_login_at?->format('M d, Y h:i A') ?? 'Never',
             ]);
 
-        return $this->downloads->download('Staff Account Directory', ['Name', 'Email', 'Role', 'Component', 'Status', 'Last Sign In'], $rows, 'Current directory filters');
+        return $this->downloads->download('Staff Account Directory', ['Name', 'Email', 'Role', 'Employee Number', 'Department / Unit', 'Designation', 'Employment Status', 'Contact Number', 'Specialization', 'Component', 'Status', 'Last Sign In'], $rows, 'Current directory filters');
     }
 
     public function students(Request $request): StreamedResponse

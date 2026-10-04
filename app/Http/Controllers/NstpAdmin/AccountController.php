@@ -26,13 +26,17 @@ class AccountController extends Controller
         $accounts = User::query()
             ->whereIn('role', self::STAFF_ROLES)
             ->with([
+                'facilitatorProfile',
                 'facilitatedSections.component',
                 'nstpComponent',
                 'nstpEnrollments' => fn ($query) => $query->with(['component', 'section'])->latest('academic_year')->latest('semester'),
             ])
             ->when($filters['search'] ?? null, fn ($query, $search) => $query->where(fn ($nested) => $nested
                 ->where('name', 'like', "%{$search}%")
-                ->orWhere('email', 'like', "%{$search}%")))
+                ->orWhere('email', 'like', "%{$search}%")
+                ->orWhereHas('facilitatorProfile', fn ($profile) => $profile
+                    ->where('employee_number', 'like', "%{$search}%")
+                    ->orWhere('department', 'like', "%{$search}%"))))
             ->when($filters['role'] ?? null, fn ($query, $role) => $query->where('role', $role))
             ->orderByRaw("CASE role WHEN 'coordinator' THEN 1 WHEN 'facilitator' THEN 2 WHEN 'student' THEN 3 ELSE 4 END")
             ->orderBy('name')
@@ -61,7 +65,7 @@ class AccountController extends Controller
                 'assessmentSubmissions' => fn ($query) => $query->with('assessment.section.component')->latest('submitted_at'),
             ]);
         } else {
-            $user->load(['facilitatedSections.component', 'nstpComponent']);
+            $user->load(['facilitatorProfile', 'facilitatedSections.component', 'nstpComponent']);
         }
 
         $components = collect([$user->nstpComponent])->filter();

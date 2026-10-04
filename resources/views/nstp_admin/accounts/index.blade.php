@@ -20,14 +20,14 @@
 
 <section class="card user-table-card">
     <form class="filter-bar" method="GET" action="{{ route('nstp_admin.accounts.index') }}">
-        <label class="search-field"><span aria-hidden="true">⌕</span><input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search staff name or email"></label>
+        <label class="search-field"><span aria-hidden="true">⌕</span><input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search name, email, employee no., or department"></label>
         <select name="role" aria-label="Filter by staff role"><option value="">All staff roles</option><option value="coordinator" @selected(($filters['role'] ?? '') === 'coordinator')>Coordinator</option><option value="facilitator" @selected(($filters['role'] ?? '') === 'facilitator')>Facilitator</option></select>
         <button class="filter-button" type="submit">Apply filters</button>
         @if(request()->hasAny(['search', 'role']))<a class="clear-filter" href="{{ route('nstp_admin.accounts.index') }}">Clear</a>@endif
     </form>
 
     <div class="table-wrap"><table class="data-table">
-        <thead><tr><th>Staff member</th><th>Account type</th><th>Component</th><th>Status</th><th class="align-right">Action</th></tr></thead>
+        <thead><tr><th>Staff member</th><th>Account type</th><th>Staff record</th><th>Component</th><th>Status</th><th class="align-right">Action</th></tr></thead>
         <tbody>@forelse($accounts as $account)
             @php
                 $accountComponents = collect([$account->nstpComponent])->filter();
@@ -38,11 +38,12 @@
             <tr>
                 <td><div class="user-cell"><span class="table-avatar">{{ strtoupper(substr($account->name, 0, 1)) }}</span><div><strong>{{ $account->name }}</strong><small>{{ $account->email }}</small></div></div></td>
                 <td><span class="role-badge role-{{ $account->role }}">{{ $account->roleLabel() }}</span></td>
+                <td>@if($account->isFacilitator())<strong>{{ $account->facilitatorProfile?->employee_number ?? 'No employee number' }}</strong><small class="table-secondary-line">{{ $account->facilitatorProfile?->department ?? 'Department not provided' }}</small>@else<span class="muted-cell">—</span>@endif</td>
                 <td>@forelse($accountComponents as $component)<span class="component-mini-badge">{{ $component->code }}</span>@empty<span class="muted-cell">Not assigned</span>@endforelse</td>
                 <td><span class="status-badge {{ $account->status }}"><i></i>{{ $account->statusLabel() }}</span></td>
                 <td class="align-right"><a class="table-action" href="{{ route('nstp_admin.accounts.show', $account) }}">Manage →</a></td>
             </tr>
-        @empty<tr><td colspan="5"><div class="empty-state"><strong>No matching staff accounts</strong><span>Try changing the role or search filter.</span></div></td></tr>@endforelse</tbody>
+        @empty<tr><td colspan="6"><div class="empty-state"><strong>No matching staff accounts</strong><span>Try changing the role or search filter.</span></div></td></tr>@endforelse</tbody>
     </table></div>
     @if($accounts->hasPages())<div class="pagination-row"><span>Showing {{ $accounts->firstItem() }}–{{ $accounts->lastItem() }} of {{ $accounts->total() }}</span>{{ $accounts->links() }}</div>@endif
 </section>

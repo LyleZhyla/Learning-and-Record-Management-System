@@ -6,6 +6,7 @@ namespace App\Models;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -166,6 +167,11 @@ class User extends Authenticatable
         return $this->hasOne(StudentProfile::class);
     }
 
+    public function facilitatorProfile(): HasOne
+    {
+        return $this->hasOne(FacilitatorProfile::class);
+    }
+
     public function nstpComponent(): BelongsTo
     {
         return $this->belongsTo(NstpComponent::class, 'nstp_component_id');
@@ -201,7 +207,7 @@ class User extends Authenticatable
         return $this->hasMany(ChatMessage::class, 'recipient_id');
     }
 
-    public function chatGroups(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    public function chatGroups(): BelongsToMany
     {
         return $this->belongsToMany(ChatGroup::class, 'chat_group_members')
             ->withPivot('last_read_at')

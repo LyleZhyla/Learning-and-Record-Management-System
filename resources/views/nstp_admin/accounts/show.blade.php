@@ -6,7 +6,19 @@
 @if(!$user->isStudent())
 <section class="card restricted-account-profile">
     <div class="account-heading"><span class="large-avatar small">{{ strtoupper(substr($user->name,0,1)) }}</span><div><span class="eyebrow">{{ $user->roleLabel() }}</span><h2>{{ $user->name }}</h2><p>{{ $user->email }}</p></div></div>
-    <div class="visible-data-grid"><div><small>Name</small><strong>{{ $user->name }}</strong></div><div><small>Email</small><strong>{{ $user->email }}</strong></div><div class="full"><small>Component handled</small><p>@forelse($components as $component)<span class="component-mini-badge">{{ $component->code }} · {{ $component->name }}</span>@empty<span class="muted-cell">No component assignment</span>@endforelse</p></div></div>
+    <div class="visible-data-grid">
+        <div><small>Name</small><strong>{{ $user->name }}</strong></div><div><small>Email</small><strong>{{ $user->email }}</strong></div>
+        @if($user->isFacilitator())
+            <div><small>Employee number</small><strong>{{ $user->facilitatorProfile?->employee_number ?? 'Not provided' }}</strong></div>
+            <div><small>Department / unit</small><strong>{{ $user->facilitatorProfile?->department ?? 'Not provided' }}</strong></div>
+            <div><small>Designation</small><strong>{{ $user->facilitatorProfile?->designation ?? 'Not provided' }}</strong></div>
+            <div><small>Employment status</small><strong>{{ $user->facilitatorProfile?->employmentStatusLabel() ?? 'Not provided' }}</strong></div>
+            <div><small>Contact number</small><strong>{{ $user->facilitatorProfile?->contact_number ?? 'Not provided' }}</strong></div>
+            <div><small>Specialization</small><strong>{{ $user->facilitatorProfile?->specialization ?? 'Not provided' }}</strong></div>
+            <div class="full"><small>Professional summary</small><p>{{ $user->facilitatorProfile?->professional_summary ?? 'Not provided' }}</p></div>
+        @endif
+        <div class="full"><small>Component handled</small><p>@forelse($components as $component)<span class="component-mini-badge">{{ $component->code }} · {{ $component->name }}</span>@empty<span class="muted-cell">No component assignment</span>@endforelse</p></div>
+    </div>
     <form class="component-assignment-form" method="POST" action="{{ route('nstp_admin.accounts.component.update', $user) }}">
         @csrf @method('PATCH')
         <label class="field-group"><span>Assign NSTP component</span><select name="nstp_component_id"><option value="">No component assigned</option>@foreach($availableComponents as $component)<option value="{{ $component->id }}" @selected((int) old('nstp_component_id', $currentComponentId) === $component->id)>{{ $component->code }} — {{ $component->name }}</option>@endforeach</select>@error('nstp_component_id')<small class="field-error">{{ $message }}</small>@enderror</label>
