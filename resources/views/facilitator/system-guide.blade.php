@@ -10,7 +10,7 @@
             <h2>Manage your classes from attendance to final grades.</h2>
             <p>Use this guide to check assigned students, run attendance, publish learning resources, assess work, record grades, and communicate clearly.</p>
             <div class="system-guide-hero-actions">
-                <a class="primary-button" href="#facilitator-workflow">View recommended workflow</a>
+                <button class="primary-button" type="button" data-start-facilitator-tour>Start interactive guided tour</button>
                 <a class="secondary-outline-button" href="{{ route('facilitator.dashboard') }}">Return to dashboard</a>
             </div>
         </div>
@@ -50,7 +50,7 @@
     </section>
 
     <section class="card system-guide-help">
-        <div><span class="eyebrow">Need teaching or system support?</span><h3>Use SNAPIE AI as an assistant, not the final decision-maker.</h3><p>Verify generated guidance, rubric suggestions, and scoring assistance before using them in official class work.</p></div>
-        <a class="secondary-button" href="{{ route('ai-assistant.index') }}">Open AI Assistant →</a>
+        <div><span class="eyebrow">Want to learn by doing?</span><h3>Let the guided tour show you each module.</h3><p>The tutorial highlights the actual Facilitator menu and follows you when you open a module.</p></div>
+        <button class="secondary-button" type="button" data-start-facilitator-tour>Start guided tour →</button>
     </section>
 @endsection

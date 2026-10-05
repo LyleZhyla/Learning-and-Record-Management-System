@@ -10,7 +10,7 @@
             <h2>Coordinate every NSTP operation in the right order.</h2>
             <p>Use this guide to prepare the academic term, organize accounts and sections, supervise learning records, and release reliable reports.</p>
             <div class="system-guide-hero-actions">
-                <a class="primary-button" href="#nstp-admin-workflow">View recommended workflow</a>
+                <button class="primary-button" type="button" data-start-nstp-admin-tour>Start interactive guided tour</button>
                 <a class="secondary-outline-button" href="{{ route('nstp_admin.dashboard') }}">Return to dashboard</a>
             </div>
         </div>
@@ -52,7 +52,7 @@
     </section>
 
     <section class="card system-guide-help">
-        <div><span class="eyebrow">Need help while working?</span><h3>Ask SNAPIE AI for workflow guidance.</h3><p>Use the assistant to understand system features, but verify official decisions against institutional policy and authorized records.</p></div>
-        <a class="secondary-button" href="{{ route('ai-assistant.index') }}">Open AI Assistant →</a>
+        <div><span class="eyebrow">Want to learn by doing?</span><h3>Let the guided tour show you each module.</h3><p>The tutorial highlights the actual NSTP Administrator menu and follows you when you open a module.</p></div>
+        <button class="secondary-button" type="button" data-start-nstp-admin-tour>Start guided tour →</button>
     </section>
 @endsection

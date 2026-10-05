@@ -21,6 +21,12 @@
         <article class="metric-card" data-unassigned-student-count="{{ $unassignedStudentCount }}"><span class="metric-icon violet">!</span><div><small>Without component</small><strong>{{ $unassignedStudentCount }}</strong><p>Active students this term</p></div></article>
     </section>
 
+    <section class="card admin-guide-preview" aria-labelledby="nstp-admin-guide-preview-title">
+        <div class="admin-guide-preview-icon" aria-hidden="true">?</div>
+        <div><span class="eyebrow">NSTP Administrator guide</span><h3 id="nstp-admin-guide-preview-title">Not sure where to begin?</h3><p>Follow the recommended operating order and open each NSTP Administration tool from one guided overview.</p></div>
+        <div class="admin-guide-preview-actions"><button class="primary-button" type="button" data-start-nstp-admin-tour>Start guided tour <span aria-hidden="true">→</span></button><a href="{{ route('nstp_admin.system-guide') }}">Read the full guide</a></div>
+    </section>
+
     <section class="component-overview" aria-label="NSTP components">
         <a class="component-card cwts" href="{{ route('nstp_admin.sections.index', ['component_id' => $components->firstWhere('code', 'CWTS')?->id]) }}"><x-component-logo component-code="CWTS" class="component-symbol" /><div><span>Civic Welfare Training Service</span><h3>CWTS</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Open sectioning →</span></a>
         <a class="component-card lts" href="{{ route('nstp_admin.sections.index', ['component_id' => $components->firstWhere('code', 'LTS')?->id]) }}"><x-component-logo component-code="LTS" class="component-symbol" /><div><span>Literacy Training Service</span><h3>LTS</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Open sectioning →</span></a>

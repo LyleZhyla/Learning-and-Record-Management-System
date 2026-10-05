@@ -10,7 +10,7 @@
             <h2>Keep your assigned NSTP component on track.</h2>
             <p>Follow this guide to monitor people and sections, coordinate schedules and attendance, review learning performance, and report verified results.</p>
             <div class="system-guide-hero-actions">
-                <a class="primary-button" href="#coordinator-workflow">View recommended workflow</a>
+                <button class="primary-button" type="button" data-start-coordinator-tour>Start interactive guided tour</button>
                 <a class="secondary-outline-button" href="{{ route('coordinator.dashboard') }}">Return to dashboard</a>
             </div>
         </div>
@@ -54,7 +54,7 @@
     </section>
 
     <section class="card system-guide-help">
-        <div><span class="eyebrow">Need a system explanation?</span><h3>Ask SNAPIE AI, then verify the official record.</h3><p>The assistant can clarify workflows but cannot approve enrollment, change grades, or make institutional decisions.</p></div>
-        <a class="secondary-button" href="{{ route('ai-assistant.index') }}">Open AI Assistant →</a>
+        <div><span class="eyebrow">Want to learn by doing?</span><h3>Let the guided tour show you each module.</h3><p>The tutorial highlights the actual Coordinator menu and follows you when you open a module.</p></div>
+        <button class="secondary-button" type="button" data-start-coordinator-tour>Start guided tour →</button>
     </section>
 @endsection

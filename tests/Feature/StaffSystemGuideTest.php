@@ -27,6 +27,10 @@ class StaffSystemGuideTest extends TestCase
             ->assertSee('Coordinate every NSTP operation in the right order.')
             ->assertSee('Run NSTP administration')
             ->assertSee('NSTP Administrator checklist')
+            ->assertSee('Start interactive guided tour')
+            ->assertSee('admin-tour.js')
+            ->assertSee('data-nstp-admin-tour-root', false)
+            ->assertSee('data-nstp-admin-tour-page-title', false)
             ->assertSeeInOrder(['Profile &amp; Security', 'System Guide'], false)
             ->assertSee(route('nstp_admin.registrations.index'), false)
             ->assertSee(route('nstp_admin.reports.index'), false);
@@ -42,6 +46,10 @@ class StaffSystemGuideTest extends TestCase
             ->assertSee('Keep your assigned NSTP component on track.')
             ->assertSee('Use your Coordinator portal')
             ->assertSee('Coordinator checklist')
+            ->assertSee('Start interactive guided tour')
+            ->assertSee('admin-tour.js')
+            ->assertSee('data-coordinator-tour-root', false)
+            ->assertSee('data-coordinator-tour-page-title', false)
             ->assertSeeInOrder(['Profile &amp; Security', 'System Guide'], false)
             ->assertSee(route('coordinator.sections.index'), false)
             ->assertSee(route('coordinator.performance.index'), false);
@@ -57,6 +65,10 @@ class StaffSystemGuideTest extends TestCase
             ->assertSee('Manage your classes from attendance to final grades.')
             ->assertSee('Use your Facilitator portal')
             ->assertSee('Facilitator checklist')
+            ->assertSee('Start interactive guided tour')
+            ->assertSee('admin-tour.js')
+            ->assertSee('data-facilitator-tour-root', false)
+            ->assertSee('data-facilitator-tour-page-title', false)
             ->assertSeeInOrder(['Profile &amp; Security', 'System Guide'], false)
             ->assertSee(route('facilitator.attendance.index'), false)
             ->assertSee(route('facilitator.grades.index'), false);
@@ -71,5 +83,25 @@ class StaffSystemGuideTest extends TestCase
         $this->actingAs($nstpAdmin)->get('/coordinator/system-guide')->assertForbidden();
         $this->actingAs($coordinator)->get('/facilitator/system-guide')->assertForbidden();
         $this->actingAs($facilitator)->get('/nstp-admin/system-guide')->assertForbidden();
+    }
+
+    public function test_each_staff_dashboard_starts_and_links_to_its_guided_tour(): void
+    {
+        $accounts = [
+            ['role' => 'nstp_admin', 'uri' => '/nstp-admin/dashboard', 'start' => 'data-start-nstp-admin-tour', 'guide' => 'nstp_admin.system-guide'],
+            ['role' => 'coordinator', 'uri' => '/coordinator/dashboard', 'start' => 'data-start-coordinator-tour', 'guide' => 'coordinator.system-guide'],
+            ['role' => 'facilitator', 'uri' => '/facilitator/dashboard', 'start' => 'data-start-facilitator-tour', 'guide' => 'facilitator.system-guide'],
+        ];
+
+        foreach ($accounts as $account) {
+            $user = User::factory()->create(['role' => $account['role'], 'status' => 'active']);
+
+            $this->actingAs($user)
+                ->get($account['uri'])
+                ->assertOk()
+                ->assertSee('Start guided tour')
+                ->assertSee($account['start'], false)
+                ->assertSee(route($account['guide']), false);
+        }
     }
 }

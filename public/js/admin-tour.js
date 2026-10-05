@@ -1,51 +1,121 @@
 (function () {
-    const adminRoot = document.querySelector('[data-admin-tour-root]');
-    const studentRoot = document.querySelector('[data-student-tour-root]');
-    const root = adminRoot || studentRoot;
+    const tourConfigurations = [
+        {
+            root: '[data-admin-tour-root]',
+            storagePrefix: 'snapie.adminTour',
+            targetAttribute: 'data-admin-tour',
+            pageTitleSelector: '[data-admin-tour-page-title]',
+            startSelector: '[data-start-admin-tour]',
+            steps: [
+                { target: 'dashboard', title: 'Your command center', text: 'Start here to monitor student enrollment, attendance trends, sections, and current-term activity.' },
+                { target: 'staff', title: 'Build your NSTP team', text: 'Create Super Admin, NSTP Admin, coordinator, and facilitator accounts. Assign only the access each person needs.' },
+                { target: 'students', title: 'Manage student access', text: 'Review registrations, import student lists, send account access, and download student QR codes.' },
+                { target: 'components', title: 'Prepare NSTP components', text: 'Configure CWTS, LTS, and ROTC capacities and control when component selection is open.' },
+                { target: 'sectioning', title: 'Organize students into classes', text: 'Create sections, assign facilitators, check capacity, and run automatic sectioning.' },
+                { target: 'scheduling', title: 'Set conflict-aware schedules', text: 'Generate schedules, review conflicts, and adjust each section before operations begin.' },
+                { target: 'attendance', title: 'Run attendance sessions', text: 'Open QR attendance sessions, scan student codes, review records, and close completed sessions.' },
+                { target: 'reports', title: 'Create official reports', text: 'Filter institution-wide data and export the results to Excel, Word, PDF, or print view.' },
+                { target: 'backup', title: 'Protect the database', text: 'Download or archive a restorable backup before bulk updates and end-of-term maintenance.' },
+                { target: 'logs', title: 'Keep actions accountable', text: 'Review the audit trail to see who performed important changes and when they happened.' },
+                { target: 'ai', title: 'Ask SNAPIE AI', text: 'Use the assistant for NSTP and system guidance. Never enter passwords, API keys, or unnecessary private data.' },
+                { target: 'guide', title: 'Return to the full guide anytime', text: 'Open the written workflow, role boundaries, and safety checklist whenever you need a reference.' },
+            ],
+        },
+        {
+            root: '[data-student-tour-root]',
+            storagePrefix: 'snapie.studentTour',
+            targetAttribute: 'data-student-tour',
+            pageTitleSelector: '[data-student-tour-page-title]',
+            startSelector: '[data-start-student-tour]',
+            steps: [
+                { target: 'dashboard', title: 'Your student dashboard', text: 'Start here to see your NSTP enrollment, attendance, learning materials, pending assessments, and current grade.' },
+                { target: 'component', title: 'Choose your NSTP component', text: 'Review your CWTS, LTS, or ROTC selection and check whether it is pending, approved, or already assigned to a section.' },
+                { target: 'attendance', title: 'Track your attendance', text: 'Use the attendance page to view your QR details and review Present, Late, and Absent records.' },
+                { target: 'materials', title: 'Open learning materials', text: 'Find the files and resources published for your NSTP component and assigned section.' },
+                { target: 'recommendations', title: 'Build a personalized learning path', text: 'Ask AI to prioritize your authorized materials using your study goal, available time, assessments, and released progress.' },
+                { target: 'proposal', title: 'Improve a project proposal', text: 'Describe your community project idea and receive structured AI guidance. Your facilitator still makes every official decision.' },
+                { target: 'assessments', title: 'Complete assessments', text: 'Check instructions and deadlines, open each activity, and submit your work before it closes.' },
+                { target: 'grades', title: 'Review your grades', text: 'See graded activities, scores, and your computed performance based on released results.' },
+                { target: 'reports', title: 'Download your records', text: 'Open your personal student reports and download the available official summaries.' },
+                { target: 'announcements', title: 'Follow announcements', text: 'Read official updates from the NSTP team so you do not miss schedules, deadlines, or instructions.' },
+                { target: 'messages', title: 'Use authorized messages', text: 'Contact the NSTP staff and groups available to your account, and check unread conversations.' },
+                { target: 'ai', title: 'Ask SNAPIE AI', text: 'Use the assistant for NSTP and system guidance. Never enter passwords, API keys, or unnecessary private information.' },
+                { target: 'profile', title: 'Protect your account', text: 'Keep your student details accurate and use a strong, private password for your account.' },
+                { target: 'guide', title: 'Return to the full guide anytime', text: 'Open the written student workflow and safety checklist whenever you need a quick reference.' },
+            ],
+        },
+        {
+            root: '[data-nstp-admin-tour-root]',
+            storagePrefix: 'snapie.nstpAdminTour',
+            targetAttribute: 'data-nstp-admin-tour',
+            pageTitleSelector: '[data-nstp-admin-tour-page-title]',
+            startSelector: '[data-start-nstp-admin-tour]',
+            steps: [
+                { target: 'dashboard', title: 'Your operations dashboard', text: 'Start here to monitor active students, staff, components, and records that still need assignments.' },
+                { target: 'staff', title: 'Review the operational team', text: 'Check coordinators and facilitators, then confirm that each account has the correct component assignment.' },
+                { target: 'students', title: 'Manage student access', text: 'Add or import students, distribute account access, and review the QR identity assigned to each student.' },
+                { target: 'registrations', title: 'Review student registrations', text: 'Validate submitted details and documents before accepting or rejecting a registration.' },
+                { target: 'components', title: 'Prepare NSTP components', text: 'Review CWTS, LTS, and ROTC settings and control when students may submit component selections.' },
+                { target: 'sectioning', title: 'Organize sections', text: 'Assign students and facilitators, check capacity, and complete sectioning for the active term.' },
+                { target: 'scheduling', title: 'Coordinate schedules', text: 'Generate schedules, review required hours, and resolve facilitator conflicts.' },
+                { target: 'attendance', title: 'Oversee attendance', text: 'Monitor QR attendance sessions and review records that need authorized correction.' },
+                { target: 'assessments', title: 'Oversee assessment records', text: 'Check assessments, submissions, grading structures, and released results.' },
+                { target: 'reports', title: 'Create verified reports', text: 'Filter institution-wide records and confirm the active term before exporting official summaries.' },
+                { target: 'ai', title: 'Ask SNAPIE AI', text: 'Use the assistant for workflow guidance without sharing credentials or unnecessary private student data.' },
+                { target: 'guide', title: 'Return to the full guide anytime', text: 'Open the complete NSTP Administrator workflow and safety checklist whenever you need a reference.' },
+            ],
+        },
+        {
+            root: '[data-coordinator-tour-root]',
+            storagePrefix: 'snapie.coordinatorTour',
+            targetAttribute: 'data-coordinator-tour',
+            pageTitleSelector: '[data-coordinator-tour-page-title]',
+            startSelector: '[data-start-coordinator-tour]',
+            steps: [
+                { target: 'dashboard', title: 'Your component dashboard', text: 'Start here to monitor students, facilitators, sections, attendance, and performance in your assigned component.' },
+                { target: 'components', title: 'Confirm your component scope', text: 'Review the CWTS, LTS, or ROTC component assigned to your coordinator account.' },
+                { target: 'accounts', title: 'Review facilitators and students', text: 'Inspect the people assigned to your component and identify records that need administrative correction.' },
+                { target: 'sections', title: 'Monitor sections and facilitators', text: 'Check capacity, facilitator assignments, enrollment, and section status.' },
+                { target: 'scheduling', title: 'Review class schedules', text: 'Verify required hours and resolve schedule conflicts before classes proceed.' },
+                { target: 'attendance', title: 'Monitor attendance', text: 'Review attendance sessions, QR records, and unexpected late or absent entries.' },
+                { target: 'omr', title: 'Scan answer sheets carefully', text: 'Use the correct assessment and confirm the captured answers before saving results.' },
+                { target: 'performance', title: 'Track student performance', text: 'Review grade completion, attendance signals, and students who may need support.' },
+                { target: 'reports', title: 'Export component reports', text: 'Confirm the component and term filters before sharing official summaries.' },
+                { target: 'ai', title: 'Ask SNAPIE AI', text: 'Use the assistant for system explanations, then verify all official decisions against authorized records.' },
+                { target: 'guide', title: 'Return to the full guide anytime', text: 'Open the complete Coordinator workflow and oversight checklist whenever you need a reference.' },
+            ],
+        },
+        {
+            root: '[data-facilitator-tour-root]',
+            storagePrefix: 'snapie.facilitatorTour',
+            targetAttribute: 'data-facilitator-tour',
+            pageTitleSelector: '[data-facilitator-tour-page-title]',
+            startSelector: '[data-start-facilitator-tour]',
+            steps: [
+                { target: 'dashboard', title: 'Your teaching dashboard', text: 'Start here to review assigned sections, students, attendance activity, and ungraded work.' },
+                { target: 'students', title: 'Review your students', text: 'Check the official class list and open the records available for each assigned student.' },
+                { target: 'attendance', title: 'Run attendance sessions', text: 'Create the correct section session, display its QR code, and review time-in, time-out, late, and absent records.' },
+                { target: 'materials', title: 'Publish learning materials', text: 'Upload or link resources and verify that they reach only the intended component or section.' },
+                { target: 'assessments', title: 'Create and review assessments', text: 'Set clear instructions, deadlines, rubrics, and scores, then review every student submission.' },
+                { target: 'omr', title: 'Scan paper assessments', text: 'Align answer sheets carefully and confirm captured answers before recording results.' },
+                { target: 'grades', title: 'Validate the gradebook', text: 'Review every score and weighted total before treating a student grade as final.' },
+                { target: 'reports', title: 'Prepare class reports', text: 'Use the correct section and term filters before exporting or printing records.' },
+                { target: 'messages', title: 'Communicate with your classes', text: 'Use authorized individual and group conversations without exposing private student information.' },
+                { target: 'ai', title: 'Ask SNAPIE AI', text: 'Use AI as advisory support and keep the facilitator responsible for every official academic decision.' },
+                { target: 'guide', title: 'Return to the full guide anytime', text: 'Open the complete Facilitator workflow and safety checklist whenever you need a reference.' },
+            ],
+        },
+    ];
+    const tour = tourConfigurations.find((configuration) => document.querySelector(configuration.root));
 
-    if (!root) {
+    if (!tour) {
         return;
     }
 
-    const adminSteps = [
-        { target: 'dashboard', title: 'Your command center', text: 'Start here to monitor student enrollment, attendance trends, sections, and current-term activity.' },
-        { target: 'staff', title: 'Build your NSTP team', text: 'Create Super Admin, NSTP Admin, coordinator, and facilitator accounts. Assign only the access each person needs.' },
-        { target: 'students', title: 'Manage student access', text: 'Review registrations, import student lists, send account access, and download student QR codes.' },
-        { target: 'components', title: 'Prepare NSTP components', text: 'Configure CWTS, LTS, and ROTC capacities and control when component selection is open.' },
-        { target: 'sectioning', title: 'Organize students into classes', text: 'Create sections, assign facilitators, check capacity, and run automatic sectioning.' },
-        { target: 'scheduling', title: 'Set conflict-aware schedules', text: 'Generate schedules, review conflicts, and adjust each section before operations begin.' },
-        { target: 'attendance', title: 'Run attendance sessions', text: 'Open QR attendance sessions, scan student codes, review records, and close completed sessions.' },
-        { target: 'reports', title: 'Create official reports', text: 'Filter institution-wide data and export the results to Excel, Word, PDF, or print view.' },
-        { target: 'backup', title: 'Protect the database', text: 'Download or archive a restorable backup before bulk updates and end-of-term maintenance.' },
-        { target: 'logs', title: 'Keep actions accountable', text: 'Review the audit trail to see who performed important changes and when they happened.' },
-        { target: 'ai', title: 'Ask SNAPIE AI', text: 'Use the assistant for NSTP and system guidance. Never enter passwords, API keys, or unnecessary private data.' },
-        { target: 'guide', title: 'Return to the full guide anytime', text: 'Open the written workflow, role boundaries, and safety checklist whenever you need a reference.' },
-    ];
-    const studentSteps = [
-        { target: 'dashboard', title: 'Your student dashboard', text: 'Start here to see your NSTP enrollment, attendance, learning materials, pending assessments, and current grade.' },
-        { target: 'component', title: 'Choose your NSTP component', text: 'Review your CWTS, LTS, or ROTC selection and check whether it is pending, approved, or already assigned to a section.' },
-        { target: 'attendance', title: 'Track your attendance', text: 'Use the attendance page to view your QR details and review Present, Late, and Absent records.' },
-        { target: 'materials', title: 'Open learning materials', text: 'Find the files and resources published for your NSTP component and assigned section.' },
-        { target: 'recommendations', title: 'Build a personalized learning path', text: 'Ask AI to prioritize your authorized materials using your study goal, available time, assessments, and released progress.' },
-        { target: 'proposal', title: 'Improve a project proposal', text: 'Describe your community project idea and receive structured AI guidance. Your facilitator still makes every official decision.' },
-        { target: 'assessments', title: 'Complete assessments', text: 'Check instructions and deadlines, open each activity, and submit your work before it closes.' },
-        { target: 'grades', title: 'Review your grades', text: 'See graded activities, scores, and your computed performance based on released results.' },
-        { target: 'reports', title: 'Download your records', text: 'Open your personal student reports and download the available official summaries.' },
-        { target: 'announcements', title: 'Follow announcements', text: 'Read official updates from the NSTP team so you do not miss schedules, deadlines, or instructions.' },
-        { target: 'messages', title: 'Use authorized messages', text: 'Contact the NSTP staff and groups available to your account, and check unread conversations.' },
-        { target: 'ai', title: 'Ask SNAPIE AI', text: 'Use the assistant for NSTP and system guidance. Never enter passwords, API keys, or unnecessary private information.' },
-        { target: 'profile', title: 'Protect your account', text: 'Keep your student details accurate and use a strong, private password for your account.' },
-        { target: 'guide', title: 'Return to the full guide anytime', text: 'Open the written student workflow and safety checklist whenever you need a quick reference.' },
-    ];
-    const isStudentTour = Boolean(studentRoot);
-    const storagePrefix = isStudentTour ? 'snapie.studentTour' : 'snapie.adminTour';
+    const { storagePrefix, targetAttribute, pageTitleSelector, startSelector, steps } = tour;
     const activeKey = `${storagePrefix}.active`;
     const stepKey = `${storagePrefix}.step`;
     const modeKey = `${storagePrefix}.mode`;
-    const targetAttribute = isStudentTour ? 'data-student-tour' : 'data-admin-tour';
-    const pageTitleSelector = isStudentTour ? '[data-student-tour-page-title]' : '[data-admin-tour-page-title]';
-    const startSelector = isStudentTour ? '[data-start-student-tour]' : '[data-start-admin-tour]';
-    const steps = isStudentTour ? studentSteps : adminSteps;
 
     let currentStep = 0;
     let backdrop;
