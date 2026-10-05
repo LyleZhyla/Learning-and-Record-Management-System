@@ -14,6 +14,7 @@
     const messages = widget.querySelector('[data-ai-widget-messages]');
     const thinking = widget.querySelector('[data-ai-widget-thinking]');
     const errorBox = widget.querySelector('[data-ai-widget-error]');
+    const welcomeTemplate = widget.querySelector('[data-ai-widget-welcome-template]');
 
     function setOpen(open) {
         panel.hidden = !open;
@@ -48,12 +49,19 @@
 
     newChat.addEventListener('click', () => {
         form.action = form.dataset.newAction;
-        const character = widget.dataset.aiCharacter;
-        messages.innerHTML = `<div class="ai-widget-welcome" data-ai-widget-welcome><img class="snapie-character" src="${character}" alt="SNAPIE AI mascot with a tablet"><strong>New conversation</strong><p>What would you like help with?</p></div>`;
+        messages.replaceChildren(welcomeTemplate.content.cloneNode(true));
         expand.href = `${form.dataset.newAction}?new=1`;
         errorBox.hidden = true;
         textarea.value = '';
         if (!textarea.disabled) textarea.focus();
+    });
+
+    messages.addEventListener('click', event => {
+        const suggestion = event.target.closest('[data-ai-widget-suggestion]');
+        if (!suggestion || textarea.disabled) return;
+        textarea.value = suggestion.dataset.aiWidgetSuggestion;
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
     });
 
     textarea.addEventListener('keydown', event => {

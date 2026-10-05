@@ -1,5 +1,13 @@
 @unless(request()->routeIs('ai-assistant.*'))
-<aside class="ai-chat-widget" data-ai-widget data-ai-character="{{ asset('images/characters/snapie-ai-guide.webp') }}">
+@php
+    $suggestedPrompts = [
+        'Ano ang puwedeng gawin ko sa platform?' => 'Ipakita ang mga pangunahing feature ng platform at kung paano ko sila magagamit.',
+        'Explain NSTP' => 'Ipaliwanag ang NSTP, CWTS, LTS, at ROTC sa simpleng paraan.',
+        'Make a study plan' => 'Tulungan mo akong gumawa ng study plan para sa susunod kong NSTP assessment.',
+        'Help with coursework' => 'Tulungan mo akong unawain at planuhin ang NSTP coursework ko.',
+    ];
+@endphp
+<aside class="ai-chat-widget" data-ai-widget>
     <section class="ai-widget-panel" data-ai-widget-panel hidden aria-label="SNAPIE AI mini chat">
         <header class="ai-widget-header">
             <img class="ai-widget-avatar" src="{{ asset('images/characters/snapie-face.webp') }}" alt="" aria-hidden="true">
@@ -23,9 +31,31 @@
                     <p>{!! nl2br(e($message->content)) !!}</p>
                 </article>
             @empty
-                <div class="ai-widget-welcome" data-ai-widget-welcome><img class="snapie-character" src="{{ asset('images/characters/snapie-ai-guide.webp') }}" alt="SNAPIE AI mascot with a tablet"><strong>How can I help?</strong><p>Ask about NSTP, coursework, studying, or using the platform.</p></div>
+                <div class="ai-widget-welcome" data-ai-widget-welcome>
+                    <img class="snapie-character" src="{{ asset('images/characters/snapie-ai-guide.webp') }}" alt="SNAPIE AI mascot with a tablet">
+                    <strong>How can I help?</strong>
+                    <p>I can help with these common tasks. Pick a suggestion to get started:</p>
+                    <div class="ai-widget-suggestions" aria-label="Suggested questions">
+                        @foreach($suggestedPrompts as $label => $prompt)
+                            <button type="button" data-ai-widget-suggestion="{{ $prompt }}" @disabled(!$isConfigured)>{{ $label }}</button>
+                        @endforeach
+                    </div>
+                </div>
             @endforelse
         </div>
+
+        <template data-ai-widget-welcome-template>
+            <div class="ai-widget-welcome" data-ai-widget-welcome>
+                <img class="snapie-character" src="{{ asset('images/characters/snapie-ai-guide.webp') }}" alt="SNAPIE AI mascot with a tablet">
+                <strong>What would you like help with?</strong>
+                <p>Choose a suggestion below or type your own question.</p>
+                <div class="ai-widget-suggestions" aria-label="Suggested questions">
+                    @foreach($suggestedPrompts as $label => $prompt)
+                        <button type="button" data-ai-widget-suggestion="{{ $prompt }}" @disabled(!$isConfigured)>{{ $label }}</button>
+                    @endforeach
+                </div>
+            </div>
+        </template>
 
         <div class="ai-widget-thinking" data-ai-widget-thinking hidden><i></i><i></i><i></i><span>Thinking…</span></div>
         <div class="ai-widget-error" data-ai-widget-error hidden role="alert"></div>

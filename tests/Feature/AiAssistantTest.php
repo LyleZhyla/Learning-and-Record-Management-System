@@ -31,8 +31,19 @@ class AiAssistantTest extends TestCase
                 ->assertOk()
                 ->assertSee('data-ai-widget', false)
                 ->assertSee('Open SNAPIE AI chat')
+                ->assertSee('Ano ang puwedeng gawin ko sa platform?')
+                ->assertSee('data-ai-widget-suggestion', false)
                 ->assertSee('ai-chat-widget.js');
         }
+    }
+
+    public function test_widget_suggestions_fill_the_composer_and_return_for_a_new_chat(): void
+    {
+        $script = file_get_contents(public_path('js/ai-chat-widget.js'));
+
+        $this->assertStringContainsString("event.target.closest('[data-ai-widget-suggestion]')", $script);
+        $this->assertStringContainsString('textarea.value = suggestion.dataset.aiWidgetSuggestion;', $script);
+        $this->assertStringContainsString('messages.replaceChildren(welcomeTemplate.content.cloneNode(true));', $script);
     }
 
     public function test_widget_shows_only_the_signed_in_users_latest_conversation(): void
