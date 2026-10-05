@@ -9,6 +9,37 @@
     @php($isAfpRotcReport = $filters['type'] === 'afp_rotc_semestral')
     @php($isOfficialSemestralReport = $isChedSemestralReport || $isAfpRotcReport)
     @php($publicFilters = collect($filters)->except('facilitator_id')->all())
+    @php($reportCatalog = [
+        'Student records' => [
+            'description' => 'Enrollment and section-based student lists.',
+            'reports' => [
+                'students' => 'Complete student enrollment masterlist.',
+                'students_by_section' => 'Student lists grouped by NSTP section.',
+            ],
+        ],
+        'Attendance and grading' => [
+            'description' => 'Monitoring reports and printable class forms.',
+            'reports' => [
+                'attendance' => 'Recorded attendance status per session.',
+                'grades' => 'Assessment and final grade records.',
+                'attendance_sheet' => 'Printable attendance sheet per class.',
+                'grade_sheet' => 'Printable grade sheet per class.',
+            ],
+        ],
+        'Official submissions' => [
+            'description' => 'Agency-prescribed semestral workbooks.',
+            'reports' => [
+                'ched_semestral' => 'CHED workbook for passing CWTS and LTS completers.',
+                'afp_rotc_semestral' => 'AFP workbook containing all ROTC cadets.',
+            ],
+        ],
+        'Program overview' => [
+            'description' => 'NSTP component and section coverage.',
+            'reports' => [
+                'sections' => 'Component, section, facilitator, and enrollment summary.',
+            ],
+        ],
+    ])
     <section class="welcome-banner report-welcome">
         <div>
             <span class="eyebrow">{{ $isFacilitatorReport ? 'Assigned section reporting center' : ($isCoordinatorReport ? 'Assigned component reporting center' : 'Central reporting center') }}</span>
@@ -25,13 +56,51 @@
         <article class="metric-card"><span class="metric-icon violet">▦</span><div><small>{{ $isFacilitatorReport ? 'MY SECTIONS' : 'NSTP SECTIONS' }}</small><strong>{{ $metrics['sections'] }}</strong><p>{{ $isScopedReport ? 'Assigned academic coverage' : 'All academic terms' }}</p></div></article>
     </section>
 
-    <nav class="report-tabs" aria-label="Report types">
-        @foreach ($reportTypes as $type => $label)
-            <a class="{{ $filters['type'] === $type ? 'active' : '' }}" href="{{ route($routePrefix.'.reports.index', array_merge(collect($publicFilters)->except('type')->all(), ['type' => $type])) }}">{{ $label }}</a>
-        @endforeach
-    </nav>
+    <section class="card report-catalog" aria-labelledby="available-downloads-title">
+        <div class="report-catalog-heading">
+            <div>
+                <span class="eyebrow">Available downloads</span>
+                <h3 id="available-downloads-title">Choose the report you need</h3>
+                <p>Only reports available for your role and assigned NSTP scope are shown below.</p>
+            </div>
+            <span class="report-catalog-count"><strong>{{ count($reportTypes) }}</strong> report{{ count($reportTypes) === 1 ? '' : 's' }} available</span>
+        </div>
+        <div class="report-category-list">
+            @foreach($reportCatalog as $categoryName => $category)
+                @php($availableReports = collect($category['reports'])->only(array_keys($reportTypes)))
+                @if($availableReports->isNotEmpty())
+                    <section class="report-category-group" aria-labelledby="report-category-{{ str($categoryName)->slug() }}">
+                        <div class="report-category-heading">
+                            <h4 id="report-category-{{ str($categoryName)->slug() }}">{{ $categoryName }}</h4>
+                            <p>{{ $category['description'] }}</p>
+                        </div>
+                        <nav class="report-download-grid" aria-label="{{ $categoryName }} downloads">
+                            @foreach($availableReports as $type => $description)
+                                @php($isSelectedReport = $filters['type'] === $type)
+                                <a
+                                    class="report-download-option {{ $isSelectedReport ? 'selected' : '' }}"
+                                    href="{{ route($routePrefix.'.reports.index', array_merge(collect($publicFilters)->except('type')->all(), ['type' => $type])) }}"
+                                    @if($isSelectedReport) aria-current="page" @endif
+                                >
+                                    <span class="report-download-copy">
+                                        <strong>{{ $reportTypes[$type] }}</strong>
+                                        <small>{{ $description }}</small>
+                                    </span>
+                                    <span class="report-download-state">{{ $isSelectedReport ? 'Selected report' : 'View filters' }}</span>
+                                </a>
+                            @endforeach
+                        </nav>
+                    </section>
+                @endif
+            @endforeach
+        </div>
+    </section>
 
     <section class="card report-filter-card">
+        <div class="report-filter-heading">
+            <div><span class="eyebrow">Report filters</span><h3>Filter {{ $reportTypes[$filters['type']] }}</h3><p>Set the reporting period and scope before previewing or downloading this report.</p></div>
+            <span class="report-filter-selection">Selected report</span>
+        </div>
         <form method="GET" action="{{ route($routePrefix.'.reports.index') }}" class="report-filter-grid">
             <input type="hidden" name="type" value="{{ $filters['type'] }}">
             <label class="field-group"><span>Academic year</span><select name="academic_year"><option value="">All academic years</option>@foreach($academicYears as $year)<option value="{{ $year }}" @selected(($filters['academic_year'] ?? '') === $year)>{{ $year }}</option>@endforeach</select></label>
@@ -42,13 +111,13 @@
                 <label class="field-group"><span>Date from</span><input type="date" name="date_from" value="{{ $filters['date_from'] ?? '' }}"></label>
                 <label class="field-group"><span>Date to</span><input type="date" name="date_to" value="{{ $filters['date_to'] ?? '' }}"></label>
             @endif
-            <div class="report-filter-actions"><button class="filter-button" type="submit">Generate report</button><a class="clear-filter" href="{{ route($routePrefix.'.reports.index', ['type' => $filters['type']]) }}">Clear filters</a></div>
+            <div class="report-filter-actions"><button class="filter-button" type="submit">Apply filters</button><a class="clear-filter" href="{{ route($routePrefix.'.reports.index', ['type' => $filters['type']]) }}">Clear filters</a></div>
         </form>
     </section>
 
     <section class="card user-table-card report-result-card">
         <div class="report-result-heading">
-            <div><span class="eyebrow">Generated report</span><h3>{{ $report['title'] }}</h3><p>{{ $report['rows']->count() }} record{{ $report['rows']->count() === 1 ? '' : 's' }} matched the selected filters.</p></div>
+            <div><span class="eyebrow">Report preview</span><h3>{{ $report['title'] }}</h3><p>{{ $report['rows']->count() }} record{{ $report['rows']->count() === 1 ? '' : 's' }} matched the selected filters.</p></div>
             <div class="report-output-actions">
                 <a class="report-print-action" target="_blank" href="{{ route($routePrefix.'.reports.print', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">
                     <span class="report-output-icon" aria-hidden="true">⎙</span>
