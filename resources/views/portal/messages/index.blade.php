@@ -7,8 +7,8 @@
 <section class="page-actions chat-page-heading">
     <div>
         <span class="eyebrow">Secure communication</span>
-        <h2>{{ $isStaffChat ? 'Administrative staff chat' : 'Student–facilitator chat' }}</h2>
-        <p>{{ $isStaffChat ? 'Private messaging for Super Admins, NSTP Admins, and Coordinators.' : 'Use private messages or section-based group chats with authorized participants.' }}</p>
+        <h2>{{ $isStaffChat ? 'Administrative staff chat' : ($routePrefix === 'facilitator' ? 'Team and student messaging' : 'Student–facilitator chat') }}</h2>
+        <p>{{ $isStaffChat ? 'Choose and privately message Super Admins, NSTP Admins, Coordinators, and Facilitators.' : ($routePrefix === 'facilitator' ? 'Choose a staff member to message, continue student conversations, or use section-based group chats.' : 'Use private messages or section-based group chats with authorized participants.') }}</p>
     </div>
 </section>
 
@@ -66,7 +66,7 @@
         @endif
 
         <div class="chat-contacts-heading">
-            <strong>{{ $isStaffChat ? 'Staff contacts' : ($routePrefix === 'student' ? 'My facilitator' : 'My students') }}</strong>
+            <strong>{{ $isStaffChat ? 'Staff contacts' : ($routePrefix === 'student' ? 'My facilitator' : 'Staff and student contacts') }}</strong>
             <span>{{ $contacts->count() }} contact(s)</span>
         </div>
         <div class="chat-contact-list">
@@ -77,7 +77,7 @@
                     @if($person->unread_messages_count > 0)<span class="chat-unread" aria-label="{{ $person->unread_messages_count }} unread messages">{{ $person->unread_messages_count > 99 ? '99+' : $person->unread_messages_count }}</span>@endif
                 </a>
             @empty
-                <div class="chat-no-contacts"><strong>No available conversation</strong><span>{{ $isStaffChat ? 'No other active administrative staff accounts are available.' : ($routePrefix === 'student' ? 'You need an active section with an assigned facilitator.' : 'A student will appear here after starting a conversation with you.') }}</span></div>
+                <div class="chat-no-contacts"><strong>No available conversation</strong><span>{{ $isStaffChat ? 'No other active staff accounts are available.' : ($routePrefix === 'student' ? 'You need an active section with an assigned facilitator.' : 'No active staff contacts or student conversations are available.') }}</span></div>
             @endforelse
         </div>
     </aside>
@@ -107,10 +107,10 @@
                 <textarea id="chat-body" name="body" rows="2" maxlength="2000" placeholder="Message {{ $activeGroup->name }}…" required>{{ old('body') }}</textarea>
                 <button class="primary-button" type="submit">Send</button>
             </form>
-        @elseif($contact && ($section || $isStaffChat))
+        @elseif($contact && ($section || $activeContactIsStaff))
             <header class="chat-conversation-heading">
                 <span class="chat-avatar">{{ strtoupper(substr($contact->name, 0, 1)) }}</span>
-                <div><strong>{{ $contact->name }}</strong><small>{{ $isStaffChat ? $contact->roleLabel() : $section->code.' · '.$section->semesterLabel().' · '.$section->academic_year }}</small></div>
+                <div><strong>{{ $contact->name }}</strong><small>{{ $activeContactIsStaff ? $contact->roleLabel() : $section->code.' · '.$section->semesterLabel().' · '.$section->academic_year }}</small></div>
             </header>
 
             <div class="chat-messages" data-chat-messages aria-live="polite">
@@ -120,7 +120,7 @@
                         <small>{{ $message->created_at->format('M d · h:i A') }}@if($message->sender_id === auth()->id()) · {{ $message->read_at ? 'Read' : 'Sent' }}@endif</small>
                     </article>
                 @empty
-                    <div class="chat-empty-thread"><strong>Start the conversation</strong><span>{{ $isStaffChat ? 'Send a private administrative message.' : 'Send a message about your NSTP class or activities.' }}</span></div>
+                    <div class="chat-empty-thread"><strong>Start the conversation</strong><span>{{ $activeContactIsStaff ? 'Send a private staff message.' : 'Send a message about your NSTP class or activities.' }}</span></div>
                 @endforelse
             </div>
 

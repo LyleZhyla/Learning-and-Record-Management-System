@@ -12,20 +12,21 @@ use App\Services\PortalAccessService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class MessageController extends Controller
 {
-    private const STAFF_CHAT_ROLES = ['super_admin', 'nstp_admin', 'coordinator'];
+    private const STAFF_CHAT_ROLES = ['super_admin', 'nstp_admin', 'coordinator', 'facilitator'];
 
     public function __construct(private PortalAccessService $access) {}
 
     public function index(Request $request, ?User $contact = null): View
     {
         $actor = $request->user();
-        $isStaffChat = $this->isStaffChatUser($actor);
+        $isStaffChat = $this->isAdministrativeChatUser($actor);
         $contactsQuery = $this->contactQuery($actor)
             ->withCount(['sentChatMessages as unread_messages_count' => fn ($query) => $query
                 ->where('recipient_id', $actor->id)
@@ -33,9 +34,6 @@ class MessageController extends Controller
 
         if ($actor->isFacilitator()) {
             $contactsQuery
-                ->where(fn ($contacts) => $contacts
-                    ->whereHas('sentChatMessages', fn ($messages) => $messages->where('recipient_id', $actor->id))
-                    ->orWhereHas('receivedChatMessages', fn ($messages) => $messages->where('sender_id', $actor->id)))
                 ->addSelect(['latest_chat_message_id' => ChatMessage::query()
                     ->selectRaw('MAX(chat_messages.id)')
                     ->where(fn ($messages) => $messages
@@ -45,7 +43,8 @@ class MessageController extends Controller
                         ->orWhere(fn ($pair) => $pair
                             ->whereColumn('chat_messages.recipient_id', 'users.id')
                             ->where('chat_messages.sender_id', $actor->id)))])
-                ->orderByDesc('latest_chat_message_id');
+                ->orderByDesc('latest_chat_message_id')
+                ->orderBy('name');
         } else {
             $contactsQuery->orderBy('name');
         }
@@ -58,7 +57,8 @@ class MessageController extends Controller
 
         if ($contact) {
             abort_unless($contacts->contains('id', $contact->id), 404);
-            if (! $isStaffChat) {
+            $activeContactIsStaff = $this->isStaffChatPair($actor, $contact);
+            if (! $activeContactIsStaff) {
                 $section = $this->sharedSection($actor, $contact);
                 abort_unless($section, 404);
             }
@@ -71,8 +71,8 @@ class MessageController extends Controller
             $contacts->firstWhere('id', $contact->id)?->setAttribute('unread_messages_count', 0);
 
             $messages = ChatMessage::query()
-                ->when($isStaffChat, fn ($query) => $query->whereNull('section_id'))
-                ->when(! $isStaffChat, fn ($query) => $query->where('section_id', $section->id))
+                ->when($activeContactIsStaff, fn ($query) => $query->whereNull('section_id'))
+                ->when(! $activeContactIsStaff, fn ($query) => $query->where('section_id', $section->id))
                 ->where(fn ($query) => $query
                     ->where(fn ($pair) => $pair->where('sender_id', $actor->id)->where('recipient_id', $contact->id))
                     ->orWhere(fn ($pair) => $pair->where('sender_id', $contact->id)->where('recipient_id', $actor->id)))
@@ -89,6 +89,7 @@ class MessageController extends Controller
             'layout' => $this->access->layout($actor),
             'routePrefix' => $routePrefix,
             'isStaffChat' => $isStaffChat,
+            'activeContactIsStaff' => $contact ? $this->isStaffChatPair($actor, $contact) : false,
             'contacts' => $contacts,
             'contact' => $contact,
             'section' => $section,
@@ -126,6 +127,7 @@ class MessageController extends Controller
             'layout' => $this->access->layout($actor),
             'routePrefix' => $routePrefix,
             'isStaffChat' => false,
+            'activeContactIsStaff' => false,
             'contacts' => collect(),
             'contact' => null,
             'section' => null,
@@ -219,9 +221,9 @@ class MessageController extends Controller
         $actor = $request->user();
         abort_unless($this->contactQuery($actor)->whereKey($recipient)->exists(), 404);
 
-        $isStaffChat = $this->isStaffChatUser($actor);
-        $section = $isStaffChat ? null : $this->sharedSection($actor, $recipient);
-        abort_unless($isStaffChat || $section, 404);
+        $isStaffPair = $this->isStaffChatPair($actor, $recipient);
+        $section = $isStaffPair ? null : $this->sharedSection($actor, $recipient);
+        abort_unless($isStaffPair || $section, 404);
 
         $validated = $request->validate([
             'body' => ['required', 'string', 'max:2000'],
@@ -242,7 +244,7 @@ class MessageController extends Controller
 
     private function contactQuery(User $actor): Builder
     {
-        if ($this->isStaffChatUser($actor)) {
+        if ($this->isAdministrativeChatUser($actor)) {
             return User::query()
                 ->whereKeyNot($actor->id)
                 ->whereIn('role', self::STAFF_CHAT_ROLES)
@@ -263,13 +265,20 @@ class MessageController extends Controller
         abort_unless($actor->isFacilitator(), 403);
 
         return User::query()
-            ->where('role', 'student')
+            ->whereKeyNot($actor->id)
             ->where('status', 'active')
-            ->whereHas('nstpEnrollments', fn ($enrollments) => $enrollments
-                ->where('status', 'enrolled')
-                ->whereHas('section', fn ($sections) => $sections
-                    ->where('facilitator_id', $actor->id)
-                    ->where('status', 'active')));
+            ->where(fn ($contacts) => $contacts
+                ->whereIn('role', self::STAFF_CHAT_ROLES)
+                ->orWhere(fn ($students) => $students
+                    ->where('role', 'student')
+                    ->whereHas('nstpEnrollments', fn ($enrollments) => $enrollments
+                        ->where('status', 'enrolled')
+                        ->whereHas('section', fn ($sections) => $sections
+                            ->where('facilitator_id', $actor->id)
+                            ->where('status', 'active')))
+                    ->where(fn ($studentsWithConversation) => $studentsWithConversation
+                        ->whereHas('sentChatMessages', fn ($messages) => $messages->where('recipient_id', $actor->id))
+                        ->orWhereHas('receivedChatMessages', fn ($messages) => $messages->where('sender_id', $actor->id)))));
     }
 
     private function sharedSection(User $actor, User $contact): ?NstpSection
@@ -301,7 +310,7 @@ class MessageController extends Controller
                     ->where('status', 'enrolled')));
     }
 
-    private function groupChats(User $actor): \Illuminate\Support\Collection
+    private function groupChats(User $actor): Collection
     {
         if (! $actor->isFacilitator() && ! $actor->isStudent()) {
             return collect();
@@ -323,7 +332,7 @@ class MessageController extends Controller
             });
     }
 
-    private function availableGroupSections(User $actor): \Illuminate\Support\Collection
+    private function availableGroupSections(User $actor): Collection
     {
         if (! $actor->isFacilitator()) {
             return collect();
@@ -340,8 +349,14 @@ class MessageController extends Controller
             ->get();
     }
 
-    private function isStaffChatUser(User $user): bool
+    private function isAdministrativeChatUser(User $user): bool
     {
-        return in_array($user->role, self::STAFF_CHAT_ROLES, true);
+        return in_array($user->role, ['super_admin', 'nstp_admin', 'coordinator'], true);
+    }
+
+    private function isStaffChatPair(User $first, User $second): bool
+    {
+        return in_array($first->role, self::STAFF_CHAT_ROLES, true)
+            && in_array($second->role, self::STAFF_CHAT_ROLES, true);
     }
 }

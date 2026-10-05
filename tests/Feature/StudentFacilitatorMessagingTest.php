@@ -102,9 +102,9 @@ class StudentFacilitatorMessagingTest extends TestCase
         $this->assertDatabaseCount('chat_messages', 0);
     }
 
-    public function test_facilitator_contact_list_only_shows_conversations_with_latest_first(): void
+    public function test_facilitator_contact_list_shows_staff_choices_and_student_conversations_latest_first(): void
     {
-        [$student, $facilitator, , $section] = $this->records();
+        [$student, $facilitator, $otherFacilitator, $section] = $this->records();
         $quietStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $latestStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
 
@@ -121,8 +121,9 @@ class StudentFacilitatorMessagingTest extends TestCase
 
         $this->actingAs($facilitator)->get('/facilitator/messages')
             ->assertOk()
-            ->assertSee('A student will appear here after starting a conversation with you.')
-            ->assertSee('0 contact(s)');
+            ->assertSee($otherFacilitator->name)
+            ->assertDontSee('/facilitator/messages/'.$student->id, false)
+            ->assertSee('1 contact(s)');
 
         ChatMessage::create([
             'section_id' => $section->id,
@@ -141,7 +142,7 @@ class StudentFacilitatorMessagingTest extends TestCase
             ->assertOk()
             ->assertSeeTextInOrder([$latestStudent->name, $student->name])
             ->assertSee('This is the latest conversation.')
-            ->assertSee('2 contact(s)');
+            ->assertSee('3 contact(s)');
     }
 
     public function test_message_body_is_required_and_limited(): void
