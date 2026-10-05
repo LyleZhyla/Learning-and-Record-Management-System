@@ -30,7 +30,7 @@ class LearningResourceRecommendationTest extends TestCase
             ->assertOk()
             ->assertSee('Study the right material at the right time.')
             ->assertSee('Recommendation catalog')
-            ->assertSee('AI Recommendations')
+            ->assertSee('AI Learning Recommendations')
             ->assertSee('data-student-tour="recommendations"', false);
     }
 

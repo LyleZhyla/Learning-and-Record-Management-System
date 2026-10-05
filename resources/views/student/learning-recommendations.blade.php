@@ -88,7 +88,7 @@
         <article class="card learning-plan-card"><span class="eyebrow">Suggested sequence</span><h3>Your study plan</h3><ol>@foreach($guidance['study_plan'] as $step)<li><span>{{ $loop->iteration }}</span><p><strong>{{ $step['title'] }}</strong><small>{{ $step['action'] }}</small></p></li>@endforeach</ol></article>
     </div>
 
-    <p class="learning-recommendation-disclaimer">AI recommendations are optional learning support. Follow official assessment instructions, deadlines, and guidance from your facilitator.</p>
+    <p class="learning-recommendation-disclaimer">AI learning recommendations are optional learning support. Follow official assessment instructions, deadlines, and guidance from your facilitator.</p>
 </section>
 @endif
 @endsection
