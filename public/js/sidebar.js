@@ -10,6 +10,78 @@
     const menuButton = document.querySelector('.menu-button');
     let backdrop = document.querySelector('[data-sidebar-backdrop]');
     const storageKey = 'snapie.sidebar.collapsed';
+    const navigation = sidebar.querySelector('.main-nav');
+
+    function initializeNavigationGroups() {
+        if (!navigation) return;
+
+        const labels = [...navigation.querySelectorAll(':scope > .nav-label')];
+        const portal = [...document.body.classList].find(className => className.startsWith('portal-')) || 'portal';
+        const groupStorageKey = `snapie.sidebar.groups.${portal}`;
+        let savedGroups = {};
+
+        try {
+            savedGroups = JSON.parse(localStorage.getItem(groupStorageKey)) || {};
+        } catch (error) {
+            savedGroups = {};
+        }
+
+        labels.forEach((label, index) => {
+            const groupName = label.textContent.trim();
+            const groupId = `sidebar-group-${portal}-${index}`;
+            const content = document.createElement('div');
+            content.className = 'nav-group-content';
+            content.id = groupId;
+
+            let sibling = label.nextElementSibling;
+            while (sibling && !sibling.classList.contains('nav-label')) {
+                const nextSibling = sibling.nextElementSibling;
+                content.appendChild(sibling);
+                sibling = nextSibling;
+            }
+            label.insertAdjacentElement('afterend', content);
+
+            const indicator = document.createElement('span');
+            indicator.className = 'nav-group-indicator';
+            indicator.setAttribute('aria-hidden', 'true');
+            indicator.textContent = '⌄';
+            label.appendChild(indicator);
+            label.setAttribute('role', 'button');
+            label.setAttribute('tabindex', '0');
+            label.setAttribute('aria-controls', groupId);
+            label.title = `Toggle ${groupName}`;
+
+            const hasActivePage = Boolean(content.querySelector('.nav-link.active'));
+            const expanded = Object.prototype.hasOwnProperty.call(savedGroups, groupName)
+                ? Boolean(savedGroups[groupName])
+                : hasActivePage;
+
+            function setExpanded(nextExpanded, persist = true) {
+                content.hidden = !nextExpanded;
+                label.classList.toggle('collapsed', !nextExpanded);
+                label.setAttribute('aria-expanded', String(nextExpanded));
+                if (persist) {
+                    savedGroups[groupName] = nextExpanded;
+                    localStorage.setItem(groupStorageKey, JSON.stringify(savedGroups));
+                }
+            }
+
+            function toggleGroup() {
+                setExpanded(label.getAttribute('aria-expanded') !== 'true');
+            }
+
+            setExpanded(expanded, false);
+            label.addEventListener('click', toggleGroup);
+            label.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    toggleGroup();
+                }
+            });
+        });
+    }
+
+    initializeNavigationGroups();
 
     if (!backdrop) {
         backdrop = document.createElement('button');
