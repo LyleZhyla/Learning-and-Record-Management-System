@@ -1,8 +1,8 @@
 <article class="student-id-card" aria-label="Auto-generated student identification card">
     <div class="student-id-accent"></div>
     <header class="student-id-header">
-        <img src="{{ asset('images/snapie-logo-160.png') }}" alt="SNAPIE logo">
-        <div><strong>SMART NSTP</strong><span>Management and AI-Integrated Platform</span></div>
+        <span class="student-id-institution-logos"><img src="{{ asset('images/branding/tau-logo.png') }}" alt="TAU logo"><img src="{{ asset('images/branding/nstp-logo.png') }}" alt="NSTP logo"></span>
+        <div><strong>TAU NSTP</strong><span>Smart Management and AI-Integrated Platform</span></div>
         <b>STUDENT ID</b>
     </header>
 
@@ -33,5 +33,5 @@
         </div>
     </div>
 
-    <footer class="student-id-footer"><span>Valid while enrolled in SNAPIE</span><strong>{{ $enrollment?->academic_year ?: now()->format('Y') }}</strong></footer>
+    <footer class="student-id-footer"><span>Valid while enrolled in TAU NSTP</span><strong>{{ $enrollment?->academic_year ?: now()->format('Y') }}</strong></footer>
 </article>

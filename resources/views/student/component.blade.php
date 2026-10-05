@@ -24,12 +24,12 @@
             <fieldset class="component-choice-fieldset">
                 <legend>NSTP component @if($currentEnrollment)<span class="component-final-badge">Final selection</span>@endif</legend>
                 <div class="component-choice-grid">
-                    @foreach($availableComponents as $component)
+                    @foreach($availableComponents as $nstpComponent)
                         <label class="component-choice-card @if($currentEnrollment) component-choice-locked @endif">
-                            <input type="radio" @if(! $currentEnrollment) name="nstp_component_id" @endif value="{{ $component->id }}" data-component-code="{{ $component->code }}" @checked((int) old('nstp_component_id', $currentEnrollment?->component_id) === $component->id) @disabled($currentEnrollment) required>
-                            <span class="component-choice-mark">{{ substr($component->code, 0, 1) }}</span>
-                            <strong>{{ $component->code }}</strong>
-                            <small>{{ $component->name }}</small>
+                            <input type="radio" @if(! $currentEnrollment) name="nstp_component_id" @endif value="{{ $nstpComponent->id }}" data-component-code="{{ $nstpComponent->code }}" @checked((int) old('nstp_component_id', $currentEnrollment?->component_id) === $nstpComponent->id) @disabled($currentEnrollment) required>
+                            <x-component-logo :component-code="$nstpComponent->code" class="component-choice-mark" />
+                            <strong>{{ $nstpComponent->code }}</strong>
+                            <small>{{ $nstpComponent->name }}</small>
                         </label>
                     @endforeach
                 </div>

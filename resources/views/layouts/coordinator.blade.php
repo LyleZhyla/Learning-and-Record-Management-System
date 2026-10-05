@@ -3,12 +3,12 @@
 <head>
     <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Coordinator') · {{ config('app.name') }}</title>
-    <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('images/snapie-logo-64.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/branding/tau-logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}"><x-theme-init />
 </head>
 <body class="admin-body portal-coordinator"><div class="app-shell">
     <aside class="sidebar" id="sidebar"><button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">‹</button>
-        <a class="brand" href="{{ route('coordinator.dashboard') }}"><img class="brand-logo brand-logo-compact" src="{{ asset('images/snapie-logo-160.png') }}" alt="SNAPIE logo"><img class="brand-logo-dark" src="{{ asset('images/snapie-landscape-dark.png') }}" alt="SNAPIE — Smart NSTP Management and AI-Integrated Platform"><span><strong>Smart NSTP</strong><small>Coordinator Portal</small></span></a>
+        <a class="brand" href="{{ route('coordinator.dashboard') }}"><x-system-brand subtitle="Coordinator Portal" /></a>
         <div class="role-card"><x-user-avatar :user="auth()->user()" /><span><strong>{{ auth()->user()->name }}</strong><small>NSTP Coordinator</small></span></div>
         <nav class="main-nav" aria-label="Coordinator navigation">
             <p class="nav-label">Overview</p>
@@ -38,5 +38,5 @@
         <form method="POST" action="{{ route('logout') }}" class="logout-form">@csrf<button type="submit" class="nav-link logout"><span class="nav-icon">↪</span> Sign out</button></form>
     </aside>
     <button class="sidebar-backdrop" type="button" aria-label="Close navigation" data-sidebar-backdrop hidden></button>
-    <main class="main-content"><header class="topbar"><button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button><div class="topbar-title"><small>Smart NSTP / Coordinator</small><h1>@yield('page-title', 'Dashboard')</h1></div><x-notification-bell /><x-theme-toggle /><div class="topbar-status"><span></span> Monitoring & QR scanning</div></header>@if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif @if($errors->any())<div class="alert danger">{{ $errors->first() }}</div>@endif @yield('content')<footer class="app-footer">© {{ date('Y') }} Smart NSTP Management and AI-Integrated Platform</footer></main>
+    <main class="main-content"><header class="topbar"><button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button><div class="topbar-title"><small>TAU NSTP / Coordinator</small><h1>@yield('page-title', 'Dashboard')</h1></div><x-notification-bell /><x-theme-toggle /><div class="topbar-status"><span></span> Monitoring & QR scanning</div></header>@if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif @if($errors->any())<div class="alert danger">{{ $errors->first() }}</div>@endif @yield('content')<footer class="app-footer">© {{ date('Y') }} Tarlac Agricultural University · National Service Training Program</footer></main>
 </div><x-ai-chat-widget /><script src="{{ asset('js/sidebar.js') }}"></script><script src="{{ asset('js/theme.js') }}"></script><script src="{{ asset('js/table-sort.js') }}?v={{ filemtime(public_path('js/table-sort.js')) }}"></script></body></html>

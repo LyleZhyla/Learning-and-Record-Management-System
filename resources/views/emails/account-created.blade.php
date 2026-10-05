@@ -24,15 +24,16 @@
         <td align="center" style="padding:32px 12px;">
             <table role="presentation" width="600" cellspacing="0" cellpadding="0" border="0" class="email-shell" style="width:600px; max-width:600px; background:#ffffff; border-radius:18px; overflow:hidden; box-shadow:0 10px 30px rgba(23,77,132,.10);">
                 <tr>
-                    <td class="email-pad" style="padding:24px 40px; background:#174d84;">
+                    <td class="email-pad" style="padding:24px 40px; background:#07512e;">
                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                             <tr>
-                                <td width="58" valign="middle">
-                                    <img src="{{ $message->embed(public_path('images/characters/snapie-email-face.png')) }}" width="50" height="50" alt="Snapie profile head" style="display:block; width:50px; height:50px; border:0; border-radius:14px; background:#ffffff; padding:2px; object-fit:contain;">
+                                <td width="104" valign="middle" style="white-space:nowrap;">
+                                    <img src="{{ $message->embed(public_path('images/branding/tau-logo.png')) }}" width="48" height="48" alt="Tarlac Agricultural University logo" style="display:inline-block; width:48px; height:48px; border:0; border-radius:50%; background:#ffffff; object-fit:contain;">
+                                    <img src="{{ $message->embed(public_path('images/branding/nstp-logo.png')) }}" width="48" height="48" alt="TAU National Service Training Program logo" style="display:inline-block; width:48px; height:48px; margin-left:-8px; border:2px solid #ffffff; border-radius:50%; background:#ffffff; object-fit:contain;">
                                 </td>
                                 <td valign="middle" style="padding-left:12px; color:#ffffff;">
-                                    <div style="font-size:20px; font-weight:800; line-height:1.2;">SNAPIE</div>
-                                    <div style="padding-top:3px; color:#dceaff; font-size:12px; line-height:1.3;">Smart NSTP Management Platform</div>
+                                    <div style="font-size:20px; font-weight:800; line-height:1.2;">TAU NSTP</div>
+                                    <div style="padding-top:3px; color:#d8eee1; font-size:12px; line-height:1.3;">Smart Management Platform</div>
                                 </td>
                                 <td align="right" valign="middle">
                                     <span style="display:inline-block; padding:7px 11px; border:1px solid #7fa8d2; border-radius:999px; color:#ffffff; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.7px;">{{ $roleLabel }}</span>
@@ -108,8 +109,8 @@
 
                 <tr>
                     <td class="email-pad" style="padding:22px 40px; background:#f5f8fb; border-top:1px solid #e3eaf1; color:#7a8999; font-size:12px; line-height:1.6;">
-                        This automated message was sent by Snapie for the Smart NSTP Management and AI-Integrated Platform. Please do not reply with your password.<br>
-                        <span style="color:#9aa7b5;">© {{ date('Y') }} Smart NSTP. All rights reserved.</span>
+                        This automated message was sent by the TAU NSTP Smart Management and AI-Integrated Platform. Please do not reply with your password.<br>
+                        <span style="color:#9aa7b5;">© {{ date('Y') }} Tarlac Agricultural University · National Service Training Program.</span>
                     </td>
                 </tr>
             </table>

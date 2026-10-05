@@ -27,8 +27,9 @@ class AccountCreatedMailTest extends TestCase
             'loginUrl' => route('login'),
         ])->render();
 
-        $this->assertStringContainsString('SNAPIE', $html);
-        $this->assertStringContainsString('Snapie profile head', $html);
+        $this->assertStringContainsString('TAU NSTP', $html);
+        $this->assertStringContainsString('Tarlac Agricultural University logo', $html);
+        $this->assertStringContainsString('TAU National Service Training Program logo', $html);
         $this->assertStringContainsString('Snapie waving hello', $html);
         $this->assertStringContainsString('Welcome to Smart NSTP, Juan Dela Cruz!', $html);
         $this->assertStringContainsString('juan@example.test', $html);

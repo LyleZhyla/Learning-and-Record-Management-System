@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Account Sign In · {{ config('app.name') }}</title>
-    <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('images/snapie-logo-64.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/branding/tau-logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,8 +18,7 @@
         <section class="auth-panel">
             <div class="auth-form-wrap">
                 <a class="brand auth-brand" href="{{ url('/') }}">
-                    <img class="brand-landscape theme-logo-light" src="{{ asset('images/snapie-landscape-light.png') }}" alt="SNAPIE — Smart NSTP Management and AI-Integrated Platform">
-                    <img class="brand-landscape theme-logo-dark" src="{{ asset('images/snapie-landscape-dark.png') }}" alt="SNAPIE — Smart NSTP Management and AI-Integrated Platform">
+                    <x-system-brand subtitle="Smart Management and AI-Integrated Platform" />
                 </a>
 
                 <div class="auth-heading">

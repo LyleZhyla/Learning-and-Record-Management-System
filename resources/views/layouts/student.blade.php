@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Student') · {{ config('app.name') }}</title>
-    <link rel="icon" type="image/png" sizes="64x64" href="{{ asset('images/snapie-logo-64.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/branding/tau-logo.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -17,9 +17,7 @@
     <aside class="sidebar" id="sidebar">
         <button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">‹</button>
         <a class="brand" href="{{ route('student.dashboard') }}">
-            <img class="brand-logo brand-logo-compact" src="{{ asset('images/snapie-logo-160.png') }}" alt="SNAPIE logo">
-            <img class="brand-logo-dark" src="{{ asset('images/snapie-landscape-dark.png') }}" alt="SNAPIE — Smart NSTP Management and AI-Integrated Platform">
-            <span><strong>Smart NSTP</strong><small>Student Learning Portal</small></span>
+            <x-system-brand subtitle="Student Learning Portal" />
         </a>
         <div class="role-card"><x-user-avatar :user="auth()->user()" /><span><strong>{{ auth()->user()->name }}</strong><small>Student</small></span></div>
 
@@ -59,7 +57,7 @@
     <main class="main-content">
         <header class="topbar">
             <button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button>
-            <div data-student-tour-page-title><small>Smart NSTP / Student</small><h1>@yield('page-title', 'Dashboard')</h1></div>
+            <div data-student-tour-page-title><small>TAU NSTP / Student</small><h1>@yield('page-title', 'Dashboard')</h1></div>
             <x-notification-bell />
             <x-theme-toggle />
             <button class="admin-tour-topbar-button" type="button" data-start-student-tour><span aria-hidden="true">?</span> Guided Tour</button>
@@ -68,7 +66,7 @@
         @if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif
         @if($errors->any())<div class="alert danger">{{ $errors->first() }}</div>@endif
         @yield('content')
-        <footer class="app-footer">© {{ date('Y') }} Smart NSTP Management and AI-Integrated Platform</footer>
+        <footer class="app-footer">© {{ date('Y') }} Tarlac Agricultural University · National Service Training Program</footer>
     </main>
 </div>
 <x-ai-chat-widget />
