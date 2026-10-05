@@ -5,6 +5,9 @@
 
 @section('content')
     @php($isScopedReport = $isCoordinatorReport || $isFacilitatorReport)
+    @php($isChedSemestralReport = $filters['type'] === 'ched_semestral')
+    @php($isAfpRotcReport = $filters['type'] === 'afp_rotc_semestral')
+    @php($isOfficialSemestralReport = $isChedSemestralReport || $isAfpRotcReport)
     @php($publicFilters = collect($filters)->except('facilitator_id')->all())
     <section class="welcome-banner report-welcome">
         <div>
@@ -59,19 +62,27 @@
                     data-word-url="{{ route($routePrefix.'.reports.document', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}"
                     data-excel-url="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}"
                     data-base-filename="{{ str($report['title'])->slug() }}"
+                    data-fixed-columns="{{ $isOfficialSemestralReport ? 'true' : 'false' }}"
                 >
                     <div class="report-download-heading">
                         <span class="report-output-icon" aria-hidden="true">↓</span>
-                        <span><strong>Download report</strong><small>Choose format and columns</small></span>
+                        <span><strong>Download report</strong><small>{{ $isOfficialSemestralReport ? 'Official workbook format' : 'Choose format and columns' }}</small></span>
                     </div>
                     <label class="report-format-field">
                         <span>File format</span>
                         <select data-report-format aria-label="Select download file format">
-                            <option value="pdf">PDF document</option>
-                            <option value="docx">Word document with official NSTP template</option>
-                            <option value="xlsx">Excel workbook</option>
+                            @if($isOfficialSemestralReport)
+                                <option value="xlsx">{{ $isChedSemestralReport ? 'CHED' : 'AFP ROTC' }} Excel workbook</option>
+                            @else
+                                <option value="pdf">PDF document</option>
+                                <option value="docx">Word document with official NSTP template</option>
+                                <option value="xlsx">Excel workbook</option>
+                            @endif
                         </select>
                     </label>
+                    @if($isOfficialSemestralReport)
+                        <p class="form-help">@if($isChedSemestralReport)Uses the official CHED workbook layout. Only completed, passing CWTS and LTS students are included. NSTP serial number cells remain blank for assignment.@else Uses the AFP ROTC grade-report layout. All enrolled ROTC cadets are included, including failed, incomplete, and ungraded records.@endif</p>
+                    @else
                     <details class="report-field-selector" data-report-fields>
                         <summary>
                             <span><strong>Choose data to include</strong><small>Customize downloaded columns</small></span>
@@ -93,13 +104,16 @@
                             </div>
                         </fieldset>
                     </details>
+                    @endif
                     <div class="report-save-footer">
-                        <button class="primary-button compact" type="button" data-report-save><span aria-hidden="true">↓</span><span data-report-save-label>Save PDF report</span></button>
-                        <small class="report-save-status" data-report-save-status aria-live="polite">PDF · {{ count($report['headers']) }} fields selected. Choose the save folder next.</small>
+                        <button class="primary-button compact" type="button" data-report-save><span aria-hidden="true">↓</span><span data-report-save-label>Save {{ $isOfficialSemestralReport ? 'XLSX' : 'PDF' }} report</span></button>
+                        <small class="report-save-status" data-report-save-status aria-live="polite">{{ $isOfficialSemestralReport ? 'XLSX · Official semestral layout. Choose the save folder next.' : 'PDF · '.count($report['headers']).' fields selected. Choose the save folder next.' }}</small>
                     </div>
                     <noscript>
-                        <a href="{{ route($routePrefix.'.reports.pdf', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download PDF</a>
-                        <a href="{{ route($routePrefix.'.reports.document', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download Word</a>
+                        @unless($isOfficialSemestralReport)
+                            <a href="{{ route($routePrefix.'.reports.pdf', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download PDF</a>
+                            <a href="{{ route($routePrefix.'.reports.document', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download Word</a>
+                        @endunless
                         <a href="{{ route($routePrefix.'.reports.export', array_merge(['type' => $filters['type']], collect($publicFilters)->except('type')->all())) }}">Download Excel</a>
                     </noscript>
                 </div>

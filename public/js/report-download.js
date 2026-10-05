@@ -64,6 +64,7 @@
         const fieldCount = control.querySelector('[data-report-field-count]');
         const selectAllButton = control.querySelector('[data-report-fields-all]');
         const clearAllButton = control.querySelector('[data-report-fields-clear]');
+        const fixedColumns = control.dataset.fixedColumns === 'true';
 
         if (!formatSelect || !saveButton || !status) {
             return;
@@ -82,8 +83,16 @@
         const updateFieldCount = () => {
             const selectedCount = fieldInputs.filter((field) => field.checked).length;
             const selected = selectedFormat();
-            fieldCount.textContent = `${selectedCount} selected`;
-            saveButton.disabled = selectedCount === 0;
+            if (fieldCount) {
+                fieldCount.textContent = `${selectedCount} selected`;
+            }
+            saveButton.disabled = !fixedColumns && selectedCount === 0;
+            if (fixedColumns) {
+                status.textContent = canChooseLocation
+                    ? `${selected.extension.slice(1).toUpperCase()} · Official semestral layout. Choose the save folder next.`
+                    : `${selected.extension.slice(1).toUpperCase()} · Official semestral layout. Saves to Downloads.`;
+                return;
+            }
             status.textContent = selectedCount === 0
                 ? 'Select at least one data field to download.'
                 : (canChooseLocation
@@ -116,7 +125,7 @@
             const selectedFields = fieldInputs.filter((field) => field.checked);
             const baseUrl = control.dataset[selected.urlAttribute];
 
-            if (!selectedFields.length) {
+            if (!fixedColumns && !selectedFields.length) {
                 status.textContent = 'Select at least one data field to download.';
                 return;
             }
@@ -126,7 +135,7 @@
                 return;
             }
 
-            const url = withSelectedColumns(baseUrl, fieldInputs);
+            const url = fixedColumns ? baseUrl : withSelectedColumns(baseUrl, fieldInputs);
 
             if (!canChooseLocation) {
                 startBrowserDownload(url);
@@ -169,7 +178,7 @@
                 }
             } finally {
                 formatSelect.disabled = false;
-                saveButton.disabled = fieldInputs.every((field) => !field.checked);
+                saveButton.disabled = !fixedColumns && fieldInputs.every((field) => !field.checked);
             }
         });
     });

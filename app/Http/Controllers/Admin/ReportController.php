@@ -9,7 +9,10 @@ use App\Models\AttendanceRecord;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Models\SystemSetting;
 use App\Models\User;
+use App\Services\AfpSemestralReportService;
+use App\Services\ChedSemestralReportService;
 use App\Services\DocumentBrandingService;
 use App\Services\GradeService;
 use App\Services\ReportDocumentService;
@@ -35,6 +38,8 @@ class ReportController extends Controller
         'grades' => 'Grade Report',
         'attendance_sheet' => 'Class Attendance Sheet',
         'grade_sheet' => 'Class Grade Sheet',
+        'ched_semestral' => 'CHED Semestral Report',
+        'afp_rotc_semestral' => 'AFP ROTC Semestral Report',
         'sections' => 'Component and Section Report',
     ];
 
@@ -43,6 +48,8 @@ class ReportController extends Controller
         private DocumentBrandingService $branding,
         private ReportSpreadsheetService $spreadsheets,
         private ReportDocumentService $documents,
+        private ChedSemestralReportService $chedReports,
+        private AfpSemestralReportService $afpReports,
     ) {}
 
     public function index(Request $request): View
@@ -58,10 +65,14 @@ class ReportController extends Controller
         $components = NstpComponent::query()
             ->when($isCoordinator, fn ($query) => $query->whereKey($componentId ?? 0))
             ->when($isFacilitator, fn ($query) => $query->whereHas('sections', fn ($section) => $section->where('facilitator_id', $facilitatorId)))
+            ->when($filters['type'] === 'ched_semestral', fn ($query) => $query->whereIn('code', ['CWTS', 'LTS']))
+            ->when($filters['type'] === 'afp_rotc_semestral', fn ($query) => $query->where('code', 'ROTC'))
             ->orderBy('code')->get();
         $sections = NstpSection::with('component')
             ->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))
             ->when($isFacilitator, fn ($query) => $query->where('facilitator_id', $facilitatorId))
+            ->when($filters['type'] === 'ched_semestral', fn ($query) => $query->whereHas('component', fn ($component) => $component->whereIn('code', ['CWTS', 'LTS'])))
+            ->when($filters['type'] === 'afp_rotc_semestral', fn ($query) => $query->whereHas('component', fn ($component) => $component->where('code', 'ROTC')))
             ->orderBy('code')->get();
         $academicYears = NstpSection::query()
             ->when($isCoordinator, fn ($query) => $query->where('component_id', $componentId ?? 0))
@@ -118,6 +129,28 @@ class ReportController extends Controller
     {
         abort_unless(array_key_exists($type, $this->availableReportTypes($request)), 404);
         $filters = $this->filters($request, $type);
+        if ($type === 'ched_semestral') {
+            $spreadsheet = $this->chedReports->createWorkbook($filters);
+            $filename = 'ched-semestral-report-cwts-lts-'.$filters['academic_year'].'-'.$filters['semester'].'-'.now()->format('Y-m-d-His').'.xlsx';
+
+            return response()->streamDownload(function () use ($spreadsheet): void {
+                (new Xlsx($spreadsheet))->save('php://output');
+                $spreadsheet->disconnectWorksheets();
+            }, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]);
+        }
+        if ($type === 'afp_rotc_semestral') {
+            $spreadsheet = $this->afpReports->createWorkbook($filters);
+            $filename = 'afp-rotc-semestral-report-'.$filters['academic_year'].'-'.$filters['semester'].'-'.now()->format('Y-m-d-His').'.xlsx';
+
+            return response()->streamDownload(function () use ($spreadsheet): void {
+                (new Xlsx($spreadsheet))->save('php://output');
+                $spreadsheet->disconnectWorksheets();
+            }, $filename, [
+                'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            ]);
+        }
         $report = $this->selectDownloadColumns($request, $this->buildReport($filters));
         $spreadsheet = $this->spreadsheets->create($report, $this->filterSummary($filters));
         $filename = str($report['title'])->slug().'-'.now()->format('Y-m-d-His').'.xlsx';
@@ -194,6 +227,11 @@ class ReportController extends Controller
         ]);
         $validated['type'] = $forcedType ?? ($validated['type'] ?? 'students');
 
+        if (in_array($validated['type'], ['ched_semestral', 'afp_rotc_semestral'], true)) {
+            $validated['academic_year'] ??= SystemSetting::studentRegistrationAcademicYear();
+            $validated['semester'] ??= SystemSetting::studentRegistrationSemester();
+        }
+
         if ($request->user()->isCoordinator()) {
             $validated['component_id'] = $request->user()->nstp_component_id ?? 0;
         }
@@ -212,6 +250,8 @@ class ReportController extends Controller
             'grades' => $this->gradeReport($filters),
             'attendance_sheet' => $this->attendanceSheetReport($filters),
             'grade_sheet' => $this->gradeSheetReport($filters),
+            'ched_semestral' => $this->chedReports->report($filters),
+            'afp_rotc_semestral' => $this->afpReports->report($filters),
             'sections' => $this->sectionReport($filters),
             default => $this->studentReport($filters),
         };
@@ -492,6 +532,18 @@ class ReportController extends Controller
 
         if ($request->user()->isCoordinator() || $request->user()->isFacilitator()) {
             unset($types['students_by_section']);
+        }
+        if ($request->user()->isFacilitator()) {
+            unset($types['ched_semestral'], $types['afp_rotc_semestral']);
+        }
+        if ($request->user()->isCoordinator()) {
+            $componentCode = $request->user()->nstpComponent?->code;
+            if (! in_array($componentCode, ['CWTS', 'LTS'], true)) {
+                unset($types['ched_semestral']);
+            }
+            if ($componentCode !== 'ROTC') {
+                unset($types['afp_rotc_semestral']);
+            }
         }
 
         return $types;
