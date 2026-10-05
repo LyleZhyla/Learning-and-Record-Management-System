@@ -15,6 +15,8 @@ class ReportDocumentService
 
     private const TABLE_WIDTH = 9360;
 
+    public function __construct(private DocumentBrandingService $branding) {}
+
     public function create(array $report, string $filterSummary): string
     {
         $template = resource_path('templates/nstp-report-template.docx');
@@ -35,6 +37,8 @@ class ReportDocumentService
             if ($archive->open($temporaryPath) !== true) {
                 throw new RuntimeException('The NSTP report document template could not be opened.');
             }
+
+            $this->applyOfficialBranding($archive);
 
             $documentXml = $archive->getFromName('word/document.xml');
 
@@ -419,13 +423,68 @@ class ReportDocumentService
             $sectionProperties->appendChild($margins);
         }
 
-        $this->wordAttribute($margins, 'top', '3024');
-        $this->wordAttribute($margins, 'bottom', '2016');
+        $this->wordAttribute($margins, 'top', '1944');
+        $this->wordAttribute($margins, 'bottom', '1656');
         $this->wordAttribute($margins, 'left', '1273');
         $this->wordAttribute($margins, 'right', '1273');
-        $this->wordAttribute($margins, 'header', '340');
-        $this->wordAttribute($margins, 'footer', '0');
+        $this->wordAttribute($margins, 'header', '216');
+        $this->wordAttribute($margins, 'footer', '216');
         $this->wordAttribute($margins, 'gutter', '0');
+    }
+
+    private function applyOfficialBranding(ZipArchive $archive): void
+    {
+        $header = file_get_contents($this->branding->headerPath());
+        $footer = file_get_contents($this->branding->footerPath());
+
+        if ($header === false || $footer === false
+            || ! $archive->addFromString('word/media/official-document-header.png', $header)
+            || ! $archive->addFromString('word/media/official-document-footer.png', $footer)
+            || ! $archive->addFromString('word/header1.xml', $this->headerFooterXml('hdr', 5943600, 824395, 901, 'Official document header'))
+            || ! $archive->addFromString('word/footer1.xml', $this->headerFooterXml('ftr', 5943600, 694484, 902, 'Official document footer'))
+            || ! $archive->addFromString('word/_rels/header1.xml.rels', $this->imageRelationshipsXml('official-document-header.png'))
+            || ! $archive->addFromString('word/_rels/footer1.xml.rels', $this->imageRelationshipsXml('official-document-footer.png'))) {
+            throw new RuntimeException('The official document header and footer could not be added to the Word report.');
+        }
+    }
+
+    private function headerFooterXml(string $root, int $width, int $height, int $drawingId, string $name): string
+    {
+        return <<<XML
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:{$root} xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture">
+  <w:p>
+    <w:pPr><w:jc w:val="center"/></w:pPr>
+    <w:r>
+      <w:drawing>
+        <wp:inline distT="0" distB="0" distL="0" distR="0">
+          <wp:extent cx="{$width}" cy="{$height}"/>
+          <wp:effectExtent l="0" t="0" r="0" b="0"/>
+          <wp:docPr id="{$drawingId}" name="{$name}"/>
+          <wp:cNvGraphicFramePr><a:graphicFrameLocks noChangeAspect="1"/></wp:cNvGraphicFramePr>
+          <a:graphic>
+            <a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">
+              <pic:pic>
+                <pic:nvPicPr><pic:cNvPr id="{$drawingId}" name="{$name}"/><pic:cNvPicPr/></pic:nvPicPr>
+                <pic:blipFill><a:blip r:embed="rId1"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>
+                <pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="{$width}" cy="{$height}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr>
+              </pic:pic>
+            </a:graphicData>
+          </a:graphic>
+        </wp:inline>
+      </w:drawing>
+    </w:r>
+  </w:p>
+</w:{$root}>
+XML;
+    }
+
+    private function imageRelationshipsXml(string $filename): string
+    {
+        return <<<XML
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/{$filename}"/></Relationships>
+XML;
     }
 
     private function findDirectChild(DOMElement $parent, string $localName): ?DOMElement

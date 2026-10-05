@@ -17,6 +17,8 @@ class ReportSpreadsheetService
 {
     private const HEADER_ROW = 6;
 
+    public function __construct(private DocumentBrandingService $branding) {}
+
     /**
      * @param  array{title: string, headers: array<int, string>, rows: iterable<int, array<string, mixed>>, generated_at: DateTimeInterface}  $report
      */
@@ -116,6 +118,8 @@ class ReportSpreadsheetService
             $letter = Coordinate::stringFromColumnIndex($column);
             $sheet->getColumnDimension($letter)->setWidth(min(40, max(12, $columnWidths[$column - 1] + 2)));
         }
+
+        $this->branding->applyToWorksheet($sheet);
 
     }
 

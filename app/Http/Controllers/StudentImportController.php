@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\DocumentBrandingService;
 use App\Services\QrCodeService;
 use App\Services\StudentImportService;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class StudentImportController extends Controller
 {
+    public function __construct(private DocumentBrandingService $branding) {}
+
     public function create(Request $request): View
     {
         return view('student-import.create', $this->viewData($request));
@@ -74,6 +77,10 @@ class StudentImportController extends Controller
         $instructions->getColumnDimension('A')->setWidth(24);
         $instructions->getColumnDimension('B')->setWidth(70);
         $instructions->getColumnDimension('C')->setWidth(40);
+
+        foreach ($spreadsheet->getAllSheets() as $worksheet) {
+            $this->branding->applyToWorksheet($worksheet);
+        }
 
         return response()->streamDownload(function () use ($spreadsheet): void {
             (new Xlsx($spreadsheet))->save('php://output');
@@ -135,6 +142,8 @@ class StudentImportController extends Controller
         foreach (['A' => 28, 'B' => 34, 'C' => 25, 'D' => 16] as $column => $width) {
             $sheet->getColumnDimension($column)->setWidth($width);
         }
+
+        $this->branding->applyToWorksheet($sheet);
 
         return response()->streamDownload(function () use ($spreadsheet): void {
             (new Xlsx($spreadsheet))->save('php://output');

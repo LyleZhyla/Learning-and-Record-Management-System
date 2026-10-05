@@ -7,6 +7,7 @@ use App\Models\Assessment;
 use App\Models\AssessmentSubmission;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
+use App\Services\DocumentBrandingService;
 use App\Services\GradeService;
 use App\Services\PortalAccessService;
 use Dompdf\Dompdf;
@@ -21,6 +22,7 @@ class ReportController extends Controller
     public function __construct(
         private PortalAccessService $access,
         private GradeService $grades,
+        private DocumentBrandingService $branding,
     ) {}
 
     public function __invoke(Request $request): View
@@ -53,6 +55,8 @@ class ReportController extends Controller
         $dompdf->loadHtml(view($type === 'certificate' ? 'student.reports.certificate' : 'student.reports.pdf', $data + [
             'downloadType' => $type,
             'student' => $student,
+            'documentHeader' => $this->branding->headerDataUri(),
+            'documentFooter' => $this->branding->footerDataUri(),
         ])->render());
         $dompdf->setPaper($type === 'certificate' ? 'a4' : 'a4', $type === 'certificate' ? 'landscape' : 'portrait');
         $dompdf->render();

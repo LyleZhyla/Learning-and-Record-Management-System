@@ -45,6 +45,10 @@ class ExpandedDownloadsTest extends TestCase
             $response = $this->actingAs($student)->get('/student/reports/download/'.$type);
             $response->assertOk()->assertDownload();
             $this->assertSame('application/pdf', $response->headers->get('content-type'));
+            $this->assertGreaterThan(500000, strlen($response->getContent()));
+            if ($type === 'certificate') {
+                $this->assertSame(1, preg_match_all('/\/Type\s*\/Page\b/', $response->getContent()));
+            }
         }
     }
 

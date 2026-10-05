@@ -78,6 +78,9 @@ class StudentImportTest extends TestCase
             $this->assertMatchesRegularExpression('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/', $credentials['password']);
             $this->assertSame('Attendance QR', $credentials['qr_heading']);
             $this->assertSame(1, $credentials['qr_images']);
+            $this->assertSame('&C&G', $credentials['header']);
+            $this->assertSame('&C&G', $credentials['footer']);
+            $this->assertSame(2, $credentials['branding_images']);
 
             $student = User::where('email', $email)->firstOrFail();
             $this->assertSame('student', $student->role);
@@ -223,6 +226,11 @@ class StudentImportTest extends TestCase
         $this->assertSame(StudentImportService::HEADERS, $spreadsheet->getSheetByName('Student Import')->rangeToArray('A1:AD1')[0]);
         $this->assertSame('last_name', $spreadsheet->getSheetByName('Instructions')->getCell('A2')->getValue());
         $this->assertSame('year_section', $spreadsheet->getSheetByName('Instructions')->getCell('A31')->getValue());
+        foreach ($spreadsheet->getAllSheets() as $sheet) {
+            $this->assertSame('&C&G', $sheet->getHeaderFooter()->getOddHeader());
+            $this->assertSame('&C&G', $sheet->getHeaderFooter()->getOddFooter());
+            $this->assertCount(2, $sheet->getHeaderFooter()->getImages());
+        }
         $spreadsheet->disconnectWorksheets();
         unlink($path);
     }
@@ -295,7 +303,7 @@ class StudentImportTest extends TestCase
         return array_map(fn (string $header): string => (string) $data[$header], StudentImportService::HEADERS);
     }
 
-    /** @return array{email: string, password: string, qr_heading: string, qr_images: int} */
+    /** @return array{email: string, password: string, qr_heading: string, qr_images: int, header: string, footer: string, branding_images: int} */
     private function credentialsFromResponse(string $content): array
     {
         $path = tempnam(sys_get_temp_dir(), 'student-credentials-').'.xlsx';
@@ -307,6 +315,9 @@ class StudentImportTest extends TestCase
             'password' => (string) $sheet->getCell('C5')->getValue(),
             'qr_heading' => (string) $sheet->getCell('D4')->getValue(),
             'qr_images' => count($sheet->getDrawingCollection()),
+            'header' => $sheet->getHeaderFooter()->getOddHeader(),
+            'footer' => $sheet->getHeaderFooter()->getOddFooter(),
+            'branding_images' => count($sheet->getHeaderFooter()->getImages()),
         ];
         $spreadsheet->disconnectWorksheets();
         unlink($path);

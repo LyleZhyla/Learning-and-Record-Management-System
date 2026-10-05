@@ -10,6 +10,7 @@ use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
+use App\Services\DocumentBrandingService;
 use App\Services\GradeService;
 use App\Services\ReportDocumentService;
 use App\Services\ReportSpreadsheetService;
@@ -39,6 +40,7 @@ class ReportController extends Controller
 
     public function __construct(
         private GradeService $grades,
+        private DocumentBrandingService $branding,
         private ReportSpreadsheetService $spreadsheets,
         private ReportDocumentService $documents,
     ) {}
@@ -158,9 +160,6 @@ class ReportController extends Controller
         abort_unless(array_key_exists($type, $this->availableReportTypes($request)), 404);
         $filters = $this->filters($request, $type);
         $report = $this->selectDownloadColumns($request, $this->buildReport($filters));
-        $logoPath = public_path('images/snapie-logo-160.png');
-        $logo = is_file($logoPath) ? 'data:image/png;base64,'.base64_encode((string) file_get_contents($logoPath)) : null;
-
         $options = new Options;
         $options->set('defaultFont', 'Helvetica');
         $options->set('isRemoteEnabled', false);
@@ -168,21 +167,11 @@ class ReportController extends Controller
         $dompdf->loadHtml(view('admin.reports.pdf', [
             'report' => $report,
             'filterSummary' => $this->filterSummary($filters),
-            'logo' => $logo,
+            'documentHeader' => $this->branding->headerDataUri(),
+            'documentFooter' => $this->branding->footerDataUri(),
         ])->render());
         $dompdf->setPaper('a4', 'landscape');
         $dompdf->render();
-
-        $canvas = $dompdf->getCanvas();
-        $font = $dompdf->getFontMetrics()->getFont('Helvetica');
-        $canvas->page_text(
-            $canvas->get_width() - 105,
-            $canvas->get_height() - 22,
-            'Page {PAGE_NUM} of {PAGE_COUNT}',
-            $font,
-            8,
-            [0.39, 0.45, 0.55],
-        );
 
         $filename = str($report['title'])->slug().'-'.now()->format('Y-m-d-His').'.pdf';
 

@@ -110,6 +110,9 @@ class SuperAdminReportsTest extends TestCase
         $this->assertSame('Demo Student', $sheet->getCell('A7')->getValue());
         $this->assertSame('A7', $sheet->getFreezePane());
         $this->assertSame('A6:I7', $sheet->getAutoFilter()->getRange());
+        $this->assertSame('&C&G', $sheet->getHeaderFooter()->getOddHeader());
+        $this->assertSame('&C&G', $sheet->getHeaderFooter()->getOddFooter());
+        $this->assertCount(2, $sheet->getHeaderFooter()->getImages());
 
         $workbook->disconnectWorksheets();
         unlink($temporaryFile);
@@ -142,6 +145,8 @@ class SuperAdminReportsTest extends TestCase
         $this->assertTrue($archive->open($response->getFile()->getPathname()));
         $documentXml = $archive->getFromName('word/document.xml');
         $headerXml = $archive->getFromName('word/header1.xml');
+        $headerImage = $archive->getFromName('word/media/official-document-header.png');
+        $footerImage = $archive->getFromName('word/media/official-document-footer.png');
         $footerRelationshipsXml = $archive->getFromName('word/_rels/footer1.xml.rels');
         $archive->close();
 
@@ -150,8 +155,10 @@ class SuperAdminReportsTest extends TestCase
         $this->assertStringContainsString('Date', $documentXml);
         $this->assertStringContainsString('Demo Student', $documentXml);
         $this->assertStringNotContainsString('Time In', $documentXml);
-        $this->assertStringContainsString('NATIONAL SERVICE TRAINING PROGRAM', $headerXml);
-        $this->assertStringContainsString('media/image3.png', $footerRelationshipsXml);
+        $this->assertStringContainsString('Official document header', $headerXml);
+        $this->assertStringContainsString('media/official-document-footer.png', $footerRelationshipsXml);
+        $this->assertSame(hash_file('sha256', public_path('images/official-document-header.png')), hash('sha256', $headerImage));
+        $this->assertSame(hash_file('sha256', public_path('images/official-document-footer.png')), hash('sha256', $footerImage));
     }
 
     public function test_super_admin_can_download_students_segregated_into_section_worksheets(): void
