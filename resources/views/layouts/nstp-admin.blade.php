@@ -31,20 +31,22 @@
                 <a class="nav-link {{ request()->routeIs('nstp_admin.dashboard') ? 'active' : '' }}" href="{{ route('nstp_admin.dashboard') }}">
                     <span class="nav-icon">⌂</span> Dashboard
                 </a>
-                <p class="nav-label">NSTP Operations</p>
+                <p class="nav-label">People & Registration</p>
                 @php($managingStudentAccount = request()->routeIs('nstp_admin.students.*') || (request()->routeIs('nstp_admin.accounts.show') && request()->route('user')?->isStudent()))
                 <a class="nav-link {{ request()->routeIs('nstp_admin.accounts.*') && !$managingStudentAccount ? 'active' : '' }}" href="{{ route('nstp_admin.accounts.index') }}"><span class="nav-icon">♙</span> Staff Accounts</a>
                 <a class="nav-link {{ $managingStudentAccount ? 'active' : '' }}" href="{{ route('nstp_admin.students.index') }}"><span class="nav-icon">♟</span> Student Accounts</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.registrations.*') ? 'active' : '' }}" href="{{ route('nstp_admin.registrations.index') }}"><span class="nav-icon">▣</span> Registration Reviews</a>
+                <p class="nav-label">Program Operations</p>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.components.*') ? 'active' : '' }}" href="{{ route('nstp_admin.components.index') }}"><span class="nav-icon">◉</span> NSTP Components</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.sections.*', 'nstp_admin.sectioning.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sections.index') }}"><span class="nav-icon">▦</span> Sectioning</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.schedules.*') ? 'active' : '' }}" href="{{ route('nstp_admin.schedules.index') }}"><span class="nav-icon">◷</span> Scheduling</a>
-                <p class="nav-label">Attendance & Learning</p>
+                <p class="nav-label">Learning & Assessment</p>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.attendance.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'attendance') }}"><span class="nav-icon">▣</span> Attendance @if($sidebarPortalNotificationCounts['attendance'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['attendance'] > 99 ? '99+' : $sidebarPortalNotificationCounts['attendance'] }}</span>@endif</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.materials.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'materials') }}"><span class="nav-icon">▤</span> Learning Materials @if($sidebarPortalNotificationCounts['materials'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['materials'] > 99 ? '99+' : $sidebarPortalNotificationCounts['materials'] }}</span>@endif</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.assessments.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'assessments') }}"><span class="nav-icon">✓</span> Assessments @if($sidebarPortalNotificationCounts['assessments'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['assessments'] > 99 ? '99+' : $sidebarPortalNotificationCounts['assessments'] }}</span>@endif</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.grades.*') ? 'active' : '' }}" href="{{ route('nstp_admin.grades.index') }}"><span class="nav-icon">◎</span> Grades</a>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.reports.*') ? 'active' : '' }}" href="{{ route('nstp_admin.reports.index') }}"><span class="nav-icon">▤</span> Reports</a>
+                <p class="nav-label">Reports & Records</p>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.reports.*') ? 'active' : '' }}" href="{{ route('nstp_admin.reports.index') }}"><span class="nav-icon">▤</span> Reports Center</a>
                 <p class="nav-label">Communication</p>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.announcements.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'announcements') }}"><span class="nav-icon">◫</span> Announcements @if($sidebarPortalNotificationCounts['announcements'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['announcements'] > 99 ? '99+' : $sidebarPortalNotificationCounts['announcements'] }}</span>@endif</a>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.messages.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'messages') }}"><span class="nav-icon">◇</span> Messages @if($sidebarUnreadMessageCount > 0)<span class="nav-count" data-unread-message-count="{{ $sidebarUnreadMessageCount }}">{{ $sidebarUnreadMessageCount > 99 ? '99+' : $sidebarUnreadMessageCount }}</span>@endif</a>

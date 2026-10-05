@@ -13,15 +13,16 @@
         <nav class="main-nav" aria-label="Coordinator navigation">
             <p class="nav-label">Overview</p>
             <a class="nav-link {{ request()->routeIs('coordinator.dashboard') ? 'active' : '' }}" href="{{ route('coordinator.dashboard') }}"><span class="nav-icon">⌂</span> Dashboard</a>
-            <p class="nav-label">NSTP Operations</p>
+            <p class="nav-label">Program Oversight</p>
             <a class="nav-link {{ request()->routeIs('coordinator.components.*') ? 'active' : '' }}" href="{{ route('coordinator.components.index') }}"><span class="nav-icon">◉</span> Components</a>
             <a class="nav-link {{ request()->routeIs('coordinator.accounts.*') ? 'active' : '' }}" href="{{ route('coordinator.accounts.index') }}"><span class="nav-icon">♙</span> Facilitators & Students</a>
             <a class="nav-link {{ request()->routeIs('coordinator.sections.*') ? 'active' : '' }}" href="{{ route('coordinator.sections.index') }}"><span class="nav-icon">▦</span> Sections & Facilitators</a>
             <a class="nav-link {{ request()->routeIs('coordinator.schedules.*') ? 'active' : '' }}" href="{{ route('coordinator.schedules.index') }}"><span class="nav-icon">◷</span> Scheduling</a>
             @if(auth()->user()->nstpComponent?->code === 'ROTC')<a class="nav-link {{ request()->routeIs('coordinator.rotc-approvals.*') ? 'active' : '' }}" href="{{ route('coordinator.rotc-approvals.index') }}"><span class="nav-icon">✓</span> ROTC Approvals</a>@endif
-            <p class="nav-label">Attendance & Grading</p>
+            <p class="nav-label">Attendance & Learning</p>
             <a class="nav-link {{ request()->routeIs('coordinator.attendance.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'attendance') }}"><span class="nav-icon">▣</span> Attendance @if($sidebarPortalNotificationCounts['attendance'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['attendance'] > 99 ? '99+' : $sidebarPortalNotificationCounts['attendance'] }}</span>@endif</a>
             <a class="nav-link {{ request()->routeIs('coordinator.materials.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'materials') }}"><span class="nav-icon">▤</span> Learning Materials @if($sidebarPortalNotificationCounts['materials'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['materials'] > 99 ? '99+' : $sidebarPortalNotificationCounts['materials'] }}</span>@endif</a>
+            <p class="nav-label">Assessment & Grading</p>
             <a class="nav-link {{ request()->routeIs('coordinator.omr.*') ? 'active' : '' }}" href="{{ route('coordinator.omr.index') }}"><span class="nav-icon">▦</span> Answer Sheet Scanner</a>
             <a class="nav-link {{ request()->routeIs('coordinator.performance.*') ? 'active' : '' }}" href="{{ route('coordinator.performance.index') }}"><span class="nav-icon">◎</span> Performance & Grades</a>
             <a class="nav-link {{ request()->routeIs('coordinator.assessments.index', 'coordinator.assessments.show') ? 'active' : '' }}" href="{{ route('coordinator.assessments.index') }}"><span class="nav-icon">▤</span> Assessment Review</a>

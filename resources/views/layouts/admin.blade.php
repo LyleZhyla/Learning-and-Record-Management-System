@@ -32,26 +32,29 @@
                 <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}" data-admin-tour="dashboard">
                     <span class="nav-icon">⌂</span> Dashboard
                 </a>
-                <p class="nav-label">Administration</p>
+                <p class="nav-label">People & Registration</p>
                 @php($managingStudentAccount = request()->routeIs('admin.students.*') || (request()->routeIs('admin.users.edit') && request()->route('user')?->isStudent()) || (request()->routeIs('admin.users.create') && request('role') === 'student'))
                 <a class="nav-link {{ request()->routeIs('admin.users.*') && !$managingStudentAccount ? 'active' : '' }}" href="{{ route('admin.users.index') }}" data-admin-tour="staff">
                     <span class="nav-icon">♙</span> Staff Accounts
                 </a>
                 <a class="nav-link {{ $managingStudentAccount ? 'active' : '' }}" href="{{ route('admin.students.index') }}" data-admin-tour="students"><span class="nav-icon">♟</span> Student Accounts</a>
                 <a class="nav-link {{ request()->routeIs('admin.registrations.*') ? 'active' : '' }}" href="{{ route('admin.registrations.index') }}"><span class="nav-icon">▣</span> Registration Reviews</a>
+                <p class="nav-label">Program Operations</p>
                 <a class="nav-link {{ request()->routeIs('admin.components.*') ? 'active' : '' }}" href="{{ route('admin.components.index') }}" data-admin-tour="components"><span class="nav-icon">◉</span> NSTP Components</a>
                 <a class="nav-link {{ request()->routeIs('admin.sections.*', 'admin.sectioning.*') ? 'active' : '' }}" href="{{ route('admin.sections.index') }}" data-admin-tour="sectioning"><span class="nav-icon">▦</span> Sectioning</a>
                 <a class="nav-link {{ request()->routeIs('admin.schedules.*') ? 'active' : '' }}" href="{{ route('admin.schedules.index') }}" data-admin-tour="scheduling"><span class="nav-icon">◷</span> Scheduling</a>
-                <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}" data-admin-tour="reports"><span class="nav-icon">◫</span> Reports</a>
-                <a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}" data-admin-tour="backup"><span class="nav-icon">⇩</span> Database Management</a>
-                <a class="nav-link {{ request()->routeIs('admin.system-logs.*') ? 'active' : '' }}" href="{{ route('admin.system-logs.index') }}" data-admin-tour="logs"><span class="nav-icon">☷</span> System Logs</a>
-                <a class="nav-link {{ request()->routeIs('admin.archives.*') ? 'active' : '' }}" href="{{ route('admin.archives.index') }}"><span class="nav-icon">▱</span> Records Archive</a>
-                <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.edit') }}"><span class="nav-icon">⚙</span> System Settings</a>
-                <p class="nav-label">Attendance & Learning</p>
+                <p class="nav-label">Learning & Assessment</p>
                 <a class="nav-link {{ request()->routeIs('admin.attendance.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'attendance') }}" data-admin-tour="attendance"><span class="nav-icon">▣</span> Attendance @if($sidebarPortalNotificationCounts['attendance'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['attendance'] > 99 ? '99+' : $sidebarPortalNotificationCounts['attendance'] }}</span>@endif</a>
                 <a class="nav-link {{ request()->routeIs('admin.materials.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'materials') }}"><span class="nav-icon">▤</span> Learning Materials @if($sidebarPortalNotificationCounts['materials'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['materials'] > 99 ? '99+' : $sidebarPortalNotificationCounts['materials'] }}</span>@endif</a>
                 <a class="nav-link {{ request()->routeIs('admin.assessments.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'assessments') }}"><span class="nav-icon">✓</span> Assessments @if($sidebarPortalNotificationCounts['assessments'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['assessments'] > 99 ? '99+' : $sidebarPortalNotificationCounts['assessments'] }}</span>@endif</a>
                 <a class="nav-link {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}" href="{{ route('admin.grades.index') }}"><span class="nav-icon">◎</span> Grades</a>
+                <p class="nav-label">Reports & Records</p>
+                <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}" data-admin-tour="reports"><span class="nav-icon">◫</span> Reports Center</a>
+                <a class="nav-link {{ request()->routeIs('admin.archives.*') ? 'active' : '' }}" href="{{ route('admin.archives.index') }}"><span class="nav-icon">▱</span> Records Archive</a>
+                <p class="nav-label">System Administration</p>
+                <a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}" data-admin-tour="backup"><span class="nav-icon">⇩</span> Database Management</a>
+                <a class="nav-link {{ request()->routeIs('admin.system-logs.*') ? 'active' : '' }}" href="{{ route('admin.system-logs.index') }}" data-admin-tour="logs"><span class="nav-icon">☷</span> System Logs</a>
+                <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.edit') }}"><span class="nav-icon">⚙</span> System Settings</a>
                 <p class="nav-label">Communication</p>
                 <a class="nav-link {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'announcements') }}"><span class="nav-icon">◫</span> Announcements @if($sidebarPortalNotificationCounts['announcements'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['announcements'] > 99 ? '99+' : $sidebarPortalNotificationCounts['announcements'] }}</span>@endif</a>
                 <a class="nav-link {{ request()->routeIs('admin.messages.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'messages') }}"><span class="nav-icon">◇</span> Messages @if($sidebarUnreadMessageCount > 0)<span class="nav-count" data-unread-message-count="{{ $sidebarUnreadMessageCount }}">{{ $sidebarUnreadMessageCount > 99 ? '99+' : $sidebarUnreadMessageCount }}</span>@endif</a>

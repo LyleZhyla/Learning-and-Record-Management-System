@@ -24,6 +24,7 @@
         <nav class="main-nav" aria-label="Student navigation">
             <p class="nav-label">Overview</p>
             <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}" href="{{ route('student.dashboard') }}" data-student-tour="dashboard"><span class="nav-icon">⌂</span> Dashboard</a>
+            <p class="nav-label">Enrollment</p>
             <a class="nav-link {{ request()->routeIs('student.component.*') ? 'active' : '' }}" href="{{ route('student.component.edit') }}" data-student-tour="component"><span class="nav-icon">◈</span> NSTP Selection</a>
 
             <p class="nav-label">Learning</p>
@@ -32,10 +33,9 @@
             <a class="nav-link {{ request()->routeIs('student.recommendations.*') ? 'active' : '' }}" href="{{ route('student.recommendations.index') }}" data-student-tour="recommendations"><span class="nav-icon">✦</span> AI Recommendations</a>
             <a class="nav-link {{ request()->routeIs('student.proposal-guide.*') ? 'active' : '' }}" href="{{ route('student.proposal-guide.index') }}" data-student-tour="proposal"><span class="nav-icon">✎</span> Proposal Guide</a>
             <a class="nav-link {{ request()->routeIs('student.assessments.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'assessments') }}" data-student-tour="assessments"><span class="nav-icon">✓</span> Assessments @php($assessmentNavCount = $sidebarNotificationCounts['assessments'] ?: $sidebarPendingAssessmentCount) @if($assessmentNavCount > 0)<span class="nav-count" data-assessment-notification-count="{{ $sidebarNotificationCounts['assessments'] }}" data-pending-assessment-count="{{ $sidebarPendingAssessmentCount }}" aria-label="{{ $sidebarNotificationCounts['assessments'] ? $sidebarNotificationCounts['assessments'].' unread assessment notifications' : $sidebarPendingAssessmentCount.' pending assessments' }}">{{ $assessmentNavCount > 99 ? '99+' : $assessmentNavCount }}</span>@endif</a>
+            <p class="nav-label">Progress & Records</p>
             <a class="nav-link {{ request()->routeIs('student.grades.*') ? 'active' : '' }}" href="{{ route('student.grades.index') }}" data-student-tour="grades"><span class="nav-icon">◎</span> Grades</a>
-
-            <p class="nav-label">Reports</p>
-            <a class="nav-link {{ request()->routeIs('student.reports.*') ? 'active' : '' }}" href="{{ route('student.reports.index') }}" data-student-tour="reports"><span class="nav-icon">▤</span> Reports</a>
+            <a class="nav-link {{ request()->routeIs('student.reports.*') ? 'active' : '' }}" href="{{ route('student.reports.index') }}" data-student-tour="reports"><span class="nav-icon">▤</span> My Reports</a>
 
             <p class="nav-label">Communication</p>
             <a class="nav-link {{ request()->routeIs('student.announcements.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'announcements') }}" data-student-tour="announcements"><span class="nav-icon">◫</span> Announcements @if($sidebarNotificationCounts['announcements'] > 0)<span class="nav-count" data-announcement-notification-count="{{ $sidebarNotificationCounts['announcements'] }}" aria-label="{{ $sidebarNotificationCounts['announcements'] }} unread announcements">{{ $sidebarNotificationCounts['announcements'] > 99 ? '99+' : $sidebarNotificationCounts['announcements'] }}</span>@endif</a>
