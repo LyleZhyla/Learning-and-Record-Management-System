@@ -8,8 +8,18 @@
     const desktopQuery = window.matchMedia('(min-width: 761px)');
     const collapseButton = sidebar.querySelector('.sidebar-toggle');
     const menuButton = document.querySelector('.menu-button');
-    const backdrop = document.querySelector('[data-sidebar-backdrop]');
+    let backdrop = document.querySelector('[data-sidebar-backdrop]');
     const storageKey = 'snapie.sidebar.collapsed';
+
+    if (!backdrop) {
+        backdrop = document.createElement('button');
+        backdrop.className = 'sidebar-backdrop';
+        backdrop.type = 'button';
+        backdrop.hidden = true;
+        backdrop.setAttribute('aria-label', 'Close navigation');
+        backdrop.setAttribute('data-sidebar-backdrop', '');
+        sidebar.insertAdjacentElement('afterend', backdrop);
+    }
 
     const navItems = sidebar.querySelectorAll('.nav-link');
     navItems.forEach((item) => {
