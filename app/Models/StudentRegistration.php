@@ -23,6 +23,11 @@ class StudentRegistration extends Model
         'needs_correction' => 'Needs correction',
     ];
 
+    public const NSTP_LEVELS = [
+        'nstp_1' => 'NSTP 1 — first NSTP semester',
+        'nstp_2' => 'NSTP 2 — completed NSTP 1 previously',
+    ];
+
     protected $guarded = [];
 
     protected function casts(): array

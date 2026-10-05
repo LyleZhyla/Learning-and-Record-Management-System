@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStudentRegistrationRequest;
 use App\Models\StudentRegistration;
+use App\Models\SystemSetting;
+use App\Models\NstpSection;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,11 @@ class StudentRegistrationController extends Controller
     public function create(): View
     {
         return view('auth.register', [
+            'registrationOpen' => SystemSetting::studentRegistrationIsOpen(),
+            'registrationAcademicYear' => SystemSetting::studentRegistrationAcademicYear(),
+            'registrationSemester' => SystemSetting::studentRegistrationSemester(),
+            'registrationSemesterLabel' => NstpSection::SEMESTERS[SystemSetting::studentRegistrationSemester()] ?? str(SystemSetting::studentRegistrationSemester())->headline(),
+            'nstpLevels' => StudentRegistration::NSTP_LEVELS,
             'locationEndpoints' => [
                 'cities' => route('locations.cities', ['provinceCode' => '__CODE__'], false),
                 'barangays' => route('locations.barangays', ['cityCode' => '__CODE__'], false),
@@ -28,7 +35,15 @@ class StudentRegistrationController extends Controller
 
     public function store(StoreStudentRegistrationRequest $request): RedirectResponse
     {
+        if (! SystemSetting::studentRegistrationIsOpen()) {
+            throw ValidationException::withMessages([
+                'registration' => 'Student registration is currently closed. Please wait for the NSTP Office to open the next registration period.',
+            ]);
+        }
+
         $validated = $request->validated();
+        $validated['academic_year'] = SystemSetting::studentRegistrationAcademicYear();
+        $validated['semester'] = SystemSetting::studentRegistrationSemester();
         $corPath = null;
         $photoPath = null;
 

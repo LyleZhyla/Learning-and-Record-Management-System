@@ -22,9 +22,15 @@ class SystemSettingTest extends TestCase
         $this->actingAs($superAdmin)->get('/admin/settings')->assertOk()->assertSee('Automatic logout timeout');
         $this->actingAs($superAdmin)->put('/admin/settings', [
             'inactivity_timeout_minutes' => 15,
+            'student_registration_open' => '0',
+            'student_registration_academic_year' => '2027-2028',
+            'student_registration_semester' => 'second',
         ])->assertSessionHasNoErrors();
 
         $this->assertSame(15, SystemSetting::inactivityTimeoutMinutes());
+        $this->assertFalse(SystemSetting::studentRegistrationIsOpen());
+        $this->assertSame('2027-2028', SystemSetting::studentRegistrationAcademicYear());
+        $this->assertSame('second', SystemSetting::studentRegistrationSemester());
         $this->assertDatabaseHas('audit_logs', [
             'user_id' => $superAdmin->id,
             'route_name' => 'admin.settings.update',
@@ -49,6 +55,21 @@ class SystemSettingTest extends TestCase
         $log = AuditLog::where('user_id', $student->id)->where('action', 'inactivity_logout')->firstOrFail();
         $this->assertSame(401, $log->status_code);
         $this->assertSame(5, $log->metadata['timeout_minutes']);
+    }
+
+    public function test_nstp_admin_can_manage_the_public_registration_period(): void
+    {
+        $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+
+        $this->actingAs($nstpAdmin)->patch('/nstp-admin/registrations/settings', [
+            'student_registration_open' => '0',
+            'student_registration_academic_year' => '2028-2029',
+            'student_registration_semester' => 'second',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertFalse(SystemSetting::studentRegistrationIsOpen());
+        $this->assertSame('2028-2029', SystemSetting::studentRegistrationAcademicYear());
+        $this->assertSame('second', SystemSetting::studentRegistrationSemester());
     }
 
     public function test_normal_activity_restarts_the_inactivity_timer(): void

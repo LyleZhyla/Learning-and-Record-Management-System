@@ -70,6 +70,8 @@
                 <dl class="registration-details-grid">
                     <div><dt>Student number</dt><dd>{{ $registration->student_number }}</dd></div>
                     <div><dt>Email address</dt><dd>{{ $registration->email }}</dd></div>
+                    <div><dt>Registration term</dt><dd>{{ ucfirst($registration->semester ?? 'Unspecified') }} · {{ $registration->academic_year ?? 'Legacy record' }}</dd></div>
+                    <div><dt>NSTP level</dt><dd>{{ str($registration->nstp_level)->replace('_', ' ')->upper() }}</dd></div>
                     <div><dt>College</dt><dd>{{ $registration->college }}</dd></div>
                     <div><dt>Course / major</dt><dd>{{ $registration->course }}{{ $registration->major ? ' — '.$registration->major : '' }}</dd></div>
                     <div><dt>Year and section</dt><dd>{{ $registration->year_section }}</dd></div>

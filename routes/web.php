@@ -130,6 +130,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/students/{student}/qr/download', [StudentAccountController::class, 'downloadQr'])->name('students.qr.download');
     Route::get('/students/export', [DirectoryExportController::class, 'students'])->name('students.export');
     Route::get('/registrations', [RegistrationReviewController::class, 'index'])->name('registrations.index');
+    Route::patch('/registrations/settings', [SystemSettingController::class, 'updateRegistration'])->name('registrations.settings.update');
     Route::get('/registrations/{registration}/documents/{document}', [RegistrationReviewController::class, 'preview'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.show');
     Route::get('/registrations/{registration}/documents/{document}/download', [RegistrationReviewController::class, 'download'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.download');
     Route::patch('/registrations/{registration}/review', [RegistrationReviewController::class, 'update'])->name('registrations.review');
@@ -228,6 +229,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/students/{student}/qr/download', [StudentAccountController::class, 'downloadQr'])->name('students.qr.download');
     Route::get('/students/export', [DirectoryExportController::class, 'students'])->name('students.export');
     Route::get('/registrations', [RegistrationReviewController::class, 'index'])->name('registrations.index');
+    Route::patch('/registrations/settings', [SystemSettingController::class, 'updateRegistration'])->name('registrations.settings.update');
     Route::get('/registrations/{registration}/documents/{document}', [RegistrationReviewController::class, 'preview'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.show');
     Route::get('/registrations/{registration}/documents/{document}/download', [RegistrationReviewController::class, 'download'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.download');
     Route::patch('/registrations/{registration}/review', [RegistrationReviewController::class, 'update'])->name('registrations.review');

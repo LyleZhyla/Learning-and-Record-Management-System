@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="page-actions">
-    <div><span class="eyebrow">Security configuration</span><h2>Session inactivity</h2><p>Control how long an unused account remains signed in across every SNAPIE role.</p></div>
+    <div><span class="eyebrow">System configuration</span><h2>Security and registration</h2><p>Control session security and the active semester-based student registration period.</p></div>
 </div>
 
 <div class="settings-security-grid">
@@ -20,6 +20,16 @@
             </label>
             @error('inactivity_timeout_minutes')<small class="field-error">{{ $message }}</small>@enderror
 
+            <div class="registration-cycle-settings">
+                <div class="card-heading"><div><h3>Student registration cycle</h3><p>Only the configured academic year and semester will be attached to new public registrations.</p></div></div>
+                <label class="field-group"><span>Registration status</span><select name="student_registration_open" required><option value="1" @selected(old('student_registration_open', $registrationOpen ? '1' : '0') === '1')>Open — accept registrations</option><option value="0" @selected(old('student_registration_open', $registrationOpen ? '1' : '0') === '0')>Closed — stop registrations</option></select></label>
+                <div class="form-grid">
+                    <label class="field-group"><span>Academic year</span><input name="student_registration_academic_year" value="{{ old('student_registration_academic_year', $registrationAcademicYear) }}" pattern="\d{4}-\d{4}" placeholder="2026-2027" required>@error('student_registration_academic_year')<small class="field-error">{{ $message }}</small>@enderror</label>
+                    <label class="field-group"><span>Semester</span><select name="student_registration_semester" required>@foreach($semesters as $value => $label)<option value="{{ $value }}" @selected(old('student_registration_semester', $registrationSemester) === $value)>{{ $label }}</option>@endforeach</select></label>
+                </div>
+                <p class="form-help">Students may identify whether they are taking NSTP 1 or are continuing with NSTP 2 after completing NSTP 1 in an earlier semester.</p>
+            </div>
+
             <div class="timeout-presets" aria-label="Suggested timeout values">
                 @foreach([5, 15, 30, 60, 120, 480] as $minutes)
                     <button type="button" data-timeout-value="{{ $minutes }}">{{ $minutes < 60 ? $minutes.' min' : ($minutes / 60).' hr' }}</button>
@@ -27,7 +37,7 @@
             </div>
 
             <div class="settings-impact-note"><span>!</span><p><strong>Applies to all accounts</strong>Students, facilitators, coordinators, NSTP Admins, and Super Admins will use this timeout. Existing sessions are evaluated on their next request.</p></div>
-            <div class="form-actions"><button class="primary-button compact">Save inactivity timeout</button></div>
+            <div class="form-actions"><button class="primary-button compact">Save system settings</button></div>
         </form>
     </section>
 

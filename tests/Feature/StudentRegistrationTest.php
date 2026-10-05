@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\StudentProfile;
 use App\Models\StudentRegistration;
 use App\Models\User;
+use App\Models\SystemSetting;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -24,6 +25,9 @@ class StudentRegistrationTest extends TestCase
         $registration = StudentRegistration::firstOrFail();
 
         $this->assertSame('pending', $registration->status);
+        $this->assertSame(SystemSetting::studentRegistrationAcademicYear(), $registration->academic_year);
+        $this->assertSame(SystemSetting::studentRegistrationSemester(), $registration->semester);
+        $this->assertSame('nstp_1', $registration->nstp_level);
         $this->assertSame('Juan Dela Cruz', $registration->first_name.' '.$registration->last_name);
         $this->assertSame('1A', $registration->year_section);
         $this->assertTrue($registration->emergency_same_address);
@@ -82,6 +86,32 @@ class StudentRegistrationTest extends TestCase
             ->assertOk()
             ->assertViewHas('locationEndpoints', fn (array $endpoints): bool => $endpoints['cities'] === '/locations/provinces/__CODE__/cities'
                 && $endpoints['barangays'] === '/locations/cities/__CODE__/barangays');
+    }
+
+    public function test_closed_registration_period_blocks_the_form_and_submission(): void
+    {
+        SystemSetting::where('key', 'student_registration_open')->update(['value' => '0']);
+
+        $this->get('/register')->assertOk()->assertSee('Registration closed');
+        $this->post('/register', $this->validPayload())
+            ->assertSessionHasErrors('registration');
+        $this->assertDatabaseCount('student_registrations', 0);
+    }
+
+    public function test_registration_uses_the_admin_configured_term_and_accepts_nstp_two_continuation(): void
+    {
+        Storage::fake('local');
+        SystemSetting::where('key', 'student_registration_academic_year')->update(['value' => '2027-2028']);
+        SystemSetting::where('key', 'student_registration_semester')->update(['value' => 'second']);
+
+        $this->post('/register', $this->validPayload(['nstp_level' => 'nstp_2']))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('student_registrations', [
+            'academic_year' => '2027-2028',
+            'semester' => 'second',
+            'nstp_level' => 'nstp_2',
+        ]);
     }
 
     public function test_other_year_and_section_requires_a_custom_value(): void
@@ -180,6 +210,7 @@ class StudentRegistrationTest extends TestCase
             'course' => 'Bachelor of Secondary Education (BSEd)',
             'major' => 'Mathematics',
             'year_section_selection' => '1A',
+            'nstp_level' => 'nstp_1',
             'privacy_consent' => '1',
         ], $overrides);
     }

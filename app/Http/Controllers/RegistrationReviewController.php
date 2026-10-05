@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\StudentRegistration;
+use App\Models\SystemSetting;
+use App\Models\NstpSection;
 use App\Services\RegistrationDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,6 +56,10 @@ class RegistrationReviewController extends Controller
                 ->selectRaw('status, count(*) as aggregate')
                 ->groupBy('status')
                 ->pluck('aggregate', 'status'),
+            'registrationOpen' => SystemSetting::studentRegistrationIsOpen(),
+            'registrationAcademicYear' => SystemSetting::studentRegistrationAcademicYear(),
+            'registrationSemester' => SystemSetting::studentRegistrationSemester(),
+            'semesters' => NstpSection::SEMESTERS,
         ]);
     }
 

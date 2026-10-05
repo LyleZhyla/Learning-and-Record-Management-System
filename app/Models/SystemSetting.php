@@ -33,4 +33,23 @@ class SystemSetting extends Model
             ->where('key', 'component_selection_open')
             ->value('value') !== '0';
     }
+
+    public static function studentRegistrationIsOpen(): bool
+    {
+        return static::query()->where('key', 'student_registration_open')->value('value') !== '0';
+    }
+
+    public static function studentRegistrationAcademicYear(): string
+    {
+        $startYear = now()->month >= 6 ? now()->year : now()->year - 1;
+
+        return static::query()->where('key', 'student_registration_academic_year')->value('value')
+            ?: $startYear.'-'.($startYear + 1);
+    }
+
+    public static function studentRegistrationSemester(): string
+    {
+        return static::query()->where('key', 'student_registration_semester')->value('value')
+            ?: (now()->month >= 6 ? 'first' : 'second');
+    }
 }

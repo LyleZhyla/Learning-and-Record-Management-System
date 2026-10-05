@@ -47,9 +47,16 @@
                         <p>Reference number: <b>{{ session('reference_code') }}</b>. Save this number for follow-up.</p>
                     </div>
                 </div>
+            @elseif (! $registrationOpen)
+                <div class="registration-closed-state" role="status">
+                    <span>Registration closed</span>
+                    <h2>The NSTP student registration period is currently closed.</h2>
+                    <p>The NSTP Office will reopen this page for the next academic year and semester. If you already have an account, sign in to view your existing enrollment.</p>
+                    <a class="primary-button compact" href="{{ route('login') }}">Go to sign in <span>→</span></a>
+                </div>
             @else
                 <div class="registration-heading">
-                    <div><span class="eyebrow">New student registration</span><h2>Student Information Form</h2></div>
+                    <div><span class="eyebrow">{{ $registrationSemesterLabel }} · A.Y. {{ $registrationAcademicYear }}</span><h2>Student Information Form</h2></div>
                     <span class="registration-step-label">Step <b id="current-step-number">1</b> of 5</span>
                 </div>
 
@@ -73,6 +80,7 @@
 
                     <section class="registration-panel active" data-step="0">
                         <div class="section-title"><span>01</span><div><h3>Certificate of Registration</h3><p>Upload your current Certificate of Registration to unlock the form.</p></div></div>
+                        <div class="registration-cycle-banner"><span>Active registration period</span><strong>{{ $registrationSemesterLabel }}, A.Y. {{ $registrationAcademicYear }}</strong><small>This term is set by the NSTP Office and will be saved with your application.</small></div>
                         <label class="upload-zone" for="cor" id="cor-zone">
                             <input id="cor" name="cor" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required>
                             <span class="upload-icon">↥</span>
@@ -127,6 +135,7 @@
                     <section class="registration-panel" data-step="3" hidden>
                         <div class="section-title"><span>04</span><div><h3>Part III — Academic Information</h3><p>Use the information shown in your current school records.</p></div></div>
                         <div class="registration-grid two-columns">
+                            <div class="registration-field full"><span>NSTP level for this registration *</span><div class="nstp-level-options">@foreach($nstpLevels as $value => $label)<label><input type="radio" name="nstp_level" value="{{ $value }}" @checked(old('nstp_level', 'nstp_1') === $value) required><span><strong>{{ str($value)->replace('_', ' ')->upper() }}</strong><small>{{ $label }}</small></span></label>@endforeach</div>@error('nstp_level')<small class="field-error">{{ $message }}</small>@enderror</div>
                             <label class="registration-field"><span>Student Number *</span><input name="student_number" value="{{ old('student_number') }}" inputmode="numeric" pattern="20[0-9]{8}" maxlength="10" placeholder="20XXXXXXXX" required><small>10 digits and must begin with 20</small>@error('student_number')<small class="field-error">{{ $message }}</small>@enderror</label>
                             <label class="registration-field"><span>College *</span><select id="academic-college" name="college" data-old-value="{{ old('college') }}" required><option value="">Select college</option>@foreach (array_keys(config('academics.colleges')) as $college)<option value="{{ $college }}" @selected(old('college') === $college)>{{ $college }}</option>@endforeach</select></label>
                             <label class="registration-field"><span>Course *</span><select id="academic-course" name="course" data-old-value="{{ old('course') }}" required disabled><option value="">Select college first</option></select></label>
