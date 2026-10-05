@@ -115,6 +115,7 @@ $scheduleRoutes = function (): void {
 
 Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
+    Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [NstpAdminProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [NstpAdminProfileController::class, 'updatePassword'])->name('password.update');
@@ -283,6 +284,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
 
 Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes) {
     Route::get('/dashboard', FacilitatorDashboardController::class)->name('dashboard');
+    Route::view('/system-guide', 'facilitator.system-guide')->name('system-guide');
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
     Route::post('/messages/groups', [PortalMessageController::class, 'storeGroup'])->name('messages.groups.store');
     Route::get('/messages/groups/{group}', [PortalMessageController::class, 'group'])->name('messages.groups.show');
@@ -305,6 +307,7 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
 
 Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
+    Route::view('/system-guide', 'coordinator.system-guide')->name('system-guide');
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');

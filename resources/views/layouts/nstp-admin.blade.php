@@ -55,6 +55,9 @@
                 <a class="nav-link {{ request()->routeIs('nstp_admin.profile.*') ? 'active' : '' }}" href="{{ route('nstp_admin.profile.edit') }}">
                     <span class="nav-icon">⚙</span> Profile & Security
                 </a>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.system-guide') ? 'active' : '' }}" href="{{ route('nstp_admin.system-guide') }}">
+                    <span class="nav-icon">?</span> System Guide
+                </a>
             </nav>
 
             <form method="POST" action="{{ route('logout') }}" class="logout-form">

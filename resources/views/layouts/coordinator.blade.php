@@ -35,6 +35,7 @@
             <a class="nav-link {{ request()->routeIs('ai-assistant.*') ? 'active' : '' }}" href="{{ route('ai-assistant.index') }}"><span class="nav-icon">✦</span> AI Assistant</a>
             <p class="nav-label">Account</p>
             <a class="nav-link {{ request()->routeIs('coordinator.profile.*') ? 'active' : '' }}" href="{{ route('coordinator.profile.edit') }}"><span class="nav-icon">⚙</span> Profile & Security</a>
+            <a class="nav-link {{ request()->routeIs('coordinator.system-guide') ? 'active' : '' }}" href="{{ route('coordinator.system-guide') }}"><span class="nav-icon">?</span> System Guide</a>
         </nav>
         <form method="POST" action="{{ route('logout') }}" class="logout-form">@csrf<button type="submit" class="nav-link logout"><span class="nav-icon">↪</span> Sign out</button></form>
     </aside>
