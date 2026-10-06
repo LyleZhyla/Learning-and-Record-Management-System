@@ -20,12 +20,16 @@ class StudentRegistrationController extends Controller
 {
     public function create(): View
     {
+        $registrationSemester = SystemSetting::studentRegistrationSemester();
+        $registrationNstpLevel = StudentRegistration::nstpLevelForSemester($registrationSemester);
+
         return view('auth.register', [
             'registrationOpen' => SystemSetting::studentRegistrationIsOpen(),
             'registrationAcademicYear' => SystemSetting::studentRegistrationAcademicYear(),
-            'registrationSemester' => SystemSetting::studentRegistrationSemester(),
-            'registrationSemesterLabel' => NstpSection::SEMESTERS[SystemSetting::studentRegistrationSemester()] ?? str(SystemSetting::studentRegistrationSemester())->headline(),
-            'nstpLevels' => StudentRegistration::NSTP_LEVELS,
+            'registrationSemester' => $registrationSemester,
+            'registrationSemesterLabel' => NstpSection::SEMESTERS[$registrationSemester] ?? str($registrationSemester)->headline(),
+            'registrationNstpLevel' => $registrationNstpLevel,
+            'registrationNstpLevelLabel' => StudentRegistration::NSTP_LEVELS[$registrationNstpLevel],
             'locationEndpoints' => [
                 'cities' => route('locations.cities', ['provinceCode' => '__CODE__'], false),
                 'barangays' => route('locations.barangays', ['cityCode' => '__CODE__'], false),
@@ -44,6 +48,7 @@ class StudentRegistrationController extends Controller
         $validated = $request->validated();
         $validated['academic_year'] = SystemSetting::studentRegistrationAcademicYear();
         $validated['semester'] = SystemSetting::studentRegistrationSemester();
+        $validated['nstp_level'] = StudentRegistration::nstpLevelForSemester($validated['semester']);
         $corPath = null;
         $photoPath = null;
 

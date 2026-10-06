@@ -104,13 +104,32 @@ class StudentRegistrationTest extends TestCase
         SystemSetting::where('key', 'student_registration_academic_year')->update(['value' => '2027-2028']);
         SystemSetting::where('key', 'student_registration_semester')->update(['value' => 'second']);
 
-        $this->post('/register', $this->validPayload(['nstp_level' => 'nstp_2']))
+        $this->post('/register', $this->validPayload(['nstp_level' => 'nstp_1']))
             ->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('student_registrations', [
             'academic_year' => '2027-2028',
             'semester' => 'second',
             'nstp_level' => 'nstp_2',
+        ]);
+    }
+
+    public function test_public_registration_locks_nstp_level_to_the_configured_first_semester(): void
+    {
+        Storage::fake('local');
+        SystemSetting::where('key', 'student_registration_semester')->update(['value' => 'first']);
+
+        $this->get('/register')
+            ->assertOk()
+            ->assertSee('NSTP 1')
+            ->assertDontSee('name="nstp_level"', false);
+
+        $this->post('/register', $this->validPayload(['nstp_level' => 'nstp_2']))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('student_registrations', [
+            'semester' => 'first',
+            'nstp_level' => 'nstp_1',
         ]);
     }
 

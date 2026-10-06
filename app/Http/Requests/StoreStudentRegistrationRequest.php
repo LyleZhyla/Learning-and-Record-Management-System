@@ -82,7 +82,6 @@ class StoreStudentRegistrationRequest extends FormRequest
             'major' => ['required', 'string', 'max:150'],
             'year_section_selection' => ['required', Rule::in(['1A', '1B', '1C', '1D', '1E', '1F', 'Others'])],
             'year_section_other' => ['nullable', 'required_if:year_section_selection,Others', 'string', 'max:80'],
-            'nstp_level' => ['required', Rule::in(array_keys(StudentRegistration::NSTP_LEVELS))],
             'privacy_consent' => ['accepted'],
         ];
     }

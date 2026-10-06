@@ -28,6 +28,11 @@ class StudentRegistration extends Model
         'nstp_2' => 'NSTP 2 — completed NSTP 1 previously',
     ];
 
+    public static function nstpLevelForSemester(string $semester): string
+    {
+        return $semester === 'second' ? 'nstp_2' : 'nstp_1';
+    }
+
     protected $guarded = [];
 
     protected function casts(): array
