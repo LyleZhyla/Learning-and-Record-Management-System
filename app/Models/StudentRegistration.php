@@ -13,7 +13,7 @@ class StudentRegistration extends Model
     public const STATUS_LABELS = [
         'pending' => 'Pending review',
         'under_review' => 'Under review',
-        'verified' => 'Documents verified',
+        'verified' => 'Approved / account created',
         'needs_correction' => 'Needs correction',
     ];
 

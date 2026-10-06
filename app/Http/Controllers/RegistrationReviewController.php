@@ -3,12 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\StudentRegistration;
+use App\Models\StudentProfile;
 use App\Models\SystemSetting;
 use App\Models\NstpSection;
+use App\Models\User;
+use App\Services\AccountCredentialMailer;
 use App\Services\RegistrationDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -16,7 +21,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class RegistrationReviewController extends Controller
 {
-    public function __construct(private readonly RegistrationDocumentService $documents) {}
+    public function __construct(
+        private readonly RegistrationDocumentService $documents,
+        private readonly AccountCredentialMailer $credentialMailer,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -109,20 +117,36 @@ class RegistrationReviewController extends Controller
                 ? 'verified'
                 : 'under_review');
 
-        $registration->update([
-            ...$validated,
-            'status' => $status,
-            'reviewed_by' => $request->user()->id,
-            'reviewed_at' => now(),
-        ]);
+        $account = DB::transaction(function () use ($registration, $validated, $status, $request): ?array {
+            $registration->update([
+                ...$validated,
+                'status' => $status,
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+            ]);
+
+            return $status === 'verified' ? $this->provisionStudentAccount($registration) : null;
+        });
+
+        $flash = [];
+        if ($account && ! $account['existing']) {
+            $emailQueued = $this->credentialMailer->send($account['student'], $account['temporary_password']);
+            $flash = [
+                'temporary_password' => $account['temporary_password'],
+                'temporary_password_email' => $account['student']->email,
+                'credentials_email_sent' => $emailQueued,
+            ];
+        }
 
         return redirect()
             ->route($this->routePrefix($request).'.registrations.show', $registration)
-            ->with('status', $status === 'verified'
-                ? 'Both required documents were marked as verified.'
+            ->with($flash + ['status' => $status === 'verified'
+                ? ($account['existing']
+                    ? 'The registration remains approved and its student account is already in the Student Accounts list.'
+                    : 'Enrollment approved. The student account was created and added to the Student Accounts list.')
                 : ($status === 'needs_correction'
                     ? 'The registration was marked as needing correction.'
-                    : 'The document review was saved.'));
+                    : 'The document review was saved.')]);
     }
 
     public function preview(Request $request, StudentRegistration $registration, string $document): StreamedResponse
@@ -163,5 +187,95 @@ class RegistrationReviewController extends Controller
     private function routePrefix(Request $request): string
     {
         return $request->user()->isSuperAdmin() ? 'admin' : 'nstp_admin';
+    }
+
+    /** @return array{student: User, temporary_password: ?string, existing: bool} */
+    private function provisionStudentAccount(StudentRegistration $registration): array
+    {
+        $existingProfile = StudentProfile::with('user')
+            ->where('student_registration_id', $registration->id)
+            ->first();
+
+        if ($existingProfile) {
+            return ['student' => $existingProfile->user, 'temporary_password' => null, 'existing' => true];
+        }
+
+        if (User::whereRaw('LOWER(email) = ?', [Str::lower($registration->email)])->exists()) {
+            throw ValidationException::withMessages([
+                'account' => 'A user account already uses this registration email. Resolve the duplicate before approving.',
+            ]);
+        }
+
+        if (StudentProfile::where('student_number', $registration->student_number)->exists()) {
+            throw ValidationException::withMessages([
+                'account' => 'A student profile already uses this student number. Resolve the duplicate before approving.',
+            ]);
+        }
+
+        $temporaryPassword = $this->generateTemporaryPassword();
+        $student = User::create([
+            'name' => collect([
+                $registration->first_name,
+                $registration->middle_name,
+                $registration->last_name,
+                $registration->extension_name,
+            ])->filter(fn ($part) => filled($part))->implode(' '),
+            'email' => Str::lower($registration->email),
+            'password' => $temporaryPassword,
+            'role' => 'student',
+            'status' => 'active',
+            'must_change_password' => true,
+            'must_upload_student_documents' => false,
+        ]);
+
+        $student->studentProfile()->create([
+            'student_registration_id' => $registration->id,
+            'last_name' => $registration->last_name,
+            'first_name' => $registration->first_name,
+            'extension_name' => $registration->extension_name,
+            'middle_name' => $registration->middle_name,
+            'province' => $registration->province,
+            'province_code' => $registration->province_code,
+            'city_municipality' => $registration->city_municipality,
+            'city_municipality_code' => $registration->city_municipality_code,
+            'barangay' => $registration->barangay,
+            'barangay_code' => $registration->barangay_code,
+            'date_of_birth' => $registration->date_of_birth,
+            'birth_province' => $registration->birth_province,
+            'birth_province_code' => $registration->birth_province_code,
+            'birth_city_municipality' => $registration->birth_city_municipality,
+            'birth_city_municipality_code' => $registration->birth_city_municipality_code,
+            'religion' => $registration->religion,
+            'sex' => $registration->sex,
+            'blood_type' => $registration->blood_type,
+            'contact_number' => $registration->contact_number,
+            'emergency_contact_name' => $registration->emergency_contact_name,
+            'emergency_relationship' => $registration->emergency_relationship,
+            'emergency_contact_number' => $registration->emergency_contact_number,
+            'emergency_same_address' => $registration->emergency_same_address,
+            'emergency_address' => $registration->emergency_address,
+            'student_number' => $registration->student_number,
+            'college' => $registration->college,
+            'course' => $registration->course,
+            'major' => $registration->major,
+            'year_section' => $registration->year_section,
+        ]);
+
+        return ['student' => $student, 'temporary_password' => $temporaryPassword, 'existing' => false];
+    }
+
+    private function generateTemporaryPassword(): string
+    {
+        $groups = ['ABCDEFGHJKLMNPQRSTUVWXYZ', 'abcdefghijkmnopqrstuvwxyz', '23456789', '!@#$%&*?'];
+        $pool = implode('', $groups);
+        $characters = array_map(fn (string $group) => $group[random_int(0, strlen($group) - 1)], $groups);
+
+        while (count($characters) < 16) {
+            $characters[] = $pool[random_int(0, strlen($pool) - 1)];
+        }
+
+        shuffle($characters);
+
+        return implode('', $characters);
     }
 }

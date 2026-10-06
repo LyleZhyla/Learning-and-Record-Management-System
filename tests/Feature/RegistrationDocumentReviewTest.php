@@ -2,10 +2,12 @@
 
 namespace Tests\Feature;
 
+use App\Jobs\SendAccountCredentials;
 use App\Models\StudentRegistration;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -44,6 +46,7 @@ class RegistrationDocumentReviewTest extends TestCase
     public function test_both_documents_must_be_verified_for_the_registration_to_be_document_verified(): void
     {
         Storage::fake('local');
+        Queue::fake();
         $registration = $this->registration();
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
 
@@ -54,13 +57,41 @@ class RegistrationDocumentReviewTest extends TestCase
                 'review_notes' => 'The submitted details match both readable files.',
             ])
             ->assertRedirect(route('nstp_admin.registrations.show', $registration))
-            ->assertSessionHasNoErrors();
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('temporary_password');
 
         $registration->refresh();
         $this->assertSame('verified', $registration->status);
         $this->assertSame('verified', $registration->cor_review_status);
         $this->assertSame($admin->id, $registration->reviewed_by);
         $this->assertNotNull($registration->reviewed_at);
+
+        $student = User::where('email', $registration->email)->firstOrFail();
+        $this->assertSame('student', $student->role);
+        $this->assertSame('active', $student->status);
+        $this->assertTrue($student->must_change_password);
+        $this->assertFalse($student->must_upload_student_documents);
+        $this->assertDatabaseHas('student_profiles', [
+            'user_id' => $student->id,
+            'student_registration_id' => $registration->id,
+            'student_number' => $registration->student_number,
+        ]);
+        $this->assertDatabaseHas('student_registrations', ['id' => $registration->id, 'status' => 'verified']);
+        Queue::assertPushed(SendAccountCredentials::class, fn (SendAccountCredentials $job) => $job->userId === $student->id);
+
+        $this->actingAs($admin)->get(route('nstp_admin.students.index'))
+            ->assertOk()
+            ->assertSee($student->email);
+
+        $this->actingAs($admin)
+            ->patch(route('nstp_admin.registrations.review', $registration), [
+                'cor_review_status' => 'verified',
+                'formal_photo_review_status' => 'verified',
+                'review_notes' => 'Rechecked.',
+            ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseCount('users', 2);
+        $this->assertDatabaseCount('student_profiles', 1);
     }
 
     public function test_missing_file_cannot_be_verified_and_correction_requires_notes(): void
@@ -128,11 +159,16 @@ class RegistrationDocumentReviewTest extends TestCase
             'first_name' => 'Juan',
             'middle_name' => 'Santos',
             'province' => 'Tarlac',
+            'province_code' => '036900000',
             'city_municipality' => 'Tarlac City',
+            'city_municipality_code' => '036916000',
             'barangay' => 'San Vicente',
+            'barangay_code' => '036916076',
             'date_of_birth' => '2007-04-15',
             'birth_province' => 'Tarlac',
+            'birth_province_code' => '036900000',
             'birth_city_municipality' => 'Tarlac City',
+            'birth_city_municipality_code' => '036916000',
             'religion' => 'Roman Catholic',
             'sex' => 'Male',
             'blood_type' => 'O+',
@@ -147,6 +183,9 @@ class RegistrationDocumentReviewTest extends TestCase
             'course' => 'Bachelor of Secondary Education (BSEd)',
             'major' => 'Mathematics',
             'year_section' => '1A',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'nstp_level' => 'nstp_1',
         ]);
     }
 }

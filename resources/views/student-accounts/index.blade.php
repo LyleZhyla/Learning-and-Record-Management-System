@@ -8,7 +8,7 @@
     <div>
         <span class="eyebrow">Student directory</span>
         <h2>Manage student accounts and QR codes</h2>
-        <p>Imported students appear here automatically with their permanent attendance QR code.</p>
+        <p>Approved public registrations and imported students appear here automatically with their permanent attendance QR code.</p>
     </div>
     <div class="page-action-buttons">
         <a class="secondary-outline-button" href="{{ route($routePrefix.'.students.export', request()->only(['search','status','component'])) }}">Download student list</a>

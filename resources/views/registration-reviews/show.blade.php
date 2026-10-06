@@ -10,6 +10,13 @@
         <div class="alert success-alert">{{ session('status') }}</div>
     @endif
 
+    @if(session('temporary_password'))
+        <section class="card credential-reveal" aria-label="New student login credentials">
+            <div><span class="eyebrow">Student account created</span><h3>Temporary login credentials</h3><p>{{ session('credentials_email_sent') ? 'The credentials were queued for email delivery. Keep this copy until the student confirms access.' : 'The credentials email could not be queued. Give these credentials to the student securely.' }}</p></div>
+            <dl><div><dt>Email</dt><dd>{{ session('temporary_password_email') }}</dd></div><div><dt>Temporary password</dt><dd><code data-temporary-password>{{ session('temporary_password') }}</code><button type="button" data-copy-temporary-password>Copy password</button></dd></div></dl>
+        </section>
+    @endif
+
     <section class="card registration-applicant-header">
         <div>
             <span class="eyebrow">{{ $registration->reference_code }}</span>
@@ -87,7 +94,7 @@
         <aside class="card registration-decision-card">
             <span class="eyebrow">Admin decision</span>
             <h3>Record document review</h3>
-            <p>“Verified” confirms that the file is present and matches the submitted registration details. It does not automatically approve enrollment or create a student account.</p>
+            <p>When both documents are marked “Verified,” the enrollment is approved and an active student account is created automatically. The original registration remains in this list for audit and review.</p>
 
             <form method="POST" action="{{ route($routePrefix.'.registrations.review', $registration) }}">
                 @csrf
@@ -122,4 +129,5 @@
             @endif
         </aside>
     </div>
+    @if(session('temporary_password'))<script src="{{ asset('js/staff-account-form.js') }}?v={{ filemtime(public_path('js/staff-account-form.js')) }}"></script>@endif
 @endsection
