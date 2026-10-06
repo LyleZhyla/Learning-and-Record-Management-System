@@ -31,10 +31,18 @@ class RegistrationReviewController extends Controller
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', Rule::in(array_keys(StudentRegistration::STATUS_LABELS))],
+            'record_state' => ['nullable', Rule::in(['active', 'archived'])],
         ]);
 
+        $recordState = $filters['record_state'] ?? 'active';
+
         $registrations = StudentRegistration::query()
-            ->with('reviewer')
+            ->with(['reviewer', 'archiver'])
+            ->when(
+                $recordState === 'archived',
+                fn ($query) => $query->whereNotNull('archived_at'),
+                fn ($query) => $query->whereNull('archived_at'),
+            )
             ->when($filters['search'] ?? null, function ($query, string $search): void {
                 $query->where(function ($query) use ($search): void {
                     $query->where('reference_code', 'like', "%{$search}%")
@@ -61,9 +69,13 @@ class RegistrationReviewController extends Controller
             'checklists' => $checklists,
             'statuses' => StudentRegistration::STATUS_LABELS,
             'statusCounts' => StudentRegistration::query()
+                ->whereNull('archived_at')
                 ->selectRaw('status, count(*) as aggregate')
                 ->groupBy('status')
                 ->pluck('aggregate', 'status'),
+            'recordState' => $recordState,
+            'activeCount' => StudentRegistration::whereNull('archived_at')->count(),
+            'archivedCount' => StudentRegistration::whereNotNull('archived_at')->count(),
             'registrationOpen' => SystemSetting::studentRegistrationIsOpen(),
             'registrationAcademicYear' => SystemSetting::studentRegistrationAcademicYear(),
             'registrationSemester' => SystemSetting::studentRegistrationSemester(),
@@ -73,7 +85,7 @@ class RegistrationReviewController extends Controller
 
     public function show(Request $request, StudentRegistration $registration): View
     {
-        $registration->load('reviewer');
+        $registration->load(['reviewer', 'archiver']);
 
         return view('registration-reviews.show', [
             ...$this->viewContext($request),
@@ -85,6 +97,8 @@ class RegistrationReviewController extends Controller
 
     public function update(Request $request, StudentRegistration $registration): RedirectResponse
     {
+        abort_if($registration->archived_at, 409, 'Restore this registration before changing its review decision.');
+
         $validated = $request->validate([
             'cor_review_status' => ['required', Rule::in(array_keys(StudentRegistration::DOCUMENT_STATUS_LABELS))],
             'formal_photo_review_status' => ['required', Rule::in(array_keys(StudentRegistration::DOCUMENT_STATUS_LABELS))],
@@ -147,6 +161,47 @@ class RegistrationReviewController extends Controller
                 : ($status === 'needs_correction'
                     ? 'The registration was marked as needing correction.'
                     : 'The document review was saved.')]);
+    }
+
+    public function archive(Request $request, StudentRegistration $registration): RedirectResponse
+    {
+        if (! $registration->archived_at) {
+            $registration->update(['archived_at' => now(), 'archived_by' => $request->user()->id]);
+        }
+
+        return redirect()->route($this->routePrefix($request).'.registrations.index')
+            ->with('status', 'Registration '.$registration->reference_code.' was archived.');
+    }
+
+    public function restore(Request $request, StudentRegistration $registration): RedirectResponse
+    {
+        $registration->update(['archived_at' => null, 'archived_by' => null]);
+
+        return redirect()->route($this->routePrefix($request).'.registrations.show', $registration)
+            ->with('status', 'Registration '.$registration->reference_code.' was restored.');
+    }
+
+    public function destroy(Request $request, StudentRegistration $registration): RedirectResponse
+    {
+        abort_unless($request->user()->isSuperAdmin(), 403);
+        abort_unless($registration->archived_at, 409, 'Archive this registration before permanently deleting it.');
+
+        $request->validate([
+            'confirmation' => ['required', Rule::in([$registration->reference_code])],
+        ], [
+            'confirmation.in' => 'Enter the registration reference code exactly as shown.',
+        ]);
+
+        $paths = collect([$registration->cor_path, $registration->formal_photo_path])->filter()->unique()->values();
+        $referenceCode = $registration->reference_code;
+        $registration->delete();
+
+        if ($paths->isNotEmpty()) {
+            Storage::disk('local')->delete($paths->all());
+        }
+
+        return redirect()->route('admin.registrations.index', ['record_state' => 'archived'])
+            ->with('status', 'Registration '.$referenceCode.' was permanently deleted.');
     }
 
     public function preview(Request $request, StudentRegistration $registration, string $document): StreamedResponse

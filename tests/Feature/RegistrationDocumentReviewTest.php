@@ -132,6 +132,80 @@ class RegistrationDocumentReviewTest extends TestCase
         ]);
     }
 
+    public function test_nstp_admin_can_archive_and_restore_a_registration(): void
+    {
+        Storage::fake('local');
+        $registration = $this->registration();
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+
+        $this->actingAs($admin)
+            ->patch(route('nstp_admin.registrations.archive', $registration))
+            ->assertRedirect(route('nstp_admin.registrations.index'));
+
+        $registration->refresh();
+        $this->assertNotNull($registration->archived_at);
+        $this->assertSame($admin->id, $registration->archived_by);
+        $this->actingAs($admin)->get(route('nstp_admin.registrations.index'))
+            ->assertViewHas('registrations', fn ($registrations) => $registrations->total() === 0);
+        $this->actingAs($admin)->get(route('nstp_admin.registrations.index', ['record_state' => 'archived']))
+            ->assertViewHas('registrations', fn ($registrations) => $registrations->contains('id', $registration->id));
+
+        $this->actingAs($admin)
+            ->patch(route('nstp_admin.registrations.restore', $registration))
+            ->assertRedirect(route('nstp_admin.registrations.show', $registration));
+
+        $this->assertNull($registration->fresh()->archived_at);
+    }
+
+    public function test_only_super_admin_can_permanently_delete_an_archived_registration(): void
+    {
+        Storage::fake('local');
+        Queue::fake();
+        $registration = $this->registration();
+        $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($nstpAdmin)->patch(route('nstp_admin.registrations.review', $registration), [
+            'cor_review_status' => 'verified',
+            'formal_photo_review_status' => 'verified',
+        ])->assertSessionHasNoErrors();
+
+        $student = User::where('email', $registration->email)->firstOrFail();
+        $corPath = $registration->cor_path;
+        $photoPath = $registration->formal_photo_path;
+
+        $this->actingAs($nstpAdmin)->patch(route('nstp_admin.registrations.archive', $registration));
+        $this->actingAs($nstpAdmin)->delete(route('nstp_admin.registrations.destroy', $registration), [
+            'confirmation' => $registration->reference_code,
+        ])->assertForbidden();
+
+        $this->actingAs($superAdmin)->delete(route('admin.registrations.destroy', $registration), [
+            'confirmation' => $registration->reference_code,
+        ])->assertRedirect(route('admin.registrations.index', ['record_state' => 'archived']));
+
+        $this->assertDatabaseMissing('student_registrations', ['id' => $registration->id]);
+        $this->assertDatabaseHas('users', ['id' => $student->id, 'role' => 'student']);
+        $this->assertDatabaseHas('student_profiles', [
+            'user_id' => $student->id,
+            'student_registration_id' => null,
+        ]);
+        Storage::disk('local')->assertMissing($corPath);
+        Storage::disk('local')->assertMissing($photoPath);
+    }
+
+    public function test_active_registration_cannot_be_permanently_deleted(): void
+    {
+        Storage::fake('local');
+        $registration = $this->registration();
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($superAdmin)->delete(route('admin.registrations.destroy', $registration), [
+            'confirmation' => $registration->reference_code,
+        ])->assertStatus(409);
+
+        $this->assertDatabaseHas('student_registrations', ['id' => $registration->id]);
+    }
+
     public function test_other_roles_cannot_access_registration_reviews(): void
     {
         Storage::fake('local');

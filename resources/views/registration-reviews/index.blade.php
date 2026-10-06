@@ -23,6 +23,12 @@
         </form>
     </section>
 
+    <div class="registration-status-grid" aria-label="Registration record state">
+        <a href="{{ route($routePrefix.'.registrations.index', ['record_state' => 'active']) }}" class="registration-status-card {{ $recordState === 'active' ? 'selected' : '' }}"><strong>{{ number_format($activeCount) }}</strong><span>Active records</span></a>
+        <a href="{{ route($routePrefix.'.registrations.index', ['record_state' => 'archived']) }}" class="registration-status-card {{ $recordState === 'archived' ? 'selected' : '' }}"><strong>{{ number_format($archivedCount) }}</strong><span>Archived records</span></a>
+    </div>
+
+    @if($recordState === 'active')
     <div class="registration-status-grid">
         @foreach($statuses as $value => $label)
             <a href="{{ route($routePrefix.'.registrations.index', ['status' => $value]) }}" class="registration-status-card {{ request('status') === $value ? 'selected' : '' }}">
@@ -31,9 +37,11 @@
             </a>
         @endforeach
     </div>
+    @endif
 
     <section class="card user-table-card">
         <form class="filter-bar" method="GET" action="{{ route($routePrefix.'.registrations.index') }}">
+            <input type="hidden" name="record_state" value="{{ $recordState }}">
             <label class="search-field">
                 <span>⌕</span>
                 <input type="search" name="search" value="{{ request('search') }}" placeholder="Search name, student number, email, or reference">
@@ -46,7 +54,7 @@
             </select>
             <button class="filter-button" type="submit">Apply filters</button>
             @if(request()->hasAny(['search', 'status']))
-                <a class="clear-filter" href="{{ route($routePrefix.'.registrations.index') }}">Clear</a>
+                <a class="clear-filter" href="{{ route($routePrefix.'.registrations.index', ['record_state' => $recordState]) }}">Clear</a>
             @endif
         </form>
 
@@ -85,7 +93,16 @@
                                 <small class="document-summary">COR: {{ $documents['cor']['complete'] ? 'ready' : 'issue found' }} · Photo: {{ $documents['formal_photo']['complete'] ? 'ready' : 'issue found' }}</small>
                             </td>
                             <td><span class="registration-status status-{{ $registration->status }}">{{ $registration->statusLabel() }}</span></td>
-                            <td class="align-right"><a class="table-action" href="{{ route($routePrefix.'.registrations.show', $registration) }}">Review documents →</a></td>
+                            <td class="align-right">
+                                <div class="account-row-actions">
+                                    <a class="table-action" href="{{ route($routePrefix.'.registrations.show', $registration) }}">{{ $registration->archived_at ? 'View record' : 'Review documents' }} →</a>
+                                    @if($registration->archived_at)
+                                        <form method="POST" action="{{ route($routePrefix.'.registrations.restore', $registration) }}">@csrf @method('PATCH')<button class="clear-filter" type="submit">Restore</button></form>
+                                    @else
+                                        <form method="POST" action="{{ route($routePrefix.'.registrations.archive', $registration) }}" onsubmit="return confirm('Archive this registration? It will move out of the active list but can be restored.')">@csrf @method('PATCH')<button class="clear-filter" type="submit">Archive</button></form>
+                                    @endif
+                                </div>
+                            </td>
                         </tr>
                     @empty
                         <tr><td colspan="6"><div class="empty-state"><strong>No registrations found</strong><span>Try changing the search or status filter.</span></div></td></tr>

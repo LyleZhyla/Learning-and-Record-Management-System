@@ -103,6 +103,7 @@ $omrScannerRoutes = function (): void {
     Route::post('/answer-sheet-scanner', [OmrScannerController::class, 'store'])->name('omr.store');
     Route::get('/answer-sheet-scanner/{sheet}', [OmrScannerController::class, 'show'])->name('omr.show');
     Route::put('/answer-sheet-scanner/{sheet}/answer-key', [OmrScannerController::class, 'updateAnswerKey'])->name('omr.answer-key.update');
+    Route::get('/answer-sheet-scanner/{sheet}/image', [OmrScannerController::class, 'image'])->name('omr.image');
     Route::get('/answer-sheet-scanner/{sheet}/print', [OmrScannerController::class, 'printable'])->name('omr.print');
     Route::post('/answer-sheet-scanner/{sheet}/grade', [OmrScannerController::class, 'grade'])->name('omr.grade');
 };
@@ -136,6 +137,9 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/registrations/{registration}/documents/{document}', [RegistrationReviewController::class, 'preview'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.show');
     Route::get('/registrations/{registration}/documents/{document}/download', [RegistrationReviewController::class, 'download'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.download');
     Route::patch('/registrations/{registration}/review', [RegistrationReviewController::class, 'update'])->name('registrations.review');
+    Route::patch('/registrations/{registration}/archive', [RegistrationReviewController::class, 'archive'])->name('registrations.archive');
+    Route::patch('/registrations/{registration}/restore', [RegistrationReviewController::class, 'restore'])->name('registrations.restore');
+    Route::delete('/registrations/{registration}', [RegistrationReviewController::class, 'destroy'])->name('registrations.destroy');
     Route::get('/registrations/{registration}', [RegistrationReviewController::class, 'show'])->name('registrations.show');
     Route::post('/accounts/students/component', [NstpAdminAccountController::class, 'bulkAssignStudents'])->name('accounts.students.component.bulk');
     Route::patch('/accounts/{user}/component', [NstpAdminAccountController::class, 'updateComponent'])->name('accounts.component.update');
@@ -235,6 +239,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/registrations/{registration}/documents/{document}', [RegistrationReviewController::class, 'preview'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.show');
     Route::get('/registrations/{registration}/documents/{document}/download', [RegistrationReviewController::class, 'download'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.download');
     Route::patch('/registrations/{registration}/review', [RegistrationReviewController::class, 'update'])->name('registrations.review');
+    Route::patch('/registrations/{registration}/archive', [RegistrationReviewController::class, 'archive'])->name('registrations.archive');
+    Route::patch('/registrations/{registration}/restore', [RegistrationReviewController::class, 'restore'])->name('registrations.restore');
+    Route::delete('/registrations/{registration}', [RegistrationReviewController::class, 'destroy'])->name('registrations.destroy');
     Route::get('/registrations/{registration}', [RegistrationReviewController::class, 'show'])->name('registrations.show');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');

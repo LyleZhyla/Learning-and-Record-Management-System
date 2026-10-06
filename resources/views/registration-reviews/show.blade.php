@@ -26,6 +26,16 @@
         <span class="registration-status status-{{ $registration->status }}">{{ $registration->statusLabel() }}</span>
     </section>
 
+    @if($registration->archived_at)
+        <section class="card password-boundary-note"><span>▱</span><div><strong>Archived registration</strong><p>Archived {{ $registration->archived_at->format('M d, Y · g:i A') }} by {{ $registration->archiver?->name ?? 'Former administrator' }}. Restore it to change the review decision.</p></div></section>
+        <div class="page-action-buttons">
+            <form method="POST" action="{{ route($routePrefix.'.registrations.restore', $registration) }}">@csrf @method('PATCH')<button class="primary-button compact" type="submit">Restore registration</button></form>
+            @if(auth()->user()->isSuperAdmin())
+                <form method="POST" action="{{ route('admin.registrations.destroy', $registration) }}" onsubmit="return confirm('Permanently delete this archived registration and its uploaded files? This cannot be undone.')">@csrf @method('DELETE')<label class="field-group"><span>Type {{ $registration->reference_code }} to confirm</span><input name="confirmation" required autocomplete="off"></label><button class="danger-button" type="submit">Permanently delete</button></form>
+            @endif
+        </div>
+    @endif
+
     <div class="registration-review-layout">
         <main class="registration-review-main">
             <section class="card registration-section-card">
@@ -96,6 +106,7 @@
             <h3>Record document review</h3>
             <p>When both documents are marked “Verified,” the enrollment is approved and an active student account is created automatically. The original registration remains in this list for audit and review.</p>
 
+            @unless($registration->archived_at)
             <form method="POST" action="{{ route($routePrefix.'.registrations.review', $registration) }}">
                 @csrf
                 @method('PATCH')
@@ -119,6 +130,9 @@
 
                 <button class="primary-button" type="submit">Save review decision</button>
             </form>
+            @else
+                <p class="muted-cell">Review controls are locked while this record is archived.</p>
+            @endunless
 
             @if($registration->reviewed_at)
                 <div class="registration-review-audit">

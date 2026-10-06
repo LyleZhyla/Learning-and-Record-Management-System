@@ -41,12 +41,18 @@ class StudentRegistration extends Model
             'date_of_birth' => 'date',
             'emergency_same_address' => 'boolean',
             'reviewed_at' => 'datetime',
+            'archived_at' => 'datetime',
         ];
     }
 
     public function reviewer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by');
+    }
+
+    public function archiver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'archived_by');
     }
 
     public function statusLabel(): string
