@@ -16,6 +16,7 @@
     const answerGrid = scanner.querySelector('[data-omr-answers]');
     const itemCount = Number(scanner.dataset.items);
     const choiceCount = Number(scanner.dataset.choices);
+    const templateBottomMarkerY = Number(scanner.dataset.templateBottom);
     const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
     let stream = null;
     let detectedConfidence = null;
@@ -63,58 +64,88 @@
         }
     }
 
-    function drawA4(source, sourceWidth, sourceHeight) {
+    function drawImage(source, sourceWidth, sourceHeight) {
         canvas.width = 1000;
-        canvas.height = 1414;
-        const targetRatio = canvas.width / canvas.height;
-        const sourceRatio = sourceWidth / sourceHeight;
-        let sx = 0;
-        let sy = 0;
-        let sw = sourceWidth;
-        let sh = sourceHeight;
-
-        if (sourceRatio > targetRatio) {
-            sw = sourceHeight * targetRatio;
-            sx = (sourceWidth - sw) / 2;
-        } else {
-            sh = sourceWidth / targetRatio;
-            sy = (sourceHeight - sh) / 2;
-        }
-
-        context.drawImage(source, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+        canvas.height = Math.max(460, Math.round(canvas.width * (sourceHeight / sourceWidth)));
+        context.drawImage(source, 0, 0, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
         canvas.classList.add('active');
         video.classList.remove('active');
         placeholder.hidden = true;
     }
 
-    function findMarker(image, region) {
-        let sumX = 0;
-        let sumY = 0;
-        let count = 0;
-        const xStart = Math.floor(region[0] * image.width);
-        const yStart = Math.floor(region[1] * image.height);
-        const xEnd = Math.floor(region[2] * image.width);
-        const yEnd = Math.floor(region[3] * image.height);
+    function findSideMarkers(image, startRatio, endRatio) {
+        const xStart = Math.floor(startRatio * image.width);
+        const xEnd = Math.ceil(endRatio * image.width);
+        const regionWidth = xEnd - xStart;
+        const visited = new Uint8Array(regionWidth * image.height);
+        const candidates = [];
+        const isDark = (x, y) => {
+            const offset = (y * image.width + x) * 4;
+            return (image.data[offset] * .299) + (image.data[offset + 1] * .587) + (image.data[offset + 2] * .114) < 75;
+        };
 
-        for (let y = yStart; y < yEnd; y += 2) {
-            for (let x = xStart; x < xEnd; x += 2) {
-                const offset = (y * image.width + x) * 4;
-                const luminance = (image.data[offset] * .299) + (image.data[offset + 1] * .587) + (image.data[offset + 2] * .114);
-                if (luminance < 75) {
-                    sumX += x;
-                    sumY += y;
-                    count += 1;
+        for (let y = 0; y < image.height; y += 1) {
+            for (let x = xStart; x < xEnd; x += 1) {
+                const startIndex = (y * regionWidth) + (x - xStart);
+                if (visited[startIndex] || !isDark(x, y)) continue;
+
+                const queue = [[x, y]];
+                visited[startIndex] = 1;
+                let head = 0;
+                let area = 0;
+                let sumX = 0;
+                let sumY = 0;
+                let minX = x;
+                let maxX = x;
+                let minY = y;
+                let maxY = y;
+
+                while (head < queue.length) {
+                    const [currentX, currentY] = queue[head++];
+                    area += 1;
+                    sumX += currentX;
+                    sumY += currentY;
+                    minX = Math.min(minX, currentX);
+                    maxX = Math.max(maxX, currentX);
+                    minY = Math.min(minY, currentY);
+                    maxY = Math.max(maxY, currentY);
+
+                    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => {
+                        const nextX = currentX + dx;
+                        const nextY = currentY + dy;
+                        if (nextX < xStart || nextX >= xEnd || nextY < 0 || nextY >= image.height) return;
+                        const index = (nextY * regionWidth) + (nextX - xStart);
+                        if (visited[index] || !isDark(nextX, nextY)) return;
+                        visited[index] = 1;
+                        queue.push([nextX, nextY]);
+                    });
+                }
+
+                const width = maxX - minX + 1;
+                const height = maxY - minY + 1;
+                const ratio = width / height;
+                const density = area / (width * height);
+                if (width >= 6 && height >= 6 && ratio >= .55 && ratio <= 1.8 && density >= .45) {
+                    candidates.push({ x: sumX / area, y: sumY / area, area });
                 }
             }
         }
 
-        if (count < 20) throw new Error('The four corner markers were not detected. Flatten the paper, improve the lighting, and try again.');
-        return { x: sumX / count, y: sumY / count };
+        const largestArea = Math.max(0, ...candidates.map((candidate) => candidate.area));
+        const likelyMarkers = candidates.filter((candidate) => candidate.area >= largestArea * .35);
+        if (likelyMarkers.length < 2) throw new Error('The four corner markers were not detected. Keep the complete answer-sheet image visible, flatten the paper, and improve the lighting.');
+
+        likelyMarkers.sort((a, b) => a.y - b.y);
+        const top = likelyMarkers[0];
+        const bottom = likelyMarkers[likelyMarkers.length - 1];
+        if (bottom.y - top.y < image.height * .15) throw new Error('The top and bottom markers are too close or unclear. Capture the complete answer-sheet image.');
+
+        return { top, bottom };
     }
 
     function mappedPoint(markers, templateX, templateY) {
         const u = (templateX - 70) / 860;
-        const v = (templateY - 70) / 1274;
+        const v = (templateY - 70) / (templateBottomMarkerY - 70);
         const top = { x: markers.tl.x + ((markers.tr.x - markers.tl.x) * u), y: markers.tl.y + ((markers.tr.y - markers.tl.y) * u) };
         const bottom = { x: markers.bl.x + ((markers.br.x - markers.bl.x) * u), y: markers.bl.y + ((markers.br.y - markers.bl.y) * u) };
         return { x: top.x + ((bottom.x - top.x) * v), y: top.y + ((bottom.y - top.y) * v) };
@@ -141,12 +172,9 @@
 
     function analyzeSheet() {
         const image = context.getImageData(0, 0, canvas.width, canvas.height);
-        const markers = {
-            tl: findMarker(image, [.035, .035, .11, .105]),
-            tr: findMarker(image, [.89, .035, .965, .105]),
-            bl: findMarker(image, [.035, .925, .11, .975]),
-            br: findMarker(image, [.89, .925, .965, .975]),
-        };
+        const leftMarkers = findSideMarkers(image, 0, .44);
+        const rightMarkers = findSideMarkers(image, .56, 1);
+        const markers = { tl: leftMarkers.top, tr: rightMarkers.top, bl: leftMarkers.bottom, br: rightMarkers.bottom };
         const sheetWidth = Math.hypot(markers.tr.x - markers.tl.x, markers.tr.y - markers.tl.y);
         const radius = (sheetWidth / 860) * 10;
         const answers = [];
@@ -211,7 +239,7 @@
     cameraButton.addEventListener('click', openCamera);
     captureButton.addEventListener('click', () => {
         if (!video.videoWidth || !requireStudent()) return;
-        drawA4(video, video.videoWidth, video.videoHeight);
+        drawImage(video, video.videoWidth, video.videoHeight);
         stopCamera();
         processCurrentImage();
     });
@@ -227,7 +255,7 @@
         try {
             stopCamera();
             const bitmap = await createImageBitmap(file);
-            drawA4(bitmap, bitmap.width, bitmap.height);
+            drawImage(bitmap, bitmap.width, bitmap.height);
             bitmap.close?.();
             processCurrentImage();
         } catch (_) {

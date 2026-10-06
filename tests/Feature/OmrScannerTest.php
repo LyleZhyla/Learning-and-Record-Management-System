@@ -55,7 +55,12 @@ class OmrScannerTest extends TestCase
         $this->actingAs($this->facilitator)->get('/facilitator/answer-sheet-scanner/'.$sheet->id)
             ->assertOk()->assertSee('data-omr-video', false)->assertSee('Capture & read', false);
         $this->actingAs($this->facilitator)->get('/facilitator/answer-sheet-scanner/'.$sheet->id.'/print')
-            ->assertOk()->assertSee('SNAPIE ANSWER SHEET')->assertSee('<svg', false);
+            ->assertOk()->assertSee('Download image')->assertSee('<img', false)->assertDontSee('<svg', false);
+        $this->actingAs($this->facilitator)->get('/facilitator/answer-sheet-scanner/'.$sheet->id.'/image')
+            ->assertOk()
+            ->assertHeader('content-type', 'image/svg+xml; charset=UTF-8')
+            ->assertSee('viewBox="0 0 1000 487"', false)
+            ->assertSee('SNAPIE ANSWER SHEET');
     }
 
     public function test_facilitator_can_create_and_print_answer_sheet_without_answer_key(): void
@@ -70,7 +75,7 @@ class OmrScannerTest extends TestCase
         $response->assertRedirect('/facilitator/answer-sheet-scanner/'.$sheet->id);
         $this->assertSame([], $sheet->answer_key);
         $this->actingAs($this->facilitator)->get('/facilitator/answer-sheet-scanner/'.$sheet->id.'/print')
-            ->assertOk()->assertSee('SNAPIE ANSWER SHEET');
+            ->assertOk()->assertSee('Download image')->assertSee('<img', false);
         $this->actingAs($this->facilitator)->get('/facilitator/answer-sheet-scanner/'.$sheet->id)
             ->assertOk()
             ->assertSee('Scanning locked')

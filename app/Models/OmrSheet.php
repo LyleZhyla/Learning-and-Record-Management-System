@@ -38,4 +38,16 @@ class OmrSheet extends Model
             && count($this->answer_key) === $this->item_count
             && collect($this->answer_key)->every(fn ($answer) => in_array($answer, $allowed, true));
     }
+
+    public function answerImageBottomMarkerY(): int
+    {
+        $lastAnswerY = 245 + (($this->item_count - 1) * 34);
+
+        return max(390, $lastAnswerY + 70);
+    }
+
+    public function answerImageHeight(): int
+    {
+        return $this->answerImageBottomMarkerY() + 70;
+    }
 }

@@ -28,7 +28,7 @@
 
 @if($hasAnswerKey)
 <div class="omr-scanner-layout">
-    <section class="card omr-camera-card" data-omr-scanner data-endpoint="{{ route($routePrefix.'.omr.grade',$sheet) }}" data-items="{{ $sheet->item_count }}" data-choices="{{ $sheet->choice_count }}">
+    <section class="card omr-camera-card" data-omr-scanner data-endpoint="{{ route($routePrefix.'.omr.grade',$sheet) }}" data-items="{{ $sheet->item_count }}" data-choices="{{ $sheet->choice_count }}" data-template-bottom="{{ $sheet->answerImageBottomMarkerY() }}">
         <div class="card-heading"><div><span class="eyebrow">Live paper scanner</span><h3>Align and capture</h3><p>Keep all four black corner markers inside the guide.</p></div></div>
         <label class="field-group"><span>Student</span><select data-omr-student required><option value="">Select the student before scanning</option>@foreach($students as $enrollment)<option value="{{ $enrollment->student_id }}">{{ $enrollment->student->name }}</option>@endforeach</select></label>
         <div class="omr-camera-viewport">

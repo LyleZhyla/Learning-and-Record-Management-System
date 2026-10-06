@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -102,6 +103,22 @@ class OmrScannerController extends Controller
         $this->ensureCanUse($request->user(), $sheet->assessment);
 
         return view('learning.omr.print', compact('sheet'));
+    }
+
+    public function image(Request $request, OmrSheet $sheet): Response
+    {
+        $sheet->load('assessment.section.component');
+        $this->ensureCanUse($request->user(), $sheet->assessment);
+
+        $response = response()->view('learning.omr.image', compact('sheet'))
+            ->header('Content-Type', 'image/svg+xml; charset=UTF-8')
+            ->header('Cache-Control', 'private, no-store');
+
+        if ($request->boolean('download')) {
+            $response->header('Content-Disposition', 'attachment; filename="answer-sheet-'.$sheet->id.'.svg"');
+        }
+
+        return $response;
     }
 
     public function grade(Request $request, OmrSheet $sheet): JsonResponse
