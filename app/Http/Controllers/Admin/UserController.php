@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\FacilitatorProfile;
 use App\Models\NstpComponent;
 use App\Models\User;
 use App\Services\AccountCredentialMailer;
@@ -11,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -74,6 +74,12 @@ class UserController extends Controller
     public function store(Request $request, AccountCredentialMailer $credentialMailer): RedirectResponse
     {
         $validated = $request->validate($this->accountRules());
+
+        if ($validated['role'] === 'facilitator') {
+            $validated['name'] = $this->facilitatorNameFromEmail($validated['email']);
+            $validated['status'] = 'active';
+        }
+
         $temporaryPassword = $this->generateTemporaryPassword();
 
         $user = DB::transaction(function () use ($validated, $temporaryPassword): User {
@@ -120,6 +126,11 @@ class UserController extends Controller
     public function update(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate($this->accountRules($user));
+
+        if ($validated['role'] === 'facilitator') {
+            $validated['name'] = $this->facilitatorNameFromEmail($validated['email']);
+            $validated['status'] = $user->status;
+        }
 
         if ($request->user()->is($user) && $validated['role'] !== 'super_admin') {
             throw ValidationException::withMessages(['role' => 'You cannot change your own Super Admin role.']);
@@ -243,34 +254,33 @@ class UserController extends Controller
 
     private function accountRules(?User $user = null): array
     {
+        $isFacilitator = request('role') === 'facilitator';
+
         return [
-            'name' => ['required', 'string', 'max:100'],
+            'name' => [Rule::requiredIf(! $isFacilitator), 'nullable', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user?->id)],
             'role' => ['required', Rule::in(array_keys(User::ROLE_LABELS))],
-            'status' => ['required', Rule::in(array_keys(User::STATUS_LABELS))],
-            'nstp_component_id' => ['nullable', 'required_if:role,coordinator', 'integer', Rule::exists('nstp_components', 'id')->where('is_active', true)],
-            'employee_number' => ['nullable', 'required_if:role,facilitator', 'string', 'max:50', Rule::unique('facilitator_profiles', 'employee_number')->ignore($user?->facilitatorProfile?->id)],
-            'department' => ['nullable', 'required_if:role,facilitator', 'string', 'max:150'],
-            'designation' => ['nullable', 'required_if:role,facilitator', 'string', 'max:120'],
-            'employment_status' => ['nullable', 'required_if:role,facilitator', Rule::in(array_keys(FacilitatorProfile::EMPLOYMENT_STATUS_LABELS))],
-            'contact_number' => ['nullable', 'regex:/^09[0-9]{9}$/'],
-            'specialization' => ['nullable', 'string', 'max:255'],
-            'professional_summary' => ['nullable', 'string', 'max:2000'],
+            'status' => [Rule::requiredIf(! $isFacilitator), 'nullable', Rule::in(array_keys(User::STATUS_LABELS))],
+            'nstp_component_id' => ['nullable', 'required_if:role,coordinator,facilitator', 'integer', Rule::exists('nstp_components', 'id')->where('is_active', true)],
+            'contact_number' => [Rule::requiredIf($isFacilitator), 'nullable', 'regex:/^09[0-9]{9}$/'],
         ];
     }
 
     /** @param array<string, mixed> $validated */
     private function facilitatorProfileData(array $validated): array
     {
-        return collect([
-            'employee_number' => $validated['employee_number'] ?? null,
-            'department' => $validated['department'] ?? null,
-            'designation' => $validated['designation'] ?? null,
-            'employment_status' => $validated['employment_status'] ?? null,
-            'contact_number' => $validated['contact_number'] ?? null,
-            'specialization' => $validated['specialization'] ?? null,
-            'professional_summary' => $validated['professional_summary'] ?? null,
-        ])->map(fn ($value) => is_string($value) ? trim($value) : $value)->all();
+        return ['contact_number' => trim($validated['contact_number'])];
+    }
+
+    private function facilitatorNameFromEmail(string $email): string
+    {
+        $name = Str::of(Str::before($email, '@'))
+            ->replace(['.', '_', '-'], ' ')
+            ->squish()
+            ->title()
+            ->toString();
+
+        return $name !== '' ? $name : 'Facilitator';
     }
 
     private function generateTemporaryPassword(): string

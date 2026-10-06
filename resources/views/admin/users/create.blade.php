@@ -5,8 +5,8 @@
 
 @section('content')
     <div class="back-row"><a href="{{ $initialRole === 'student' ? route('admin.students.index') : route('admin.users.index') }}">← Back to {{ $initialRole === 'student' ? 'student' : 'staff' }} accounts</a></div>
-    <div class="editor-grid">
-        <section class="card">
+    <div class="compact-account-editor">
+        <section class="card compact-account-card">
             <div class="card-heading"><div><span class="eyebrow">New {{ $initialRole === 'student' ? 'student' : 'staff' }} account</span><h3>Account information</h3><p>{{ $initialRole === 'student' ? 'Create the student login account.' : 'Select the account role.' }} A secure temporary password will be generated automatically.</p></div></div>
             <form method="POST" action="{{ route('admin.users.store') }}" class="account-form" data-staff-account-form>
                 @csrf
@@ -17,12 +17,6 @@
                 </div>
             </form>
         </section>
-        <aside class="card role-guide" @if($initialRole === 'student') hidden @endif>
-            <span class="eyebrow">Access guide</span><h3>Available roles</h3>
-            @foreach (collect(\App\Models\User::ROLE_LABELS)->only(['nstp_admin', 'coordinator', 'facilitator']) as $role => $label)
-                <div class="role-guide-item"><span class="role-dot role-{{ $role }}"></span><div><strong>{{ $label }}</strong><p>{{ match($role) { 'student' => 'Access learning materials, activities, attendance, and grades.', 'facilitator' => 'Manage assigned sections, lessons, assessments, and grades.', 'coordinator' => 'Monitor components, sections, facilitators, and reports.', 'nstp_admin' => 'Manage institution-wide NSTP operations and records.', default => 'Full platform configuration and account administration.' } }}</p></div></div>
-            @endforeach
-        </aside>
     </div>
     <script src="{{ asset('js/staff-account-form.js') }}?v={{ filemtime(public_path('js/staff-account-form.js')) }}"></script>
 @endsection

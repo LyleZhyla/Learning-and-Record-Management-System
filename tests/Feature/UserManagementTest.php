@@ -62,6 +62,9 @@ class UserManagementTest extends TestCase
             ->assertSee('Facilitator')
             ->assertDontSee('option value="student"', false)
             ->assertDontSee('option value="super_admin"', false)
+            ->assertSee('name="contact_number"', false)
+            ->assertDontSee('name="employee_number"', false)
+            ->assertDontSee('name="department"', false)
             ->assertDontSee('name="password"', false);
     }
 
@@ -78,15 +81,10 @@ class UserManagementTest extends TestCase
                 'email' => "role{$index}@example.test",
                 'role' => $role,
                 'status' => 'active',
-                'nstp_component_id' => $role === 'coordinator' ? $component->id : null,
+                'nstp_component_id' => in_array($role, ['coordinator', 'facilitator'], true) ? $component->id : null,
             ];
             if ($role === 'facilitator') {
-                $payload += [
-                    'employee_number' => 'FAC-'.str_pad((string) $index, 4, '0', STR_PAD_LEFT),
-                    'department' => 'NSTP Office',
-                    'designation' => 'NSTP Facilitator',
-                    'employment_status' => 'full_time',
-                ];
+                $payload['contact_number'] = '09171234567';
             }
 
             $response = $this->actingAs($admin)->post('/admin/users', $payload)
@@ -101,8 +99,7 @@ class UserManagementTest extends TestCase
             if ($role === 'facilitator') {
                 $this->assertDatabaseHas('facilitator_profiles', [
                     'user_id' => $createdUser->id,
-                    'employee_number' => $payload['employee_number'],
-                    'department' => 'NSTP Office',
+                    'contact_number' => '09171234567',
                 ]);
             }
 
