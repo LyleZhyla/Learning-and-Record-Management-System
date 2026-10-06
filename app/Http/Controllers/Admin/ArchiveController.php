@@ -6,12 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Announcement;
 use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
+use App\Models\StudentRegistration;
+use App\Models\User;
 use App\Services\SpreadsheetDownloadService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -21,6 +25,15 @@ class ArchiveController extends Controller
         'attendance' => ['label' => 'Attendance records', 'description' => 'Student attendance entries from all sessions and components.', 'icon' => '▣'],
         'system-logs' => ['label' => 'System logs', 'description' => 'Authenticated activity and security audit trail entries.', 'icon' => '☷'],
         'notifications' => ['label' => 'Notifications', 'description' => 'Published announcements currently shown in notification bells.', 'icon' => '🔔'],
+    ];
+
+    private const BULK_DELETE_TARGETS = [
+        'student-accounts' => ['label' => 'Student accounts', 'description' => 'All student accounts and their linked enrollments, attendance, submissions, messages, and AI learning recommendations.'],
+        'staff-accounts' => ['label' => 'Facilitator and coordinator accounts', 'description' => 'All facilitator and coordinator accounts. Institutional content is reassigned to the acting Super Admin.'],
+        'archived-registrations' => ['label' => 'Archived registrations', 'description' => 'Archived public registration records and their uploaded registration files.'],
+        'archived-attendance' => ['label' => 'Archived attendance records', 'description' => 'Attendance entries already moved to the archive.'],
+        'archived-system-logs' => ['label' => 'Archived system logs', 'description' => 'Audit trail entries already moved to the archive.'],
+        'archived-notifications' => ['label' => 'Archived notifications', 'description' => 'Published announcements already moved to the archive.'],
     ];
 
     public function __construct(private SpreadsheetDownloadService $downloads) {}
@@ -38,7 +51,51 @@ class ArchiveController extends Controller
         return view('admin.archives.index', [
             'groups' => $groups,
             'recentArchives' => $this->recentArchives(),
+            'bulkDeleteTargets' => collect(self::BULK_DELETE_TARGETS)->map(fn (array $details, string $target): array => $details + [
+                'target' => $target,
+                'count' => $this->bulkDeleteCount($target),
+            ]),
         ]);
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'targets' => ['required', 'array', 'min:1'],
+            'targets.*' => ['required', 'distinct', Rule::in(array_keys(self::BULK_DELETE_TARGETS))],
+            'confirmation' => ['required', Rule::in(['DELETE SELECTED'])],
+        ], [
+            'targets.required' => 'Select at least one record category to delete.',
+            'confirmation.required' => 'Type DELETE SELECTED to confirm permanent deletion.',
+            'confirmation.in' => 'Type DELETE SELECTED exactly to confirm permanent deletion.',
+        ]);
+
+        $filePaths = collect();
+        $deleted = [];
+        $actor = $request->user();
+
+        DB::transaction(function () use ($validated, $actor, $filePaths, &$deleted): void {
+            foreach ($validated['targets'] as $target) {
+                $deleted[$target] = match ($target) {
+                    'student-accounts' => $this->deleteStudentAccounts($filePaths),
+                    'staff-accounts' => $this->deleteStaffAccounts($actor, $filePaths),
+                    'archived-registrations' => $this->deleteArchivedRegistrations($filePaths),
+                    'archived-attendance' => AttendanceRecord::onlyArchived()->delete(),
+                    'archived-system-logs' => AuditLog::onlyArchived()->delete(),
+                    'archived-notifications' => Announcement::onlyArchived()->where('status', 'published')->delete(),
+                };
+            }
+        });
+
+        if ($filePaths->isNotEmpty()) {
+            Storage::disk('local')->delete($filePaths->filter()->unique()->values()->all());
+        }
+
+        $summary = collect($deleted)
+            ->map(fn (int $count, string $target): string => number_format($count).' '.self::BULK_DELETE_TARGETS[$target]['label'])
+            ->implode(', ');
+
+        return back()->with('status', 'Bulk deletion completed: '.$summary.'.');
     }
 
     public function archiveAll(Request $request, string $type): RedirectResponse
@@ -147,6 +204,61 @@ class ArchiveController extends Controller
         };
 
         return $type === 'notifications' ? $query->where('status', 'published') : $query;
+    }
+
+    private function bulkDeleteCount(string $target): int
+    {
+        return match ($target) {
+            'student-accounts' => User::where('role', 'student')->count(),
+            'staff-accounts' => User::whereIn('role', ['facilitator', 'coordinator'])->count(),
+            'archived-registrations' => StudentRegistration::whereNotNull('archived_at')->count(),
+            'archived-attendance' => AttendanceRecord::onlyArchived()->count(),
+            'archived-system-logs' => AuditLog::onlyArchived()->count(),
+            'archived-notifications' => Announcement::onlyArchived()->where('status', 'published')->count(),
+        };
+    }
+
+    private function deleteStudentAccounts(Collection $filePaths): int
+    {
+        $students = User::with('studentProfile')->where('role', 'student')->get();
+        $filePaths->push(...$students->flatMap(fn (User $student): array => [
+            $student->profile_photo_path,
+            $student->studentProfile?->cor_path,
+            $student->studentProfile?->formal_photo_path,
+        ])->filter()->all());
+
+        return User::whereKey($students->modelKeys())->delete();
+    }
+
+    private function deleteStaffAccounts(User $actor, Collection $filePaths): int
+    {
+        $staff = User::whereIn('role', ['facilitator', 'coordinator'])->get();
+        $ids = $staff->modelKeys();
+        $filePaths->push(...$staff->pluck('profile_photo_path')->filter()->all());
+
+        if ($ids === []) {
+            return 0;
+        }
+
+        DB::table('attendance_sessions')->whereIn('created_by', $ids)->update(['created_by' => $actor->id]);
+        DB::table('learning_materials')->whereIn('created_by', $ids)->update(['created_by' => $actor->id]);
+        DB::table('assessments')->whereIn('created_by', $ids)->update(['created_by' => $actor->id]);
+        DB::table('omr_sheets')->whereIn('created_by', $ids)->update(['created_by' => $actor->id]);
+        DB::table('omr_scan_results')->whereIn('scanned_by', $ids)->update(['scanned_by' => $actor->id]);
+        DB::table('sessions')->whereIn('user_id', $ids)->delete();
+
+        return User::whereKey($ids)->delete();
+    }
+
+    private function deleteArchivedRegistrations(Collection $filePaths): int
+    {
+        $registrations = StudentRegistration::whereNotNull('archived_at')->get();
+        $filePaths->push(...$registrations->flatMap(fn (StudentRegistration $registration): array => [
+            $registration->cor_path,
+            $registration->formal_photo_path,
+        ])->filter()->all());
+
+        return StudentRegistration::whereKey($registrations->modelKeys())->delete();
     }
 
     private function recentArchives(): Collection

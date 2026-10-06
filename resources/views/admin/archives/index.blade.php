@@ -26,6 +26,30 @@
     @endforeach
 </section>
 
+<section class="card bulk-delete-center">
+    <div class="sectioning-toolbar"><div><span class="eyebrow">Super Admin control</span><h3>Bulk deletion center</h3><p class="muted-cell">Select one or more categories to permanently delete in a single operation. Account deletion cannot be restored.</p></div></div>
+    <form method="POST" action="{{ route('admin.archives.bulk-destroy') }}" data-bulk-delete-form>
+        @csrf @method('DELETE')
+        <div class="bulk-delete-option-grid">
+            @foreach($bulkDeleteTargets as $target)
+                <label class="bulk-delete-option {{ $target['count'] ? '' : 'disabled' }}">
+                    <input type="checkbox" name="targets[]" value="{{ $target['target'] }}" @disabled(!$target['count'])>
+                    <span><strong>{{ $target['label'] }}</strong><small>{{ $target['description'] }}</small></span>
+                    <b>{{ number_format($target['count']) }}</b>
+                </label>
+            @endforeach
+        </div>
+        @error('targets')<small class="field-error">{{ $message }}</small>@enderror
+        @error('targets.*')<small class="field-error">{{ $message }}</small>@enderror
+        <div class="bulk-delete-confirmation">
+            <div><strong>This action is permanent</strong><p>Type <b>DELETE SELECTED</b>, then confirm the browser warning. Create a database backup first if these records may be needed later.</p></div>
+            <label class="field-group"><span>Confirmation phrase</span><input name="confirmation" autocomplete="off" required pattern="DELETE SELECTED" placeholder="DELETE SELECTED"></label>
+            <button class="danger-button" type="submit">Delete selected categories</button>
+        </div>
+        @error('confirmation')<small class="field-error">{{ $message }}</small>@enderror
+    </form>
+</section>
+
 <section class="card user-table-card archive-history-card">
     <div class="sectioning-toolbar"><div><span class="eyebrow">Archive activity</span><h3>Recently archived records</h3><p class="muted-cell">Latest records moved out of active operational screens.</p></div></div>
     <div class="table-wrap"><table class="data-table"><thead><tr><th>Record type</th><th>Record</th><th>Details</th><th>Archived</th></tr></thead><tbody>
@@ -37,5 +61,13 @@
     </tbody></table></div>
 </section>
 
-<section class="card password-boundary-note archive-accountability-note"><span>ℹ</span><div><strong>Permanent deletion boundary</strong><p>Only archived records can be permanently deleted. Every deletion remains attributable to the signed-in Super Admin through the active audit log.</p></div></section>
+<section class="card password-boundary-note archive-accountability-note"><span>ℹ</span><div><strong>Permanent deletion boundary</strong><p>Operational records and registrations must be archived before deletion. Account categories are deleted directly with their linked data. Every operation remains attributable to the signed-in Super Admin through the active audit log.</p></div></section>
+<script>
+document.querySelector('[data-bulk-delete-form]')?.addEventListener('submit', (event) => {
+    const selected = [...event.currentTarget.querySelectorAll('input[name="targets[]"]:checked')];
+    if (!selected.length || !window.confirm(`Permanently delete ${selected.length} selected record categor${selected.length === 1 ? 'y' : 'ies'}? This cannot be undone.`)) {
+        event.preventDefault();
+    }
+});
+</script>
 @endsection

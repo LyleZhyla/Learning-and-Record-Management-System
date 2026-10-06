@@ -267,6 +267,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/system-logs/export', [SystemLogController::class, 'export'])->name('system-logs.export');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/archives', [ArchiveController::class, 'index'])->name('archives.index');
+    Route::delete('/archives/bulk-delete', [ArchiveController::class, 'bulkDestroy'])->name('archives.bulk-destroy');
     Route::get('/archives/{type}/export', [ArchiveController::class, 'export'])->name('archives.export');
     Route::post('/archives/{type}', [ArchiveController::class, 'archiveAll'])->name('archives.archive');
     Route::patch('/archives/{type}/restore', [ArchiveController::class, 'restoreAll'])->name('archives.restore');

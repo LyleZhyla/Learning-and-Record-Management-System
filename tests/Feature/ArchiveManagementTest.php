@@ -36,6 +36,9 @@ class ArchiveManagementTest extends TestCase
         $this->actingAs($superAdmin)->get('/admin/archives')
             ->assertOk()
             ->assertSee('Operational records archive')
+            ->assertSee('Bulk deletion center')
+            ->assertSee('Student accounts')
+            ->assertSee('Facilitator and coordinator accounts')
             ->assertSee('Recently archived records')
             ->assertSee($notification->title);
 
@@ -57,6 +60,59 @@ class ArchiveManagementTest extends TestCase
         $this->actingAs($student)->post('/admin/archives/attendance')->assertForbidden();
         $this->actingAs($student)->patch('/admin/archives/attendance/restore')->assertForbidden();
         $this->actingAs($student)->delete('/admin/archives/attendance', ['confirmation' => 'DELETE'])->assertForbidden();
+        $this->actingAs($student)->delete('/admin/archives/bulk-delete', [
+            'targets' => ['student-accounts'],
+            'confirmation' => 'DELETE SELECTED',
+        ])->assertForbidden();
+    }
+
+    public function test_super_admin_can_choose_multiple_categories_for_one_bulk_deletion(): void
+    {
+        [$superAdmin, , $log] = $this->records();
+        $studentIds = User::where('role', 'student')->pluck('id')->all();
+        $facilitatorId = User::where('role', 'facilitator')->value('id');
+        AuditLog::whereKey($log->id)->update(['archived_at' => now(), 'archived_by' => $superAdmin->id]);
+
+        $this->actingAs($superAdmin)->delete('/admin/archives/bulk-delete', [
+            'targets' => ['student-accounts', 'archived-system-logs'],
+            'confirmation' => 'DELETE SELECTED',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('users', ['id' => $studentIds[0]]);
+        $this->assertDatabaseHas('users', ['id' => $facilitatorId, 'role' => 'facilitator']);
+        $this->assertNull(AuditLog::withArchived()->find($log->id));
+        $this->assertDatabaseHas('users', ['id' => $superAdmin->id, 'role' => 'super_admin']);
+    }
+
+    public function test_bulk_staff_deletion_preserves_content_by_reassigning_it_to_super_admin(): void
+    {
+        [$superAdmin, $attendance] = $this->records();
+        $facilitator = User::where('role', 'facilitator')->firstOrFail();
+        $session = $attendance->attendanceSession;
+
+        $this->actingAs($superAdmin)->delete('/admin/archives/bulk-delete', [
+            'targets' => ['staff-accounts'],
+            'confirmation' => 'DELETE SELECTED',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('users', ['id' => $facilitator->id]);
+        $this->assertDatabaseHas('attendance_sessions', [
+            'id' => $session->id,
+            'created_by' => $superAdmin->id,
+        ]);
+    }
+
+    public function test_bulk_deletion_requires_selection_and_exact_confirmation(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+
+        $this->actingAs($superAdmin)->from('/admin/archives')->delete('/admin/archives/bulk-delete', [
+            'targets' => ['student-accounts'],
+            'confirmation' => 'DELETE',
+        ])->assertRedirect('/admin/archives')->assertSessionHasErrors('confirmation');
+
+        $this->assertDatabaseHas('users', ['id' => $student->id]);
     }
 
     public function test_super_admin_can_permanently_delete_only_archived_records(): void
