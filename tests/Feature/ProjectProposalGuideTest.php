@@ -22,23 +22,21 @@ class ProjectProposalGuideTest extends TestCase
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $this->actingAs($student)->get('/student/project-proposal-guide')
             ->assertOk()
-            ->assertSee('Turn a community need into a clearer project proposal.')
+            ->assertSee('Turn your project idea into a clearer proposal.')
+            ->assertSee('A short project idea is enough.')
             ->assertSee('This tool does not approve proposals')
             ->assertSee('Proposal Guide')
             ->assertSee('data-student-tour="proposal"', false);
     }
 
-    public function test_required_proposal_context_is_validated_before_using_ai(): void
+    public function test_only_the_project_idea_is_required_before_using_ai(): void
     {
         Http::fake();
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
 
         $this->actingAs($student)->post('/student/project-proposal-guide', [
-            'component' => 'INVALID',
-            'project_title' => '',
-            'community_need' => '',
-            'target_beneficiaries' => '',
-        ])->assertSessionHasErrors(['component', 'project_title', 'community_need', 'target_beneficiaries']);
+            'project_idea' => '',
+        ])->assertSessionHasErrors(['project_idea']);
 
         Http::assertNothingSent();
     }
@@ -86,11 +84,67 @@ class ProjectProposalGuideTest extends TestCase
             return $request->url() === 'https://api.openai.com/v1/responses'
                 && $request['model'] === 'gpt-5-mini'
                 && $request['store'] === false
+                && $request['max_output_tokens'] === 5000
                 && $request['text']['format']['name'] === 'nstp_project_proposal_guidance'
                 && $request['safety_identifier'] === hash('sha256', 'smart-nstp-proposal-'.$student->id)
                 && str_contains($input, 'Barangay Reading Buddies')
                 && str_contains($request['instructions'], 'Do not approve or reject the proposal.');
         });
+    }
+
+    public function test_partial_ai_sections_are_shown_instead_of_rejecting_the_whole_guidance(): void
+    {
+        config(['services.openai.api_key' => 'test-key']);
+        Http::fake(['api.openai.com/v1/responses' => Http::response([
+            'output' => [[
+                'type' => 'message',
+                'content' => [[
+                    'type' => 'output_text',
+                    'text' => json_encode([
+                        'summary' => 'Start with a consultation and verify the community need.',
+                        'recommendations' => ['Ask the intended beneficiaries what support they need.'],
+                    ]),
+                ]],
+            ]],
+        ])]);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+
+        $this->actingAs($student)->post('/student/project-proposal-guide', [
+            'project_idea' => 'Community clean-up drive',
+        ])->assertOk()
+            ->assertSee('Your proposal guidance')
+            ->assertSee('Start with a consultation')
+            ->assertSee('Ask the intended beneficiaries')
+            ->assertDontSee('The AI returned incomplete proposal guidance');
+    }
+
+    public function test_token_limited_ai_response_is_retried_automatically(): void
+    {
+        config(['services.openai.api_key' => 'test-key']);
+        Http::fakeSequence()
+            ->push([
+                'status' => 'incomplete',
+                'incomplete_details' => ['reason' => 'max_output_tokens'],
+                'output' => [],
+            ])
+            ->push([
+                'status' => 'completed',
+                'output' => [[
+                    'type' => 'message',
+                    'content' => [[
+                        'type' => 'output_text',
+                        'text' => json_encode(['summary' => 'A practical starter plan is ready.']),
+                    ]],
+                ]],
+            ]);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+
+        $this->actingAs($student)->post('/student/project-proposal-guide', [
+            'project_idea' => 'Community vegetable garden',
+        ])->assertOk()->assertSee('A practical starter plan is ready.');
+
+        Http::assertSentCount(2);
+        Http::assertSent(fn (Request $request): bool => $request['max_output_tokens'] === 8000);
     }
 
     public function test_ai_failure_keeps_the_draft_and_shows_a_safe_error(): void
@@ -103,21 +157,14 @@ class ProjectProposalGuideTest extends TestCase
             ->post('/student/project-proposal-guide', $this->validProposal())
             ->assertRedirect('/student/project-proposal-guide')
             ->assertSessionHasErrors('proposal_guidance')
-            ->assertSessionHasInput('project_title', 'Barangay Reading Buddies');
+            ->assertSessionHasInput('project_idea', 'Barangay Reading Buddies reading program for elementary learners.');
     }
 
     /** @return array<string, string> */
     private function validProposal(): array
     {
         return [
-            'component' => 'LTS',
-            'project_title' => 'Barangay Reading Buddies',
-            'community_need' => 'Some elementary learners need additional guided reading practice.',
-            'target_beneficiaries' => 'Twenty elementary learners in a nearby partner barangay.',
-            'proposed_objectives' => 'Improve reading confidence through guided practice.',
-            'proposed_activities' => 'Consultation, baseline activity, reading sessions, and reflection.',
-            'timeline' => 'Four Saturdays during the semester.',
-            'available_resources' => 'Student volunteers and donated reading materials; permissions still need confirmation.',
+            'project_idea' => 'Barangay Reading Buddies reading program for elementary learners.',
         ];
     }
 }

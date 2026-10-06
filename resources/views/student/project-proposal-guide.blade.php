@@ -7,8 +7,8 @@
 <section class="proposal-guide-hero">
     <div>
         <span class="eyebrow">AI-assisted planning</span>
-        <h2>Turn a community need into a clearer project proposal.</h2>
-        <p>Describe your idea and SNAPIE AI will suggest improvements, measurable objectives, practical activities, risks to verify, and next steps.</p>
+        <h2>Turn your project idea into a clearer proposal.</h2>
+        <p>Enter the project you want to do. SNAPIE AI will build starter objectives, activities, risks to verify, and next steps.</p>
     </div>
     <div class="proposal-guide-boundary"><span aria-hidden="true">i</span><p><strong>Guidance only</strong> This tool does not approve proposals or make official NSTP decisions. Your facilitator and authorized school officials provide final review.</p></div>
 </section>
@@ -24,64 +24,18 @@
 <section class="proposal-guide-layout">
     <form class="card proposal-guide-form" method="POST" action="{{ route('student.proposal-guide.generate') }}">
         @csrf
-        <div class="card-heading"><div><h3>Describe your project idea</h3><p>Required details help the AI give useful guidance without inventing facts about your community.</p></div><span class="pill">Draft review</span></div>
+        <div class="card-heading"><div><h3>What project do you want to do?</h3><p>A short project idea is enough. You can add the place or intended beneficiaries if you already know them.</p></div><span class="pill">Quick start</span></div>
 
         <div class="form-grid">
-            <label class="field-group">
-                <span>NSTP component *</span>
-                <select name="component" required>
-                    @foreach(['CWTS', 'LTS', 'ROTC'] as $component)
-                        <option value="{{ $component }}" @selected(old('component', $draft['component'] ?? $defaultComponent) === $component)>{{ $component }}</option>
-                    @endforeach
-                </select>
-                @error('component')<small class="field-error">{{ $message }}</small>@enderror
-            </label>
-
-            <label class="field-group">
-                <span>Working project title *</span>
-                <input name="project_title" value="{{ old('project_title', $draft['project_title'] ?? '') }}" maxlength="180" placeholder="Example: Barangay Reading Buddies" required>
-                @error('project_title')<small class="field-error">{{ $message }}</small>@enderror
-            </label>
-
             <label class="field-group full">
-                <span>Community need or problem *</span>
-                <textarea name="community_need" rows="5" maxlength="3000" placeholder="What problem did you observe? What evidence or community input still needs verification?" required>{{ old('community_need', $draft['community_need'] ?? '') }}</textarea>
-                @error('community_need')<small class="field-error">{{ $message }}</small>@enderror
-            </label>
-
-            <label class="field-group full">
-                <span>Target beneficiaries *</span>
-                <textarea name="target_beneficiaries" rows="3" maxlength="1200" placeholder="Who may benefit, where are they located, and approximately how many people are involved?" required>{{ old('target_beneficiaries', $draft['target_beneficiaries'] ?? '') }}</textarea>
-                @error('target_beneficiaries')<small class="field-error">{{ $message }}</small>@enderror
-            </label>
-
-            <label class="field-group full">
-                <span>Draft objectives</span>
-                <textarea name="proposed_objectives" rows="4" maxlength="3000" placeholder="List what the project should achieve. You may leave this blank for suggestions.">{{ old('proposed_objectives', $draft['proposed_objectives'] ?? '') }}</textarea>
-                @error('proposed_objectives')<small class="field-error">{{ $message }}</small>@enderror
-            </label>
-
-            <label class="field-group full">
-                <span>Draft activities</span>
-                <textarea name="proposed_activities" rows="4" maxlength="3000" placeholder="Describe the activities you are considering.">{{ old('proposed_activities', $draft['proposed_activities'] ?? '') }}</textarea>
-                @error('proposed_activities')<small class="field-error">{{ $message }}</small>@enderror
-            </label>
-
-            <label class="field-group">
-                <span>Proposed timeline</span>
-                <textarea name="timeline" rows="4" maxlength="1200" placeholder="Dates, number of sessions, or project phases">{{ old('timeline', $draft['timeline'] ?? '') }}</textarea>
-                @error('timeline')<small class="field-error">{{ $message }}</small>@enderror
-            </label>
-
-            <label class="field-group">
-                <span>Available resources or constraints</span>
-                <textarea name="available_resources" rows="4" maxlength="2000" placeholder="People, materials, budget limits, permissions, or safety concerns">{{ old('available_resources', $draft['available_resources'] ?? '') }}</textarea>
-                @error('available_resources')<small class="field-error">{{ $message }}</small>@enderror
+                <span>Project idea *</span>
+                <textarea name="project_idea" rows="6" maxlength="3000" placeholder="Example: Gusto kong gumawa ng weekend reading program para sa mga batang hirap magbasa sa aming barangay." required>{{ old('project_idea', $draft['project_idea'] ?? '') }}</textarea>
+                @error('project_idea')<small class="field-error">{{ $message }}</small>@enderror
             </label>
         </div>
 
         <div class="proposal-guide-submit">
-            <p>Do not enter private beneficiary information, passwords, or confidential records. Verify all AI suggestions with your facilitator and community partners.</p>
+            <p>Your {{ $defaultComponent }} component is selected automatically. Do not enter names or other private beneficiary information. Verify AI suggestions with your facilitator.</p>
             <button class="primary-button" type="submit" @disabled(!$isConfigured)>Generate proposal guidance <span aria-hidden="true">✦</span></button>
         </div>
     </form>
