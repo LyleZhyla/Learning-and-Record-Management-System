@@ -20,8 +20,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('[data-staff-account-form]').forEach((form) => {
         const role = form.querySelector('[data-account-role]');
-        const nameField = form.querySelector('[data-account-name-field]');
-        const nameInput = form.querySelector('[data-account-name-input]');
         const statusField = form.querySelector('[data-account-status-field]');
         const statusInput = form.querySelector('[data-account-status-input]');
         const componentField = form.querySelector('[data-staff-component-field]');
@@ -38,11 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const usesComponent = isCoordinator || isFacilitator;
 
             form.classList.toggle('is-facilitator', isFacilitator);
-            if (nameField && nameInput) {
-                nameField.hidden = isFacilitator;
-                nameInput.disabled = isFacilitator;
-                nameInput.required = !isFacilitator;
-            }
             if (statusField && statusInput) {
                 statusField.hidden = isFacilitator;
                 statusInput.disabled = isFacilitator;

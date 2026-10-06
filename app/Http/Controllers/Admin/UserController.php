@@ -10,7 +10,6 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -30,15 +29,17 @@ class UserController extends Controller
             'status' => ['nullable', Rule::in(array_keys(User::STATUS_LABELS))],
         ]);
 
-        $users = User::query()->with('facilitatorProfile')
+        $users = User::query()->with(['facilitatorProfile', 'nstpComponent'])
             ->whereIn('role', self::STAFF_ROLES)
             ->when($filters['search'] ?? null, function ($query, string $search): void {
                 $query->where(function ($query) use ($search): void {
                     $query->where('name', 'like', "%{$search}%")
                         ->orWhere('email', 'like', "%{$search}%")
                         ->orWhereHas('facilitatorProfile', fn ($profile) => $profile
-                            ->where('employee_number', 'like', "%{$search}%")
-                            ->orWhere('department', 'like', "%{$search}%"));
+                            ->where('contact_number', 'like', "%{$search}%"))
+                        ->orWhereHas('nstpComponent', fn ($component) => $component
+                            ->where('code', 'like', "%{$search}%")
+                            ->orWhere('name', 'like', "%{$search}%"));
                 });
             })
             ->when($filters['role'] ?? null, fn ($query, string $role) => $query->where('role', $role))
@@ -76,7 +77,6 @@ class UserController extends Controller
         $validated = $request->validate($this->accountRules());
 
         if ($validated['role'] === 'facilitator') {
-            $validated['name'] = $this->facilitatorNameFromEmail($validated['email']);
             $validated['status'] = 'active';
         }
 
@@ -128,7 +128,6 @@ class UserController extends Controller
         $validated = $request->validate($this->accountRules($user));
 
         if ($validated['role'] === 'facilitator') {
-            $validated['name'] = $this->facilitatorNameFromEmail($validated['email']);
             $validated['status'] = $user->status;
         }
 
@@ -257,7 +256,7 @@ class UserController extends Controller
         $isFacilitator = request('role') === 'facilitator';
 
         return [
-            'name' => [Rule::requiredIf(! $isFacilitator), 'nullable', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user?->id)],
             'role' => ['required', Rule::in(array_keys(User::ROLE_LABELS))],
             'status' => [Rule::requiredIf(! $isFacilitator), 'nullable', Rule::in(array_keys(User::STATUS_LABELS))],
@@ -270,17 +269,6 @@ class UserController extends Controller
     private function facilitatorProfileData(array $validated): array
     {
         return ['contact_number' => trim($validated['contact_number'])];
-    }
-
-    private function facilitatorNameFromEmail(string $email): string
-    {
-        $name = Str::of(Str::before($email, '@'))
-            ->replace(['.', '_', '-'], ' ')
-            ->squish()
-            ->title()
-            ->toString();
-
-        return $name !== '' ? $name : 'Facilitator';
     }
 
     private function generateTemporaryPassword(): string

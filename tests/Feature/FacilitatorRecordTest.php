@@ -20,6 +20,7 @@ class FacilitatorRecordTest extends TestCase
         $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
 
         $response = $this->actingAs($admin)->post('/admin/users', [
+            'name' => 'Ana Santos',
             'email' => 'ana.facilitator@example.test',
             'role' => 'facilitator',
             'nstp_component_id' => $component->id,
@@ -28,7 +29,7 @@ class FacilitatorRecordTest extends TestCase
 
         $facilitator = User::where('email', 'ana.facilitator@example.test')->firstOrFail();
         $temporaryPassword = $response->getSession()->get('temporary_password');
-        $this->assertSame('Ana Facilitator', $facilitator->name);
+        $this->assertSame('Ana Santos', $facilitator->name);
         $this->assertSame('active', $facilitator->status);
         $this->assertSame($component->id, $facilitator->nstp_component_id);
         $this->assertTrue(Hash::check($temporaryPassword, $facilitator->password));
@@ -38,6 +39,7 @@ class FacilitatorRecordTest extends TestCase
         ]);
 
         $this->actingAs($admin)->put('/admin/users/'.$facilitator->id, [
+            'name' => 'Ana Reyes',
             'email' => 'ana.updated@example.test',
             'role' => 'facilitator',
             'nstp_component_id' => $component->id,
@@ -46,7 +48,7 @@ class FacilitatorRecordTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'id' => $facilitator->id,
-            'name' => 'Ana Updated',
+            'name' => 'Ana Reyes',
             'email' => 'ana.updated@example.test',
             'nstp_component_id' => $component->id,
         ]);
@@ -56,9 +58,10 @@ class FacilitatorRecordTest extends TestCase
         ]);
     }
 
-    public function test_facilitator_can_update_personal_record_fields_but_not_official_employment_fields(): void
+    public function test_facilitator_profile_only_exposes_contact_and_assigned_component(): void
     {
-        $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
+        $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active', 'nstp_component_id' => $component->id]);
         $facilitator->facilitatorProfile()->create([
             'employee_number' => 'FAC-2026-011',
             'department' => 'NSTP Office',
@@ -68,8 +71,11 @@ class FacilitatorRecordTest extends TestCase
 
         $this->actingAs($facilitator)->get('/facilitator/profile')
             ->assertOk()
-            ->assertSee('FAC-2026-011')
-            ->assertSee('Official facilitator record');
+            ->assertSee('Assigned component')
+            ->assertSee('CWTS')
+            ->assertDontSee('FAC-2026-011')
+            ->assertDontSee('Official facilitator record')
+            ->assertDontSee('Specialization');
 
         $this->actingAs($facilitator)->put('/facilitator/profile', [
             'name' => $facilitator->name,
@@ -90,7 +96,7 @@ class FacilitatorRecordTest extends TestCase
             'designation' => 'NSTP Facilitator',
             'employment_status' => 'contractual',
             'contact_number' => '09181234567',
-            'specialization' => 'Literacy education',
+            'specialization' => null,
         ]);
     }
 
@@ -102,6 +108,6 @@ class FacilitatorRecordTest extends TestCase
         $this->actingAs($admin)->post('/admin/users', [
             'email' => 'new.facilitator@example.test',
             'role' => 'facilitator',
-        ])->assertSessionHasErrors(['nstp_component_id', 'contact_number']);
+        ])->assertSessionHasErrors(['name', 'nstp_component_id', 'contact_number']);
     }
 }
