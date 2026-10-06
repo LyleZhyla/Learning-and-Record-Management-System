@@ -67,6 +67,7 @@ class RegistrationDocumentReviewTest extends TestCase
         $this->assertNotNull($registration->reviewed_at);
 
         $student = User::where('email', $registration->email)->firstOrFail();
+        $this->assertSame('Juan Santos Dela Cruz', $student->name);
         $this->assertSame('student', $student->role);
         $this->assertSame('active', $student->status);
         $this->assertTrue($student->must_change_password);
@@ -77,10 +78,11 @@ class RegistrationDocumentReviewTest extends TestCase
             'student_number' => $registration->student_number,
         ]);
         $this->assertDatabaseHas('student_registrations', ['id' => $registration->id, 'status' => 'verified']);
-        Queue::assertPushed(SendAccountCredentials::class, fn (SendAccountCredentials $job) => $job->userId === $student->id);
+        Queue::assertNotPushed(SendAccountCredentials::class);
 
         $this->actingAs($admin)->get(route('nstp_admin.students.index'))
             ->assertOk()
+            ->assertSee($student->name)
             ->assertSee($student->email);
 
         $this->actingAs($admin)

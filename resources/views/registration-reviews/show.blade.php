@@ -12,7 +12,7 @@
 
     @if(session('temporary_password'))
         <section class="card credential-reveal" aria-label="New student login credentials">
-            <div><span class="eyebrow">Student account created</span><h3>Temporary login credentials</h3><p>{{ session('credentials_email_sent') ? 'The credentials were queued for email delivery. Keep this copy until the student confirms access.' : 'The credentials email could not be queued. Give these credentials to the student securely.' }}</p></div>
+            <div><span class="eyebrow">Student account created</span><h3>Temporary login credentials</h3><p>No email was sent automatically. Copy these credentials securely, or use “Email selected students” from Student Accounts when you are ready to notify the student.</p></div>
             <dl><div><dt>Email</dt><dd>{{ session('temporary_password_email') }}</dd></div><div><dt>Temporary password</dt><dd><code data-temporary-password>{{ session('temporary_password') }}</code><button type="button" data-copy-temporary-password>Copy password</button></dd></div></dl>
         </section>
     @endif

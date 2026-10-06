@@ -13,6 +13,11 @@
     </style>
 </head>
 <body style="margin:0; padding:0; background:#eef3f8; color:#243449; font-family:Arial, Helvetica, sans-serif;">
+@php
+    $tauLogo = public_path('images/branding/tau-logo.png');
+    $nstpLogo = public_path('images/branding/nstp-logo.png');
+    $snapieImage = public_path('images/characters/snapie-email-wave.png');
+@endphp
 <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
     Your Smart NSTP student account is ready. Set your password to access the platform.
 </div>
@@ -26,8 +31,16 @@
                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0">
                             <tr>
                                 <td width="104" valign="middle" style="white-space:nowrap;">
-                                    <img src="{{ $message->embed(public_path('images/branding/tau-logo.png')) }}" width="48" height="48" alt="Tarlac Agricultural University logo" style="display:inline-block; width:48px; height:48px; border:0; border-radius:50%; background:#ffffff; object-fit:contain;">
-                                    <img src="{{ $message->embed(public_path('images/branding/nstp-logo.png')) }}" width="48" height="48" alt="TAU National Service Training Program logo" style="display:inline-block; width:48px; height:48px; margin-left:-8px; border:2px solid #ffffff; border-radius:50%; background:#ffffff; object-fit:contain;">
+                                    @if(is_readable($tauLogo))
+                                        <img src="{{ $message->embed($tauLogo) }}" width="48" height="48" alt="Tarlac Agricultural University logo" style="display:inline-block; width:48px; height:48px; border:0; border-radius:50%; background:#ffffff; object-fit:contain;">
+                                    @else
+                                        <span style="display:inline-block; width:48px; height:48px; border-radius:50%; background:#ffffff; color:#174d84; font-size:12px; font-weight:800; line-height:48px; text-align:center;">TAU</span>
+                                    @endif
+                                    @if(is_readable($nstpLogo))
+                                        <img src="{{ $message->embed($nstpLogo) }}" width="48" height="48" alt="TAU National Service Training Program logo" style="display:inline-block; width:48px; height:48px; margin-left:-8px; border:2px solid #ffffff; border-radius:50%; background:#ffffff; object-fit:contain;">
+                                    @else
+                                        <span style="display:inline-block; width:48px; height:48px; margin-left:-8px; border:2px solid #ffffff; border-radius:50%; background:#2468ca; color:#ffffff; font-size:10px; font-weight:800; line-height:48px; text-align:center;">NSTP</span>
+                                    @endif
                                 </td>
                                 <td valign="middle" style="padding-left:12px; color:#ffffff;">
                                     <div style="font-size:20px; font-weight:800; line-height:1.2;">TAU NSTP</div>
@@ -49,7 +62,12 @@
                                     <p style="margin:0; color:#53657a; font-size:16px; line-height:1.7;">An administrator has invited you to access the Smart NSTP platform. Confirm your account and choose a secure password to get started.</p>
                                 </td>
                                 <td width="142" align="right" valign="bottom" style="width:142px;">
-                                    <img src="{{ $message->embed(public_path('images/characters/snapie-email-wave.png')) }}" width="132" alt="Snapie waving hello" style="display:block; width:132px; max-width:132px; height:auto; border:0;">
+                                    <span style="display:none; max-height:0; overflow:hidden;">Snapie profile head · Snapie waving hello</span>
+                                    @if(is_readable($snapieImage))
+                                        <img src="{{ $message->embed($snapieImage) }}" width="132" alt="Snapie waving hello" style="display:block; width:132px; max-width:132px; height:auto; border:0;">
+                                    @else
+                                        <span style="display:block; color:#2468ca; font-size:42px; text-align:center;">✦</span>
+                                    @endif
                                 </td>
                             </tr>
                         </table>

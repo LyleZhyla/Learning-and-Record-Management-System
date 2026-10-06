@@ -7,7 +7,6 @@ use App\Models\StudentProfile;
 use App\Models\SystemSetting;
 use App\Models\NstpSection;
 use App\Models\User;
-use App\Services\AccountCredentialMailer;
 use App\Services\RegistrationDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +22,6 @@ class RegistrationReviewController extends Controller
 {
     public function __construct(
         private readonly RegistrationDocumentService $documents,
-        private readonly AccountCredentialMailer $credentialMailer,
     ) {}
 
     public function index(Request $request): View
@@ -144,11 +142,9 @@ class RegistrationReviewController extends Controller
 
         $flash = [];
         if ($account && ! $account['existing']) {
-            $emailQueued = $this->credentialMailer->send($account['student'], $account['temporary_password']);
             $flash = [
                 'temporary_password' => $account['temporary_password'],
                 'temporary_password_email' => $account['student']->email,
-                'credentials_email_sent' => $emailQueued,
             ];
         }
 
