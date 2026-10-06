@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
+use App\Models\AiLearningRecommendation;
 use App\Models\Assessment;
 use App\Models\LearningMaterial;
 use App\Services\OpenAiLearningRecommendationService;
@@ -22,10 +23,18 @@ class LearningRecommendationController extends Controller
     public function index(Request $request): View
     {
         $page = $this->pageData($request);
+        $savedRecommendation = $page['enrollment']
+            ? AiLearningRecommendation::query()
+                ->where('student_id', $request->user()->id)
+                ->where('nstp_enrollment_id', $page['enrollment']->id)
+                ->latest()
+                ->first()
+            : null;
 
         return view('student.learning-recommendations', $page + [
-            'guidance' => null,
-            'preferences' => [],
+            'guidance' => $savedRecommendation?->guidance,
+            'preferences' => $savedRecommendation?->preferences ?? [],
+            'savedRecommendation' => $savedRecommendation,
         ]);
     }
 
@@ -60,10 +69,15 @@ class LearningRecommendationController extends Controller
             ])->withInput();
         }
 
-        return view('student.learning-recommendations', $page + [
-            'guidance' => $guidance,
+        AiLearningRecommendation::create([
+            'student_id' => $request->user()->id,
+            'nstp_enrollment_id' => $page['enrollment']->id,
             'preferences' => $preferences,
+            'guidance' => $guidance,
         ]);
+
+        return redirect()->route('student.recommendations.index')
+            ->with('status', 'Your AI learning recommendation was generated and saved.');
     }
 
     /** @return array<string, mixed> */

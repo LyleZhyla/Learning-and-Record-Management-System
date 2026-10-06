@@ -58,10 +58,19 @@ class LearningResourceRecommendationTest extends TestCase
         ])]);
 
         $this->actingAs($student)->post('/student/learning-recommendations', $this->preferences())
+            ->assertRedirect('/student/learning-recommendations')
+            ->assertSessionHas('status');
+
+        $this->assertDatabaseHas('ai_learning_recommendations', [
+            'student_id' => $student->id,
+        ]);
+
+        $this->actingAs($student)->get('/student/learning-recommendations')
             ->assertOk()
             ->assertSee('Your recommended learning path')
             ->assertSee($visibleMaterial->title)
             ->assertSee('Read once, then create a five-point summary.')
+            ->assertSee('Saved')
             ->assertDontSee($hiddenMaterial->title)
             ->assertDontSee('Should be filtered.');
 

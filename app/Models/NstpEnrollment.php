@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class NstpEnrollment extends Model
 {
@@ -60,6 +61,11 @@ class NstpEnrollment extends Model
     public function rotcApprover(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rotc_approved_by');
+    }
+
+    public function aiLearningRecommendations(): HasMany
+    {
+        return $this->hasMany(AiLearningRecommendation::class);
     }
 
     protected function casts(): array

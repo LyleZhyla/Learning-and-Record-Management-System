@@ -13,6 +13,9 @@
     </div>
 </section>
 
+@if(session('status'))
+    <div class="alert success" role="status">{{ session('status') }}</div>
+@endif
 @unless($isConfigured)
     <div class="alert warning"><strong>AI learning recommendations are not configured.</strong> Please contact the system administrator.</div>
 @endunless
@@ -68,7 +71,7 @@
 
 @if($guidance)
 <section class="learning-path-results" aria-labelledby="learning-path-title">
-    <div class="learning-path-heading"><div><span class="eyebrow">Personalized advisory result</span><h2 id="learning-path-title">Your recommended learning path</h2><p>{{ $guidance['overview'] }}</p></div><span>Based on current available materials</span></div>
+    <div class="learning-path-heading"><div><span class="eyebrow">Personalized advisory result</span><h2 id="learning-path-title">Your recommended learning path</h2><p>{{ $guidance['overview'] }}</p></div><span>{{ $savedRecommendation ? 'Saved '.$savedRecommendation->created_at->format('M d, Y · h:i A') : 'Based on current available materials' }}</span></div>
 
     <div class="recommended-material-list">
         @foreach($guidance['recommendations'] as $index => $recommendation)

@@ -157,6 +157,11 @@ class User extends Authenticatable
         return $this->hasMany(NstpEnrollment::class, 'student_id');
     }
 
+    public function aiLearningRecommendations(): HasMany
+    {
+        return $this->hasMany(AiLearningRecommendation::class, 'student_id');
+    }
+
     public function latestNstpEnrollment(): HasOne
     {
         return $this->hasOne(NstpEnrollment::class, 'student_id')->latestOfMany();
