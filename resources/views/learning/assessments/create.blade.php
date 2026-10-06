@@ -27,7 +27,7 @@
         <section class="embedded-answer-sheet" data-answer-sheet-option hidden>
             <div class="answer-sheet-choice-heading"><div><span class="eyebrow">Optional scanner setup</span><h3>Create an answer sheet?</h3><p>If Yes, the assessment and printable answer sheet will be saved together.</p></div></div>
             <div class="answer-sheet-toggle" role="radiogroup" aria-label="Create an answer sheet">
-                <label><input type="radio" name="create_answer_sheet" value="1" @checked(old('create_answer_sheet')==='1')><span><strong>Yes</strong><small>Create answer key now</small></span></label>
+                <label><input type="radio" name="create_answer_sheet" value="1" @checked(old('create_answer_sheet')==='1')><span><strong>Yes</strong><small>Answer key can be added later</small></span></label>
                 <label><input type="radio" name="create_answer_sheet" value="0" @checked(old('create_answer_sheet','0')==='0')><span><strong>No</strong><small>Assessment only</small></span></label>
             </div>
 
@@ -36,7 +36,7 @@
                     <label class="field-group"><span>Number of items</span><input type="number" name="item_count" min="1" max="30" value="{{ old('item_count',20) }}" data-item-count></label>
                     <label class="field-group"><span>Choices per item</span><select name="choice_count" data-choice-count><option value="2" @selected(old('choice_count')==2)>A–B</option><option value="3" @selected(old('choice_count')==3)>A–C</option><option value="4" @selected(old('choice_count',4)==4)>A–D</option><option value="5" @selected(old('choice_count')==5)>A–E</option></select></label>
                 </div>
-                <div class="answer-key-heading"><strong>Correct answers</strong><small>Click a letter for every question.</small></div>
+                <div class="answer-key-heading"><strong>Correct answers (optional)</strong><small>Complete every item now, or leave all items blank and add the key later.</small></div>
                 <div class="answer-key-grid" data-answer-key-grid></div>
             </div>
         </section>

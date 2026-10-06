@@ -102,6 +102,7 @@ $omrScannerRoutes = function (): void {
     Route::get('/answer-sheet-scanner', [OmrScannerController::class, 'index'])->name('omr.index');
     Route::post('/answer-sheet-scanner', [OmrScannerController::class, 'store'])->name('omr.store');
     Route::get('/answer-sheet-scanner/{sheet}', [OmrScannerController::class, 'show'])->name('omr.show');
+    Route::put('/answer-sheet-scanner/{sheet}/answer-key', [OmrScannerController::class, 'updateAnswerKey'])->name('omr.answer-key.update');
     Route::get('/answer-sheet-scanner/{sheet}/print', [OmrScannerController::class, 'printable'])->name('omr.print');
     Route::post('/answer-sheet-scanner/{sheet}/grade', [OmrScannerController::class, 'grade'])->name('omr.grade');
 };

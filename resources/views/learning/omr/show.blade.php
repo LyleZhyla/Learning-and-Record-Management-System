@@ -3,12 +3,30 @@
 @section('page-title', 'Answer Sheet Scanner')
 
 @section('content')
+@php($hasAnswerKey = $sheet->hasCompleteAnswerKey())
 <div class="back-row"><a href="{{ route($routePrefix.'.omr.index') }}">← Back to answer sheets</a></div>
 <section class="card omr-session-header">
     <div><span class="eyebrow">{{ $sheet->assessment->section->component->code }} · {{ $sheet->assessment->section->code }}</span><h2>{{ $sheet->assessment->title }}</h2><p>{{ $sheet->item_count }} items · Choices A–{{ chr(64 + $sheet->choice_count) }} · {{ number_format($sheet->assessment->max_score,2) }} maximum points</p></div>
     <a class="secondary-outline-button" href="{{ route($routePrefix.'.omr.print',$sheet) }}" target="_blank">Print blank answer sheet</a>
 </section>
 
+@unless($hasAnswerKey)
+<section class="card omr-key-card">
+    <div class="card-heading"><div><span class="eyebrow">Scanning locked</span><h3>Add the answer key first</h3><p>The blank answer sheet is ready to print, but camera, upload, and manual scanning remain unavailable until every correct answer is saved.</p></div></div>
+    <form method="POST" action="{{ route($routePrefix.'.omr.answer-key.update', $sheet) }}" data-answer-key-builder data-require-answer-key>
+        @csrf
+        @method('PUT')
+        <input type="hidden" value="{{ $sheet->item_count }}" data-item-count>
+        <input type="hidden" value="{{ $sheet->choice_count }}" data-choice-count>
+        <div class="answer-key-heading"><strong>Correct answers</strong><small>Select one answer for every item to unlock scanning.</small></div>
+        <div class="answer-key-grid" data-answer-key-grid></div>
+        <script type="application/json" data-old-answer-key>@json(array_values(old('answers', $sheet->answer_key ?? [])))</script>
+        <div class="form-actions"><button class="primary-button compact">Save answer key & unlock scanner</button></div>
+    </form>
+</section>
+@endunless
+
+@if($hasAnswerKey)
 <div class="omr-scanner-layout">
     <section class="card omr-camera-card" data-omr-scanner data-endpoint="{{ route($routePrefix.'.omr.grade',$sheet) }}" data-items="{{ $sheet->item_count }}" data-choices="{{ $sheet->choice_count }}">
         <div class="card-heading"><div><span class="eyebrow">Live paper scanner</span><h3>Align and capture</h3><p>Keep all four black corner markers inside the guide.</p></div></div>
@@ -43,4 +61,7 @@
 </div>
 
 <script src="{{ asset('js/omr-scanner.js') }}?v={{ filemtime(public_path('js/omr-scanner.js')) }}"></script>
+@else
+<script src="{{ asset('js/answer-key-builder.js') }}?v={{ filemtime(public_path('js/answer-key-builder.js')) }}"></script>
+@endif
 @endsection

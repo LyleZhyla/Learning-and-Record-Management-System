@@ -32,7 +32,7 @@
         choiceInput.disabled = !active;
         grid.querySelectorAll('input[type="radio"]').forEach((radio) => {
             radio.disabled = !active;
-            radio.required = active;
+            radio.required = active && form.hasAttribute('data-require-answer-key');
         });
     }
 
@@ -66,7 +66,7 @@
                 radio.type = 'radio';
                 radio.name = `answers[${index}]`;
                 radio.value = letter;
-                radio.required = true;
+                radio.required = form.hasAttribute('data-require-answer-key');
                 radio.checked = selected === letter;
                 text.textContent = letter;
                 label.append(radio, text);

@@ -40,16 +40,16 @@ class OmrScannerController extends Controller
             'assessment_id' => ['required', 'integer', 'exists:assessments,id', 'unique:omr_sheets,assessment_id'],
             'item_count' => ['required', 'integer', 'min:1', 'max:30'],
             'choice_count' => ['required', 'integer', 'min:2', 'max:5'],
-            'answers' => ['required', 'array'],
+            'answers' => ['nullable', 'array'],
             'answers.*' => ['required', Rule::in(['A', 'B', 'C', 'D', 'E'])],
         ]);
 
         $assessment = Assessment::with('section')->findOrFail($validated['assessment_id']);
         $this->ensureCanUse($request->user(), $assessment);
-        $answers = array_values($validated['answers']);
+        $answers = array_values($validated['answers'] ?? []);
 
-        if (count($answers) !== (int) $validated['item_count']) {
-            throw ValidationException::withMessages(['answers' => 'Provide one correct answer for every item.']);
+        if ($answers !== [] && count($answers) !== (int) $validated['item_count']) {
+            throw ValidationException::withMessages(['answers' => 'Complete the answer key for every item, or leave all answers blank to add it later.']);
         }
 
         $allowed = array_slice(['A', 'B', 'C', 'D', 'E'], 0, (int) $validated['choice_count']);
@@ -66,7 +66,23 @@ class OmrScannerController extends Controller
         ]);
 
         return redirect()->route($this->routePrefix($request).'.omr.show', $sheet)
-            ->with('status', 'Answer sheet scanner created. Print the template before scanning student papers.');
+            ->with('status', $answers === []
+                ? 'Blank answer sheet created. Add the answer key before scanning student papers.'
+                : 'Answer sheet scanner created. Print the template before scanning student papers.');
+    }
+
+    public function updateAnswerKey(Request $request, OmrSheet $sheet): RedirectResponse
+    {
+        $sheet->load('assessment.section');
+        $this->ensureCanUse($request->user(), $sheet->assessment);
+        $validated = $request->validate([
+            'answers' => ['required', 'array', 'size:'.$sheet->item_count],
+            'answers.*' => ['required', Rule::in(array_slice(['A', 'B', 'C', 'D', 'E'], 0, $sheet->choice_count))],
+        ]);
+
+        $sheet->update(['answer_key' => array_values($validated['answers'])]);
+
+        return back()->with('status', 'Answer key saved. Scanning is now available.');
     }
 
     public function show(Request $request, OmrSheet $sheet): View
@@ -92,6 +108,13 @@ class OmrScannerController extends Controller
     {
         $sheet->load('assessment.section');
         $this->ensureCanUse($request->user(), $sheet->assessment);
+
+        if (! $sheet->hasCompleteAnswerKey()) {
+            throw ValidationException::withMessages([
+                'answer_key' => 'Add a complete answer key before scanning or grading student papers.',
+            ]);
+        }
+
         $validated = $request->validate([
             'student_id' => [
                 'required', 'integer',

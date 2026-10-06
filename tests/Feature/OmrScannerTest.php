@@ -58,6 +58,62 @@ class OmrScannerTest extends TestCase
             ->assertOk()->assertSee('SNAPIE ANSWER SHEET')->assertSee('<svg', false);
     }
 
+    public function test_facilitator_can_create_and_print_answer_sheet_without_answer_key(): void
+    {
+        $response = $this->actingAs($this->facilitator)->post('/facilitator/answer-sheet-scanner', [
+            'assessment_id' => $this->assessment->id,
+            'item_count' => 4,
+            'choice_count' => 4,
+        ]);
+
+        $sheet = OmrSheet::firstOrFail();
+        $response->assertRedirect('/facilitator/answer-sheet-scanner/'.$sheet->id);
+        $this->assertSame([], $sheet->answer_key);
+        $this->actingAs($this->facilitator)->get('/facilitator/answer-sheet-scanner/'.$sheet->id.'/print')
+            ->assertOk()->assertSee('SNAPIE ANSWER SHEET');
+        $this->actingAs($this->facilitator)->get('/facilitator/answer-sheet-scanner/'.$sheet->id)
+            ->assertOk()
+            ->assertSee('Scanning locked')
+            ->assertSee('Save answer key & unlock scanner', false)
+            ->assertDontSee('data-omr-scanner', false);
+    }
+
+    public function test_scanning_is_rejected_until_a_complete_answer_key_is_saved(): void
+    {
+        $sheet = OmrSheet::create([
+            'assessment_id' => $this->assessment->id,
+            'created_by' => $this->facilitator->id,
+            'item_count' => 4,
+            'choice_count' => 4,
+            'answer_key' => [],
+        ]);
+
+        $this->actingAs($this->facilitator)->postJson('/facilitator/answer-sheet-scanner/'.$sheet->id.'/grade', [
+            'student_id' => $this->student->id,
+            'answers' => ['A', 'B', 'C', 'D'],
+        ])->assertUnprocessable()->assertJsonValidationErrors('answer_key');
+
+        $this->actingAs($this->facilitator)->put('/facilitator/answer-sheet-scanner/'.$sheet->id.'/answer-key', [
+            'answers' => ['A', 'B', 'C', 'D'],
+        ])->assertRedirect();
+
+        $this->assertSame(['A', 'B', 'C', 'D'], $sheet->fresh()->answer_key);
+        $this->actingAs($this->facilitator)->get('/facilitator/answer-sheet-scanner/'.$sheet->id)
+            ->assertOk()->assertSee('data-omr-scanner', false);
+    }
+
+    public function test_partial_answer_key_is_not_accepted_when_creating_a_sheet(): void
+    {
+        $this->actingAs($this->facilitator)->from('/facilitator/answer-sheet-scanner')->post('/facilitator/answer-sheet-scanner', [
+            'assessment_id' => $this->assessment->id,
+            'item_count' => 4,
+            'choice_count' => 4,
+            'answers' => [0 => 'A', 2 => 'C'],
+        ])->assertRedirect('/facilitator/answer-sheet-scanner')->assertSessionHasErrors('answers');
+
+        $this->assertDatabaseCount('omr_sheets', 0);
+    }
+
     public function test_facilitator_can_create_a_quiz_and_answer_sheet_together(): void
     {
         $this->actingAs($this->facilitator)->get('/facilitator/assessments/create')
@@ -80,6 +136,26 @@ class OmrScannerTest extends TestCase
         $sheet = OmrSheet::where('assessment_id', $assessment->id)->firstOrFail();
         $response->assertRedirect('/facilitator/answer-sheet-scanner/'.$sheet->id);
         $this->assertSame(['A', 'B', 'C', 'D', 'A'], $sheet->answer_key);
+    }
+
+    public function test_facilitator_can_create_assessment_with_blank_answer_sheet(): void
+    {
+        $response = $this->actingAs($this->facilitator)->post('/facilitator/assessments', [
+            'section_id' => $this->section->id,
+            'grading_category_id' => $this->section->gradingCategories()->where('name', 'Quizzes')->value('id'),
+            'title' => 'Blank Sheet Quiz',
+            'type' => 'quiz',
+            'max_score' => 20,
+            'status' => 'published',
+            'create_answer_sheet' => 1,
+            'item_count' => 5,
+            'choice_count' => 4,
+        ]);
+
+        $assessment = Assessment::where('title', 'Blank Sheet Quiz')->firstOrFail();
+        $sheet = OmrSheet::where('assessment_id', $assessment->id)->firstOrFail();
+        $response->assertRedirect('/facilitator/answer-sheet-scanner/'.$sheet->id);
+        $this->assertSame([], $sheet->answer_key);
     }
 
     public function test_coordinator_can_choose_to_create_an_exam_without_an_answer_sheet(): void

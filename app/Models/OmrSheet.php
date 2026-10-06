@@ -29,4 +29,13 @@ class OmrSheet extends Model
     {
         return $this->hasMany(OmrScanResult::class);
     }
+
+    public function hasCompleteAnswerKey(): bool
+    {
+        $allowed = array_slice(['A', 'B', 'C', 'D', 'E'], 0, $this->choice_count);
+
+        return is_array($this->answer_key)
+            && count($this->answer_key) === $this->item_count
+            && collect($this->answer_key)->every(fn ($answer) => in_array($answer, $allowed, true));
+    }
 }

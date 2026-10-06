@@ -85,7 +85,7 @@ class AssessmentController extends Controller
             'create_answer_sheet' => ['required', 'boolean'],
             'item_count' => ['nullable', 'required_if:create_answer_sheet,1', 'integer', 'min:1', 'max:30'],
             'choice_count' => ['nullable', 'required_if:create_answer_sheet,1', 'integer', 'min:2', 'max:5'],
-            'answers' => ['nullable', 'required_if:create_answer_sheet,1', 'array'],
+            'answers' => ['nullable', 'array'],
             'answers.*' => ['required', Rule::in(['A', 'B', 'C', 'D', 'E'])],
         ]);
         $validated['rubric'] = $this->encodeRubric($validated['rubric_criteria'] ?? [], (float) $validated['max_score']);
@@ -106,8 +106,8 @@ class AssessmentController extends Controller
         }
 
         $answers = array_values($validated['answers'] ?? []);
-        if ($createAnswerSheet && count($answers) !== (int) $validated['item_count']) {
-            throw ValidationException::withMessages(['answers' => 'Provide one correct answer for every item.']);
+        if ($createAnswerSheet && $answers !== [] && count($answers) !== (int) $validated['item_count']) {
+            throw ValidationException::withMessages(['answers' => 'Complete the answer key for every item, or leave all answers blank to add it later.']);
         }
         if ($createAnswerSheet) {
             $allowed = array_slice(['A', 'B', 'C', 'D', 'E'], 0, (int) $validated['choice_count']);
@@ -133,7 +133,9 @@ class AssessmentController extends Controller
 
         if ($sheet) {
             return redirect()->route($this->access->routePrefix($request->user()).'.omr.show', $sheet)
-                ->with('status', 'Assessment and answer sheet created successfully.');
+                ->with('status', $answers === []
+                    ? 'Assessment and blank answer sheet created. Add the answer key before scanning.'
+                    : 'Assessment and answer sheet created successfully.');
         }
 
         if ($request->user()->isCoordinator()) {
