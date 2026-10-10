@@ -167,7 +167,8 @@ button { color: inherit; }
 .services-section { color: white; background: var(--green-800); }
 .services-grid { display: grid; grid-template-columns: .75fr 1.25fr; gap: 100px; }
 .services-heading h2 { color: white; }
-.services-heading > p:last-child { max-width: 400px; color: rgba(255,255,255,.66); }
+.services-heading > p:not(.eyebrow) { max-width: 400px; color: rgba(255,255,255,.66); }
+.service-request-button { margin-top: 24px; }
 .service-links { border-top: 1px solid rgba(255,255,255,.25); }
 .service-links a { display: grid; grid-template-columns: 50px 1fr auto; align-items: center; gap: 20px; min-height: 108px; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,.25); transition: padding .25s, color .25s; }
 .service-links a:hover { padding-left: 12px; color: var(--gold-light); }

@@ -54,6 +54,7 @@ use App\Http\Controllers\Portal\MessageController as PortalMessageController;
 use App\Http\Controllers\Portal\ProfileController as PortalProfileController;
 use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\ProjectTaskController;
+use App\Http\Controllers\PublicServiceRequestController;
 use App\Http\Controllers\RegistrationReviewController;
 use App\Http\Controllers\SerialNumberVerificationController;
 use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
@@ -75,6 +76,10 @@ Route::get('/', LandingPageController::class)->name('landing');
 Route::get('/community-feedback/{communityProject}/{token}', [EvaluationController::class, 'communityForm'])->name('community-feedback.create');
 Route::post('/community-feedback/{communityProject}/{token}', [EvaluationController::class, 'storeCommunity'])->middleware('throttle:10,1')->name('community-feedback.store');
 Route::get('/verify/serial', SerialNumberVerificationController::class)->middleware('throttle:20,1')->name('serial-numbers.verify');
+Route::get('/services/requests', [PublicServiceRequestController::class, 'create'])->name('service-requests.create');
+Route::post('/services/requests', [PublicServiceRequestController::class, 'store'])->middleware('throttle:5,1')->name('service-requests.store');
+Route::get('/services/requests/{nstpServiceRequest}', [PublicServiceRequestController::class, 'show'])
+    ->middleware('throttle:30,1')->name('service-requests.show');
 
 $learningManagementRoutes = function (): void {
     Route::get('/attendance', [ManagementAttendanceController::class, 'index'])->name('attendance.index');
