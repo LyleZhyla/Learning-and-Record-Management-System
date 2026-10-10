@@ -66,6 +66,11 @@ class CommunityProject extends Model
         return $this->hasMany(CommunityProjectActivity::class)->orderBy('scheduled_date')->orderBy('id');
     }
 
+    public function tasks(): HasMany
+    {
+        return $this->hasMany(ProjectTask::class)->orderBy('due_at')->orderBy('id');
+    }
+
     public function approvalLabel(): string
     {
         return self::APPROVAL_STATUSES[$this->approval_status] ?? str($this->approval_status)->headline()->toString();

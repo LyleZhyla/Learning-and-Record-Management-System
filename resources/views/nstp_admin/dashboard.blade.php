@@ -24,7 +24,7 @@
     <section class="card admin-guide-preview" aria-labelledby="nstp-admin-guide-preview-title">
         <div class="admin-guide-preview-icon" aria-hidden="true">?</div>
         <div><span class="eyebrow">NSTP Administrator guide</span><h3 id="nstp-admin-guide-preview-title">Not sure where to begin?</h3><p>Follow the recommended operating order and open each NSTP Administration tool from one guided overview.</p></div>
-        <div class="admin-guide-preview-actions"><button class="primary-button" type="button" data-start-nstp-admin-tour>Start guided tour <span aria-hidden="true">→</span></button><a href="{{ route('nstp_admin.community-projects.index') }}">Community projects →</a><a href="{{ route('nstp_admin.system-guide') }}">Read the full guide</a></div>
+        <div class="admin-guide-preview-actions"><button class="primary-button" type="button" data-start-nstp-admin-tour>Start guided tour <span aria-hidden="true">→</span></button><a href="{{ route('nstp_admin.community-projects.index') }}">Community projects →</a><a href="{{ route('nstp_admin.project-tasks.index') }}">Task monitoring →</a><a href="{{ route('nstp_admin.system-guide') }}">Read the full guide</a></div>
     </section>
 
     <section class="component-overview" aria-label="NSTP components">

@@ -4,7 +4,7 @@
 @section('page-title', 'Community Project')
 
 @section('content')
-    <section class="welcome-banner"><div><span class="eyebrow">{{ $project->reference_number }} · {{ $project->component->code }}</span><h2>{{ $project->title }}</h2><p>{{ $project->section?->code ?? 'Component-wide' }} · Proposed by {{ $project->proposer->name }} · {{ $project->location }}</p></div><div style="display:flex;gap:.6rem;flex-wrap:wrap">@if($canEdit)<a class="secondary-button" href="{{ route($routePrefix.'.community-projects.edit', $project) }}">Edit project</a>@endif<a class="secondary-button" href="{{ route($routePrefix.'.community-projects.index') }}">All projects</a></div></section>
+    <section class="welcome-banner"><div><span class="eyebrow">{{ $project->reference_number }} · {{ $project->component->code }}</span><h2>{{ $project->title }}</h2><p>{{ $project->section?->code ?? 'Component-wide' }} · Proposed by {{ $project->proposer->name }} · {{ $project->location }}</p></div><div style="display:flex;gap:.6rem;flex-wrap:wrap">@if($canEdit)<a class="secondary-button" href="{{ route($routePrefix.'.community-projects.edit', $project) }}">Edit project</a>@endif<a class="secondary-button" href="{{ route($routePrefix.'.project-tasks.index', ['project_id' => $project->id]) }}">Task monitoring</a>@if($canManageImplementation)<a class="secondary-button" href="{{ route($routePrefix.'.project-tasks.create', $project) }}">Assign task</a>@endif<a class="secondary-button" href="{{ route($routePrefix.'.community-projects.index') }}">All projects</a></div></section>
     @if($errors->any())<div class="alert error"><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>@endif
 
     <section class="dashboard-grid two-column" style="margin-bottom:1.25rem">

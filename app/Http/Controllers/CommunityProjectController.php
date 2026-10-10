@@ -243,7 +243,9 @@ class CommunityProjectController extends Controller
         } elseif ($user->isFacilitator()) {
             $query->whereHas('section', fn (Builder $section) => $section->where('facilitator_id', $user->id));
         } elseif ($user->isStudent()) {
-            $query->where('proposed_by', $user->id);
+            $query->where(fn (Builder $scope) => $scope
+                ->where('proposed_by', $user->id)
+                ->orWhereHas('tasks', fn (Builder $task) => $task->where('assigned_to', $user->id)));
         } elseif (! $user->isSuperAdmin() && ! $user->isNstpAdmin()) {
             $query->whereRaw('1 = 0');
         }
@@ -262,7 +264,8 @@ class CommunityProjectController extends Controller
             return false;
         }
         if ($request->user()->isStudent()) {
-            return in_array($project->approval_status, ['pending', 'needs_revision'], true)
+            return $project->proposed_by === $request->user()->id
+                && in_array($project->approval_status, ['pending', 'needs_revision'], true)
                 && $project->implementation_status === 'proposed';
         }
 
