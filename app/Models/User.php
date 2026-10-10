@@ -170,19 +170,37 @@ class User extends Authenticatable
 
     public function studentRecordName(): string
     {
-        $profile = $this->studentProfile;
+        $details = $this->studentProfile ?? $this->latestStudentRegistration;
 
-        if (blank($profile?->last_name) || blank($profile?->first_name)) {
+        if (filled($details?->last_name) && filled($details?->first_name)) {
+            $middleInitial = filled($details->middle_name)
+                ? Str::upper(Str::substr(trim($details->middle_name), 0, 1)).'.'
+                : null;
+
+            $givenNames = collect([$details->first_name, $middleInitial])->filter()->implode(' ');
+
+            return $details->last_name.', '.$givenNames;
+        }
+
+        $parts = collect(preg_split('/\s+/', trim($this->name)) ?: [])->filter()->values();
+
+        if ($parts->count() < 2) {
             return $this->name;
         }
 
-        $middleInitial = filled($profile->middle_name)
-            ? Str::upper(Str::substr(trim($profile->middle_name), 0, 1)).'.'
+        $lastName = $parts->pop();
+        $firstName = $parts->shift();
+        $middleInitial = $parts->isNotEmpty()
+            ? Str::upper(Str::substr($parts->first(), 0, 1)).'.'
             : null;
 
-        $givenNames = collect([$profile->first_name, $middleInitial])->filter()->implode(' ');
+        return $lastName.', '.collect([$firstName, $middleInitial])->filter()->implode(' ');
+    }
 
-        return $profile->last_name.', '.$givenNames;
+    public function studentRecordNumber(): ?string
+    {
+        return $this->studentProfile?->student_number
+            ?? $this->latestStudentRegistration?->student_number;
     }
 
     public function dashboardRouteName(): ?string
@@ -215,6 +233,11 @@ class User extends Authenticatable
     public function studentProfile(): HasOne
     {
         return $this->hasOne(StudentProfile::class);
+    }
+
+    public function latestStudentRegistration(): HasOne
+    {
+        return $this->hasOne(StudentRegistration::class, 'email', 'email')->latestOfMany();
     }
 
     public function facilitatorProfile(): HasOne

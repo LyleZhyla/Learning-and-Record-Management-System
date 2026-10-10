@@ -422,7 +422,10 @@ class AssessmentController extends Controller
             $section->load(['gradingCategories.assessments.submissions', 'gradingSetting']);
             $categories = $section->gradingCategories;
             $settings = $section->gradingSetting;
-            $enrollments = $section->enrollments()->with('student.studentProfile');
+            $enrollments = $section->enrollments()->with([
+                'student.studentProfile',
+                'student.latestStudentRegistration',
+            ]);
 
             if ($selectedMsLevel) {
                 $enrollments->where('rotc_category', $selectedMsLevel);

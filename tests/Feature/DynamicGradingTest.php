@@ -101,8 +101,8 @@ class DynamicGradingTest extends TestCase
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $rotc = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
         $rotcSection = NstpSection::create(['component_id' => $rotc->id, 'facilitator_id' => $facilitator->id, 'code' => 'ROTC-01', 'name' => 'Alpha Company', 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);
-        $msOneStudent = User::factory()->create(['name' => 'Cadet MS One', 'role' => 'student', 'status' => 'active']);
-        $msThirtyOneStudent = User::factory()->create(['name' => 'Cadet MS Thirty One', 'role' => 'student', 'status' => 'active']);
+        $msOneStudent = User::factory()->create(['name' => 'Alpha Cadet', 'role' => 'student', 'status' => 'active']);
+        $msThirtyOneStudent = User::factory()->create(['name' => 'Bravo Officer', 'role' => 'student', 'status' => 'active']);
 
         NstpEnrollment::create(['student_id' => $msOneStudent->id, 'component_id' => $rotc->id, 'section_id' => $rotcSection->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-1', 'status' => 'enrolled']);
         NstpEnrollment::create(['student_id' => $msThirtyOneStudent->id, 'component_id' => $rotc->id, 'section_id' => $rotcSection->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-31', 'status' => 'enrolled']);
@@ -112,8 +112,8 @@ class DynamicGradingTest extends TestCase
             ->assertSee('NSTP grading and class record')
             ->assertSee('data-grade-component', false)
             ->assertSee('data-ms-level', false)
-            ->assertSee('Cadet MS One')
-            ->assertDontSee('Cadet MS Thirty One');
+            ->assertSee('Cadet, Alpha')
+            ->assertDontSee('Officer, Bravo');
 
         $this->actingAs($admin)->get('/admin/grades?component='.$cwtsSection->component_id.'&section='.$cwtsSection->id)
             ->assertOk()
