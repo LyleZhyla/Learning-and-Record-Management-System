@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="The official Smart NSTP portal of Tarlac Agricultural University for student service, community engagement, and program management.">
-    <meta name="theme-color" content="#10264b">
+    <meta name="theme-color" content="#071426">
     <title>Smart NSTP | Tarlac Agricultural University</title>
     <link rel="icon" href="{{ asset('images/branding/tau-logo.png') }}">
     <link rel="preconnect" href="https://www.tau.edu.ph">
@@ -14,46 +14,47 @@
 <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
     <header class="site-header" data-header>
-        <div class="utility-bar"><div class="page-shell utility-inner"><span>Republic of the Philippines</span><a href="https://www.tau.edu.ph" target="_blank" rel="noopener">Tarlac Agricultural University website ↗</a></div></div>
         <nav class="main-nav page-shell" aria-label="Main navigation">
-            <a class="brand" href="#home" aria-label="Smart NSTP home"><img src="{{ asset('images/branding/tau-logo.png') }}" alt="Tarlac Agricultural University seal"><span class="brand-copy"><strong>Tarlac Agricultural University</strong><small>National Service Training Program</small></span></a>
+            <a class="brand" href="#home" aria-label="Smart NSTP home"><span class="brand-seal"><img src="{{ asset('images/branding/tau-logo.png') }}" alt="Tarlac Agricultural University seal"></span><span class="brand-copy"><strong>TAU</strong><small>Smart NSTP</small></span><img class="brand-snapie" src="{{ asset('images/characters/snapie-face.webp') }}" alt="" aria-hidden="true"></a>
             <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu" data-menu-toggle><span></span><span></span><span></span><span class="sr-only">Open menu</span></button>
             <div class="nav-menu" id="site-menu" data-menu>
                 <a href="#home">Home</a><a href="#about">About</a><a href="#components">Components</a><a href="#activities">Activities</a><a href="#announcements">Announcements</a><a href="#services">Services</a><a href="#faqs">FAQs</a><a href="#contact">Contact</a>
                 <a class="nav-portal" href="{{ route('login') }}">Student Portal <span aria-hidden="true">→</span></a>
             </div>
+            <button class="sound-toggle" type="button" aria-label="Toggle background video sound" aria-pressed="false" data-sound-toggle><svg viewBox="0 0 40 40" aria-hidden="true"><path class="speaker-body" d="M8 16h6l8-6v20l-8-6H8z"/><path class="sound-wave" d="M26 15c3 3 3 7 0 10M30 11c5 5 5 13 0 18"/></svg></button>
         </nav>
     </header>
 
     <main id="main-content">
         <section class="hero" id="home" aria-labelledby="hero-title">
+            <video class="hero-video" autoplay muted loop playsinline preload="metadata" poster="https://tau.edu.ph/images/Content/2026/70.jpg" data-hero-video>
+                <source src="https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20261005_182346_a590ff3b-72e5-41ce-8f69-a8c823eaecaa.mp4" type="video/mp4">
+            </video>
+            <div class="hero-shade hero-shade-horizontal" aria-hidden="true"></div>
+            <div class="hero-shade hero-shade-vertical" aria-hidden="true"></div>
+            <div class="hero-shade hero-shade-corner" aria-hidden="true"></div>
             <div class="page-shell hero-grid">
                 <div class="hero-copy">
-                    <p class="eyebrow"><span></span> Tarlac Agricultural University · NSTP</p>
-                    <h1 id="hero-title">Empowering Students.<br><em>Serving Communities.</em><br>Building Future Leaders.</h1>
-                    <p class="hero-lead">Smart NSTP connects TAU students with purposeful training, community service, and the tools they need to complete their national service journey.</p>
-                    <div class="hero-actions"><a class="button button-primary" href="#components">Explore NSTP <span aria-hidden="true">↓</span></a><a class="button button-light" href="#activities">View activities</a><a class="text-link" href="{{ route('login') }}">Open Student Portal <span aria-hidden="true">↗</span></a></div>
-                    <dl class="hero-facts" aria-label="NSTP program information"><div><dt>ROTC</dt><dd>Defense<br>preparedness</dd></div><div><dt>CWTS</dt><dd>Community<br>welfare</dd></div><div><dt>LTS</dt><dd>Literacy<br>service</dd></div></dl>
+                    <p class="hero-brand">Smart NSTP</p>
+                    <h1 id="hero-title"><span>Empowering Students.</span><span>Serving Communities.</span><span>Building Future Leaders.</span></h1>
+                    <p class="hero-lead"><span>Purposeful training, civic responsibility, and community engagement.</span><span>One digital platform for every TAU NSTP journey.</span></p>
+                    <div class="hero-actions"><a class="button hero-cta" href="{{ route('register') }}">Register for NSTP <span class="action-disc" aria-hidden="true">→</span></a><a class="text-link" href="#components">Explore the program <span aria-hidden="true">↗</span></a></div>
                 </div>
-                <div class="hero-media" aria-label="TAU NSTP in action">
-                    <figure class="hero-photo hero-photo-main"><img src="https://tau.edu.ph/images/Content/2026/70.jpg" alt="TAU NSTP students participating in gender-responsive first-aid training" fetchpriority="high"><figcaption><span>In action</span> Emergency-response skills training</figcaption></figure>
-                    <figure class="hero-photo hero-photo-small"><img src="https://tau.edu.ph/images/Content/2025/613.png" alt="TAU ROTC cadets at the opening of training" fetchpriority="high"><figcaption>Discipline in service</figcaption></figure>
-                </div>
+                <a class="hero-scroll" href="#about">Scroll for program details <span aria-hidden="true">⌄</span></a>
             </div>
-            <div class="hero-ribbon" aria-hidden="true"><span>MAKABAYAN</span><span>MAKATAO</span><span>MAKAKALIKASAN</span><span>MAKADIYOS</span></div>
         </section>
 
-        <section class="section about-section" id="about" aria-labelledby="about-title">
+        <section class="section about-section" id="about" aria-labelledby="about-title" data-section-number="01">
             <div class="page-shell about-grid">
                 <div class="section-heading"><p class="eyebrow dark"><span></span> About the program</p><h2 id="about-title">National Service Training Program</h2></div>
                 <div class="about-copy"><p class="lead-paragraph">The National Service Training Program develops civic consciousness, defense preparedness, and a genuine commitment to nation-building among Filipino youth.</p><p>At TAU, students choose a path that matches how they want to serve—through military training, community welfare initiatives, or literacy education. Smart NSTP supports that journey from registration and enrollment to attendance, assessment, community engagement, and completion.</p><div class="law-note"><span>Republic Act No. 9163</span><p>The NSTP Act of 2001 established ROTC, CWTS, and LTS as the program's three components.</p></div></div>
             </div>
         </section>
 
-        <section class="section components-section" id="components" aria-labelledby="components-title">
+        <section class="section components-section" id="components" aria-labelledby="components-title" data-section-number="02">
             <div class="page-shell">
                 <div class="section-intro"><div><p class="eyebrow dark"><span></span> Program options</p><h2 id="components-title">NSTP Program Components</h2></div><p>Students complete one of three components according to their chosen area of national and community service.</p></div>
-                <div class="component-tabs" role="tablist" aria-label="NSTP components"><button type="button" role="tab" aria-selected="true" aria-controls="component-rotc" id="tab-rotc" data-component-tab="rotc"><span>01</span>ROTC</button><button type="button" role="tab" aria-selected="false" aria-controls="component-cwts" id="tab-cwts" data-component-tab="cwts"><span>02</span>CWTS</button><button type="button" role="tab" aria-selected="false" aria-controls="component-lts" id="tab-lts" data-component-tab="lts"><span>03</span>LTS</button></div>
+                <div class="component-tabs" role="tablist" aria-label="NSTP components"><button type="button" role="tab" aria-selected="true" aria-controls="component-rotc" id="tab-rotc" data-component-tab="rotc"><span>01</span><strong>ROTC</strong><small>Defense preparedness</small></button><button type="button" role="tab" aria-selected="false" aria-controls="component-cwts" id="tab-cwts" data-component-tab="cwts"><span>02</span><strong>CWTS</strong><small>Community welfare</small></button><button type="button" role="tab" aria-selected="false" aria-controls="component-lts" id="tab-lts" data-component-tab="lts"><span>03</span><strong>LTS</strong><small>Literacy service</small></button></div>
                 <div class="component-panels">
                     <article class="component-panel is-active" id="component-rotc" role="tabpanel" aria-labelledby="tab-rotc" data-component-panel="rotc"><div class="component-image"><img src="https://tau.edu.ph/images/Content/2025/613.png" alt="TAU ROTC cadets standing in formation" loading="lazy"><img class="component-mark" src="{{ asset('images/branding/rotc-logo.png') }}" alt=""></div><div class="component-content"><p class="component-code">Reserve Officers' Training Corps</p><h3>Military training and national defense readiness</h3><p>ROTC provides military education and training that prepares students for national defense and public-service leadership.</p><ul><li>Military discipline and drills</li><li>Leadership and teamwork</li><li>Disaster and emergency readiness</li></ul><a class="button button-outline" href="{{ route('register') }}">Begin registration <span aria-hidden="true">→</span></a></div></article>
                     <article class="component-panel" id="component-cwts" role="tabpanel" aria-labelledby="tab-cwts" data-component-panel="cwts" hidden><div class="component-image"><img src="https://tau.edu.ph/images/Content/2026/64.png" alt="TAU community participating in a university-wide clean-up drive" loading="lazy"><img class="component-mark" src="{{ asset('images/branding/cwts-logo.png') }}" alt=""></div><div class="component-content"><p class="component-code">Civic Welfare Training Service</p><h3>Community welfare and civic engagement</h3><p>CWTS equips students to design and carry out activities that improve health, education, environment, safety, and community welfare.</p><ul><li>Community needs assessment</li><li>Environmental and health initiatives</li><li>Project planning and implementation</li></ul><a class="button button-outline" href="{{ route('register') }}">Begin registration <span aria-hidden="true">→</span></a></div></article>
@@ -62,7 +63,7 @@
             </div>
         </section>
 
-        <section class="section activities-section" id="activities" aria-labelledby="activities-title">
+        <section class="section activities-section" id="activities" aria-labelledby="activities-title" data-section-number="03">
             <div class="page-shell">
                 <div class="section-intro activities-intro"><div><p class="eyebrow light"><span></span> News and media</p><h2 id="activities-title">NSTP Activities and Updates</h2></div><p>Explore official TAU stories from training grounds, campus initiatives, and community-centered activities.</p></div>
                 <div class="gallery-filters" role="group" aria-label="Filter activities"><button class="is-active" type="button" data-gallery-filter="all">All</button><button type="button" data-gallery-filter="rotc">ROTC</button><button type="button" data-gallery-filter="cwts">CWTS</button><button type="button" data-gallery-filter="lts">LTS</button><button type="button" data-gallery-filter="photo">Photos</button><button type="button" data-gallery-filter="video">Videos</button></div>
@@ -78,7 +79,7 @@
             </div>
         </section>
 
-        <section class="section announcements-section" id="announcements" aria-labelledby="announcements-title">
+        <section class="section announcements-section" id="announcements" aria-labelledby="announcements-title" data-section-number="04">
             <div class="page-shell">
                 <div class="section-intro compact"><div><p class="eyebrow dark"><span></span> Stay informed</p><h2 id="announcements-title">Latest announcements.</h2></div><a class="text-link dark-link" href="{{ route('login') }}">View all in the portal <span aria-hidden="true">→</span></a></div>
                 <div class="announcement-list">

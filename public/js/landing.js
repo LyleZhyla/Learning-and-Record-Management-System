@@ -2,6 +2,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const header = document.querySelector('[data-header]');
     const menuToggle = document.querySelector('[data-menu-toggle]');
     const menu = document.querySelector('[data-menu]');
+    const soundToggle = document.querySelector('[data-sound-toggle]');
+    const heroVideo = document.querySelector('[data-hero-video]');
 
     const closeMenu = () => {
         if (!menuToggle || !menu) return;
@@ -15,6 +17,23 @@ document.addEventListener('DOMContentLoaded', () => {
         menuToggle.setAttribute('aria-expanded', String(open));
         menu?.classList.toggle('is-open', open);
         document.body.classList.toggle('menu-open', open);
+        if (open) menu?.querySelector('a')?.focus();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || menuToggle?.getAttribute('aria-expanded') !== 'true') return;
+        closeMenu();
+        menuToggle?.focus();
+    });
+    document.addEventListener('click', (event) => {
+        if (menuToggle?.getAttribute('aria-expanded') !== 'true' || header?.contains(event.target)) return;
+        closeMenu();
+    });
+
+    soundToggle?.addEventListener('click', () => {
+        if (!heroVideo) return;
+        heroVideo.muted = !heroVideo.muted;
+        soundToggle.setAttribute('aria-pressed', String(!heroVideo.muted));
     });
 
     menu?.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));

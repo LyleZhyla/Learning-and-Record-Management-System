@@ -19,6 +19,9 @@ class LandingPageTest extends TestCase
             ->assertSee('Empowering Students.')
             ->assertSee('Serving Communities.')
             ->assertSee('Student Portal')
+            ->assertSee('data-hero-video', false)
+            ->assertSee('hf_20261005_182346_a590ff3b-72e5-41ce-8f69-a8c823eaecaa.mp4', false)
+            ->assertSee('Scroll for program details')
             ->assertSee('images/characters/snapie-qr.webp', false)
             ->assertSee(route('register'), false)
             ->assertSee(route('serial-numbers.verify'), false);
