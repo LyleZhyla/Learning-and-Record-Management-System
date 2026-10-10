@@ -436,7 +436,10 @@ class AssessmentController extends Controller
                 ->select('nstp_enrollments.*')
                 ->orderBy('users.name')->get()->map(
                     fn ($enrollment) => ['student' => $enrollment->student] + $this->grades->summary($enrollment->student, $section->id),
-                );
+                )->sortBy(
+                    fn (array $summary) => $summary['student']->studentRecordName(),
+                    SORT_NATURAL | SORT_FLAG_CASE,
+                )->values();
             $gradebookMetrics = [
                 'students' => $allSummaries->count(),
                 'on_track' => $allSummaries->where('progress_status', 'on_track')->count(),

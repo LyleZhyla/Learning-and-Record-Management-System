@@ -95,6 +95,31 @@ class DynamicGradingTest extends TestCase
         $this->actingAs($facilitator)->delete('/facilitator/grades/categories/'.$category->id)->assertForbidden();
     }
 
+    public function test_gradebook_students_are_automatically_sorted_by_surname(): void
+    {
+        [$facilitator, $student, $section] = $this->records();
+        $alphabeticalFirst = User::factory()->create([
+            'name' => 'Amy Anderson',
+            'role' => 'student',
+            'status' => 'active',
+        ]);
+        NstpEnrollment::create([
+            'student_id' => $alphabeticalFirst->id,
+            'component_id' => $section->component_id,
+            'section_id' => $section->id,
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'status' => 'enrolled',
+        ]);
+
+        $this->actingAs($facilitator)->get('/facilitator/grades?section='.$section->id)
+            ->assertOk()
+            ->assertSeeInOrder([
+                'Anderson, Amy',
+                'Dela Cruz, Juan S.',
+            ]);
+    }
+
     public function test_gradebook_filters_sections_by_component_and_rotc_ms_level(): void
     {
         [$facilitator, $student, $cwtsSection] = $this->records();
