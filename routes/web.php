@@ -39,6 +39,7 @@ use App\Http\Controllers\Learning\AttendanceController as ManagementAttendanceCo
 use App\Http\Controllers\Learning\MaterialController;
 use App\Http\Controllers\Learning\OmrScannerController;
 use App\Http\Controllers\Learning\ScheduleController;
+use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NstpAdmin\AccountController as NstpAdminAccountController;
 use App\Http\Controllers\NstpAdmin\AnnouncementController as NstpAdminAnnouncementController;
@@ -69,17 +70,7 @@ use App\Http\Controllers\StudentAccountController;
 use App\Http\Controllers\StudentImportController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    if (! auth()->check()) {
-        return redirect()->route('login');
-    }
-
-    $routeName = auth()->user()->dashboardRouteName();
-
-    abort_unless($routeName, 403, 'A dashboard is not yet available for this account role.');
-
-    return redirect()->route($routeName);
-});
+Route::get('/', LandingPageController::class)->name('landing');
 
 Route::get('/community-feedback/{communityProject}/{token}', [EvaluationController::class, 'communityForm'])->name('community-feedback.create');
 Route::post('/community-feedback/{communityProject}/{token}', [EvaluationController::class, 'storeCommunity'])->middleware('throttle:10,1')->name('community-feedback.store');
