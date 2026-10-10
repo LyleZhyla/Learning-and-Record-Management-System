@@ -30,6 +30,7 @@
         </div>
         <div class="admin-guide-preview-actions">
             <button class="primary-button" type="button" data-start-admin-tour>Start guided tour <span aria-hidden="true">→</span></button>
+            <a href="{{ route('admin.community-projects.index') }}">Community projects →</a>
             <a href="{{ route('admin.system-guide') }}">Read the full guide</a>
         </div>
     </section>

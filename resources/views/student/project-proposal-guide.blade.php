@@ -9,6 +9,7 @@
         <span class="eyebrow">AI-assisted planning</span>
         <h2>Turn your project idea into a clearer proposal.</h2>
         <p>Enter the project you want to do. SNAPIE AI will build starter objectives, activities, risks to verify, and next steps.</p>
+        <a class="secondary-button" href="{{ route('student.community-projects.index') }}">Open Community Project Management →</a>
     </div>
     <div class="proposal-guide-boundary"><span aria-hidden="true">i</span><p><strong>Guidance only</strong> This tool does not approve proposals or make official NSTP decisions. Your facilitator and authorized school officials provide final review.</p></div>
 </section>

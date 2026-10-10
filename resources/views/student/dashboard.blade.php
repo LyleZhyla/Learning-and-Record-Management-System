@@ -11,7 +11,7 @@
     @else
         Your NSTP enrollment and section have not been assigned yet.
     @endif
-</p></div><img class="snapie-character snapie-banner-character" src="{{ asset('images/characters/snapie-wave.webp') }}" alt="SNAPIE mascot waving"><a class="secondary-button" href="{{ route('student.assessments.index') }}">View assessments</a></section>
+</p></div><img class="snapie-character snapie-banner-character" src="{{ asset('images/characters/snapie-wave.webp') }}" alt="SNAPIE mascot waving"><a class="secondary-button" href="{{ route('student.community-projects.index') }}">Community projects</a></section>
 <section class="card admin-guide-preview">
     <span class="admin-guide-preview-icon" aria-hidden="true">?</span>
     <div><span class="eyebrow">Student portal tutorial</span><h3>New to Smart NSTP?</h3><p>Take an interactive tour that highlights the actual pages for enrollment, attendance, learning, project proposal guidance, assessments, grades, communication, AI assistance, and account security.</p></div>
