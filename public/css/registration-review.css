@@ -21,3 +21,30 @@ html[data-theme=dark] .registration-review-progress li>span{color:#c0ccdb;backgr
 @media(max-width:860px){.registration-period-control{align-items:stretch;flex-direction:column}.registration-period-settings>summary{justify-content:space-between}.registration-period-settings form{position:static;width:100%;grid-template-columns:1fr 1fr;margin-top:10px;box-shadow:none}.registration-period-settings form .primary-button{grid-column:1/-1}.registration-review-progress{grid-template-columns:1fr}.registration-review-progress li{border-top:1px solid var(--line);border-left:0}.registration-review-progress li:first-child{border-top:0}}
 @media(max-width:760px){.registration-review-hero{min-height:0;padding:27px 23px;border-radius:19px}.registration-review-hero h2{font-size:28px}.registration-queue-summary{min-width:0}.registration-queue-summary>span{padding:13px 10px}.registration-queue-summary strong{font-size:18px}.registration-record-tabs{width:100%}.registration-record-tabs a{flex:1;justify-content:space-between}.registration-status-grid{grid-template-columns:1fr 1fr}.registration-list-heading{align-items:flex-start}.registration-review-table{min-width:0}.registration-review-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}.registration-review-table,.registration-review-table tbody,.registration-review-table tr,.registration-review-table td{display:block;width:100%}.registration-review-table tbody{display:grid;gap:12px;padding:12px}.registration-review-table tr{overflow:hidden;border:1px solid var(--line);border-radius:14px;background:var(--surface)}.registration-review-table td{position:relative;min-height:48px;padding:14px 14px 14px 42%;border-top:1px solid var(--line);text-align:left!important}.registration-review-table td:first-child{padding-left:14px;border-top:0}.registration-review-table td:not(:first-child)::before{position:absolute;top:16px;left:14px;width:34%;color:var(--muted);content:attr(data-label);font-size:9px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}.registration-review-table .account-row-actions{align-items:flex-start;justify-content:flex-start;flex-direction:column}.registration-review-table .account-row-actions a,.registration-review-table .account-row-actions form,.registration-review-table .account-row-actions button{width:100%}.registration-applicant-header,.registration-section-heading{align-items:flex-start;flex-direction:column}.registration-applicant-identity{align-items:flex-start}.registration-document-grid,.registration-details-grid{grid-template-columns:1fr}.registration-details-grid>div:nth-child(odd):not(.full){border-right:0}.registration-details-grid .full{grid-column:auto}.registration-document-preview{height:320px}}
 @media(max-width:520px){.registration-queue-summary{grid-template-columns:1fr}.registration-queue-summary>span{display:flex;align-items:center;justify-content:space-between;border-top:1px solid rgba(255,255,255,.12);border-left:0}.registration-queue-summary>span:first-child{border-top:0}.registration-queue-summary small{margin:0;text-align:right}.registration-period-settings form,.registration-status-grid{grid-template-columns:1fr}.registration-period-settings form .primary-button{grid-column:auto}.registration-record-tabs{align-items:stretch;flex-direction:column}.registration-list-heading{flex-direction:column}.registration-applicant-avatar{width:44px;height:44px;border-radius:14px}.registration-applicant-header h2{font-size:19px}.registration-section-card,.registration-decision-card{padding:18px}.registration-decision-heading{margin:-18px -18px 16px;padding:19px 18px 16px}.document-actions{flex-direction:column}}
+
+/* Registration review typography scale: body 13–14px, labels 12px, compact metadata 11px. */
+.registration-review-hero p{font-size:14px}
+.registration-review-hero .eyebrow,.registration-period-overview .eyebrow,.registration-list-heading .eyebrow,.registration-applicant-header .eyebrow,.registration-decision-heading .eyebrow{font-size:11px}
+.registration-queue-summary small{font-size:11px}
+.registration-period-overview p,.registration-period-settings>summary,.registration-record-tabs a,.registration-status-card span{font-size:12px}
+.registration-period-settings .field-group>span,.registration-decision-card .field-group>span{font-size:12px}
+.registration-list-heading p,.registration-filter-active{font-size:11px}
+.document-count,.registration-status,.document-health,.document-summary{font-size:11px}
+.registration-review-table .table-action,.registration-review-table .clear-filter{font-size:12px}
+.registration-applicant-header p{font-size:12px}
+.registration-review-progress li>span{font-size:11px}
+.registration-review-progress strong{font-size:13px}
+.registration-review-progress small{font-size:11px}
+.registration-section-heading p{font-size:12px}
+.registration-document-heading strong,.missing-document strong{font-size:14px}
+.registration-document-heading small,.missing-document span,.document-validation-list span{font-size:11px}
+.registration-details-grid dt{font-size:11px}
+.registration-details-grid dd{font-size:14px}
+.registration-decision-heading p{font-size:12px}
+.registration-file-readiness strong{font-size:12px}
+.registration-file-readiness small{font-size:11px}
+.registration-approval-note{font-size:11px}
+.registration-decision-card textarea{font-size:13px}
+.registration-review-audit strong{font-size:12px}
+.registration-review-audit span,.registration-review-audit small{font-size:11px}
+@media(max-width:760px){.registration-review-table td:not(:first-child)::before{font-size:11px}}
