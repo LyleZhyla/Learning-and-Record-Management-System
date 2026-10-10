@@ -6,32 +6,42 @@
 @section('content')
     <section class="registration-review-hero">
         <div>
-            <span class="eyebrow">Document verification</span>
-            <h2>Review student registration documents</h2>
-            <p>Check whether the submitted COR and formal photo are present and valid before recording your verification decision.</p>
+            <span class="eyebrow">Registration review workspace</span>
+            <h2>Verify every application with confidence.</h2>
+            <p>Review the student profile, inspect both required files, and record a clear decision from one focused workspace.</p>
         </div>
-        <span class="registration-review-total">{{ $registrations->total() }} matching registration{{ $registrations->total() === 1 ? '' : 's' }}</span>
+        <div class="registration-queue-summary" aria-label="Registration queue summary">
+            <span><strong>{{ number_format($registrations->total()) }}</strong><small>Matching results</small></span>
+            <span><strong>{{ number_format($activeCount) }}</strong><small>Active records</small></span>
+            <span><strong>{{ number_format($archivedCount) }}</strong><small>Archived</small></span>
+        </div>
     </section>
 
     <section class="card registration-period-control">
-        <div><span class="eyebrow">Registration period</span><h3>{{ $registrationOpen ? 'Public registration is open' : 'Public registration is closed' }}</h3><p>Set the exact academic year and semester saved with every new application.</p></div>
-        <form method="POST" action="{{ route($routePrefix.'.registrations.settings.update') }}">@csrf @method('PATCH')
-            <label class="field-group"><span>Status</span><select name="student_registration_open"><option value="1" @selected($registrationOpen)>Open</option><option value="0" @selected(! $registrationOpen)>Closed</option></select></label>
-            <label class="field-group"><span>Academic year</span><input name="student_registration_academic_year" value="{{ $registrationAcademicYear }}" pattern="\d{4}-\d{4}" required></label>
-            <label class="field-group"><span>Semester</span><select name="student_registration_semester">@foreach($semesters as $value => $label)<option value="{{ $value }}" @selected($registrationSemester === $value)>{{ $label }}</option>@endforeach</select></label>
-            <button class="primary-button compact" type="submit">Update registration period</button>
-        </form>
+        <div class="registration-period-overview">
+            <span class="registration-period-icon {{ $registrationOpen ? 'is-open' : 'is-closed' }}" aria-hidden="true">{{ $registrationOpen ? '●' : '—' }}</span>
+            <div><span class="eyebrow">Public registration period</span><h3>{{ $registrationOpen ? 'Accepting applications' : 'Applications are paused' }}</h3><p>{{ $semesters[$registrationSemester] ?? str($registrationSemester)->headline() }} · {{ $registrationAcademicYear }}</p></div>
+        </div>
+        <details class="registration-period-settings">
+            <summary>Manage registration period <span aria-hidden="true">⌄</span></summary>
+            <form method="POST" action="{{ route($routePrefix.'.registrations.settings.update') }}">@csrf @method('PATCH')
+                <label class="field-group"><span>Status</span><select name="student_registration_open"><option value="1" @selected($registrationOpen)>Open</option><option value="0" @selected(! $registrationOpen)>Closed</option></select></label>
+                <label class="field-group"><span>Academic year</span><input name="student_registration_academic_year" value="{{ $registrationAcademicYear }}" pattern="\d{4}-\d{4}" required></label>
+                <label class="field-group"><span>Semester</span><select name="student_registration_semester">@foreach($semesters as $value => $label)<option value="{{ $value }}" @selected($registrationSemester === $value)>{{ $label }}</option>@endforeach</select></label>
+                <button class="primary-button compact" type="submit">Save period</button>
+            </form>
+        </details>
     </section>
 
-    <div class="registration-status-grid" aria-label="Registration record state">
-        <a href="{{ route($routePrefix.'.registrations.index', ['record_state' => 'active']) }}" class="registration-status-card {{ $recordState === 'active' ? 'selected' : '' }}"><strong>{{ number_format($activeCount) }}</strong><span>Active records</span></a>
-        <a href="{{ route($routePrefix.'.registrations.index', ['record_state' => 'archived']) }}" class="registration-status-card {{ $recordState === 'archived' ? 'selected' : '' }}"><strong>{{ number_format($archivedCount) }}</strong><span>Archived records</span></a>
-    </div>
+    <nav class="registration-record-tabs" aria-label="Registration record state">
+        <a href="{{ route($routePrefix.'.registrations.index', ['record_state' => 'active']) }}" class="{{ $recordState === 'active' ? 'selected' : '' }}"><span>Active review queue</span><strong>{{ number_format($activeCount) }}</strong></a>
+        <a href="{{ route($routePrefix.'.registrations.index', ['record_state' => 'archived']) }}" class="{{ $recordState === 'archived' ? 'selected' : '' }}"><span>Archived records</span><strong>{{ number_format($archivedCount) }}</strong></a>
+    </nav>
 
     @if($recordState === 'active')
-    <div class="registration-status-grid">
+    <div class="registration-status-grid" aria-label="Filter active registrations by review status">
         @foreach($statuses as $value => $label)
-            <a href="{{ route($routePrefix.'.registrations.index', ['status' => $value]) }}" class="registration-status-card {{ request('status') === $value ? 'selected' : '' }}">
+            <a href="{{ route($routePrefix.'.registrations.index', ['status' => $value, 'record_state' => 'active']) }}" class="registration-status-card status-card-{{ $value }} {{ request('status') === $value ? 'selected' : '' }}">
                 <strong>{{ number_format($statusCounts[$value] ?? 0) }}</strong>
                 <span>{{ $label }}</span>
             </a>
@@ -39,7 +49,11 @@
     </div>
     @endif
 
-    <section class="card user-table-card">
+    <section class="card user-table-card registration-list-card">
+        <header class="registration-list-heading">
+            <div><span class="eyebrow">{{ $recordState === 'archived' ? 'Records archive' : 'Review queue' }}</span><h3>{{ $recordState === 'archived' ? 'Archived registrations' : 'Student applications' }}</h3><p>{{ $registrations->total() }} result{{ $registrations->total() === 1 ? '' : 's' }} in the current view</p></div>
+            @if(request()->hasAny(['search', 'status']))<span class="registration-filter-active">Filters active</span>@endif
+        </header>
         <form class="filter-bar" method="GET" action="{{ route($routePrefix.'.registrations.index') }}">
             <input type="hidden" name="record_state" value="{{ $recordState }}">
             <label class="search-field">
@@ -77,7 +91,7 @@
                             $completeCount = collect($documents)->where('complete', true)->count();
                         @endphp
                         <tr>
-                            <td>
+                            <td data-label="Applicant">
                                 <div class="user-cell">
                                     <span class="table-avatar">{{ str($registration->first_name)->substr(0, 1) }}{{ str($registration->last_name)->substr(0, 1) }}</span>
                                     <span>
@@ -86,14 +100,14 @@
                                     </span>
                                 </div>
                             </td>
-                            <td><strong>{{ $registration->student_number }}</strong><br><span class="muted-cell">{{ $registration->college }} · {{ $registration->course }}</span><br><small class="muted-cell">{{ str($registration->nstp_level)->replace('_', ' ')->upper() }} · {{ ucfirst($registration->semester ?? 'Unspecified') }} · {{ $registration->academic_year ?? 'Legacy record' }}</small></td>
-                            <td>{{ $registration->created_at->format('M d, Y') }}<br><span class="muted-cell">{{ $registration->created_at->format('g:i A') }}</span></td>
-                            <td>
+                            <td data-label="Academic details"><strong>{{ $registration->student_number }}</strong><br><span class="muted-cell">{{ $registration->college }} · {{ $registration->course }}</span><br><small class="muted-cell">{{ str($registration->nstp_level)->replace('_', ' ')->upper() }} · {{ ucfirst($registration->semester ?? 'Unspecified') }} · {{ $registration->academic_year ?? 'Legacy record' }}</small></td>
+                            <td data-label="Submitted">{{ $registration->created_at->format('M d, Y') }}<br><span class="muted-cell">{{ $registration->created_at->format('g:i A') }}</span></td>
+                            <td data-label="Required documents">
                                 <span class="document-count {{ $completeCount === 2 ? 'complete' : 'incomplete' }}">{{ $completeCount }} of 2 files available</span>
                                 <small class="document-summary">COR: {{ $documents['cor']['complete'] ? 'ready' : 'issue found' }} · Photo: {{ $documents['formal_photo']['complete'] ? 'ready' : 'issue found' }}</small>
                             </td>
-                            <td><span class="registration-status review-category-badge" style="--review-category-color: {{ $registration->statusColor() }}">{{ $registration->statusLabel() }}</span></td>
-                            <td class="align-right">
+                            <td data-label="Review status"><span class="registration-status review-category-badge" style="--review-category-color: {{ $registration->statusColor() }}">{{ $registration->statusLabel() }}</span></td>
+                            <td class="align-right" data-label="Action">
                                 <div class="account-row-actions">
                                     <a class="table-action" href="{{ route($routePrefix.'.registrations.show', $registration) }}">{{ $registration->archived_at ? 'View record' : 'Review documents' }} →</a>
                                     @if($registration->archived_at)

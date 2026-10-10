@@ -18,13 +18,22 @@
     @endif
 
     <section class="card registration-applicant-header">
-        <div>
+        <div class="registration-applicant-identity">
+            <span class="registration-applicant-avatar">{{ str($registration->first_name)->substr(0, 1) }}{{ str($registration->last_name)->substr(0, 1) }}</span>
+            <div>
             <span class="eyebrow">{{ $registration->reference_code }}</span>
             <h2>{{ $registration->first_name }} {{ $registration->middle_name }} {{ $registration->last_name }} {{ $registration->extension_name }}</h2>
-            <p>Submitted {{ $registration->created_at->format('F d, Y \a\t g:i A') }}</p>
+            <p>{{ $registration->student_number }} · Submitted {{ $registration->created_at->format('F d, Y \a\t g:i A') }}</p>
+            </div>
         </div>
         <span class="registration-status review-category-badge" style="--review-category-color: {{ $registration->statusColor() }}">{{ $registration->statusLabel() }}</span>
     </section>
+
+    <ol class="registration-review-progress" aria-label="Registration review workflow">
+        <li class="is-current"><span>1</span><div><strong>Inspect documents</strong><small>Confirm file quality and validity</small></div></li>
+        <li><span>2</span><div><strong>Check applicant data</strong><small>Compare registration details</small></div></li>
+        <li><span>3</span><div><strong>Record decision</strong><small>Save a status for each file</small></div></li>
+    </ol>
 
     @if($registration->archived_at)
         <section class="card password-boundary-note"><span>▱</span><div><strong>Archived registration</strong><p>Archived {{ $registration->archived_at->format('M d, Y · g:i A') }} by {{ $registration->archiver?->name ?? 'Former administrator' }}. Restore it to change the review decision.</p></div></section>
@@ -106,9 +115,15 @@
         </main>
 
         <aside class="card registration-decision-card">
-            <span class="eyebrow">Admin decision</span>
-            <h3>Record document review</h3>
-            <p>When both documents receive an approved/verified workflow outcome, the enrollment is approved and an active student account is created automatically. The original registration remains in this list for audit and review.</p>
+            <div class="registration-decision-heading"><span class="eyebrow">Final review step</span><h3>Record your decision</h3><p>Approve each valid file or request a correction with clear reviewer notes.</p></div>
+
+            <div class="registration-file-readiness" aria-label="Submitted file readiness">
+                @foreach($checklist as $document)
+                    <div class="{{ $document['complete'] ? 'is-ready' : 'has-issue' }}"><span>{{ $document['complete'] ? '✓' : '!' }}</span><p><strong>{{ $document['label'] }}</strong><small>{{ $document['complete'] ? 'Ready for review' : 'File issue detected' }}</small></p></div>
+                @endforeach
+            </div>
+
+            <p class="registration-approval-note"><span aria-hidden="true">i</span>When both documents are approved, the registration can automatically provision an active student account according to the configured workflow.</p>
 
             @unless($registration->archived_at)
             <form method="POST" action="{{ route($routePrefix.'.registrations.review', $registration) }}">

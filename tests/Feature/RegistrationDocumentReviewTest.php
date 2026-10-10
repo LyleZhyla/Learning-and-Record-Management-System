@@ -26,6 +26,9 @@ class RegistrationDocumentReviewTest extends TestCase
             $this->actingAs($admin)
                 ->get(route($prefix.'.registrations.index'))
                 ->assertOk()
+                ->assertSee('Registration review workspace')
+                ->assertSee('Active review queue')
+                ->assertSee('Manage registration period')
                 ->assertSee($registration->reference_code)
                 ->assertSee('2 of 2 files available');
 
@@ -34,13 +37,24 @@ class RegistrationDocumentReviewTest extends TestCase
                 ->assertOk()
                 ->assertSee('certificate-of-registration.pdf')
                 ->assertSee('formal-photo.jpg')
-                ->assertSee('Document checklist');
+                ->assertSee('Document checklist')
+                ->assertSee('Inspect documents')
+                ->assertSee('Record your decision');
 
             $this->actingAs($admin)
                 ->get(route($prefix.'.registrations.documents.show', [$registration, 'cor']))
                 ->assertOk()
                 ->assertHeader('content-disposition', 'inline; filename=certificate-of-registration.pdf');
         }
+    }
+
+    public function test_registration_review_workspace_has_responsive_dark_mode_styles(): void
+    {
+        $styles = file_get_contents(public_path('css/registration-review.css'));
+
+        $this->assertStringContainsString('html[data-theme=dark] .registration-status-card.selected', $styles);
+        $this->assertStringContainsString('html[data-theme=dark] .registration-decision-card textarea', $styles);
+        $this->assertStringContainsString('.registration-review-table td:not(:first-child)::before', $styles);
     }
 
     public function test_both_documents_must_be_verified_for_the_registration_to_be_document_verified(): void
