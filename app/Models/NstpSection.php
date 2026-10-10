@@ -84,6 +84,11 @@ class NstpSection extends Model
         return $this->hasMany(ChatGroup::class, 'section_id');
     }
 
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(EvaluationResponse::class, 'section_id');
+    }
+
     public function semesterLabel(): string
     {
         return self::SEMESTERS[$this->semester] ?? str($this->semester)->headline()->toString();
