@@ -30,7 +30,7 @@ class OmrScannerController extends Controller
             ->with('section.component')->whereDoesntHave('omrSheet')->latest()->get();
         $sheets = OmrSheet::with(['assessment.section.component', 'creator'])->withCount('results')
             ->whereHas('assessment', fn (Builder $query) => $this->scopeAssessments($query, $request->user()))
-            ->latest()->paginate(12);
+            ->latest()->paginate($this->perPage(12))->withQueryString();
 
         return view('learning.omr.index', $this->context($request) + compact('assessments', 'sheets'));
     }
@@ -134,7 +134,7 @@ class OmrScannerController extends Controller
 
         $validated = $request->validate([
             'student_id' => [
-                'required', 'integer',
+                'nullable', 'integer',
                 Rule::exists('nstp_enrollments', 'student_id')->where('section_id', $sheet->assessment->section_id)->where('status', 'enrolled'),
             ],
             'answers' => ['required', 'array', 'size:'.$sheet->item_count],
@@ -147,15 +147,34 @@ class OmrScannerController extends Controller
         $blank = collect($answers)->filter(fn ($answer) => $answer === null)->count();
         $score = round(($correct / $sheet->item_count) * (float) $sheet->assessment->max_score, 2);
 
-        DB::transaction(function () use ($request, $sheet, $validated, $answers, $correct, $blank, $score): void {
+        $studentId = $validated['student_id'] ?? null;
+        $resultData = [
+            'scanned_by' => $request->user()->id,
+            'answers' => $answers,
+            'correct_count' => $correct,
+            'blank_count' => $blank,
+            'score' => $score,
+            'confidence' => $validated['confidence'] ?? null,
+        ];
+
+        DB::transaction(function () use ($sheet, $studentId, $resultData, $correct, $blank, $score, $request): void {
+            if ($studentId === null) {
+                OmrScanResult::create($resultData + [
+                    'omr_sheet_id' => $sheet->id,
+                    'student_id' => null,
+                ]);
+
+                return;
+            }
+
             OmrScanResult::updateOrCreate(
-                ['omr_sheet_id' => $sheet->id, 'student_id' => $validated['student_id']],
-                ['scanned_by' => $request->user()->id, 'answers' => $answers, 'correct_count' => $correct, 'blank_count' => $blank, 'score' => $score, 'confidence' => $validated['confidence'] ?? null],
+                ['omr_sheet_id' => $sheet->id, 'student_id' => $studentId],
+                $resultData,
             );
 
             $submission = AssessmentSubmission::firstOrNew([
                 'assessment_id' => $sheet->assessment_id,
-                'student_id' => $validated['student_id'],
+                'student_id' => $studentId,
             ]);
             $submission->fill([
                 'answer_text' => $submission->answer_text ?: 'Checked using the SNAPIE Answer Sheet Scanner.',
@@ -168,7 +187,10 @@ class OmrScannerController extends Controller
         });
 
         return response()->json([
-            'message' => "Answer sheet checked: {$correct}/{$sheet->item_count} correct.",
+            'message' => $studentId === null
+                ? "Unassigned answer sheet saved: {$correct}/{$sheet->item_count} correct."
+                : "Answer sheet checked: {$correct}/{$sheet->item_count} correct.",
+            'assigned' => $studentId !== null,
             'correct' => $correct,
             'blank' => $blank,
             'score' => $score,

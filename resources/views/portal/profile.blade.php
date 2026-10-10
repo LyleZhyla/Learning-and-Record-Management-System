@@ -21,25 +21,10 @@
 
             @if($user->isFacilitator())
                 @php($facilitatorProfile = $user->facilitatorProfile)
-                <section class="facilitator-official-record">
-                    <div class="facilitator-record-heading full"><div><span class="eyebrow">Official facilitator record</span><h3>Employment information</h3></div><p>Contact the Super Admin if an official field needs correction.</p></div>
-                    <div><small>Employee number</small><strong>{{ $facilitatorProfile?->employee_number ?? 'Not provided' }}</strong></div>
-                    <div><small>Department / unit</small><strong>{{ $facilitatorProfile?->department ?? 'Not provided' }}</strong></div>
-                    <div><small>Designation</small><strong>{{ $facilitatorProfile?->designation ?? 'Not provided' }}</strong></div>
-                    <div><small>Employment status</small><strong>{{ $facilitatorProfile?->employmentStatusLabel() ?? 'Not provided' }}</strong></div>
-                </section>
-
                 <label for="contact_number">Contact number</label>
                 <input id="contact_number" name="contact_number" type="tel" value="{{ old('contact_number', $facilitatorProfile?->contact_number) }}" maxlength="11" pattern="09[0-9]{9}" placeholder="09XXXXXXXXX">
                 @error('contact_number')<small class="field-error">{{ $message }}</small>@enderror
-
-                <label for="specialization">Specialization</label>
-                <input id="specialization" name="specialization" value="{{ old('specialization', $facilitatorProfile?->specialization) }}" maxlength="255" placeholder="e.g. Community development">
-                @error('specialization')<small class="field-error">{{ $message }}</small>@enderror
-
-                <label for="professional_summary">Professional summary</label>
-                <textarea id="professional_summary" name="professional_summary" rows="4" maxlength="2000">{{ old('professional_summary', $facilitatorProfile?->professional_summary) }}</textarea>
-                @error('professional_summary')<small class="field-error">{{ $message }}</small>@enderror
+                <div class="readonly-field"><span>Assigned component</span><strong>{{ $user->nstpComponent?->code ?? 'Not assigned' }}</strong></div>
             @endif
 
             <div class="readonly-field"><span>Account role</span><strong>{{ $user->roleLabel() }}</strong></div>

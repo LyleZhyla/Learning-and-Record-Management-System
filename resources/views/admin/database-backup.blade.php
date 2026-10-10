@@ -71,6 +71,6 @@
             <tr><td colspan="5"><div class="empty-state"><strong>No database archives yet</strong><span>Create an archive before a major update or data operation.</span></div></td></tr>
         @endforelse
     </tbody></table></div>
-    @if($archives->hasPages())<div class="pagination-row"><span>Showing {{ $archives->firstItem() }}–{{ $archives->lastItem() }} of {{ $archives->total() }}</span>{{ $archives->links() }}</div>@endif
+    @if($archives->total() > 0)<div class="pagination-row"><span>Showing {{ $archives->firstItem() }}–{{ $archives->lastItem() }} of {{ $archives->total() }}</span>{{ $archives->links() }}</div>@endif
 </section>
 @endsection

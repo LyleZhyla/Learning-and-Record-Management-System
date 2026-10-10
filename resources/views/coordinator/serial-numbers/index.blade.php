@@ -35,7 +35,7 @@
             <tr><td colspan="{{ $isProgramAdministrator ? 6 : 5 }}"><div class="empty-state"><strong>No official file uploaded yet</strong><span>Upload the list received by the office to begin encoding.</span></div></td></tr>
         @endforelse
         </tbody></table></div>
-        @if($releases->hasPages())<div class="pagination-row">{{ $releases->links() }}</div>@endif
+        @if($releases->total() > 0)<div class="pagination-row">{{ $releases->links() }}</div>@endif
     </section>
 </div>
 @endsection

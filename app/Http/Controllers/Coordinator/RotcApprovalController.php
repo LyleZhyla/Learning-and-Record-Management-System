@@ -23,7 +23,8 @@ class RotcApprovalController extends Controller
             ->where('rotc_approval_status', 'pending')
             ->where('status', 'pending_approval')
             ->oldest()
-            ->paginate(15);
+            ->paginate($this->perPage())
+            ->withQueryString();
 
         return view('coordinator.rotc-approvals.index', [
             'pendingRequests' => $pendingRequests,

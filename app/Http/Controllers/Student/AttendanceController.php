@@ -23,7 +23,8 @@ class AttendanceController extends Controller
         $records = AttendanceRecord::with('attendanceSession.section.component')
             ->where('student_id', $student->id)
             ->latest('checked_in_at')
-            ->paginate(15);
+            ->paginate($this->perPage())
+            ->withQueryString();
         $qrSvg = $qrCode->generateSvg($student->studentQrPayload());
 
         return view('student.attendance.index', [

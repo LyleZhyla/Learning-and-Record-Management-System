@@ -94,6 +94,6 @@
             <tr><td colspan="5"><div class="empty-state"><strong>No active sections in this term</strong><span>Create or activate sections before generating a schedule.</span></div></td></tr>
         @endforelse
     </tbody></table></div>
-    @if($sections->hasPages())<div class="pagination-row"><span>Showing {{ $sections->firstItem() }}–{{ $sections->lastItem() }} of {{ $sections->total() }}</span>{{ $sections->links() }}</div>@endif
+    @if($sections->total() > 0)<div class="pagination-row"><span>Showing {{ $sections->firstItem() }}–{{ $sections->lastItem() }} of {{ $sections->total() }}</span>{{ $sections->links() }}</div>@endif
 </section>
 @endsection

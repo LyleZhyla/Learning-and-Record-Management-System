@@ -60,7 +60,7 @@ class RegistrationReviewController extends Controller
                 $query->orderByRaw("CASE status {$cases} ELSE ? END", [...$statusOrder->all(), $statusOrder->count()]);
             })
             ->latest('created_at')
-            ->paginate(15)
+            ->paginate($this->perPage())
             ->withQueryString();
 
         $checklists = $registrations->getCollection()

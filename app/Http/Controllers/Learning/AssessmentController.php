@@ -48,7 +48,7 @@ class AssessmentController extends Controller
             ? $this->access->gradebookSections($request->user())
             : $this->access->manageableSections($request->user()))->pluck('id');
         $assessments = Assessment::with(['section.component', 'creator', 'gradingCategory'])->withCount('submissions')
-            ->whereIn('section_id', $sectionIds)->latest()->paginate(15);
+            ->whereIn('section_id', $sectionIds)->latest()->paginate($this->perPage())->withQueryString();
 
         return view('learning.assessments.index', $this->context($request) + compact('assessments'));
     }
@@ -183,7 +183,7 @@ class AssessmentController extends Controller
             ->join('users', 'users.id', '=', 'nstp_enrollments.student_id')
             ->select('nstp_enrollments.*')
             ->orderBy('users.name')
-            ->paginate(15)
+            ->paginate($this->perPage())
             ->withQueryString();
         $assessment->load(['submissions' => fn ($query) => $query
             ->whereIn('student_id', $students->pluck('student_id'))
@@ -448,7 +448,8 @@ class AssessmentController extends Controller
                 'average_completion' => round((float) ($allSummaries->avg('completion_percentage') ?? 0), 1),
             ];
             $page = LengthAwarePaginator::resolveCurrentPage();
-            $summaries = new LengthAwarePaginator($allSummaries->forPage($page, 15)->values(), $allSummaries->count(), 15, $page, [
+            $perPage = $this->perPage();
+            $summaries = new LengthAwarePaginator($allSummaries->forPage($page, $perPage)->values(), $allSummaries->count(), $perPage, $page, [
                 'path' => $request->url(),
                 'query' => $request->query(),
             ]);

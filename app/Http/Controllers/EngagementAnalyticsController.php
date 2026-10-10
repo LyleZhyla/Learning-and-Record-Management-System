@@ -54,7 +54,8 @@ class EngagementAnalyticsController extends Controller
             'at_risk' => $rows->where('status', 'at_risk')->count(),
         ];
         $page = LengthAwarePaginator::resolveCurrentPage();
-        $paginatedRows = new LengthAwarePaginator($rows->forPage($page, 15)->values(), $rows->count(), 15, $page, [
+        $perPage = $this->perPage();
+        $paginatedRows = new LengthAwarePaginator($rows->forPage($page, $perPage)->values(), $rows->count(), $perPage, $page, [
             'path' => $request->url(),
             'query' => $request->query(),
         ]);

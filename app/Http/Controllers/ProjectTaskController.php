@@ -39,7 +39,7 @@ class ProjectTaskController extends Controller
         ];
         $tasks = $baseQuery->with(['project.component', 'project.section', 'assignee', 'assigner', 'reviewer'])
             ->orderByRaw('CASE WHEN due_at IS NULL THEN 1 ELSE 0 END')->orderBy('due_at')->latest('id')
-            ->paginate(15)->withQueryString();
+            ->paginate($this->perPage())->withQueryString();
 
         return view('project-tasks.index', $this->viewContext($request) + [
             'tasks' => $tasks,

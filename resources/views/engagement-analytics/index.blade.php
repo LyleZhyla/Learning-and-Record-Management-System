@@ -48,7 +48,7 @@
         @endforelse
         </tbody>
     </table></div>
-    @if($rows->hasPages())<div class="pagination-row"><span>Showing {{ $rows->firstItem() }}–{{ $rows->lastItem() }} of {{ $rows->total() }}</span>{{ $rows->links() }}</div>@endif
+    @if($rows->total() > 0)<div class="pagination-row"><span>Showing {{ $rows->firstItem() }}–{{ $rows->lastItem() }} of {{ $rows->total() }}</span>{{ $rows->links() }}</div>@endif
 </section>
 
 <section class="card engagement-method-card">

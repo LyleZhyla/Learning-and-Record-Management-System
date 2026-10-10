@@ -18,7 +18,7 @@ class ProfileController extends Controller
 
     public function edit(Request $request): View
     {
-        $user = $request->user()->loadMissing('facilitatorProfile');
+        $user = $request->user()->loadMissing(['facilitatorProfile', 'nstpComponent']);
 
         return view('portal.profile', [
             'user' => $user,
@@ -39,8 +39,6 @@ class ProfileController extends Controller
         if ($user->isFacilitator()) {
             $rules += [
                 'contact_number' => ['nullable', 'regex:/^09[0-9]{9}$/'],
-                'specialization' => ['nullable', 'string', 'max:255'],
-                'professional_summary' => ['nullable', 'string', 'max:2000'],
             ];
         }
 
@@ -58,8 +56,6 @@ class ProfileController extends Controller
                 ['user_id' => $user->id],
                 [
                     'contact_number' => filled($validated['contact_number'] ?? null) ? trim($validated['contact_number']) : null,
-                    'specialization' => filled($validated['specialization'] ?? null) ? trim($validated['specialization']) : null,
-                    'professional_summary' => filled($validated['professional_summary'] ?? null) ? trim($validated['professional_summary']) : null,
                 ]
             );
         }

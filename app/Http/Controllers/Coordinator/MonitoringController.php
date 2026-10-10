@@ -23,7 +23,7 @@ class MonitoringController extends Controller
             ->orderBy('code')->get();
         $component = $components->first();
         $componentSections = $component?->sections()->with('facilitator')->withCount('enrollments')
-            ->orderBy('code')->paginate(10)->withQueryString();
+            ->orderBy('code')->paginate($this->perPage(10))->withQueryString();
         if ($component) {
             $component->setRelation('sections', $componentSections->getCollection());
         }
@@ -40,7 +40,7 @@ class MonitoringController extends Controller
             ->when($filters['component_id'] ?? null, fn ($query, $value) => $query->where('component_id', $value))
             ->when($filters['academic_year'] ?? null, fn ($query, $value) => $query->where('academic_year', $value))
             ->when($filters['semester'] ?? null, fn ($query, $value) => $query->where('semester', $value))
-            ->orderByDesc('academic_year')->orderBy('code')->paginate(15)->withQueryString();
+            ->orderByDesc('academic_year')->orderBy('code')->paginate($this->perPage())->withQueryString();
 
         return view('coordinator.sections', $this->filterOptions() + compact('sections', 'filters'));
     }
@@ -61,7 +61,7 @@ class MonitoringController extends Controller
             ->when($filters['section_id'] ?? null, fn ($query, $value) => $query->where('section_id', $value))
             ->when($filters['date_from'] ?? null, fn ($query, $value) => $query->whereDate('starts_at', '>=', $value))
             ->when($filters['date_to'] ?? null, fn ($query, $value) => $query->whereDate('starts_at', '<=', $value))
-            ->latest('starts_at')->paginate(15)->withQueryString();
+            ->latest('starts_at')->paginate($this->perPage())->withQueryString();
 
         return view('coordinator.attendance', $this->filterOptions() + compact('sessions', 'filters'));
     }
@@ -96,7 +96,8 @@ class MonitoringController extends Controller
             $summaries = $summaries->where('overall_status', $filters['progress_status'])->values();
         }
         $page = LengthAwarePaginator::resolveCurrentPage();
-        $summaries = new LengthAwarePaginator($summaries->forPage($page, 15)->values(), $summaries->count(), 15, $page, [
+        $perPage = $this->perPage();
+        $summaries = new LengthAwarePaginator($summaries->forPage($page, $perPage)->values(), $summaries->count(), $perPage, $page, [
             'path' => $request->url(),
             'query' => $request->query(),
         ]);

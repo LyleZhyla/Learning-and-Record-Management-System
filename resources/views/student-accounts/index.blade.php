@@ -64,7 +64,7 @@
     </table></div>
 
     </form>
-    @if($students->hasPages())<div class="pagination-row"><span>Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }}</span>{{ $students->links() }}</div>@endif
+    @if($students->total() > 0)<div class="pagination-row"><span>Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }}</span>{{ $students->links() }}</div>@endif
 </section>
 
 <dialog class="student-qr-dialog" data-student-qr-dialog>

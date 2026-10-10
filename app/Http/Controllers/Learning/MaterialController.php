@@ -31,7 +31,7 @@ class MaterialController extends Controller
                 $query->whereIn('section_id', $sectionIds)
                     ->orWhere(fn ($q) => $q->whereNull('section_id')->whereIn('component_id', $componentIds));
             })
-            ->latest()->paginate(15);
+            ->latest()->paginate($this->perPage())->withQueryString();
 
         return view('learning.materials.index', $this->context($request) + compact('materials'));
     }

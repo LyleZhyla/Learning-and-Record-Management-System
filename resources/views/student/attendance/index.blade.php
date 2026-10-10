@@ -21,6 +21,6 @@
             <tr><td colspan="7"><div class="empty-state"><strong>No attendance records yet</strong><span>Show your personal QR to your facilitator or coordinator during an active session.</span></div></td></tr>
         @endforelse
     </tbody></table></div>
-    @if($records->hasPages())<div class="pagination-row"><span>Showing {{ $records->count() }} of {{ $records->total() }}</span>{{ $records->links() }}</div>@endif
+    @if($records->total() > 0)<div class="pagination-row"><span>Showing {{ $records->count() }} of {{ $records->total() }}</span>{{ $records->links() }}</div>@endif
 </section>
 @endsection

@@ -33,7 +33,7 @@
         <form class="filter-bar" method="GET" action="{{ route('admin.users.index') }}">
             <label class="search-field">
                 <span aria-hidden="true">⌕</span>
-                <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search name, email, employee no., or department">
+                <input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search name, email, contact, or component">
             </label>
             <select name="role" aria-label="Filter by role">
                 <option value="">All roles</option>
@@ -55,7 +55,7 @@
 
         <div class="table-wrap">
             <table class="data-table">
-                <thead><tr><th>User</th><th>Role</th><th>Staff record</th><th>Status</th><th>Last sign in</th><th class="align-right">Action</th></tr></thead>
+                <thead><tr><th>User</th><th>Role</th><th>Contact / component</th><th>Status</th><th>Last sign in</th><th class="align-right">Action</th></tr></thead>
                 <tbody>
                     @forelse ($users as $user)
                         <tr>
@@ -66,7 +66,7 @@
                                 </div>
                             </td>
                             <td><span class="role-badge role-{{ $user->role }}">{{ $user->roleLabel() }}</span></td>
-                            <td>@if($user->isFacilitator())<strong>{{ $user->facilitatorProfile?->employee_number ?? 'No employee number' }}</strong><small class="table-secondary-line">{{ $user->facilitatorProfile?->department ?? 'Department not provided' }}</small>@else<span class="muted-cell">—</span>@endif</td>
+                            <td>@if($user->isFacilitator())<strong>{{ $user->facilitatorProfile?->contact_number ?? 'No contact number' }}</strong><small class="table-secondary-line">{{ $user->nstpComponent?->code ?? 'No component assigned' }}</small>@elseif($user->isCoordinator())<strong>{{ $user->nstpComponent?->code ?? 'No component assigned' }}</strong>@else<span class="muted-cell">—</span>@endif</td>
                             <td><span class="status-badge {{ $user->status }}"><i></i>{{ $user->statusLabel() }}</span></td>
                             <td class="muted-cell">{{ $user->last_login_at?->format('M d, Y · h:i A') ?? 'Never' }}</td>
                             <td class="align-right"><div class="account-row-actions"><a class="table-action" href="{{ route('admin.users.edit', $user) }}">Edit</a>@if($user->canBePermanentlyDeleted())<a class="link-danger" href="{{ route('admin.users.delete', $user) }}">Delete</a>@endif</div></td>
@@ -78,14 +78,10 @@
             </table>
         </div>
 
-        @if ($users->hasPages())
+        @if ($users->total() > 0)
             <div class="pagination-row">
                 <span>Showing {{ $users->firstItem() }}–{{ $users->lastItem() }} of {{ $users->total() }}</span>
-                <div>
-                    @if ($users->onFirstPage()) <span class="page-button disabled">Previous</span> @else <a class="page-button" href="{{ $users->previousPageUrl() }}">Previous</a> @endif
-                    <span class="page-current">Page {{ $users->currentPage() }} of {{ $users->lastPage() }}</span>
-                    @if ($users->hasMorePages()) <a class="page-button" href="{{ $users->nextPageUrl() }}">Next</a> @else <span class="page-button disabled">Next</span> @endif
-                </div>
+                {{ $users->links() }}
             </div>
         @endif
     </section>

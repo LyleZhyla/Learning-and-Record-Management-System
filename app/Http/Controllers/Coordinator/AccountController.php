@@ -34,7 +34,7 @@ class AccountController extends Controller
             ->when($filters['role'] ?? null, fn ($query, $role) => $query->where('role', $role))
             ->orderByRaw("CASE role WHEN 'facilitator' THEN 1 WHEN 'student' THEN 2 ELSE 3 END")
             ->orderBy('name')
-            ->paginate(15)
+            ->paginate($this->perPage())
             ->withQueryString();
 
         $roleCounts = $this->visibleAccounts($componentId)
@@ -53,21 +53,21 @@ class AccountController extends Controller
         if ($user->isStudent()) {
             $enrollments = $user->nstpEnrollments()->where('component_id', $componentId)
                 ->with(['component', 'section'])->latest('academic_year')
-                ->paginate(10, ['*'], 'enrollments_page')->withQueryString();
+                ->paginate($this->perPage(10), ['*'], 'enrollments_page')->withQueryString();
             $attendanceRecords = $user->attendanceRecords()
                 ->whereHas('attendanceSession.section', fn ($section) => $section->where('component_id', $componentId))
                 ->with('attendanceSession.section.component')->latest('checked_in_at')
-                ->paginate(15, ['*'], 'attendance_page')->withQueryString();
+                ->paginate($this->perPage(), ['*'], 'attendance_page')->withQueryString();
             $submissions = $user->assessmentSubmissions()
                 ->whereHas('assessment.section', fn ($section) => $section->where('component_id', $componentId))
                 ->with('assessment.section.component')->latest('submitted_at')
-                ->paginate(15, ['*'], 'submissions_page')->withQueryString();
+                ->paginate($this->perPage(), ['*'], 'submissions_page')->withQueryString();
             $user->setRelation('nstpEnrollments', $enrollments->getCollection());
             $user->setRelation('attendanceRecords', $attendanceRecords->getCollection());
             $user->setRelation('assessmentSubmissions', $submissions->getCollection());
         } else {
             $handledSections = $user->facilitatedSections()->where('component_id', $componentId)->with('component')
-                ->orderBy('code')->paginate(15, ['*'], 'sections_page')->withQueryString();
+                ->orderBy('code')->paginate($this->perPage(), ['*'], 'sections_page')->withQueryString();
             $user->setRelation('facilitatedSections', $handledSections->getCollection());
         }
 

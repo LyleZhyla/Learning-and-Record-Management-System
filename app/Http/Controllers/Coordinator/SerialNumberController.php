@@ -33,7 +33,7 @@ class SerialNumberController extends Controller
         $releases = NstpSerialNumberRelease::with(['component', 'uploader'])
             ->withCount('serialNumbers')
             ->when($selectedComponentId > 0, fn ($query) => $query->where('component_id', $selectedComponentId))
-            ->latest('received_at')->latest('id')->paginate(15)->withQueryString();
+            ->latest('received_at')->latest('id')->paginate($this->perPage())->withQueryString();
 
         return view('coordinator.serial-numbers.index', [
             'releases' => $releases,

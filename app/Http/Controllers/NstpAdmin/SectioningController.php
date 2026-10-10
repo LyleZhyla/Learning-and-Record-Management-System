@@ -39,7 +39,7 @@ class SectioningController extends Controller
             ->where('semester', $semester)
             ->when($componentId, fn ($query) => $query->where('component_id', $componentId))
             ->orderBy('code')
-            ->paginate(12)
+            ->paginate($this->perPage(12))
             ->withQueryString();
 
         $eligibleStatuses = WorkflowDefinition::ruleEnabled('sectioning', 'enrolled_students_only')

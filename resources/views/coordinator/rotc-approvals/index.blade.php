@@ -25,6 +25,6 @@
         @endforelse
         </tbody>
     </table></div>
-    @if($pendingRequests->hasPages())<div class="pagination-row"><span>Showing {{ $pendingRequests->firstItem() }}–{{ $pendingRequests->lastItem() }} of {{ $pendingRequests->total() }}</span>{{ $pendingRequests->links() }}</div>@endif
+    @if($pendingRequests->total() > 0)<div class="pagination-row"><span>Showing {{ $pendingRequests->firstItem() }}–{{ $pendingRequests->lastItem() }} of {{ $pendingRequests->total() }}</span>{{ $pendingRequests->links() }}</div>@endif
 </section>
 @endsection

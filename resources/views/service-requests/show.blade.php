@@ -7,7 +7,7 @@
     <div class="page-shell request-result-shell">
         @if (session('status'))<div class="request-alert success" role="status"><strong>Request received.</strong><span>{{ session('status') }}</span></div>@endif
         <div class="request-result-card">
-            <div class="request-result-mark" aria-hidden="true">✓</div>
+            <img class="request-status-snapie" src="{{ asset('images/characters/snapie-qr.webp') }}" alt="SNAPIE mascot presenting the request reference number">
             <p class="eyebrow dark"><span></span> Request status</p>
             <h1>{{ $serviceRequest->statusLabel() }}</h1>
             <p>Your request is now recorded by the Smart NSTP platform. Keep the reference number below for follow-ups with the NSTP Office.</p>

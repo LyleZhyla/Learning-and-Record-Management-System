@@ -138,7 +138,7 @@
             </tbody>
         </table>
     </div>
-    @if($summaries->hasPages())<div class="pagination-row"><span>Showing {{ $summaries->firstItem() }}–{{ $summaries->lastItem() }} of {{ $summaries->total() }}</span>{{ $summaries->links() }}</div>@endif
+    @if($summaries->total() > 0)<div class="pagination-row"><span>Showing {{ $summaries->firstItem() }}–{{ $summaries->lastItem() }} of {{ $summaries->total() }}</span>{{ $summaries->links() }}</div>@endif
 </section>
 
 <script>

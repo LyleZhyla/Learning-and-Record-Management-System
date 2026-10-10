@@ -7,6 +7,7 @@
     <div class="page-shell request-hero-grid">
         <div><p class="eyebrow light"><span></span> NSTP online services</p><h1>How can the<br>NSTP Office help?</h1><p>Request official student records or coordinate ceremonial and collaborative assistance through one guided form.</p></div>
         <ol aria-label="Request process"><li><span>01</span><strong>Choose a service</strong><small>Select the record or assistance you need.</small></li><li><span>02</span><strong>Send the details</strong><small>Provide complete and accurate information.</small></li><li><span>03</span><strong>Save the reference</strong><small>Use it to revisit your request status.</small></li></ol>
+        <img class="request-snapie" src="{{ asset('images/characters/snapie-wave.webp') }}" alt="SNAPIE mascot welcoming visitors to NSTP online services">
     </div>
 </section>
 

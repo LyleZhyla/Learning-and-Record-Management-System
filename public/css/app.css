@@ -140,7 +140,8 @@ label,button,input,select,textarea{font-size:15px!important}
 @media(max-width:900px){.student-import-grid{grid-template-columns:1fr}}@media(max-width:760px){.page-action-buttons{width:100%;align-items:stretch;flex-direction:column}.page-action-buttons a,.student-import-heading>a,.page-actions>.import-students-button{width:100%}.student-import-dropzone{min-height:230px;padding:20px}}
 
 /* One compact pagination structure across every account portal. */
-.pagination-controls{display:flex;align-items:center;gap:8px;margin-left:auto}
+.pagination-controls{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-left:auto}
+.page-size-control{display:inline-flex;min-height:36px;align-items:center;gap:7px;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap}.page-size-control select{height:36px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:0 28px 0 10px;color:var(--ink);font-size:12px;font-weight:800;outline:none}.page-size-control select:focus{border-color:#4f83d5;box-shadow:0 0 0 3px rgba(79,131,213,.12)}
 @media(max-width:760px){.pagination-controls{width:100%;justify-content:space-between;margin-left:0}.pagination-controls .page-current{padding:0}}
 
 .bulk-account-action-bar{display:grid;grid-template-columns:minmax(230px,1fr) minmax(300px,1.25fr) auto;align-items:end;gap:16px;border-bottom:1px solid var(--line)}

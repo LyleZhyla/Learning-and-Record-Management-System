@@ -20,12 +20,12 @@ class LearningController extends Controller
     public function materials(Request $request): View
     {
         $enrollment = $this->access->currentEnrollment($request->user());
-        $materials = LearningMaterial::with(['component', 'section', 'creator'])->whereRaw('1 = 0')->paginate(15)->withQueryString();
+        $materials = LearningMaterial::with(['component', 'section', 'creator'])->whereRaw('1 = 0')->paginate($this->perPage())->withQueryString();
         if ($enrollment) {
             $materials = LearningMaterial::with(['component', 'section', 'creator'])->where('status', 'published')
                 ->where('component_id', $enrollment->component_id)
                 ->where(fn ($q) => $q->whereNull('section_id')->orWhere('section_id', $enrollment->section_id))
-                ->latest('published_at')->paginate(15)->withQueryString();
+                ->latest('published_at')->paginate($this->perPage())->withQueryString();
         }
 
         return view('student.materials.index', compact('enrollment', 'materials'));
@@ -34,10 +34,10 @@ class LearningController extends Controller
     public function assessments(Request $request): View
     {
         $enrollment = $this->access->currentEnrollment($request->user());
-        $assessments = Assessment::with(['section.component', 'submissions' => fn ($q) => $q->where('student_id', $request->user()->id)])->whereRaw('1 = 0')->paginate();
+        $assessments = Assessment::with(['section.component', 'submissions' => fn ($q) => $q->where('student_id', $request->user()->id)])->whereRaw('1 = 0')->paginate($this->perPage())->withQueryString();
         if ($enrollment) {
             $assessments = Assessment::with(['section.component', 'submissions' => fn ($q) => $q->where('student_id', $request->user()->id)])
-                ->where('section_id', $enrollment->section_id)->where('status', 'published')->latest()->paginate(15);
+                ->where('section_id', $enrollment->section_id)->where('status', 'published')->latest()->paginate($this->perPage())->withQueryString();
         }
 
         return view('student.assessments.index', compact('enrollment', 'assessments'));

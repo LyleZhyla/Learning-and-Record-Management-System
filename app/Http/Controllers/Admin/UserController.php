@@ -47,7 +47,7 @@ class UserController extends Controller
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
             ->orderByRaw("CASE role WHEN 'super_admin' THEN 1 WHEN 'nstp_admin' THEN 2 WHEN 'coordinator' THEN 3 WHEN 'facilitator' THEN 4 WHEN 'student' THEN 5 ELSE 6 END")
             ->orderBy('name')
-            ->paginate(10)
+            ->paginate($this->perPage(10))
             ->withQueryString();
 
         $roleCounts = User::query()

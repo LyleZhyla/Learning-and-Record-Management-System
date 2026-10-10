@@ -128,7 +128,7 @@
             </table>
         </div>
 
-        @if($registrations->hasPages())
+        @if($registrations->total() > 0)
             <div class="registration-pagination">{{ $registrations->links() }}</div>
         @endif
     </section>

@@ -53,7 +53,7 @@ class StudentAccountController extends Controller
                 );
             })
             ->orderBy('name')
-            ->paginate(12)
+            ->paginate($this->perPage(12))
             ->withQueryString();
 
         return view('student-accounts.index', [

@@ -38,7 +38,7 @@ class ScheduleController extends Controller
         );
         $sections = NstpSection::with(['component', 'facilitator', 'schedule'])
             ->where('component_id', $componentId)->where('academic_year', $academicYear)->where('semester', $semester)
-            ->where('status', 'active')->orderBy('code')->paginate(15)->withQueryString();
+            ->where('status', 'active')->orderBy('code')->paginate($this->perPage())->withQueryString();
 
         return view('learning.schedules.index', [
             'layout' => $this->layout($request),

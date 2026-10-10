@@ -35,7 +35,7 @@ class SectionController extends Controller
             ->orderByDesc('academic_year')
             ->orderByRaw("FIELD(semester, 'first', 'second', 'summer')")
             ->orderBy('code')
-            ->paginate(12)
+            ->paginate($this->perPage(12))
             ->withQueryString();
 
         return view('nstp_admin.sections.index', [

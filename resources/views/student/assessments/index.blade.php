@@ -41,7 +41,7 @@
     @endforelse
 </section>
 
-@if ($assessments->hasPages())
+@if ($assessments->total() > 0)
     <div class="pagination-row classroom-pagination">
         <span>Showing {{ $assessments->count() }} of {{ $assessments->total() }}</span>
         {{ $assessments->links() }}

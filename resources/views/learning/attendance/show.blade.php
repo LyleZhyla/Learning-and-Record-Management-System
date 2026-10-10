@@ -96,7 +96,7 @@
                 </tbody>
             </table>
         </div>
-        @if($enrolledStudents->hasPages())<div class="pagination-row"><span>Showing {{ $enrolledStudents->firstItem() }}–{{ $enrolledStudents->lastItem() }} of {{ $enrolledStudents->total() }} students</span>{{ $enrolledStudents->links() }}</div>@endif
+        @if($enrolledStudents->total() > 0)<div class="pagination-row"><span>Showing {{ $enrolledStudents->firstItem() }}–{{ $enrolledStudents->lastItem() }} of {{ $enrolledStudents->total() }} students</span>{{ $enrolledStudents->links() }}</div>@endif
     </section>
 </div>
 

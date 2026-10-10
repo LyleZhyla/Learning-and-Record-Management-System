@@ -11,6 +11,9 @@
     const manualButton = scanner.querySelector('[data-omr-manual]');
     const upload = scanner.querySelector('[data-omr-upload]');
     const student = scanner.querySelector('[data-omr-student]');
+    const studentField = scanner.querySelector('[data-omr-student-field]');
+    const scanModes = Array.from(scanner.querySelectorAll('[data-omr-mode]'));
+    const saveButton = scanner.querySelector('[data-omr-save]');
     const message = scanner.querySelector('[data-omr-message]');
     const review = scanner.querySelector('[data-omr-review]');
     const answerGrid = scanner.querySelector('[data-omr-answers]');
@@ -216,15 +219,29 @@
         review.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
 
-    function requireStudent() {
-        if (student.value) return true;
+    function selectedMode() {
+        return scanModes.find((mode) => mode.checked)?.value || 'student';
+    }
+
+    function validateAssignment() {
+        if (selectedMode() === 'unassigned' || student.value) return true;
         setMessage('Select the student before scanning or saving answers.', 'error');
         student.focus();
         return false;
     }
 
+    function syncAssignmentMode() {
+        const unassigned = selectedMode() === 'unassigned';
+        student.disabled = unassigned;
+        studentField.hidden = unassigned;
+        saveButton.innerHTML = unassigned ? 'Save unassigned result <span>→</span>' : 'Save score to grades <span>→</span>';
+        setMessage(unassigned
+            ? 'Unassigned mode: scan now without choosing a student. The result will not be posted to grades.'
+            : 'Select a student, then open the camera.');
+    }
+
     function processCurrentImage() {
-        if (!requireStudent()) return;
+        if (!validateAssignment()) return;
         try {
             const answers = analyzeSheet();
             renderAnswers(answers);
@@ -238,20 +255,20 @@
 
     cameraButton.addEventListener('click', openCamera);
     captureButton.addEventListener('click', () => {
-        if (!video.videoWidth || !requireStudent()) return;
+        if (!video.videoWidth || !validateAssignment()) return;
         drawImage(video, video.videoWidth, video.videoHeight);
         stopCamera();
         processCurrentImage();
     });
     manualButton.addEventListener('click', () => {
-        if (!requireStudent()) return;
+        if (!validateAssignment()) return;
         detectedConfidence = null;
         renderAnswers(Array(itemCount).fill(null));
         setMessage('Manual answer entry opened. Select each visible student response.', 'working');
     });
     upload.addEventListener('change', async () => {
         const file = upload.files?.[0];
-        if (!file || !requireStudent()) return;
+        if (!file || !validateAssignment()) return;
         try {
             stopCamera();
             const bitmap = await createImageBitmap(file);
@@ -264,14 +281,15 @@
     });
     review.addEventListener('submit', async (event) => {
         event.preventDefault();
-        if (!requireStudent()) return;
+        if (!validateAssignment()) return;
         const answers = Array.from(answerGrid.querySelectorAll('select')).map((select) => select.value || null);
-        setMessage('Checking answers and saving the grade…', 'working');
+        const studentId = selectedMode() === 'student' ? Number(student.value) : null;
+        setMessage(studentId ? 'Checking answers and saving the grade…' : 'Checking answers and saving the unassigned result…', 'working');
         try {
             const response = await fetch(scanner.dataset.endpoint, {
                 method: 'POST',
                 headers: { 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
-                body: JSON.stringify({ student_id: Number(student.value), answers, confidence: detectedConfidence }),
+                body: JSON.stringify({ student_id: studentId, answers, confidence: detectedConfidence }),
             });
             const result = await response.json();
             if (!response.ok) throw new Error(result.message || Object.values(result.errors || {})[0]?.[0] || 'Unable to save the result.');
@@ -282,5 +300,7 @@
             setMessage(error.message || 'Unable to save the scan result.', 'error');
         }
     });
+    scanModes.forEach((mode) => mode.addEventListener('change', syncAssignmentMode));
+    syncAssignmentMode();
     window.addEventListener('pagehide', stopCamera);
 })();

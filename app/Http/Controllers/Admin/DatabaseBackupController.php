@@ -20,7 +20,8 @@ class DatabaseBackupController extends Controller
     {
         $archives = $this->backups->archives();
         $page = LengthAwarePaginator::resolveCurrentPage();
-        $pagedArchives = new LengthAwarePaginator($archives->forPage($page, 15)->values(), $archives->count(), 15, $page, [
+        $perPage = $this->perPage();
+        $pagedArchives = new LengthAwarePaginator($archives->forPage($page, $perPage)->values(), $archives->count(), $perPage, $page, [
             'path' => $request->url(),
             'query' => $request->query(),
         ]);

@@ -39,7 +39,7 @@ class CommunityProjectController extends Controller
                 ->orWhere('beneficiaries', 'like', "%{$search}%")))
             ->when($filters['approval_status'] ?? null, fn (Builder $query, string $status) => $query->where('approval_status', $status))
             ->when($filters['implementation_status'] ?? null, fn (Builder $query, string $status) => $query->where('implementation_status', $status))
-            ->latest()->paginate(15)->withQueryString();
+            ->latest()->paginate($this->perPage())->withQueryString();
 
         return view('community-projects.index', $this->viewContext($request) + compact('projects', 'filters'));
     }

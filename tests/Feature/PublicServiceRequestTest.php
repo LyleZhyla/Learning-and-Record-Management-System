@@ -23,6 +23,7 @@ class PublicServiceRequestTest extends TestCase
             ->assertOk()
             ->assertSee('How can the')
             ->assertSee('Honor Guard')
+            ->assertSee('images/characters/snapie-wave.webp', false)
             ->assertSee('Certificate of Completion');
     }
 
@@ -49,6 +50,7 @@ class PublicServiceRequestTest extends TestCase
         $this->get(route('service-requests.show', $serviceRequest))
             ->assertOk()
             ->assertSee($serviceRequest->reference_code)
+            ->assertSee('images/characters/snapie-qr.webp', false)
             ->assertSee('Certificate of Completion');
     }
 

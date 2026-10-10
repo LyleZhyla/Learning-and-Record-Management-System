@@ -27,26 +27,23 @@ class DirectoryExportController extends Controller
                 ->where('name', 'like', "%{$search}%")
                 ->orWhere('email', 'like', "%{$search}%")
                 ->orWhereHas('facilitatorProfile', fn ($profile) => $profile
-                    ->where('employee_number', 'like', "%{$search}%")
-                    ->orWhere('department', 'like', "%{$search}%"))))
+                    ->where('contact_number', 'like', "%{$search}%"))
+                ->orWhereHas('nstpComponent', fn ($component) => $component
+                    ->where('code', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%"))))
             ->when($filters['role'] ?? null, fn ($query, string $role) => $query->where('role', $role))
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
             ->orderBy('role')->orderBy('name')->get()->map(fn (User $user) => [
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->roleLabel(),
-                'employee_number' => $user->facilitatorProfile?->employee_number ?? '—',
-                'department' => $user->facilitatorProfile?->department ?? '—',
-                'designation' => $user->facilitatorProfile?->designation ?? '—',
-                'employment_status' => $user->facilitatorProfile?->employmentStatusLabel() ?? '—',
                 'contact_number' => $user->facilitatorProfile?->contact_number ?? '—',
-                'specialization' => $user->facilitatorProfile?->specialization ?? '—',
                 'component' => $user->nstpComponent?->code ?? '—',
                 'status' => $user->statusLabel(),
                 'last_sign_in' => $user->last_login_at?->format('M d, Y h:i A') ?? 'Never',
             ]);
 
-        return $this->downloads->download('Staff Account Directory', ['Name', 'Email', 'Role', 'Employee Number', 'Department / Unit', 'Designation', 'Employment Status', 'Contact Number', 'Specialization', 'Component', 'Status', 'Last Sign In'], $rows, 'Current directory filters');
+        return $this->downloads->download('Staff Account Directory', ['Name', 'Email', 'Role', 'Contact Number', 'Component', 'Status', 'Last Sign In'], $rows, 'Current directory filters');
     }
 
     public function students(Request $request): StreamedResponse

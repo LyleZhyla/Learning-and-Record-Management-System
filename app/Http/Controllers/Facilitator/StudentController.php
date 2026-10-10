@@ -32,7 +32,7 @@ class StudentController extends Controller
                     ->where('section_id', $sectionId)
                     ->whereIn('section_id', $sectionIds)))
             ->orderBy('name')
-            ->paginate(15)
+            ->paginate($this->perPage())
             ->withQueryString();
 
         return view('facilitator.students.index', compact('students', 'sections', 'filters'));
@@ -45,15 +45,15 @@ class StudentController extends Controller
 
         $enrollments = $student->nstpEnrollments()->whereIn('section_id', $sectionIds)
             ->with(['component', 'section'])->latest('academic_year')
-            ->paginate(10, ['*'], 'enrollments_page')->withQueryString();
+            ->paginate($this->perPage(10), ['*'], 'enrollments_page')->withQueryString();
         $attendanceRecords = $student->attendanceRecords()
             ->whereHas('attendanceSession', fn ($sessions) => $sessions->whereIn('section_id', $sectionIds))
             ->with('attendanceSession.section.component')->latest('checked_in_at')
-            ->paginate(15, ['*'], 'attendance_page')->withQueryString();
+            ->paginate($this->perPage(), ['*'], 'attendance_page')->withQueryString();
         $submissions = $student->assessmentSubmissions()
             ->whereHas('assessment', fn ($assessments) => $assessments->whereIn('section_id', $sectionIds))
             ->with('assessment.section.component')->latest('submitted_at')
-            ->paginate(15, ['*'], 'submissions_page')->withQueryString();
+            ->paginate($this->perPage(), ['*'], 'submissions_page')->withQueryString();
         $student->setRelation('nstpEnrollments', $enrollments->getCollection());
         $student->setRelation('attendanceRecords', $attendanceRecords->getCollection());
         $student->setRelation('assessmentSubmissions', $submissions->getCollection());

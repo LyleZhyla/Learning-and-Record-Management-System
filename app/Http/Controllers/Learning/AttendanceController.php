@@ -38,7 +38,7 @@ class AttendanceController extends Controller
             ->whereIn('section_id', $sections->pluck('id'))
             ->when($sectionId, fn ($query) => $query->where('section_id', $sectionId))
             ->latest('starts_at')
-            ->paginate(12)
+            ->paginate($this->perPage(12))
             ->withQueryString();
 
         return view('learning.attendance.index', $this->context($request) + compact('sections', 'sessions', 'sectionId'));
@@ -99,7 +99,7 @@ class AttendanceController extends Controller
             ->join('users', 'users.id', '=', 'nstp_enrollments.student_id')
             ->select('nstp_enrollments.*')
             ->orderBy('users.name')
-            ->paginate(20)
+            ->paginate($this->perPage(20))
             ->withQueryString();
         $attendance->loadCount('records');
         $attendance->load(['records' => fn ($query) => $query->whereIn('student_id', $enrolledStudents->pluck('student_id'))]);

@@ -10,6 +10,7 @@
 .request-hero { position: relative; overflow: hidden; color: white; background: #10264b; }
 .request-hero::before { content: ''; position: absolute; inset: 0; opacity: .08; background-image: linear-gradient(rgba(255,255,255,.35) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.35) 1px,transparent 1px); background-size: 58px 58px; }
 .request-hero-grid { position: relative; min-height: 390px; display: grid; grid-template-columns: 1fr .85fr; align-items: center; gap: 100px; padding-block: 70px; }
+.request-snapie { position: absolute; z-index: 2; width: 148px; left: 48%; bottom: -24px; object-fit: contain; pointer-events: none; filter: drop-shadow(0 15px 18px rgba(3,17,43,.34)); animation: request-snapie-float 5s ease-in-out infinite; }
 .request-hero h1 { margin: 0; font-family: Georgia,'Times New Roman',serif; font-size: clamp(48px,5.4vw,72px); font-weight: 400; letter-spacing: -.04em; line-height: 1; }
 .request-hero-grid > div > p:last-child { max-width: 650px; margin: 24px 0 0; color: #ccdbed; font-size: 16px; }
 .request-hero ol { margin: 0; padding: 0; list-style: none; border-top: 1px solid rgba(255,255,255,.2); }
@@ -91,7 +92,7 @@
 .request-result-section { min-height: calc(100vh - 150px); padding: 60px 0 90px; background: linear-gradient(180deg,#eef3fa,#f8faff); }
 .request-result-shell { max-width: 850px; }
 .request-result-card { position: relative; border: 1px solid #e2e8f0; border-radius: 22px; background: white; padding: clamp(28px,6vw,60px); box-shadow: 0 18px 50px rgba(25,46,83,.09); }
-.request-result-mark { position: absolute; right: 50px; top: 46px; width: 58px; height: 58px; display: grid; place-items: center; border-radius: 18px; color: #167657; background: #e7f7f1; font-size: 25px; font-weight: 900; }
+.request-status-snapie { position: absolute; right: 35px; top: 25px; width: 140px; height: 150px; object-fit: contain; pointer-events: none; filter: drop-shadow(0 12px 16px rgba(25,46,83,.2)); animation: request-snapie-float 5s ease-in-out infinite; }
 .request-result-card > h1 { margin: 0; color: #10264b; font-family: Georgia,'Times New Roman',serif; font-size: clamp(42px,6vw,64px); font-weight: 400; letter-spacing: -.035em; }
 .request-result-card > p:not(.eyebrow) { max-width: 620px; color: #66758c; }
 .reference-box { display: grid; grid-template-columns: 1fr auto; gap: 4px 20px; margin: 32px 0; border: 1px solid #c9dcf5; border-radius: 15px; background: #f4f8fe; padding: 18px 20px; }
@@ -123,6 +124,7 @@
 .request-footer { margin-top: auto; color: #9eb1cb; background: #071a33; font-size: 10px; }
 .request-footer > div { min-height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .request-footer a:hover { color: #a7d3ff; }
+@keyframes request-snapie-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 
 @media (max-width: 980px) {
     .request-hero-grid,.request-workspace { grid-template-columns: 1fr; }
@@ -142,13 +144,18 @@
     .request-nav-actions > a:first-child { display: none; }
     .request-hero-grid { padding-block: 54px; }
     .request-hero h1 { font-size: 46px; }
+    .request-snapie { width: 120px; left: auto; right: -28px; top: 22px; bottom: auto; opacity: .22; }
     .request-type-grid,.request-field-grid.two,.request-summary,.request-next ol { grid-template-columns: 1fr; }
     .assistance-grid { grid-template-columns: repeat(2,1fr); }
     .request-guide-card ul { grid-template-columns: 1fr; }
     .request-submit-row { align-items: stretch; flex-direction: column; }
     .request-submit { justify-content: space-between; }
-    .request-result-mark { position: static; margin-bottom: 25px; }
+    .request-status-snapie { position: static; width: 110px; height: 115px; margin: -8px auto 15px; }
     .request-result-actions { flex-direction: column; }
     .request-result-actions a { justify-content: center; }
     .request-footer > div { align-items: flex-start; flex-direction: column; justify-content: center; padding-block: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .request-snapie,.request-status-snapie { animation: none; }
 }

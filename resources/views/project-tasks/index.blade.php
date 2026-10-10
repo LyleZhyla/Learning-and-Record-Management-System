@@ -56,6 +56,6 @@
                 <tr><td colspan="7"><div class="empty-state"><strong>No project tasks found</strong><span>Create a task from an approved community project or adjust the filters.</span></div></td></tr>
             @endforelse
         </tbody></table></div>
-        @if($tasks->hasPages())<div class="pagination-row">{{ $tasks->links() }}</div>@endif
+        @if($tasks->total() > 0)<div class="pagination-row">{{ $tasks->links() }}</div>@endif
     </section>
 @endsection

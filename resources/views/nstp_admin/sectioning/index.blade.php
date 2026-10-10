@@ -39,7 +39,7 @@
             <article class="section-summary-card empty-summary"><strong>No sections found</strong><span>{{ $showAllComponents ? 'No sections exist for any active component in this term.' : 'Create a section manually or run automatic sectioning after assigning students from Student Accounts.' }}</span></article>
         @endforelse
     </div>
-    @if($sections->hasPages())<div class="pagination-row"><span>Showing {{ $sections->firstItem() }}–{{ $sections->lastItem() }} of {{ $sections->total() }}</span>{{ $sections->links() }}</div>@endif
+    @if($sections->total() > 0)<div class="pagination-row"><span>Showing {{ $sections->firstItem() }}–{{ $sections->lastItem() }} of {{ $sections->total() }}</span>{{ $sections->links() }}</div>@endif
 </section>
 @else
 <section class="card empty-state sectioning-no-component"><strong>No active NSTP component is available</strong><span>Activate at least one component before using automatic sectioning.</span></section>

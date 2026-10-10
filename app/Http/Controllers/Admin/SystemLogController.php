@@ -23,7 +23,7 @@ class SystemLogController extends Controller
 
         $logs = $this->query($filters)
             ->latest('created_at')
-            ->paginate(25)
+            ->paginate($this->perPage(25))
             ->withQueryString();
 
         $metrics = [

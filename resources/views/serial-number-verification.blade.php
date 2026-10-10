@@ -13,6 +13,7 @@
     <div style="width:min(760px,100%)">
         <a class="brand" href="{{ route('login') }}" style="margin-bottom:1.5rem"><x-system-brand subtitle="Official NSTP Record Verification" /></a>
         <section class="card" style="padding:2rem">
+            <img class="snapie-character snapie-registration-character" src="{{ asset('images/characters/snapie-qr.webp') }}" alt="SNAPIE mascot presenting serial number verification">
             <div class="auth-heading" style="margin-bottom:1.5rem"><span class="eyebrow">Public verification service</span><h1 style="font-size:2rem">Verify an NSTP serial number</h1><p>Enter the complete serial number issued by CHED and recorded by the authorized NSTP office.</p></div>
             <form method="GET" action="{{ route('serial-numbers.verify') }}" class="auth-form">
                 <label for="serial_number">NSTP serial number</label>

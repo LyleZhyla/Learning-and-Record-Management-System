@@ -42,14 +42,14 @@ class NstpAdminAccountDirectoryTest extends TestCase
         $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts/'.$superAdmin->id)->assertNotFound();
     }
 
-    public function test_staff_details_include_facilitator_record_without_password_controls(): void
+    public function test_staff_details_show_only_simplified_facilitator_details_without_password_controls(): void
     {
         [$nstpAdmin, $coordinator, $facilitator] = $this->records();
 
         $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts/'.$facilitator->id)
             ->assertOk()->assertSee($facilitator->name)->assertSee($facilitator->email)
-            ->assertSee('FAC-2026-001')->assertSee('NSTP Office')
-            ->assertSee('Community Development')->assertSee('CWTS')->assertSee('Component assignment enabled')
+            ->assertSee('09171234567')->assertSee('CWTS')->assertSee('Component assignment enabled')
+            ->assertDontSee('FAC-2026-001')->assertDontSee('NSTP Office')->assertDontSee('Community Development')
             ->assertDontSee('Reset password')->assertDontSee('Last sign in');
 
         $this->actingAs($nstpAdmin)->get('/nstp-admin/accounts/'.$coordinator->id)

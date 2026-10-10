@@ -42,7 +42,7 @@
                 <tr><td colspan="5"><div class="empty-state"><strong>No answer sheet scanner yet</strong><span>Create your first answer key using the form.</span></div></td></tr>
             @endforelse
         </tbody></table></div>
-        @if($sheets->hasPages())<div class="pagination-row"><span>{{ $sheets->total() }} scanner setups</span>{{ $sheets->links() }}</div>@endif
+        @if($sheets->total() > 0)<div class="pagination-row"><span>{{ $sheets->total() }} scanner setups</span>{{ $sheets->links() }}</div>@endif
     </section>
 </div>
 

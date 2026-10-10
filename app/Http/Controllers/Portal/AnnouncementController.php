@@ -20,7 +20,7 @@ class AnnouncementController extends Controller
         $user = $request->user();
         $announcements = $this->notifications->visibleQuery($user)
             ->with(['author', 'component'])
-            ->latest('published_at')->paginate(12);
+            ->latest('published_at')->paginate($this->perPage(12))->withQueryString();
 
         return view('portal.announcements.index', [
             'announcements' => $announcements,

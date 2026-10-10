@@ -89,7 +89,8 @@ class ReportController extends Controller
             ]))->values()
             : $report['rows']->map(fn (array $row) => ['row' => $row]);
         $page = LengthAwarePaginator::resolveCurrentPage();
-        $preview = new LengthAwarePaginator($previewRows->forPage($page, 20)->values(), $previewRows->count(), 20, $page, [
+        $perPage = $this->perPage(20);
+        $preview = new LengthAwarePaginator($previewRows->forPage($page, $perPage)->values(), $previewRows->count(), $perPage, $page, [
             'path' => $request->url(),
             'query' => $request->query(),
         ]);

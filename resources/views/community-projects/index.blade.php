@@ -34,6 +34,6 @@
                 <tr><td colspan="8"><div class="empty-state"><strong>No community projects yet</strong><span>Create the first proposal to begin approval and implementation tracking.</span></div></td></tr>
             @endforelse
         </tbody></table></div>
-        @if($projects->hasPages())<div class="pagination-row">{{ $projects->links() }}</div>@endif
+        @if($projects->total() > 0)<div class="pagination-row">{{ $projects->links() }}</div>@endif
     </section>
 @endsection

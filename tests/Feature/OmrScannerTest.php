@@ -198,6 +198,42 @@ class OmrScannerTest extends TestCase
         $this->assertDatabaseHas('assessment_submissions', ['assessment_id' => $this->assessment->id, 'student_id' => $this->student->id, 'score' => 75, 'graded_by' => $this->coordinator->id]);
     }
 
+    public function test_facilitator_can_scan_without_selecting_a_student(): void
+    {
+        $sheet = OmrSheet::create(['assessment_id' => $this->assessment->id, 'created_by' => $this->facilitator->id, 'item_count' => 4, 'choice_count' => 4, 'answer_key' => ['A', 'B', 'C', 'D']]);
+
+        $this->actingAs($this->facilitator)->get('/facilitator/answer-sheet-scanner/'.$sheet->id)
+            ->assertOk()
+            ->assertSee('Choose a student')
+            ->assertSee('Scan without a student');
+
+        $response = $this->actingAs($this->facilitator)->postJson('/facilitator/answer-sheet-scanner/'.$sheet->id.'/grade', [
+            'answers' => ['A', 'B', 'A', null],
+            'confidence' => 84.5,
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('assigned', false)
+            ->assertJsonPath('correct', 2)
+            ->assertJsonPath('blank', 1)
+            ->assertJsonPath('score', 50);
+
+        $this->assertDatabaseHas('omr_scan_results', [
+            'omr_sheet_id' => $sheet->id,
+            'student_id' => null,
+            'correct_count' => 2,
+            'blank_count' => 1,
+            'score' => 50,
+        ]);
+        $this->assertDatabaseCount('assessment_submissions', 0);
+
+        $this->actingAs($this->facilitator)->postJson('/facilitator/answer-sheet-scanner/'.$sheet->id.'/grade', [
+            'answers' => ['A', 'B', 'C', 'D'],
+        ])->assertOk()->assertJsonPath('assigned', false);
+
+        $this->assertDatabaseCount('omr_scan_results', 2);
+    }
+
     public function test_other_roles_and_unassigned_facilitators_cannot_use_scanner(): void
     {
         $otherFacilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);

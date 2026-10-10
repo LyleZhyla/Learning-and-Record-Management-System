@@ -30,7 +30,16 @@
 <div class="omr-scanner-layout">
     <section class="card omr-camera-card" data-omr-scanner data-endpoint="{{ route($routePrefix.'.omr.grade',$sheet) }}" data-items="{{ $sheet->item_count }}" data-choices="{{ $sheet->choice_count }}" data-template-bottom="{{ $sheet->answerImageBottomMarkerY() }}">
         <div class="card-heading"><div><span class="eyebrow">Live paper scanner</span><h3>Align and capture</h3><p>Keep all four black corner markers inside the guide.</p></div></div>
-        <label class="field-group"><span>Student</span><select data-omr-student required><option value="">Select the student before scanning</option>@foreach($students as $enrollment)<option value="{{ $enrollment->student_id }}">{{ $enrollment->student->name }}</option>@endforeach</select></label>
+        <div class="learning-choice-group">
+            <fieldset>
+                <legend>Who is this scan for?</legend>
+                <div class="learning-choice-grid">
+                    <label><input type="radio" name="omr_scan_mode" value="student" data-omr-mode checked><span><strong>Choose a student</strong><small>Save the result and post the score to the selected student's grades.</small></span></label>
+                    <label><input type="radio" name="omr_scan_mode" value="unassigned" data-omr-mode><span><strong>Scan without a student</strong><small>Save the checked paper as unassigned without posting an official grade.</small></span></label>
+                </div>
+            </fieldset>
+        </div>
+        <label class="field-group" data-omr-student-field><span>Student</span><select data-omr-student><option value="">Select the student before scanning</option>@foreach($students as $enrollment)<option value="{{ $enrollment->student_id }}">{{ $enrollment->student->name }}</option>@endforeach</select></label>
         <div class="omr-camera-viewport">
             <video data-omr-video playsinline muted></video>
             <canvas data-omr-canvas></canvas>
@@ -39,20 +48,20 @@
         </div>
         <div class="omr-camera-actions"><button class="primary-button" type="button" data-omr-camera>Open camera</button><button class="filter-button" type="button" data-omr-capture disabled>Capture & read</button><button class="secondary-outline-button" type="button" data-omr-manual>Enter manually</button></div>
         <label class="omr-upload-button">Upload answer-sheet photo<input type="file" accept="image/*" capture="environment" data-omr-upload></label>
-        <p class="scanner-message" data-omr-message role="status">Select a student, then open the camera.</p>
+        <p class="scanner-message" data-omr-message role="status">Choose a student or switch to unassigned scanning, then open the camera.</p>
 
         <form class="omr-review" data-omr-review hidden>
             <div class="answer-key-heading"><strong>Review detected answers</strong><small>Correct unclear or blank answers before saving.</small></div>
             <div class="omr-detected-grid" data-omr-answers></div>
-            <button class="primary-button" type="submit">Save score to grades <span>→</span></button>
+            <button class="primary-button" type="submit" data-omr-save>Save score to grades <span>→</span></button>
         </form>
     </section>
 
     <section class="card user-table-card omr-results-card">
-        <div class="sectioning-toolbar"><div><h3>Scan results</h3><p class="muted-cell">The latest scan per student is used as the assessment score.</p></div><span class="pill">{{ $sheet->results->count() }} checked</span></div>
+        <div class="sectioning-toolbar"><div><h3>Scan results</h3><p class="muted-cell">Student-linked scans update grades; unassigned scans are saved here for review.</p></div><span class="pill">{{ $sheet->results->count() }} checked</span></div>
         <div class="table-wrap"><table class="data-table"><thead><tr><th>Student</th><th>Correct</th><th>Blank</th><th>Score</th><th>Confidence</th><th>Scanned by</th></tr></thead><tbody>
-            @forelse($sheet->results->sortBy(fn($result) => $result->student->name) as $result)
-                <tr><td><strong>{{ $result->student->name }}</strong><br><small class="muted-cell">{{ $result->student->email }}</small></td><td>{{ $result->correct_count }} / {{ $sheet->item_count }}</td><td>{{ $result->blank_count }}</td><td><strong class="grade-number">{{ number_format($result->score,2) }}</strong> / {{ number_format($sheet->assessment->max_score,2) }}</td><td>{{ $result->confidence === null ? 'Manual review' : number_format($result->confidence,1).'%' }}</td><td>{{ $result->scanner->name }}<br><small class="muted-cell">{{ $result->updated_at->format('M d, g:i A') }}</small></td></tr>
+            @forelse($sheet->results->sortBy(fn($result) => $result->student?->name ?? 'Unassigned '.$result->id) as $result)
+                <tr><td><strong>{{ $result->student?->name ?? 'Unassigned scan' }}</strong><br><small class="muted-cell">{{ $result->student?->email ?? 'Not posted to student grades' }}</small></td><td>{{ $result->correct_count }} / {{ $sheet->item_count }}</td><td>{{ $result->blank_count }}</td><td><strong class="grade-number">{{ number_format($result->score,2) }}</strong> / {{ number_format($sheet->assessment->max_score,2) }}</td><td>{{ $result->confidence === null ? 'Manual review' : number_format($result->confidence,1).'%' }}</td><td>{{ $result->scanner->name }}<br><small class="muted-cell">{{ $result->updated_at->format('M d, g:i A') }}</small></td></tr>
             @empty
                 <tr><td colspan="6"><div class="empty-state"><strong>No papers scanned yet</strong><span>Scanned scores will appear here.</span></div></td></tr>
             @endforelse

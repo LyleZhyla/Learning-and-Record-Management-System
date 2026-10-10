@@ -23,7 +23,7 @@ class AnnouncementController extends Controller
             ->when(! $request->user()->isSuperAdmin(), fn ($query) => $query->where('author_id', $request->user()->id))
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['audience'] ?? null, fn ($query, $audience) => $query->where('audience', $audience))
-            ->latest()->paginate(15)->withQueryString();
+            ->latest()->paginate($this->perPage())->withQueryString();
 
         return view('nstp_admin.announcements.index', $this->viewData($request) + compact('announcements', 'filters'));
     }

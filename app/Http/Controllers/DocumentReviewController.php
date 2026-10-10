@@ -30,7 +30,7 @@ class DocumentReviewController extends Controller
             ->when($filters['document_form_id'] ?? null, fn ($query, $value) => $query->where('document_form_id', $value))
             ->when($filters['component_id'] ?? null, fn ($query, $value) => $query->whereHas('enrollment', fn ($enrollment) => $enrollment->where('component_id', $value)))
             ->when($filters['search'] ?? null, fn ($query, $value) => $query->whereHas('user', fn ($user) => $user->where('name', 'like', "%{$value}%")->orWhere('email', 'like', "%{$value}%")))
-            ->latest()->paginate(15)->withQueryString();
+            ->latest()->paginate($this->perPage())->withQueryString();
         $prefix = $this->prefix($request);
 
         return view('admin.document-reviews.index', [

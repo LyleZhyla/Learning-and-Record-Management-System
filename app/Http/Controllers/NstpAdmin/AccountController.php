@@ -35,12 +35,14 @@ class AccountController extends Controller
                 ->where('name', 'like', "%{$search}%")
                 ->orWhere('email', 'like', "%{$search}%")
                 ->orWhereHas('facilitatorProfile', fn ($profile) => $profile
-                    ->where('employee_number', 'like', "%{$search}%")
-                    ->orWhere('department', 'like', "%{$search}%"))))
+                    ->where('contact_number', 'like', "%{$search}%"))
+                ->orWhereHas('nstpComponent', fn ($component) => $component
+                    ->where('code', 'like', "%{$search}%")
+                    ->orWhere('name', 'like', "%{$search}%"))))
             ->when($filters['role'] ?? null, fn ($query, $role) => $query->where('role', $role))
             ->orderByRaw("CASE role WHEN 'coordinator' THEN 1 WHEN 'facilitator' THEN 2 WHEN 'student' THEN 3 ELSE 4 END")
             ->orderBy('name')
-            ->paginate(15)
+            ->paginate($this->perPage())
             ->withQueryString();
 
         $roleCounts = User::whereIn('role', self::STAFF_ROLES)

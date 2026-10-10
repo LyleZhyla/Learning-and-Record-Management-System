@@ -60,6 +60,7 @@
                 <h2>Protect your account with a stronger password.</h2>
                 <p>Your new password must contain at least 12 characters, including uppercase and lowercase letters, a number, and a symbol.</p>
             </div>
+            <img class="snapie-character snapie-auth-character" src="{{ asset('images/characters/snapie-learning.webp') }}" alt="SNAPIE mascot supporting secure password setup">
         </section>
     </main>
     <script src="{{ asset('js/theme.js') }}"></script>

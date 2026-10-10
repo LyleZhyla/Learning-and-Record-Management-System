@@ -17,6 +17,6 @@
         <tr><td><div class="user-cell"><span class="table-avatar">{{ strtoupper(substr($account->name,0,1)) }}</span><div><strong>{{ $account->name }}</strong><small>{{ $account->email }}</small></div></div></td><td><span class="role-badge role-{{ $account->role }}">{{ $account->roleLabel() }}</span></td><td>@forelse($assignments as $assignment)<span class="component-mini-badge">{{ $account->isFacilitator() ? $assignment->code : ($assignment->section?->code ?? $assignment->component?->code) }}</span>@empty<span class="muted-cell">Not assigned</span>@endforelse</td><td class="align-right"><a class="table-action" href="{{ route('coordinator.accounts.show',$account) }}">View →</a></td></tr>
     @empty<tr><td colspan="4"><div class="empty-state"><strong>No matching accounts</strong><span>No facilitator or student is currently connected to this component.</span></div></td></tr>@endforelse
     </tbody></table></div>
-    @if($accounts->hasPages())<div class="pagination-row"><span>Showing {{ $accounts->firstItem() }}–{{ $accounts->lastItem() }} of {{ $accounts->total() }}</span>{{ $accounts->links() }}</div>@endif
+    @if($accounts->total() > 0)<div class="pagination-row"><span>Showing {{ $accounts->firstItem() }}–{{ $accounts->lastItem() }} of {{ $accounts->total() }}</span>{{ $accounts->links() }}</div>@endif
 </section>
 @endsection

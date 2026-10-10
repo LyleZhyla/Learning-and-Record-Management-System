@@ -10,6 +10,6 @@
         <tr><td><div class="user-cell"><span class="table-avatar">{{ strtoupper(substr($student->name,0,1)) }}</span><div><strong>{{ $student->name }}</strong><small>{{ $student->email }}</small></div></div></td><td>@foreach($student->nstpEnrollments as $enrollment)<span class="component-mini-badge">{{ $enrollment->component?->code }} · {{ $enrollment->section?->code ?? 'Unassigned' }}</span>@endforeach</td><td>{{ $student->nstpEnrollments->pluck('status')->map(fn($status) => ucfirst($status))->unique()->join(', ') }}</td><td class="align-right"><a class="table-action" href="{{ route('facilitator.students.show', $student) }}">View →</a></td></tr>
     @empty<tr><td colspan="4"><div class="empty-state"><strong>No assigned students</strong><span>Students will appear after they are enrolled in one of your sections.</span></div></td></tr>@endforelse
     </tbody></table></div>
-    @if($students->hasPages())<div class="pagination-row"><span>Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }}</span>{{ $students->links() }}</div>@endif
+    @if($students->total() > 0)<div class="pagination-row"><span>Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }}</span>{{ $students->links() }}</div>@endif
 </section>
 @endsection

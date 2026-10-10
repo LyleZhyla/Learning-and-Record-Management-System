@@ -9,13 +9,7 @@
     <div class="visible-data-grid">
         <div><small>Name</small><strong>{{ $user->name }}</strong></div><div><small>Email</small><strong>{{ $user->email }}</strong></div>
         @if($user->isFacilitator())
-            <div><small>Employee number</small><strong>{{ $user->facilitatorProfile?->employee_number ?? 'Not provided' }}</strong></div>
-            <div><small>Department / unit</small><strong>{{ $user->facilitatorProfile?->department ?? 'Not provided' }}</strong></div>
-            <div><small>Designation</small><strong>{{ $user->facilitatorProfile?->designation ?? 'Not provided' }}</strong></div>
-            <div><small>Employment status</small><strong>{{ $user->facilitatorProfile?->employmentStatusLabel() ?? 'Not provided' }}</strong></div>
             <div><small>Contact number</small><strong>{{ $user->facilitatorProfile?->contact_number ?? 'Not provided' }}</strong></div>
-            <div><small>Specialization</small><strong>{{ $user->facilitatorProfile?->specialization ?? 'Not provided' }}</strong></div>
-            <div class="full"><small>Professional summary</small><p>{{ $user->facilitatorProfile?->professional_summary ?? 'Not provided' }}</p></div>
         @endif
         <div class="full"><small>Component handled</small><p>@forelse($components as $component)<span class="component-mini-badge">{{ $component->code }} · {{ $component->name }}</span>@empty<span class="muted-cell">No component assignment</span>@endforelse</p></div>
     </div>
