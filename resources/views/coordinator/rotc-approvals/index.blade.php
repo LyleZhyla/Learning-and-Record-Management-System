@@ -1,4 +1,4 @@
-@extends('layouts.coordinator')
+@extends($layout)
 @section('title', 'ROTC Approvals')
 @section('page-title', 'ROTC Approvals')
 
@@ -17,8 +17,8 @@
                 <td><span class="role-badge role-student">{{ $enrollment->rotc_category }}</span></td>
                 <td>{{ $enrollment->shirt_size }}</td>
                 <td>{{ ucfirst($enrollment->semester) }} · {{ $enrollment->academic_year }}</td>
-                <td><a class="table-action" href="{{ route('coordinator.rotc-approvals.proof', $enrollment) }}">View proof →</a></td>
-                <td class="align-right"><form method="POST" action="{{ route('coordinator.rotc-approvals.approve', $enrollment) }}">@csrf @method('PATCH')<button class="success-button" type="submit">Approve {{ $enrollment->rotc_category }}</button></form></td>
+                <td><a class="table-action" href="{{ route($routePrefix.'.rotc-approvals.proof', $enrollment) }}">View proof →</a></td>
+                <td class="align-right"><form method="POST" action="{{ route($routePrefix.'.rotc-approvals.approve', $enrollment) }}">@csrf @method('PATCH')<button class="success-button" type="submit">Approve {{ $enrollment->rotc_category }}</button></form></td>
             </tr>
         @empty
             <tr><td colspan="6"><div class="empty-state"><strong>No pending ROTC requests</strong><span>MS-31 and MS-41 requests will appear here after students upload proof.</span></div></td></tr>

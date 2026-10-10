@@ -69,13 +69,15 @@ class RotcApprovalTest extends TestCase
             ->assertOk()->assertSee('ROTC enrollment is approved and awaiting section assignment');
     }
 
-    public function test_only_the_rotc_coordinator_can_review_or_approve_requests(): void
+    public function test_management_roles_and_only_the_rotc_coordinator_can_review_or_approve_requests(): void
     {
         Storage::fake('local');
         $rotc = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
         $cwts = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
         $rotcCoordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active', 'nstp_component_id' => $rotc->id]);
         $cwtsCoordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active', 'nstp_component_id' => $cwts->id]);
+        $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $proofPath = UploadedFile::fake()->create('proof.pdf', 100, 'application/pdf')->store('rotc-ms1-proofs');
         [$academicYear, $semester] = $this->currentTerm();
@@ -95,6 +97,49 @@ class RotcApprovalTest extends TestCase
         $this->actingAs($cwtsCoordinator)->get('/coordinator/rotc-approvals')->assertForbidden();
         $this->actingAs($cwtsCoordinator)->patch('/coordinator/rotc-approvals/'.$enrollment->id.'/approve')->assertForbidden();
         $this->actingAs($rotcCoordinator)->get('/coordinator/rotc-approvals')->assertOk();
+        $this->actingAs($nstpAdmin)->get('/nstp-admin/rotc-approvals')
+            ->assertOk()->assertSee($student->name)->assertSee('View proof');
+        $this->actingAs($superAdmin)->get('/admin/rotc-approvals')
+            ->assertOk()->assertSee($student->name)->assertSee('View proof');
+
+        $this->actingAs($nstpAdmin)->get('/nstp-admin/rotc-approvals/'.$enrollment->id.'/proof')
+            ->assertOk()->assertSee('MS-1 completion proof');
+        $this->actingAs($superAdmin)->get('/admin/rotc-approvals/'.$enrollment->id.'/proof')
+            ->assertOk()->assertSee('MS-1 completion proof');
+
+        $this->actingAs($nstpAdmin)->patch('/nstp-admin/rotc-approvals/'.$enrollment->id.'/approve')
+            ->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('nstp_enrollments', [
+            'id' => $enrollment->id,
+            'rotc_approval_status' => 'approved',
+            'rotc_approved_by' => $nstpAdmin->id,
+            'status' => 'enrolled',
+        ]);
+
+        $secondStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $secondEnrollment = NstpEnrollment::create([
+            'student_id' => $secondStudent->id,
+            'component_id' => $rotc->id,
+            'academic_year' => $academicYear,
+            'semester' => $semester,
+            'shirt_size' => 'M',
+            'rotc_category' => 'MS-31',
+            'rotc_proof_path' => $proofPath,
+            'rotc_proof_original_name' => 'proof.pdf',
+            'rotc_approval_status' => 'pending',
+            'status' => 'pending_approval',
+        ]);
+
+        $this->actingAs($superAdmin)->patch('/admin/rotc-approvals/'.$secondEnrollment->id.'/approve')
+            ->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('nstp_enrollments', [
+            'id' => $secondEnrollment->id,
+            'rotc_approval_status' => 'approved',
+            'rotc_approved_by' => $superAdmin->id,
+            'status' => 'enrolled',
+        ]);
     }
 
     public function test_rotc_coordinator_can_assign_ms_levels_but_other_coordinators_cannot(): void

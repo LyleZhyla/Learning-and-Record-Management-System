@@ -14,7 +14,7 @@ class RotcApprovalController extends Controller
 {
     public function index(Request $request): View
     {
-        $this->ensureRotcCoordinator($request);
+        $this->ensureReviewerCanManageRotcApprovals($request);
 
         $pendingRequests = NstpEnrollment::query()
             ->with(['student', 'component'])
@@ -25,21 +25,29 @@ class RotcApprovalController extends Controller
             ->oldest()
             ->paginate(15);
 
-        return view('coordinator.rotc-approvals.index', compact('pendingRequests'));
+        return view('coordinator.rotc-approvals.index', [
+            'pendingRequests' => $pendingRequests,
+            'layout' => $this->layout($request),
+            'routePrefix' => $this->routePrefix($request),
+        ]);
     }
 
     public function showProof(Request $request, NstpEnrollment $enrollment): View
     {
-        $this->ensureRotcCoordinator($request);
+        $this->ensureReviewerCanManageRotcApprovals($request);
         $this->ensurePendingRotcRequest($enrollment);
         abort_unless($enrollment->rotc_proof_path && Storage::disk('local')->exists($enrollment->rotc_proof_path), 404);
 
-        return view('coordinator.rotc-approvals.proof', compact('enrollment'));
+        return view('coordinator.rotc-approvals.proof', [
+            'enrollment' => $enrollment,
+            'layout' => $this->layout($request),
+            'routePrefix' => $this->routePrefix($request),
+        ]);
     }
 
     public function streamProof(Request $request, NstpEnrollment $enrollment): StreamedResponse
     {
-        $this->ensureRotcCoordinator($request);
+        $this->ensureReviewerCanManageRotcApprovals($request);
         $this->ensurePendingRotcRequest($enrollment);
         abort_unless($enrollment->rotc_proof_path && Storage::disk('local')->exists($enrollment->rotc_proof_path), 404);
 
@@ -52,7 +60,7 @@ class RotcApprovalController extends Controller
 
     public function downloadProof(Request $request, NstpEnrollment $enrollment): StreamedResponse
     {
-        $this->ensureRotcCoordinator($request);
+        $this->ensureReviewerCanManageRotcApprovals($request);
         $this->ensurePendingRotcRequest($enrollment);
         abort_unless($enrollment->rotc_proof_path && Storage::disk('local')->exists($enrollment->rotc_proof_path), 404);
 
@@ -64,7 +72,7 @@ class RotcApprovalController extends Controller
 
     public function approve(Request $request, NstpEnrollment $enrollment): RedirectResponse
     {
-        $this->ensureRotcCoordinator($request);
+        $this->ensureReviewerCanManageRotcApprovals($request);
         $this->ensurePendingRotcRequest($enrollment);
         abort_unless($enrollment->rotc_proof_path && Storage::disk('local')->exists($enrollment->rotc_proof_path), 422, 'The MS-1 proof file is missing.');
 
@@ -78,9 +86,34 @@ class RotcApprovalController extends Controller
         return back()->with('status', $enrollment->student->name.' was approved for '.$enrollment->rotc_category.'.');
     }
 
-    private function ensureRotcCoordinator(Request $request): void
+    private function ensureReviewerCanManageRotcApprovals(Request $request): void
     {
-        abort_unless($request->user()->isCoordinator() && $request->user()->nstpComponent?->code === 'ROTC', 403);
+        $user = $request->user();
+
+        abort_unless(
+            $user->isSuperAdmin()
+            || $user->isNstpAdmin()
+            || ($user->isCoordinator() && $user->nstpComponent?->code === 'ROTC'),
+            403,
+        );
+    }
+
+    private function routePrefix(Request $request): string
+    {
+        return match (true) {
+            $request->user()->isSuperAdmin() => 'admin',
+            $request->user()->isNstpAdmin() => 'nstp_admin',
+            default => 'coordinator',
+        };
+    }
+
+    private function layout(Request $request): string
+    {
+        return match ($this->routePrefix($request)) {
+            'admin' => 'layouts.admin',
+            'nstp_admin' => 'layouts.nstp-admin',
+            default => 'layouts.coordinator',
+        };
     }
 
     private function ensurePendingRotcRequest(NstpEnrollment $enrollment): void

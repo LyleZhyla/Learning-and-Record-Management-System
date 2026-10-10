@@ -21,7 +21,7 @@ return [
         'learning.grades' => ['group' => 'Learning & Assessment', 'label' => 'Manage or view grades', 'bases' => ['nstp_admin', 'coordinator', 'facilitator', 'student']],
         'learning.omr' => ['group' => 'Learning & Assessment', 'label' => 'Use answer-sheet scanner', 'bases' => ['coordinator', 'facilitator']],
         'monitoring.performance' => ['group' => 'Monitoring', 'label' => 'View student performance monitoring', 'bases' => ['coordinator']],
-        'rotc.approvals' => ['group' => 'Monitoring', 'label' => 'Review ROTC approval requests', 'bases' => ['coordinator']],
+        'rotc.approvals' => ['group' => 'Monitoring', 'label' => 'Review ROTC approval requests', 'bases' => ['nstp_admin', 'coordinator']],
         'reports.view' => ['group' => 'Reports & Records', 'label' => 'View and export reports', 'bases' => ['nstp_admin', 'coordinator', 'facilitator', 'student']],
         'records.archives' => ['group' => 'Reports & Records', 'label' => 'Manage archived records', 'bases' => ['nstp_admin']],
         'communication.announcements' => ['group' => 'Communication', 'label' => 'Manage or view announcements', 'bases' => ['nstp_admin', 'coordinator', 'facilitator', 'student']],
@@ -37,7 +37,7 @@ return [
         'nstp_admin' => [
             'accounts.staff', 'accounts.students', 'registrations.review', 'documents.configure', 'documents.review', 'reviews.configure', 'workflows.configure', 'notifications.configure', 'policies.configure', 'landing.configure', 'program.components',
             'program.sections', 'program.schedules', 'learning.attendance', 'learning.materials',
-            'learning.assessments', 'learning.grades', 'reports.view', 'records.archives',
+            'learning.assessments', 'learning.grades', 'rotc.approvals', 'reports.view', 'records.archives',
             'communication.announcements', 'communication.messages', 'ai.use',
         ],
         'coordinator' => [
@@ -78,6 +78,7 @@ return [
         'admin.materials.*' => 'learning.materials',
         'admin.assessments.*' => 'learning.assessments',
         'admin.grades.*' => 'learning.grades',
+        'admin.rotc-approvals.*' => 'rotc.approvals',
         'admin.reports.*' => 'reports.view',
         'admin.ched-applications.*' => 'reports.view',
         'admin.archives.*' => 'records.archives',
@@ -101,6 +102,7 @@ return [
         'nstp_admin.materials.*' => 'learning.materials',
         'nstp_admin.assessments.*' => 'learning.assessments',
         'nstp_admin.grades.*' => 'learning.grades',
+        'nstp_admin.rotc-approvals.*' => 'rotc.approvals',
         'nstp_admin.reports.*' => 'reports.view',
         'nstp_admin.ched-applications.*' => 'reports.view',
         'nstp_admin.announcements.*' => 'communication.announcements',

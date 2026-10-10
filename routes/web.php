@@ -133,6 +133,14 @@ $scheduleRoutes = function (): void {
     Route::put('/schedules/sections/{section}', [ScheduleController::class, 'updateSection'])->name('schedules.sections.update');
 };
 
+$rotcApprovalRoutes = function (): void {
+    Route::get('/rotc-approvals', [CoordinatorRotcApprovalController::class, 'index'])->name('rotc-approvals.index');
+    Route::get('/rotc-approvals/{enrollment}/proof', [CoordinatorRotcApprovalController::class, 'showProof'])->name('rotc-approvals.proof');
+    Route::get('/rotc-approvals/{enrollment}/proof/file', [CoordinatorRotcApprovalController::class, 'streamProof'])->name('rotc-approvals.proof.file');
+    Route::get('/rotc-approvals/{enrollment}/proof/download', [CoordinatorRotcApprovalController::class, 'downloadProof'])->name('rotc-approvals.proof.download');
+    Route::patch('/rotc-approvals/{enrollment}/approve', [CoordinatorRotcApprovalController::class, 'approve'])->name('rotc-approvals.approve');
+};
+
 $documentConfigurationRoutes = function (): void {
     Route::get('/document-forms', [DocumentFormController::class, 'index'])->name('document-forms.index');
     Route::get('/document-forms/create', [DocumentFormController::class, 'create'])->name('document-forms.create');
@@ -242,7 +250,7 @@ $engagementAnalyticsRoutes = function (): void {
     Route::get('/engagement-analytics', EngagementAnalyticsController::class)->name('engagement-analytics.index');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumApprovalRoutes, $engagementAnalyticsRoutes) {
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumApprovalRoutes, $engagementAnalyticsRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
@@ -312,6 +320,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::post('/sectioning/automate', [NstpAdminSectioningController::class, 'automate'])->name('sectioning.automate');
     $learningManagementRoutes();
     $scheduleRoutes();
+    $rotcApprovalRoutes();
 });
 
 Route::middleware('guest')->group(function () {
@@ -362,7 +371,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $engagementAnalyticsRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $engagementAnalyticsRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -457,6 +466,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::post('/sectioning/automate', [NstpAdminSectioningController::class, 'automate'])->name('sectioning.automate');
     $learningManagementRoutes();
     $scheduleRoutes();
+    $rotcApprovalRoutes();
 });
 
 Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $engagementAnalyticsRoutes) {
@@ -488,7 +498,7 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     $omrScannerRoutes();
 });
 
-Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $engagementAnalyticsRoutes) {
+Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $rotcApprovalRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $engagementAnalyticsRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'coordinator.system-guide')->name('system-guide');
     Route::get('/landing-page', [LandingPageContentController::class, 'edit'])->name('landing-page.edit');
@@ -501,11 +511,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/accounts', [CoordinatorAccountController::class, 'index'])->name('accounts.index');
     Route::patch('/accounts/{user}/enrollments/{enrollment}/rotc-category', [CoordinatorAccountController::class, 'updateRotcCategory'])->name('accounts.rotc-category.update');
     Route::get('/accounts/{user}', [CoordinatorAccountController::class, 'show'])->name('accounts.show');
-    Route::get('/rotc-approvals', [CoordinatorRotcApprovalController::class, 'index'])->name('rotc-approvals.index');
-    Route::get('/rotc-approvals/{enrollment}/proof', [CoordinatorRotcApprovalController::class, 'showProof'])->name('rotc-approvals.proof');
-    Route::get('/rotc-approvals/{enrollment}/proof/file', [CoordinatorRotcApprovalController::class, 'streamProof'])->name('rotc-approvals.proof.file');
-    Route::get('/rotc-approvals/{enrollment}/proof/download', [CoordinatorRotcApprovalController::class, 'downloadProof'])->name('rotc-approvals.proof.download');
-    Route::patch('/rotc-approvals/{enrollment}/approve', [CoordinatorRotcApprovalController::class, 'approve'])->name('rotc-approvals.approve');
+    $rotcApprovalRoutes();
     Route::get('/sections', [CoordinatorMonitoringController::class, 'sections'])->name('sections.index');
     Route::get('/sections/export', [DirectoryExportController::class, 'sections'])->name('sections.export');
     $scheduleRoutes();
