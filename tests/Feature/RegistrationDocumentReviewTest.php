@@ -31,6 +31,8 @@ class RegistrationDocumentReviewTest extends TestCase
                 ->assertSee('Manage registration period')
                 ->assertSee($registration->reference_code)
                 ->assertSee('class="registration-review-button"', false)
+                ->assertSee('>Review</span>', false)
+                ->assertDontSee('Review documents')
                 ->assertSee('2 of 2 files available');
 
             $this->actingAs($admin)

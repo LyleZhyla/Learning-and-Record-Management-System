@@ -110,7 +110,7 @@
                             <td class="align-right" data-label="Action">
                                 <div class="account-row-actions">
                                     <a class="registration-review-button" href="{{ route($routePrefix.'.registrations.show', $registration) }}">
-                                        <span>{{ $registration->archived_at ? 'View record' : 'Review documents' }}</span>
+                                        <span>{{ $registration->archived_at ? 'View record' : 'Review' }}</span>
                                         <i aria-hidden="true">→</i>
                                     </a>
                                     @if($registration->archived_at)
