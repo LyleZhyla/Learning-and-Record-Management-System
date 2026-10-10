@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\ChedApplicationController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DirectoryExportController;
+use App\Http\Controllers\Admin\LandingPageContentController;
 use App\Http\Controllers\Admin\DocumentFormController;
 use App\Http\Controllers\Admin\NotificationRuleController;
 use App\Http\Controllers\Admin\PolicyRequirementController;
@@ -247,6 +248,8 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [NstpAdminProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [NstpAdminProfileController::class, 'updatePassword'])->name('password.update');
+    Route::get('/landing-page', [LandingPageContentController::class, 'edit'])->name('landing-page.edit');
+    Route::put('/landing-page', [LandingPageContentController::class, 'update'])->name('landing-page.update');
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::get('/accounts', [NstpAdminAccountController::class, 'index'])->name('accounts.index');
@@ -365,6 +368,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
+    Route::get('/landing-page', [LandingPageContentController::class, 'edit'])->name('landing-page.edit');
+    Route::put('/landing-page', [LandingPageContentController::class, 'update'])->name('landing-page.update');
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
@@ -486,6 +491,8 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
 Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $engagementAnalyticsRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'coordinator.system-guide')->name('system-guide');
+    Route::get('/landing-page', [LandingPageContentController::class, 'edit'])->name('landing-page.edit');
+    Route::put('/landing-page', [LandingPageContentController::class, 'update'])->name('landing-page.update');
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
