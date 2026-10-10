@@ -66,7 +66,9 @@ class DynamicGradingTest extends TestCase
 
         $this->actingAs($facilitator)->get('/facilitator/grades?section='.$section->id)
             ->assertOk()
-            ->assertSee('Dela Cruz, Juan S.');
+            ->assertSee('Dela Cruz, Juan S.')
+            ->assertSee('2026000001')
+            ->assertDontSee($student->email);
     }
 
     public function test_facilitator_cannot_change_the_grading_configuration(): void
