@@ -276,6 +276,10 @@ class StudentImportService
     /** @return array<int, array<int, mixed>> */
     private function readRows(UploadedFile $file): array
     {
+        if (strtolower($file->getClientOriginalExtension()) === 'sql') {
+            return $this->readSqlRows($file);
+        }
+
         try {
             $reader = IOFactory::createReaderForFile($file->getRealPath());
             $reader->setReadDataOnly(true);
@@ -289,6 +293,244 @@ class StudentImportService
                 'file' => 'The uploaded file could not be read. Use a valid .xlsx, .xls, or .csv file.',
             ]);
         }
+    }
+
+    /** @return array<int, array<int, mixed>> */
+    private function readSqlRows(UploadedFile $file): array
+    {
+        $contents = file_get_contents($file->getRealPath());
+
+        if ($contents === false || trim($contents) === '') {
+            throw ValidationException::withMessages(['file' => 'The SQL file is empty.']);
+        }
+
+        if (! mb_check_encoding($contents, 'UTF-8')) {
+            throw ValidationException::withMessages(['file' => 'The SQL file must use UTF-8 text encoding.']);
+        }
+
+        $contents = preg_replace('/^\xEF\xBB\xBF/', '', $contents) ?? $contents;
+        $statements = $this->splitSqlStatements($contents);
+        $rows = [self::HEADERS];
+
+        foreach ($statements as $statementNumber => $statement) {
+            if (preg_match('/^INSERT\s+INTO\s+(?:`?(?:student_import|students)`?)\s*\((.*?)\)\s*VALUES\s*(.+)$/is', trim($statement), $matches) !== 1) {
+                throw ValidationException::withMessages([
+                    'file' => 'Statement '.($statementNumber + 1).' is not an allowed student INSERT. Only INSERT INTO student_import (...) VALUES (...) statements are accepted and no SQL is executed directly.',
+                ]);
+            }
+
+            $headers = array_map(
+                fn (string $header): string => $this->normalizeHeader(trim($header, " \t\n\r\0\x0B`\"")),
+                explode(',', $matches[1]),
+            );
+            $missingHeaders = array_diff(self::HEADERS, $headers);
+
+            if ($missingHeaders !== []) {
+                throw ValidationException::withMessages([
+                    'file' => 'Statement '.($statementNumber + 1).' is missing required column(s): '.implode(', ', $missingHeaders).'. Download and use the SQL template.',
+                ]);
+            }
+
+            if (count($headers) !== count(array_unique($headers))) {
+                throw ValidationException::withMessages(['file' => 'Statement '.($statementNumber + 1).' contains duplicate column names.']);
+            }
+
+            $headerIndexes = array_flip($headers);
+            foreach ($this->parseSqlValueTuples($matches[2], $statementNumber + 1) as $tuple) {
+                if (count($tuple) !== count($headers)) {
+                    throw ValidationException::withMessages([
+                        'file' => 'Statement '.($statementNumber + 1).' contains a VALUES row with '.count($tuple).' value(s), but '.count($headers).' column(s) were declared.',
+                    ]);
+                }
+
+                $rows[] = array_map(fn (string $header): mixed => $tuple[$headerIndexes[$header]], self::HEADERS);
+            }
+        }
+
+        if (count($rows) === 1) {
+            throw ValidationException::withMessages(['file' => 'The SQL file does not contain any student INSERT rows.']);
+        }
+
+        return $rows;
+    }
+
+    /** @return array<int, string> */
+    private function splitSqlStatements(string $sql): array
+    {
+        $statements = [];
+        $buffer = '';
+        $inString = false;
+        $length = strlen($sql);
+
+        for ($index = 0; $index < $length; $index++) {
+            $character = $sql[$index];
+            $next = $index + 1 < $length ? $sql[$index + 1] : '';
+
+            if (! $inString && $character === '-' && $next === '-') {
+                while ($index < $length && ! in_array($sql[$index], ["\n", "\r"], true)) {
+                    $index++;
+                }
+                $buffer .= ' ';
+
+                continue;
+            }
+
+            if (! $inString && $character === '/' && $next === '*') {
+                $closing = strpos($sql, '*/', $index + 2);
+                if ($closing === false) {
+                    throw ValidationException::withMessages(['file' => 'The SQL file contains an unterminated comment.']);
+                }
+                $index = $closing + 1;
+                $buffer .= ' ';
+
+                continue;
+            }
+
+            if ($character === "'") {
+                if ($inString && $next === "'") {
+                    $buffer .= "''";
+                    $index++;
+
+                    continue;
+                }
+
+                if ($index === 0 || $sql[$index - 1] !== '\\') {
+                    $inString = ! $inString;
+                }
+            }
+
+            if (! $inString && $character === ';') {
+                if (trim($buffer) !== '') {
+                    $statements[] = trim($buffer);
+                }
+                $buffer = '';
+
+                continue;
+            }
+
+            $buffer .= $character;
+        }
+
+        if ($inString) {
+            throw ValidationException::withMessages(['file' => 'The SQL file contains an unterminated quoted value.']);
+        }
+
+        if (trim($buffer) !== '') {
+            $statements[] = trim($buffer);
+        }
+
+        return $statements;
+    }
+
+    /** @return array<int, array<int, mixed>> */
+    private function parseSqlValueTuples(string $values, int $statementNumber): array
+    {
+        $tuples = [];
+        $index = 0;
+        $length = strlen($values);
+
+        while ($index < $length) {
+            while ($index < $length && (ctype_space($values[$index]) || $values[$index] === ',')) {
+                $index++;
+            }
+
+            if ($index >= $length) {
+                break;
+            }
+
+            if ($values[$index] !== '(') {
+                throw ValidationException::withMessages(['file' => "Statement {$statementNumber} has an invalid VALUES clause near character ".($index + 1).'.']);
+            }
+            $index++;
+            $tuple = [];
+
+            while (true) {
+                while ($index < $length && ctype_space($values[$index])) {
+                    $index++;
+                }
+
+                if ($index >= $length) {
+                    throw ValidationException::withMessages(['file' => "Statement {$statementNumber} contains an incomplete VALUES row."]);
+                }
+
+                if ($values[$index] === "'") {
+                    [$value, $index] = $this->parseSqlString($values, $index, $statementNumber);
+                } else {
+                    $start = $index;
+                    while ($index < $length && ! in_array($values[$index], [',', ')'], true)) {
+                        $index++;
+                    }
+                    $token = trim(substr($values, $start, $index - $start));
+                    if (preg_match('/^(?:NULL|TRUE|FALSE|-?\d+(?:\.\d+)?)$/i', $token) !== 1) {
+                        throw ValidationException::withMessages(['file' => "Statement {$statementNumber} contains an unsupported SQL expression. Quote text values and use only literals."]);
+                    }
+                    $value = strcasecmp($token, 'NULL') === 0 ? '' : $token;
+                }
+
+                $tuple[] = $value;
+                while ($index < $length && ctype_space($values[$index])) {
+                    $index++;
+                }
+
+                if ($index < $length && $values[$index] === ',') {
+                    $index++;
+
+                    continue;
+                }
+
+                if ($index < $length && $values[$index] === ')') {
+                    $index++;
+                    break;
+                }
+
+                throw ValidationException::withMessages(['file' => "Statement {$statementNumber} has an invalid separator in its VALUES clause."]);
+            }
+
+            $tuples[] = $tuple;
+        }
+
+        return $tuples;
+    }
+
+    /** @return array{string, int} */
+    private function parseSqlString(string $sql, int $index, int $statementNumber): array
+    {
+        $value = '';
+        $length = strlen($sql);
+        $index++;
+
+        while ($index < $length) {
+            $character = $sql[$index];
+            $next = $index + 1 < $length ? $sql[$index + 1] : '';
+
+            if ($character === "'" && $next === "'") {
+                $value .= "'";
+                $index += 2;
+
+                continue;
+            }
+
+            if ($character === '\\' && $next !== '') {
+                $value .= match ($next) {
+                    'n' => "\n",
+                    'r' => "\r",
+                    't' => "\t",
+                    default => $next,
+                };
+                $index += 2;
+
+                continue;
+            }
+
+            if ($character === "'") {
+                return [$value, $index + 1];
+            }
+
+            $value .= $character;
+            $index++;
+        }
+
+        throw ValidationException::withMessages(['file' => "Statement {$statementNumber} contains an unterminated quoted value."]);
     }
 
     private function normalizeHeader(mixed $value): string

@@ -29,7 +29,11 @@ class StudentImportController extends Controller
     public function store(Request $request, StudentImportService $importer, QrCodeService $qrCode): StreamedResponse|Response
     {
         $validated = $request->validate([
-            'file' => ['required', 'file', 'max:5120', 'mimes:xlsx,xls,csv'],
+            'file' => ['required', 'file', 'max:5120', function (string $attribute, mixed $value, \Closure $fail): void {
+                if (! in_array(strtolower($value->getClientOriginalExtension()), ['xlsx', 'xls', 'csv', 'sql'], true)) {
+                    $fail('Use a valid .xlsx, .xls, .csv, or .sql student import file.');
+                }
+            }],
             'credential_delivery' => ['nullable', Rule::in(['download', 'view'])],
         ]);
 
@@ -88,6 +92,31 @@ class StudentImportController extends Controller
         }, 'student-import-template.xlsx', [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
         ]);
+    }
+
+    public function sqlTemplate(): StreamedResponse
+    {
+        $columns = collect(StudentImportService::HEADERS)
+            ->map(fn (string $header): string => '`'.$header.'`')
+            ->implode(', ');
+        $values = collect(StudentImportService::templateInstructions())
+            ->map(fn (array $instruction): string => "'".str_replace("'", "''", $instruction[2])."'")
+            ->implode(', ');
+        $sql = implode("\r\n", [
+            '-- Safe student import template. Uploaded SQL is parsed as data and is never executed directly.',
+            '-- Add up to 1,000 parenthesized rows after VALUES, separated by commas.',
+            "INSERT INTO student_import ({$columns}) VALUES",
+            "({$values});",
+            '',
+        ]);
+
+        return response()->streamDownload(
+            static function () use ($sql): void {
+                echo $sql;
+            },
+            'student-import-template.sql',
+            ['Content-Type' => 'application/sql; charset=UTF-8'],
+        );
     }
 
     /**

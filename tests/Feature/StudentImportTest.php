@@ -31,20 +31,72 @@ class StudentImportTest extends TestCase
             $this->actingAs($user)->get($directoryUrl)
                 ->assertOk()
                 ->assertSee('Import Students')
-                ->assertSee('aria-label="Import students from Excel"', false)
+                ->assertSee('aria-label="Import students from Excel, CSV, or SQL"', false)
                 ->assertSee('href="'.url($url).'"', false);
 
             $this->actingAs($user)->get($url)
                 ->assertOk()
-                ->assertSee('Upload an Excel student list')
-                ->assertSee('Download Excel template')
+                ->assertSee('Upload an Excel, CSV, or SQL student list')
+                ->assertSee('Excel template')
+                ->assertSee('SQL template')
+                ->assertSee('SQL files are never executed')
                 ->assertSee('Import & download credentials')
                 ->assertSee('Import & view credentials');
 
             $this->actingAs($user)->get($url.'/template')
                 ->assertOk()
                 ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+
+            $this->actingAs($user)->get($url.'/template/sql')
+                ->assertOk()
+                ->assertDownload('student-import-template.sql')
+                ->assertHeader('content-type', 'application/sql; charset=UTF-8');
         }
+    }
+
+    public function test_authorized_user_can_import_students_from_a_safe_sql_file(): void
+    {
+        Mail::fake();
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $file = $this->sqlFile([
+            $this->validStudentRow([
+                'last_name' => "Dela O'Brien",
+                'first_name' => 'Sql',
+                'middle_name' => '',
+                'email' => 'sql.student@import.test',
+                'student_number' => '2026000088',
+            ]),
+        ]);
+
+        $response = $this->actingAs($admin)->post('/admin/students/import', [
+            'file' => $file,
+            'credential_delivery' => 'view',
+        ]);
+
+        $response->assertOk()
+            ->assertViewIs('student-import.credentials')
+            ->assertSee('Sql Dela O&#039;Brien', false)
+            ->assertSee('sql.student@import.test');
+        $this->assertDatabaseHas('users', ['email' => 'sql.student@import.test', 'role' => 'student']);
+        $this->assertDatabaseHas('student_profiles', [
+            'student_number' => '2026000088',
+            'last_name' => "Dela O'Brien",
+        ]);
+        Mail::assertSent(AccountCreatedMail::class, 1);
+    }
+
+    public function test_sql_import_rejects_arbitrary_statements_without_executing_them(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $file = UploadedFile::fake()->createWithContent('students.sql', 'DROP TABLE users;');
+
+        $this->actingAs($admin)
+            ->from('/admin/students/import')
+            ->post('/admin/students/import', ['file' => $file])
+            ->assertRedirect('/admin/students/import')
+            ->assertSessionHasErrors('file');
+
+        $this->assertDatabaseHas('users', ['id' => $admin->id]);
     }
 
     public function test_both_authorized_roles_can_import_excel_student_accounts(): void
@@ -261,6 +313,24 @@ class StudentImportTest extends TestCase
             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             null,
             true,
+        );
+    }
+
+    /** @param array<int, array<int, string>> $rows */
+    private function sqlFile(array $rows): UploadedFile
+    {
+        $columns = collect(StudentImportService::HEADERS)
+            ->map(fn (string $header): string => '`'.$header.'`')
+            ->implode(', ');
+        $values = collect($rows)->map(function (array $row): string {
+            return '('.collect($row)
+                ->map(fn (string $value): string => "'".str_replace("'", "''", $value)."'")
+                ->implode(', ').')';
+        })->implode(",\n");
+
+        return UploadedFile::fake()->createWithContent(
+            'students.sql',
+            "-- Student import test\nINSERT INTO student_import ({$columns}) VALUES\n{$values};\n",
         );
     }
 
