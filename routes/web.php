@@ -27,6 +27,7 @@ use App\Http\Controllers\Coordinator\MonitoringController as CoordinatorMonitori
 use App\Http\Controllers\Coordinator\RotcApprovalController as CoordinatorRotcApprovalController;
 use App\Http\Controllers\CommunityProjectController;
 use App\Http\Controllers\DocumentReviewController;
+use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
 use App\Http\Controllers\Facilitator\StudentController as FacilitatorStudentController;
 use App\Http\Controllers\Learning\AssessmentController;
@@ -74,6 +75,9 @@ Route::get('/', function () {
 
     return redirect()->route($routeName);
 });
+
+Route::get('/community-feedback/{communityProject}/{token}', [EvaluationController::class, 'communityForm'])->name('community-feedback.create');
+Route::post('/community-feedback/{communityProject}/{token}', [EvaluationController::class, 'storeCommunity'])->middleware('throttle:10,1')->name('community-feedback.store');
 
 $learningManagementRoutes = function (): void {
     Route::get('/attendance', [ManagementAttendanceController::class, 'index'])->name('attendance.index');
@@ -184,6 +188,9 @@ $communityProjectRoutes = function (): void {
     Route::put('/community-projects/{communityProject}/implementation', [CommunityProjectController::class, 'updateImplementation'])->name('community-projects.implementation');
     Route::post('/community-projects/{communityProject}/activities', [CommunityProjectController::class, 'storeActivity'])->name('community-projects.activities.store');
     Route::put('/community-projects/{communityProject}/activities/{activity}', [CommunityProjectController::class, 'updateActivity'])->name('community-projects.activities.update');
+    Route::post('/community-projects/{communityProject}/documents', [CommunityProjectController::class, 'storeDocument'])->name('community-projects.documents.store');
+    Route::get('/community-projects/{communityProject}/documents/{document}', [CommunityProjectController::class, 'downloadDocument'])->name('community-projects.documents.download');
+    Route::delete('/community-projects/{communityProject}/documents/{document}', [CommunityProjectController::class, 'destroyDocument'])->name('community-projects.documents.destroy');
 };
 
 $projectTaskRoutes = function (): void {
@@ -197,7 +204,14 @@ $projectTaskRoutes = function (): void {
     Route::get('/task-monitoring/{projectTask}/evidence', [ProjectTaskController::class, 'evidence'])->name('project-tasks.evidence');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes) {
+$evaluationRoutes = function (): void {
+    Route::get('/evaluations', [EvaluationController::class, 'index'])->name('evaluations.index');
+    Route::post('/evaluations/instructor', [EvaluationController::class, 'storeStudentInstructor'])->name('evaluations.student-instructor.store');
+    Route::put('/evaluations/sections/{section}/students/{student}', [EvaluationController::class, 'storeInstructorStudent'])->name('evaluations.instructor-student.store');
+    Route::put('/evaluations/community-projects/{communityProject}/survey', [EvaluationController::class, 'toggleCommunitySurvey'])->name('evaluations.community.toggle');
+};
+
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
@@ -236,6 +250,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $chedApplicationRoutes();
     $communityProjectRoutes();
     $projectTaskRoutes();
+    $evaluationRoutes();
     $documentConfigurationRoutes();
     $documentReviewRoutes();
     $reviewCategoryRoutes();
@@ -309,7 +324,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -359,6 +374,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $chedApplicationRoutes();
     $communityProjectRoutes();
     $projectTaskRoutes();
+    $evaluationRoutes();
     $documentConfigurationRoutes();
     $documentReviewRoutes();
     $reviewCategoryRoutes();
@@ -401,7 +417,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $scheduleRoutes();
 });
 
-Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes, $communityProjectRoutes, $projectTaskRoutes) {
+Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes) {
     Route::get('/dashboard', FacilitatorDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'facilitator.system-guide')->name('system-guide');
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
@@ -422,11 +438,12 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     $communityProjectRoutes();
     $projectTaskRoutes();
+    $evaluationRoutes();
     $learningManagementRoutes();
     $omrScannerRoutes();
 });
 
-Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $communityProjectRoutes, $projectTaskRoutes) {
+Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'coordinator.system-guide')->name('system-guide');
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
@@ -462,6 +479,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     $communityProjectRoutes();
     $projectTaskRoutes();
+    $evaluationRoutes();
     Route::get('/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
     Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store');
     Route::get('/assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');
@@ -478,7 +496,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     $omrScannerRoutes();
 });
 
-Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () use ($communityProjectRoutes, $projectTaskRoutes) {
+Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () use ($communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes) {
     Route::get('/dashboard', StudentDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'student.system-guide')->name('system-guide');
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
@@ -503,6 +521,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/project-proposal-guide', [StudentProjectProposalGuideController::class, 'generate'])->middleware('throttle:5,1')->name('proposal-guide.generate');
     $communityProjectRoutes();
     $projectTaskRoutes();
+    $evaluationRoutes();
     Route::get('/assessments', [StudentLearningController::class, 'assessments'])->name('assessments.index');
     Route::get('/assessments/{assessment}', [StudentLearningController::class, 'show'])->name('assessments.show');
     Route::post('/assessments/{assessment}/submit', [StudentLearningController::class, 'submit'])->name('assessments.submit');

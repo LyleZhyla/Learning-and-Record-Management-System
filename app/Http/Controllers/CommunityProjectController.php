@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CommunityProject;
 use App\Models\CommunityProjectActivity;
+use App\Models\CommunityProjectDocument;
 use App\Models\NstpComponent;
 use App\Models\NstpSection;
 use App\Services\PortalAccessService;
@@ -11,9 +12,11 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CommunityProjectController extends Controller
 {
@@ -82,13 +85,17 @@ class CommunityProjectController extends Controller
     public function show(Request $request, CommunityProject $communityProject): View
     {
         $this->ensureVisible($request, $communityProject);
-        $communityProject->load(['component', 'section.facilitator', 'proposer', 'approver', 'activities.creator']);
+        $communityProject->load([
+            'component', 'section.facilitator', 'proposer', 'approver', 'activities.creator',
+            'documents.activity', 'documents.uploader',
+        ]);
 
         return view('community-projects.show', $this->viewContext($request) + [
             'project' => $communityProject,
             'canEdit' => $this->canEdit($request, $communityProject),
             'canApprove' => $this->canApprove($request, $communityProject),
             'canManageImplementation' => $this->canManageImplementation($request, $communityProject),
+            'canUploadDocumentation' => $this->canUploadDocumentation($request, $communityProject),
         ]);
     }
 
@@ -179,6 +186,74 @@ class CommunityProjectController extends Controller
         ]);
 
         return back()->with('status', 'Project activity updated.');
+    }
+
+    public function storeDocument(Request $request, CommunityProject $communityProject): RedirectResponse
+    {
+        $this->ensureVisible($request, $communityProject);
+        abort_unless($this->canUploadDocumentation($request, $communityProject), 403);
+        abort_unless($communityProject->approval_status === 'approved', 422, 'Approve the project before uploading accomplishment documentation.');
+
+        $validated = $request->validate([
+            'category' => ['required', Rule::in(array_keys(CommunityProjectDocument::CATEGORIES))],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:3000'],
+            'community_project_activity_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('community_project_activities', 'id')->where(
+                    fn ($query) => $query->where('community_project_id', $communityProject->id)
+                ),
+            ],
+            'file' => ['required', 'file', 'max:15360', 'mimes:pdf,jpg,jpeg,png,doc,docx,xls,xlsx,csv'],
+        ]);
+
+        $file = $request->file('file');
+        $path = $file->store('community-project-documents/'.$communityProject->id, 'local');
+        abort_unless($path, 500, 'The project document could not be stored.');
+
+        try {
+            $communityProject->documents()->create([
+                ...collect($validated)->except('file')->all(),
+                'file_path' => $path,
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType(),
+                'size_bytes' => $file->getSize(),
+                'uploaded_by' => $request->user()->id,
+            ]);
+        } catch (\Throwable $exception) {
+            Storage::disk('local')->delete($path);
+
+            throw $exception;
+        }
+
+        return back()->with('status', 'Project accomplishment documentation uploaded.');
+    }
+
+    public function downloadDocument(Request $request, CommunityProject $communityProject, CommunityProjectDocument $document): StreamedResponse
+    {
+        $this->ensureVisible($request, $communityProject);
+        abort_unless($document->community_project_id === $communityProject->id, 404);
+        abort_unless(Storage::disk('local')->exists($document->file_path), 404);
+
+        return Storage::disk('local')->download($document->file_path, $document->original_name);
+    }
+
+    public function destroyDocument(Request $request, CommunityProject $communityProject, CommunityProjectDocument $document): RedirectResponse
+    {
+        $this->ensureVisible($request, $communityProject);
+        abort_unless($document->community_project_id === $communityProject->id, 404);
+        abort_unless(
+            $this->canManageImplementation($request, $communityProject)
+            || $document->uploaded_by === $request->user()->id,
+            403,
+        );
+
+        $path = $document->file_path;
+        $document->delete();
+        Storage::disk('local')->delete($path);
+
+        return back()->with('status', 'Project documentation removed.');
     }
 
     private function projectData(Request $request): array
@@ -288,6 +363,16 @@ class CommunityProjectController extends Controller
             || ($user->isFacilitator() && $project->section?->facilitator_id === $user->id);
     }
 
+    private function canUploadDocumentation(Request $request, CommunityProject $project): bool
+    {
+        if ($this->canManageImplementation($request, $project)) {
+            return true;
+        }
+
+        return $request->user()->isStudent()
+            && $this->visibleProjects($request)->whereKey($project)->exists();
+    }
+
     private function availableComponents(Request $request)
     {
         $query = NstpComponent::where('is_active', true)->orderBy('code');
@@ -323,6 +408,7 @@ class CommunityProjectController extends Controller
             'approvalStatuses' => CommunityProject::APPROVAL_STATUSES,
             'implementationStatuses' => CommunityProject::IMPLEMENTATION_STATUSES,
             'activityStatuses' => CommunityProjectActivity::STATUSES,
+            'documentCategories' => CommunityProjectDocument::CATEGORIES,
         ];
     }
 

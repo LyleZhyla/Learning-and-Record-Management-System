@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class CommunityProject extends Model
 {
@@ -29,6 +30,7 @@ class CommunityProject extends Model
         'description', 'objectives', 'beneficiaries', 'beneficiary_count', 'location',
         'budget', 'start_date', 'end_date', 'approval_status', 'approval_notes',
         'approved_by', 'approved_at', 'implementation_status', 'implementation_notes',
+        'feedback_token', 'feedback_is_open',
     ];
 
     protected function casts(): array
@@ -38,7 +40,15 @@ class CommunityProject extends Model
             'start_date' => 'date',
             'end_date' => 'date',
             'approved_at' => 'datetime',
+            'feedback_is_open' => 'boolean',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (CommunityProject $project): void {
+            $project->feedback_token ??= Str::random(48);
+        });
     }
 
     public function component(): BelongsTo
@@ -69,6 +79,16 @@ class CommunityProject extends Model
     public function tasks(): HasMany
     {
         return $this->hasMany(ProjectTask::class)->orderBy('due_at')->orderBy('id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(CommunityProjectDocument::class)->latest();
+    }
+
+    public function evaluations(): HasMany
+    {
+        return $this->hasMany(EvaluationResponse::class, 'community_project_id')->latest('submitted_at');
     }
 
     public function approvalLabel(): string
