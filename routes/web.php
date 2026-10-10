@@ -26,6 +26,7 @@ use App\Http\Controllers\Coordinator\AccountController as CoordinatorAccountCont
 use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
 use App\Http\Controllers\Coordinator\MonitoringController as CoordinatorMonitoringController;
 use App\Http\Controllers\Coordinator\RotcApprovalController as CoordinatorRotcApprovalController;
+use App\Http\Controllers\Coordinator\SerialNumberController as CoordinatorSerialNumberController;
 use App\Http\Controllers\DocumentReviewController;
 use App\Http\Controllers\EngagementAnalyticsController;
 use App\Http\Controllers\EvaluationController;
@@ -53,6 +54,7 @@ use App\Http\Controllers\Portal\ProfileController as PortalProfileController;
 use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\ProjectTaskController;
 use App\Http\Controllers\RegistrationReviewController;
+use App\Http\Controllers\SerialNumberVerificationController;
 use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
 use App\Http\Controllers\Student\ComponentController as StudentComponentController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
@@ -81,6 +83,7 @@ Route::get('/', function () {
 
 Route::get('/community-feedback/{communityProject}/{token}', [EvaluationController::class, 'communityForm'])->name('community-feedback.create');
 Route::post('/community-feedback/{communityProject}/{token}', [EvaluationController::class, 'storeCommunity'])->middleware('throttle:10,1')->name('community-feedback.store');
+Route::get('/verify/serial', SerialNumberVerificationController::class)->middleware('throttle:20,1')->name('serial-numbers.verify');
 
 $learningManagementRoutes = function (): void {
     Route::get('/attendance', [ManagementAttendanceController::class, 'index'])->name('attendance.index');
@@ -518,6 +521,11 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/reports/{type}/document', [ReportController::class, 'document'])->name('reports.document');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
+    Route::get('/serial-numbers', [CoordinatorSerialNumberController::class, 'index'])->name('serial-numbers.index');
+    Route::post('/serial-numbers', [CoordinatorSerialNumberController::class, 'store'])->name('serial-numbers.store');
+    Route::get('/serial-numbers/{serialNumberRelease}', [CoordinatorSerialNumberController::class, 'show'])->name('serial-numbers.show');
+    Route::get('/serial-numbers/{serialNumberRelease}/source-file', [CoordinatorSerialNumberController::class, 'download'])->name('serial-numbers.download');
+    Route::put('/serial-numbers/{serialNumberRelease}/students/{enrollment}', [CoordinatorSerialNumberController::class, 'storeSerial'])->name('serial-numbers.students.store');
     $communityProjectRoutes();
     $projectTaskRoutes();
     $evaluationRoutes();

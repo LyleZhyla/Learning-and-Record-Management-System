@@ -66,6 +66,7 @@
                 </form>
 
                 <p class="auth-register-link">New student? <a href="{{ route('register') }}">Complete your registration</a></p>
+                <p class="auth-register-link">Need to verify a graduate record? <a href="{{ route('serial-numbers.verify') }}">Verify an NSTP serial number</a></p>
 
                 <p class="security-note">Protected by server-side sessions, CSRF validation, password hashing, and login rate limiting.</p>
             </div>
