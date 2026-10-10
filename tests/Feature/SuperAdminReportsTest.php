@@ -117,6 +117,10 @@ class SuperAdminReportsTest extends TestCase
             ->assertSee('data-word-url="'.url('/admin/reports/students/document').'"', false)
             ->assertSee('data-excel-url="'.url('/admin/reports/students/export').'"', false)
             ->assertSee('js/report-download.js', false);
+
+        $styles = file_get_contents(public_path('css/app.css'));
+        $this->assertStringContainsString('width:min(820px,calc(100vw - 64px))', $styles);
+        $this->assertStringContainsString('.report-field-grid{grid-template-columns:repeat(5,minmax(0,1fr))}', $styles);
     }
 
     public function test_student_report_download_can_select_registration_fields(): void

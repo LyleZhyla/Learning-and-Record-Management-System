@@ -334,17 +334,17 @@ html[data-theme=dark] .ai-widget-panel{border-color:var(--line);background:var(-
 .report-field-selector>summary>span small{font-size:10px;line-height:1.35}
 .report-field-selector>summary>b{font-size:10px}
 .report-field-selector[open]>summary{border-radius:11px}
-.report-field-selector>fieldset{position:absolute;z-index:30;top:calc(100% + 6px);right:0;left:auto;width:440px;max-width:calc(100vw - 64px);border:1px solid #cbd9ea;border-radius:11px;padding:13px;box-shadow:0 16px 36px rgba(20,48,83,.18)}
+.report-field-selector>fieldset{position:absolute;z-index:30;top:calc(100% + 6px);right:0;left:auto;width:min(820px,calc(100vw - 64px));max-width:calc(100vw - 64px);border:1px solid #cbd9ea;border-radius:11px;padding:13px;box-shadow:0 16px 36px rgba(20,48,83,.18)}
 .report-field-toolbar{font-size:11px}
-.report-field-grid label{min-height:38px;font-size:11px}
+.report-field-grid{grid-template-columns:repeat(5,minmax(0,1fr))}.report-field-grid label{min-height:38px;font-size:11px}
 .report-save-footer{display:flex;min-width:0;align-items:stretch;flex-direction:column;gap:6px}
 .report-save-footer .primary-button{min-width:150px;min-height:50px;font-size:12px}
 .report-save-status{max-width:220px;font-size:10px;line-height:1.35}
 .report-save-control button:disabled,.report-format-field select:disabled{cursor:not-allowed;opacity:.55}
 html[data-theme=dark] .report-format-field select{border-color:#34465e;background:#142238;color:#e6eef9}
-@media(max-width:1080px){.report-output-actions{grid-template-columns:1fr}.report-download-panel{grid-template-columns:minmax(190px,1fr) minmax(170px,210px) minmax(230px,280px) minmax(175px,auto)}}
+@media(max-width:1080px){.report-output-actions{grid-template-columns:1fr}.report-download-panel{grid-template-columns:minmax(190px,1fr) minmax(170px,210px) minmax(230px,280px) minmax(175px,auto)}.report-field-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:900px){.report-download-panel{grid-template-columns:repeat(2,minmax(0,1fr))}.report-download-heading{grid-column:1/-1}.report-save-footer .primary-button{width:100%}.report-save-status{max-width:none;text-align:center}}
-@media(max-width:600px){.report-download-panel{grid-template-columns:1fr}.report-download-heading{grid-column:auto}.report-field-selector>fieldset{right:auto;left:0;width:min(430px,calc(100vw - 64px));min-width:0}.report-print-action small,.report-download-heading small,.report-field-selector>summary>span small{display:block}.report-save-status{text-align:left}}
+@media(max-width:760px){.report-field-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:600px){.report-download-panel{grid-template-columns:1fr}.report-download-heading{grid-column:auto}.report-field-selector>fieldset{right:auto;left:0;width:min(620px,calc(100vw - 64px));min-width:0}.report-print-action small,.report-download-heading small,.report-field-selector>summary>span small{display:block}.report-save-status{text-align:left}}@media(max-width:520px){.report-field-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:380px){.report-field-grid{grid-template-columns:1fr}}
 
 /* Super Admin system guide and dashboard onboarding. */
 .admin-guide-preview{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:18px;margin-bottom:20px;padding:20px 22px;border-color:#cfe0f5;background:linear-gradient(135deg,#f8fbff,#eef5ff)}.admin-guide-preview-icon{display:grid;width:48px;height:48px;place-items:center;border-radius:15px;background:#2468ca;color:#fff;font-size:22px;font-weight:900;box-shadow:0 8px 18px rgba(36,104,202,.22)}.admin-guide-preview h3{margin:3px 0 4px;color:var(--navy);font-size:18px}.admin-guide-preview p{max-width:720px;margin:0;color:var(--muted);font-size:12px;line-height:1.55}.admin-guide-preview .primary-button{white-space:nowrap}
