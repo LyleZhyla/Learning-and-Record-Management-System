@@ -89,6 +89,9 @@ button { color: inherit; }
 .hero-stamp { position: absolute; z-index: 4; width: 106px; height: 106px; right: -18px; top: 35px; display: grid; align-content: center; justify-items: center; color: var(--green-950); background: var(--gold); border: 4px double rgba(16, 38, 75, .45); border-radius: 50%; transform: rotate(8deg); }
 .hero-stamp strong { font-family: var(--serif); font-size: 28px; line-height: 1; }
 .hero-stamp span { margin-top: 7px; font-size: 7px; font-weight: 800; letter-spacing: .1em; }
+.landing-snapie { display: block; object-fit: contain; pointer-events: none; user-select: none; filter: drop-shadow(0 16px 19px rgba(4,20,48,.3)); }
+.landing-snapie-hero { position: absolute; z-index: 6; width: 185px; right: -52px; bottom: -25px; animation: landing-snapie-float 5s ease-in-out infinite; }
+.landing-snapie-mobile { display: none; }
 .hero-ribbon { position: relative; min-height: 47px; display: flex; align-items: center; justify-content: space-around; gap: 30px; padding: 8px 4vw; overflow: hidden; color: var(--green-950); background: var(--gold); font-size: 10px; font-weight: 900; letter-spacing: .24em; }
 .hero-ribbon span::before { content: '◆'; margin-right: clamp(20px, 4vw, 70px); font-size: 7px; }
 
@@ -120,7 +123,7 @@ button { color: inherit; }
 .component-image > img:first-child { width: 100%; height: 100%; object-fit: cover; }
 .component-image.lts-image > img:first-child { object-fit: cover; }
 .component-image .component-mark { position: absolute; width: 92px; height: 92px; right: 24px; bottom: 22px; padding: 10px; object-fit: contain; background: rgba(255,255,255,.94); border-radius: 50%; box-shadow: 0 12px 35px rgba(0,0,0,.2); }
-.component-content { padding: clamp(42px, 6vw, 80px); }
+.component-content { position: relative; padding: clamp(42px, 6vw, 80px); }
 .component-code { margin: 0 0 14px; color: var(--green-700); font-size: 10px; font-weight: 900; letter-spacing: .14em; text-transform: uppercase; }
 .component-content h3 { max-width: 470px; margin: 0; color: var(--green-950); font-family: var(--serif); font-size: clamp(35px, 4vw, 51px); font-weight: 400; line-height: 1.05; }
 .component-content > p:not(.component-code) { color: var(--muted); }
@@ -129,6 +132,7 @@ button { color: inherit; }
 .component-content li::before { content: '—'; margin-left: -24px; margin-right: 10px; color: var(--gold); }
 .button-outline { color: var(--green-800); border-color: #a8c3e8; }
 .button-outline:hover { color: white; border-color: var(--green-800); background: var(--green-800); }
+.component-snapie { position: absolute; width: 105px; right: 20px; bottom: 13px; opacity: .93; filter: drop-shadow(0 9px 12px rgba(25,46,83,.18)); }
 
 .activities-section { color: white; background: var(--green-950); }
 .activities-section h2 { color: white; }
@@ -169,6 +173,7 @@ button { color: inherit; }
 .services-heading h2 { color: white; }
 .services-heading > p:not(.eyebrow) { max-width: 400px; color: rgba(255,255,255,.66); }
 .service-request-button { margin-top: 24px; }
+.services-snapie { width: 175px; margin: 28px auto -78px; filter: drop-shadow(0 13px 17px rgba(4,20,48,.28)); animation: landing-snapie-float 5.4s ease-in-out infinite; }
 .service-links { border-top: 1px solid rgba(255,255,255,.25); }
 .service-links a { display: grid; grid-template-columns: 50px 1fr auto; align-items: center; gap: 20px; min-height: 108px; padding: 18px 0; border-bottom: 1px solid rgba(255,255,255,.25); transition: padding .25s, color .25s; }
 .service-links a:hover { padding-left: 12px; color: var(--gold-light); }
@@ -211,6 +216,7 @@ button { color: inherit; }
 .footer-bottom { display: flex; justify-content: space-between; padding-top: 18px; padding-bottom: 22px; border-top: 1px solid rgba(255,255,255,.12); font-size: 10px; }
 
 :focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+@keyframes landing-snapie-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
 
 @media (max-width: 1180px) {
     .menu-toggle { display: block; }
@@ -252,6 +258,8 @@ button { color: inherit; }
     .nav-menu { top: 76px; }
     .hero-grid { padding-top: 58px; padding-bottom: 55px; }
     .hero h1 { font-size: clamp(42px, 12vw, 58px); }
+    .landing-snapie-mobile { position: absolute; z-index: -1; display: block; width: 145px; right: -28px; top: 3px; opacity: .2; }
+    .landing-snapie-hero { display: none; }
     .hero-lead { font-size: 15px; }
     .hero-actions { align-items: stretch; }
     .hero-actions .button { width: calc(50% - 7px); }
@@ -265,6 +273,7 @@ button { color: inherit; }
     .hero-stamp { width: 82px; height: 82px; right: -5px; top: 20px; }
     .hero-stamp strong { font-size: 22px; }
     .hero-ribbon { justify-content: flex-start; }
+    .landing-snapie-hero { width: 125px; right: -30px; bottom: -18px; }
     .section { padding: 78px 0; }
     .section h2, .contact-section h2 { font-size: 43px; }
     .about-grid { gap: 35px; }
@@ -274,6 +283,7 @@ button { color: inherit; }
     .component-panel { margin-top: 22px; }
     .component-image { min-height: 270px; }
     .component-content { padding: 34px 25px 40px; }
+    .component-snapie { width: 72px; right: 8px; bottom: 5px; opacity: .42; }
     .activity-grid { grid-template-columns: 1fr; }
     .activity-featured, .activity-card { grid-column: auto; min-height: 400px; }
     .announcement-item { grid-template-columns: 65px 1fr; gap: 20px; }

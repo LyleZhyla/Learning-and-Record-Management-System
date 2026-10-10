@@ -19,6 +19,11 @@ class LandingPageTest extends TestCase
             ->assertSee('Empowering Students.')
             ->assertSee('Serving Communities.')
             ->assertSee('Student Portal')
+            ->assertSee('images/characters/snapie-hero.webp', false)
+            ->assertSee('images/characters/snapie-face.webp', false)
+            ->assertSee('images/characters/snapie-ai-guide.webp', false)
+            ->assertSee('images/characters/snapie-learning.webp', false)
+            ->assertSee('images/characters/snapie-qr.webp', false)
             ->assertSee(route('register'), false)
             ->assertSee(route('serial-numbers.verify'), false);
     }
