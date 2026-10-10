@@ -10,6 +10,7 @@ use App\Services\PortalAccessService;
 use App\Services\ProgressMonitoringService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class LearningController extends Controller
@@ -55,14 +56,15 @@ class LearningController extends Controller
     {
         $enrollment = $this->access->currentEnrollment($request->user());
         abort_unless($enrollment && $assessment->section_id === $enrollment->section_id && $assessment->status === 'published', 403);
-        $validated = $request->validate([
-            'answer_text' => ['nullable', 'string', 'max:20000', 'required_without:file'],
-            'file' => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,jpg,jpeg,png', 'max:10240', 'required_without:answer_text'],
-        ]);
-        $file = $request->file('file');
         $existingSubmission = AssessmentSubmission::where('assessment_id', $assessment->id)
             ->where('student_id', $request->user()->id)
             ->first();
+        $projectNeedsFile = $assessment->type === 'project' && blank($existingSubmission?->file_path);
+        $validated = $request->validate([
+            'answer_text' => ['nullable', 'string', 'max:20000', 'required_without:file'],
+            'file' => [Rule::requiredIf($projectNeedsFile), 'nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,jpg,jpeg,png', 'max:10240', 'required_without:answer_text'],
+        ]);
+        $file = $request->file('file');
         AssessmentSubmission::updateOrCreate(
             ['assessment_id' => $assessment->id, 'student_id' => $request->user()->id],
             [
@@ -76,7 +78,9 @@ class LearningController extends Controller
             ],
         );
 
-        return back()->with('status', 'Your work was submitted successfully.');
+        return back()->with('status', $assessment->type === 'project'
+            ? 'Your project was submitted successfully through Assessments.'
+            : 'Your work was submitted successfully.');
     }
 
     public function grades(Request $request): View

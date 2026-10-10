@@ -70,8 +70,8 @@
 
             <label class="classroom-file-picker">
                 <span class="classroom-add-icon" aria-hidden="true">＋</span>
-                <span><strong>Add an attachment</strong><small data-assessment-file-name>PDF, Office document, image, or text · Max 10 MB</small></span>
-                <input type="file" name="file" data-assessment-file accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png">
+                <span><strong>{{ $assessment->type === 'project' ? 'Attach project file' : 'Add an attachment' }}</strong><small data-assessment-file-name>PDF, Office document, image, or text · Max 10 MB{{ $assessment->type === 'project' ? ' · Required for first submission' : '' }}</small></span>
+                <input type="file" name="file" data-assessment-file accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png" @required($assessment->type === 'project' && blank($submission?->file_path))>
             </label>
 
             <label class="classroom-response-field">
@@ -87,7 +87,7 @@
         @if ($submission)
             <p class="classroom-submitted-time">Last submitted {{ $submission->submitted_at->format('M d, Y · g:i A') }}</p>
         @else
-            <p class="classroom-submit-note">Attach a file, enter a response, or provide both before turning in.</p>
+            <p class="classroom-submit-note">{{ $assessment->type === 'project' ? 'Submit the required project file here. You may also include a written note.' : 'Attach a file, enter a response, or provide both before turning in.' }}</p>
         @endif
     </aside>
 </div>

@@ -3,16 +3,16 @@
 @section('content')
 <link rel="stylesheet" href="{{ asset('css/ai-assessment-scoring.css') }}?v={{ filemtime(public_path('css/ai-assessment-scoring.css')) }}">
 @php($canCreateAnswerSheet = auth()->user()->isFacilitator() || auth()->user()->isCoordinator())
-<div class="back-row"><a href="{{ auth()->user()->isCoordinator() ? route('coordinator.omr.index') : route($routePrefix.'.assessments.index') }}">← Back</a></div>
+<div class="back-row"><a href="{{ route($routePrefix.'.assessments.index') }}">← Back to assessments</a></div>
 <section class="card section-form-card assessment-builder-card">
-    <div class="card-heading"><div><h3>Assessment details</h3><p>Create the assessment and, for a quiz or exam, optionally prepare its answer sheet in the same step.</p></div></div>
+    <div class="card-heading"><div><h3>Assessment details</h3><p>Choose whether students will complete a quiz, activity, project, or exam. Project files will be submitted by students through this same assessment workflow.</p></div></div>
     <form method="POST" action="{{ route($routePrefix.'.assessments.store') }}" data-assessment-builder @if($canCreateAnswerSheet) data-answer-key-builder @endif>
         @csrf
         <div class="form-grid">
             <label class="field-group full"><span>Section</span><select name="section_id" data-assessment-section required><option value="">Select section</option>@foreach($sections as $section)<option value="{{ $section->id }}" @selected(old('section_id')==$section->id)>{{ $section->code }} · {{ $section->component->code }}</option>@endforeach</select></label>
             <div class="assessment-profile-note full" data-assessment-profile-note hidden></div>
             <label class="field-group full"><span>Title</span><input name="title" value="{{ old('title') }}" required></label>
-            <label class="field-group"><span>Type</span><select name="type" data-assessment-type><option value="activity" @selected(old('type')==='activity')>Activity</option><option value="quiz" @selected(old('type')==='quiz')>Quiz</option><option value="project" @selected(old('type')==='project')>Project</option><option value="exam" @selected(old('type')==='exam')>Exam</option></select></label>
+            <label class="field-group"><span>Assessment type</span><select name="type" data-assessment-type><option value="activity" @selected(old('type')==='activity')>Activity</option><option value="quiz" @selected(old('type')==='quiz')>Quiz</option><option value="project" @selected(old('type')==='project')>Project</option><option value="exam" @selected(old('type')==='exam')>Exam</option></select><small>You control which type of work students will submit.</small></label>
             <label class="field-group"><span>Grading sheet category</span><select name="grading_category_id" data-assessment-category required><option value="">Select where scores will appear</option>@foreach($sections as $section)@foreach($section->gradingCategories as $category)<option value="{{ $category->id }}" data-section="{{ $section->id }}" data-type="{{ $category->assessment_type }}" @selected(old('grading_category_id')==$category->id)>{{ $category->name }} ({{ number_format($category->weight,2) }}%)</option>@endforeach @endforeach</select></label>
             <p class="form-help full">Every score recorded for this assessment will automatically appear under the selected category in the grading sheet.</p>
             <label class="field-group"><span>Status</span><select name="status"><option value="published" @selected(old('status','published')==='published')>Published</option><option value="draft" @selected(old('status')==='draft')>Draft</option></select></label>

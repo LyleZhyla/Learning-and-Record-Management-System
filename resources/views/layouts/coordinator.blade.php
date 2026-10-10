@@ -24,7 +24,7 @@
                 @if(auth()->user()->nstpComponent?->code === 'ROTC')<a class="nav-link {{ request()->routeIs('coordinator.rotc-approvals.*') ? 'active' : '' }}" href="{{ route('coordinator.rotc-approvals.index') }}"><span class="nav-icon">✓</span> ROTC Approvals</a>@endif
             @endpermission
             <a class="nav-link {{ request()->routeIs('coordinator.community-projects.*') ? 'active' : '' }}" href="{{ route('coordinator.community-projects.index') }}"><span class="nav-icon">⌂</span> Community Projects</a>
-            <a class="nav-link {{ request()->routeIs('coordinator.project-tasks.*') ? 'active' : '' }}" href="{{ route('coordinator.project-tasks.index') }}"><span class="nav-icon">✓</span> Task Monitoring</a>
+            <a class="nav-link {{ request()->routeIs('coordinator.project-tasks.*') ? 'active' : '' }}" href="{{ route('coordinator.project-tasks.index') }}"><span class="nav-icon">✓</span> Implementation Tasks</a>
             <a class="nav-link {{ request()->routeIs('coordinator.evaluations.*') ? 'active' : '' }}" href="{{ route('coordinator.evaluations.index') }}"><span class="nav-icon">☆</span> Evaluations</a>
             <p class="nav-label">Attendance & Learning</p>
             @permission('learning.attendance')<a class="nav-link {{ request()->routeIs('coordinator.attendance.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'attendance') }}" data-coordinator-tour="attendance"><span class="nav-icon">▣</span> Attendance @if($sidebarPortalNotificationCounts['attendance'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['attendance'] > 99 ? '99+' : $sidebarPortalNotificationCounts['attendance'] }}</span>@endif</a>@endpermission

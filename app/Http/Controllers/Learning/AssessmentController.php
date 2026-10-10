@@ -55,6 +55,8 @@ class AssessmentController extends Controller
 
     public function create(Request $request): View
     {
+        abort_unless($request->user()->isFacilitator() || $request->user()->isCoordinator(), 403);
+
         $sections = ($request->user()->isCoordinator() ? $this->access->gradebookSections($request->user()) : $this->access->manageableSections($request->user()))
             ->with('component.assessmentSetting')->where('status', 'active')->orderBy('code')->get();
         $sections->each(fn ($section) => $this->ensureGradingStructure($section));
@@ -78,6 +80,8 @@ class AssessmentController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        abort_unless($request->user()->isFacilitator() || $request->user()->isCoordinator(), 403);
+
         $request->merge(['create_answer_sheet' => $request->boolean('create_answer_sheet')]);
         $this->removeEmptyRubricRows($request);
         $validated = $request->validate([
@@ -160,10 +164,6 @@ class AssessmentController extends Controller
                 ->with('status', $answers === []
                     ? 'Assessment and blank answer sheet created. Add the answer key before scanning.'
                     : 'Assessment and answer sheet created successfully.');
-        }
-
-        if ($request->user()->isCoordinator()) {
-            return redirect()->route('coordinator.omr.index')->with('status', 'Assessment created without an answer sheet.');
         }
 
         return redirect()->route($this->access->routePrefix($request->user()).'.assessments.show', $assessment)
