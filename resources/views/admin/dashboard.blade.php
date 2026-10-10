@@ -34,6 +34,7 @@
             <a href="{{ route('admin.project-tasks.index') }}">Task monitoring →</a>
             <a href="{{ route('admin.evaluations.index') }}">Evaluations →</a>
             <a href="{{ route('admin.facilitator-requirements.index') }}">Facilitator compliance →</a>
+            <a href="{{ route('admin.engagement-analytics.index') }}">Engagement analytics →</a>
             <a href="{{ route('admin.system-guide') }}">Read the full guide</a>
         </div>
     </section>
