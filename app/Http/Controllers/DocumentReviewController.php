@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DocumentForm;
 use App\Models\DocumentSubmission;
 use App\Models\NstpComponent;
+use App\Models\ReviewCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -16,8 +17,9 @@ class DocumentReviewController extends Controller
 {
     public function index(Request $request): View
     {
+        $statusLabels = ReviewCategory::labels('document_submission');
         $filters = $request->validate([
-            'status' => ['nullable', Rule::in(array_keys(DocumentSubmission::STATUSES))],
+            'status' => ['nullable', Rule::in(array_keys($statusLabels))],
             'document_form_id' => ['nullable', 'integer', 'exists:document_forms,id'],
             'component_id' => ['nullable', 'integer', 'exists:nstp_components,id'],
             'search' => ['nullable', 'string', 'max:100'],
@@ -36,16 +38,19 @@ class DocumentReviewController extends Controller
             'submissions' => $submissions,
             'forms' => DocumentForm::orderBy('title')->get(),
             'components' => NstpComponent::orderBy('code')->get(),
-            'statuses' => DocumentSubmission::STATUSES,
+            'statuses' => $statusLabels,
+            'reviewCategories' => ReviewCategory::categories('document_submission', true),
             'filters' => $filters,
         ]);
     }
 
     public function update(Request $request, DocumentSubmission $documentSubmission): RedirectResponse
     {
+        $activeCategories = ReviewCategory::categories('document_submission', true)->keyBy('slug');
+        $selectedOutcome = $activeCategories->get($request->input('status'))?->outcome ?? 'pending';
         $validated = $request->validate([
-            'status' => ['required', Rule::in(array_keys(DocumentSubmission::STATUSES))],
-            'review_notes' => [Rule::requiredIf($request->input('status') === 'needs_correction'), 'nullable', 'string', 'max:2000'],
+            'status' => ['required', Rule::in($activeCategories->keys()->all())],
+            'review_notes' => [Rule::requiredIf($selectedOutcome === 'correction'), 'nullable', 'string', 'max:2000'],
         ]);
         $documentSubmission->update($validated + ['reviewed_by' => $request->user()->id, 'reviewed_at' => now()]);
 

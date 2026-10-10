@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreStudentRegistrationRequest;
+use App\Models\NstpSection;
+use App\Models\ReviewCategory;
 use App\Models\StudentRegistration;
 use App\Models\SystemSetting;
-use App\Models\NstpSection;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -75,7 +76,7 @@ class StudentRegistrationController extends Controller
                 return StudentRegistration::create([
                     ...$validated,
                     'reference_code' => $this->referenceCode(),
-                    'status' => 'pending',
+                    'status' => ReviewCategory::defaultSlug('registration', 'pending', 'pending'),
                     'cor_path' => $corPath,
                     'cor_original_name' => $corOriginalName,
                     'formal_photo_path' => $photoPath,

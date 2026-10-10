@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\DirectoryExportController;
 use App\Http\Controllers\Admin\DocumentFormController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\ReviewCategoryController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SystemLogController;
 use App\Http\Controllers\Admin\SystemSettingController;
@@ -136,7 +137,14 @@ $documentReviewRoutes = function (): void {
     Route::get('/document-reviews/{documentSubmission}/download', [DocumentReviewController::class, 'download'])->name('document-reviews.download');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes) {
+$reviewCategoryRoutes = function (): void {
+    Route::get('/review-categories', [ReviewCategoryController::class, 'index'])->name('review-categories.index');
+    Route::post('/review-categories', [ReviewCategoryController::class, 'store'])->name('review-categories.store');
+    Route::put('/review-categories/{reviewCategory}', [ReviewCategoryController::class, 'update'])->name('review-categories.update');
+    Route::delete('/review-categories/{reviewCategory}', [ReviewCategoryController::class, 'destroy'])->name('review-categories.destroy');
+};
+
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
@@ -173,6 +181,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     $documentConfigurationRoutes();
     $documentReviewRoutes();
+    $reviewCategoryRoutes();
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/export', [DirectoryExportController::class, 'components'])->name('components.export');
@@ -239,7 +248,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -287,6 +296,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
     $documentConfigurationRoutes();
     $documentReviewRoutes();
+    $reviewCategoryRoutes();
     Route::get('/database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup.index');
     Route::post('/database-backup/download', [DatabaseBackupController::class, 'download'])->middleware('throttle:2,1')->name('database-backup.download');
     Route::post('/database-backup/archive', [DatabaseBackupController::class, 'archive'])->middleware('throttle:2,1')->name('database-backup.archive');

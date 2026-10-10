@@ -23,7 +23,7 @@
             <h2>{{ $registration->first_name }} {{ $registration->middle_name }} {{ $registration->last_name }} {{ $registration->extension_name }}</h2>
             <p>Submitted {{ $registration->created_at->format('F d, Y \a\t g:i A') }}</p>
         </div>
-        <span class="registration-status status-{{ $registration->status }}">{{ $registration->statusLabel() }}</span>
+        <span class="registration-status review-category-badge" style="--review-category-color: {{ $registration->statusColor() }}">{{ $registration->statusLabel() }}</span>
     </section>
 
     @if($registration->archived_at)
@@ -104,7 +104,7 @@
         <aside class="card registration-decision-card">
             <span class="eyebrow">Admin decision</span>
             <h3>Record document review</h3>
-            <p>When both documents are marked “Verified,” the enrollment is approved and an active student account is created automatically. The original registration remains in this list for audit and review.</p>
+            <p>When both documents receive an approved/verified workflow outcome, the enrollment is approved and an active student account is created automatically. The original registration remains in this list for audit and review.</p>
 
             @unless($registration->archived_at)
             <form method="POST" action="{{ route($routePrefix.'.registrations.review', $registration) }}">
@@ -114,8 +114,8 @@
                     <label class="field-group">
                         <span>{{ $label }}</span>
                         <select name="{{ $key }}_review_status" required>
-                            @foreach($documentStatuses as $value => $statusLabel)
-                                <option value="{{ $value }}" @selected(old($key.'_review_status', $registration->{$key.'_review_status'}) === $value)>{{ $statusLabel }}</option>
+                            @foreach($documentStatuses as $statusCategory)
+                                <option value="{{ $statusCategory->slug }}" @selected(old($key.'_review_status', $registration->{$key.'_review_status'}) === $statusCategory->slug)>{{ $statusCategory->name }}</option>
                             @endforeach
                         </select>
                         @error($key.'_review_status')<small class="field-error">{{ $message }}</small>@enderror

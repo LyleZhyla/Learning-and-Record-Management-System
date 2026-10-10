@@ -7,6 +7,7 @@ return [
         'registrations.review' => ['group' => 'People & Registration', 'label' => 'Review student registrations', 'bases' => ['nstp_admin']],
         'documents.configure' => ['group' => 'Documents & Forms', 'label' => 'Configure documents and downloadable forms', 'bases' => ['nstp_admin']],
         'documents.review' => ['group' => 'Documents & Forms', 'label' => 'Review configurable document submissions', 'bases' => ['nstp_admin']],
+        'reviews.configure' => ['group' => 'Documents & Forms', 'label' => 'Configure registration and document review categories', 'bases' => ['nstp_admin']],
         'program.components' => ['group' => 'Program Operations', 'label' => 'Manage NSTP components', 'bases' => ['nstp_admin', 'coordinator']],
         'program.sections' => ['group' => 'Program Operations', 'label' => 'Manage sections and sectioning', 'bases' => ['nstp_admin', 'coordinator']],
         'program.schedules' => ['group' => 'Program Operations', 'label' => 'Manage schedules', 'bases' => ['nstp_admin', 'coordinator']],
@@ -30,7 +31,7 @@ return [
     'defaults' => [
         'super_admin' => ['*'],
         'nstp_admin' => [
-            'accounts.staff', 'accounts.students', 'registrations.review', 'documents.configure', 'documents.review', 'program.components',
+            'accounts.staff', 'accounts.students', 'registrations.review', 'documents.configure', 'documents.review', 'reviews.configure', 'program.components',
             'program.sections', 'program.schedules', 'learning.attendance', 'learning.materials',
             'learning.assessments', 'learning.grades', 'reports.view', 'records.archives',
             'communication.announcements', 'communication.messages', 'ai.use',
@@ -60,6 +61,7 @@ return [
         'admin.registrations.*' => 'registrations.review',
         'admin.document-forms.*' => 'documents.configure',
         'admin.document-reviews.*' => 'documents.review',
+        'admin.review-categories.*' => 'reviews.configure',
         'admin.components.*' => 'program.components',
         'admin.sections.*' => 'program.sections',
         'admin.sectioning.*' => 'program.sections',
@@ -77,6 +79,7 @@ return [
         'nstp_admin.registrations.*' => 'registrations.review',
         'nstp_admin.document-forms.*' => 'documents.configure',
         'nstp_admin.document-reviews.*' => 'documents.review',
+        'nstp_admin.review-categories.*' => 'reviews.configure',
         'nstp_admin.components.*' => 'program.components',
         'nstp_admin.sections.*' => 'program.sections',
         'nstp_admin.sectioning.*' => 'program.sections',

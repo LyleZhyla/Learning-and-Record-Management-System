@@ -10,19 +10,6 @@ class StudentRegistration extends Model
 {
     use HasFactory;
 
-    public const STATUS_LABELS = [
-        'pending' => 'Pending review',
-        'under_review' => 'Under review',
-        'verified' => 'Approved / account created',
-        'needs_correction' => 'Needs correction',
-    ];
-
-    public const DOCUMENT_STATUS_LABELS = [
-        'pending' => 'Pending review',
-        'verified' => 'Verified',
-        'needs_correction' => 'Needs correction',
-    ];
-
     public const NSTP_LEVELS = [
         'nstp_1' => 'NSTP 1 — first NSTP semester',
         'nstp_2' => 'NSTP 2 — completed NSTP 1 previously',
@@ -57,6 +44,11 @@ class StudentRegistration extends Model
 
     public function statusLabel(): string
     {
-        return self::STATUS_LABELS[$this->status] ?? str($this->status)->headline()->toString();
+        return ReviewCategory::labelFor('registration', $this->status);
+    }
+
+    public function statusColor(): string
+    {
+        return ReviewCategory::colorFor('registration', $this->status);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ReviewCategory;
 use App\Models\StudentRegistration;
 use Illuminate\Support\Facades\Storage;
 
@@ -57,7 +58,7 @@ class RegistrationDocumentService
             'valid_type' => $validType,
             'valid_size' => $validSize,
             'complete' => $exists && $validType && $validSize,
-            'review_status' => $reviewStatus ?: 'pending',
+            'review_status' => $reviewStatus ?: ReviewCategory::defaultSlug('registration_document', 'pending', 'pending'),
             'allowed_extensions' => $allowedExtensions,
             'maximum_size_label' => number_format($maximumBytes / 1024 / 1024, 0).' MB',
             'is_image' => in_array($extension, ['jpg', 'jpeg', 'png'], true),

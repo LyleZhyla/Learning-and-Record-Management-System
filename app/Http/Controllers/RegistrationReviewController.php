@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\StudentRegistration;
-use App\Models\StudentProfile;
-use App\Models\SystemSetting;
 use App\Models\NstpSection;
+use App\Models\ReviewCategory;
+use App\Models\StudentProfile;
+use App\Models\StudentRegistration;
+use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\RegistrationDocumentService;
 use Illuminate\Http\RedirectResponse;
@@ -26,9 +27,11 @@ class RegistrationReviewController extends Controller
 
     public function index(Request $request): View
     {
+        $statusLabels = ReviewCategory::labels('registration');
+        $statusOrder = ReviewCategory::categories('registration')->pluck('slug')->values();
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:100'],
-            'status' => ['nullable', Rule::in(array_keys(StudentRegistration::STATUS_LABELS))],
+            'status' => ['nullable', Rule::in(array_keys($statusLabels))],
             'record_state' => ['nullable', Rule::in(['active', 'archived'])],
         ]);
 
@@ -51,7 +54,10 @@ class RegistrationReviewController extends Controller
                 });
             })
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
-            ->orderByRaw("CASE status WHEN 'needs_correction' THEN 0 WHEN 'pending' THEN 1 WHEN 'under_review' THEN 2 ELSE 3 END")
+            ->when($statusOrder->isNotEmpty(), function ($query) use ($statusOrder): void {
+                $cases = $statusOrder->map(fn (string $status, int $index): string => "WHEN ? THEN {$index}")->implode(' ');
+                $query->orderByRaw("CASE status {$cases} ELSE ? END", [...$statusOrder->all(), $statusOrder->count()]);
+            })
             ->latest('created_at')
             ->paginate(15)
             ->withQueryString();
@@ -65,7 +71,7 @@ class RegistrationReviewController extends Controller
             ...$this->viewContext($request),
             'registrations' => $registrations,
             'checklists' => $checklists,
-            'statuses' => StudentRegistration::STATUS_LABELS,
+            'statuses' => $statusLabels,
             'statusCounts' => StudentRegistration::query()
                 ->whereNull('archived_at')
                 ->selectRaw('status, count(*) as aggregate')
@@ -89,7 +95,7 @@ class RegistrationReviewController extends Controller
             ...$this->viewContext($request),
             'registration' => $registration,
             'checklist' => $this->documents->checklist($registration),
-            'documentStatuses' => StudentRegistration::DOCUMENT_STATUS_LABELS,
+            'documentStatuses' => ReviewCategory::categories('registration_document', true),
         ]);
     }
 
@@ -97,14 +103,16 @@ class RegistrationReviewController extends Controller
     {
         abort_if($registration->archived_at, 409, 'Restore this registration before changing its review decision.');
 
+        $activeDocumentStatuses = ReviewCategory::categories('registration_document', true)->keyBy('slug');
+        $selectedOutcomes = collect([
+            $request->input('cor_review_status'),
+            $request->input('formal_photo_review_status'),
+        ])->map(fn (?string $status): string => $activeDocumentStatuses->get($status)?->outcome ?? 'pending');
         $validated = $request->validate([
-            'cor_review_status' => ['required', Rule::in(array_keys(StudentRegistration::DOCUMENT_STATUS_LABELS))],
-            'formal_photo_review_status' => ['required', Rule::in(array_keys(StudentRegistration::DOCUMENT_STATUS_LABELS))],
+            'cor_review_status' => ['required', Rule::in($activeDocumentStatuses->keys()->all())],
+            'formal_photo_review_status' => ['required', Rule::in($activeDocumentStatuses->keys()->all())],
             'review_notes' => [
-                Rule::requiredIf(fn (): bool => in_array('needs_correction', [
-                    $request->input('cor_review_status'),
-                    $request->input('formal_photo_review_status'),
-                ], true)),
+                Rule::requiredIf(fn (): bool => $selectedOutcomes->contains('correction')),
                 'nullable',
                 'string',
                 'max:2000',
@@ -114,7 +122,7 @@ class RegistrationReviewController extends Controller
         $checklist = $this->documents->checklist($registration);
         $errors = [];
         foreach (['cor', 'formal_photo'] as $document) {
-            if ($validated[$document.'_review_status'] === 'verified' && ! $checklist[$document]['complete']) {
+            if (ReviewCategory::outcomeFor('registration_document', $validated[$document.'_review_status']) === 'approved' && ! $checklist[$document]['complete']) {
                 $errors[$document.'_review_status'] = 'This document cannot be verified because its stored file is missing, empty, too large, or has an unsupported type.';
             }
         }
@@ -122,14 +130,18 @@ class RegistrationReviewController extends Controller
             throw ValidationException::withMessages($errors);
         }
 
-        $documentDecisions = [$validated['cor_review_status'], $validated['formal_photo_review_status']];
-        $status = in_array('needs_correction', $documentDecisions, true)
-            ? 'needs_correction'
-            : (collect($documentDecisions)->every(fn (string $decision): bool => $decision === 'verified')
-                ? 'verified'
-                : 'under_review');
+        $documentOutcomes = collect([$validated['cor_review_status'], $validated['formal_photo_review_status']])
+            ->map(fn (string $decision): string => ReviewCategory::outcomeFor('registration_document', $decision));
+        $statusOutcome = $documentOutcomes->contains('correction')
+            ? 'correction'
+            : ($documentOutcomes->every(fn (string $outcome): bool => $outcome === 'approved') ? 'approved' : 'in_progress');
+        $status = ReviewCategory::defaultSlug('registration', $statusOutcome, match ($statusOutcome) {
+            'approved' => 'verified',
+            'correction' => 'needs_correction',
+            default => 'under_review',
+        });
 
-        $account = DB::transaction(function () use ($registration, $validated, $status, $request): ?array {
+        $account = DB::transaction(function () use ($registration, $validated, $status, $statusOutcome, $request): ?array {
             $registration->update([
                 ...$validated,
                 'status' => $status,
@@ -137,7 +149,7 @@ class RegistrationReviewController extends Controller
                 'reviewed_at' => now(),
             ]);
 
-            return $status === 'verified' ? $this->provisionStudentAccount($registration) : null;
+            return $statusOutcome === 'approved' ? $this->provisionStudentAccount($registration) : null;
         });
 
         $flash = [];
@@ -150,11 +162,11 @@ class RegistrationReviewController extends Controller
 
         return redirect()
             ->route($this->routePrefix($request).'.registrations.show', $registration)
-            ->with($flash + ['status' => $status === 'verified'
+            ->with($flash + ['status' => $statusOutcome === 'approved'
                 ? ($account['existing']
                     ? 'The registration remains approved and its student account is already in the Student Accounts list.'
                     : 'Enrollment approved. The student account was created and added to the Student Accounts list.')
-                : ($status === 'needs_correction'
+                : ($statusOutcome === 'correction'
                     ? 'The registration was marked as needing correction.'
                     : 'The document review was saved.')]);
     }

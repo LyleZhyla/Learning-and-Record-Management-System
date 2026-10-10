@@ -92,7 +92,7 @@
                                 <span class="document-count {{ $completeCount === 2 ? 'complete' : 'incomplete' }}">{{ $completeCount }} of 2 files available</span>
                                 <small class="document-summary">COR: {{ $documents['cor']['complete'] ? 'ready' : 'issue found' }} · Photo: {{ $documents['formal_photo']['complete'] ? 'ready' : 'issue found' }}</small>
                             </td>
-                            <td><span class="registration-status status-{{ $registration->status }}">{{ $registration->statusLabel() }}</span></td>
+                            <td><span class="registration-status review-category-badge" style="--review-category-color: {{ $registration->statusColor() }}">{{ $registration->statusLabel() }}</span></td>
                             <td class="align-right">
                                 <div class="account-row-actions">
                                     <a class="table-action" href="{{ route($routePrefix.'.registrations.show', $registration) }}">{{ $registration->archived_at ? 'View record' : 'Review documents' }} →</a>

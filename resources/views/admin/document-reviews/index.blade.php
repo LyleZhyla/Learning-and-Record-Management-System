@@ -30,7 +30,7 @@
                     <p><strong>{{ $submission->user->name }}</strong> · {{ $submission->user->email }}</p>
                     <small>Submitted {{ $submission->created_at->format('M j, Y g:i A') }} · {{ $submission->original_filename }}</small>
                 </div>
-                <span class="document-status {{ $submission->status }}">{{ $submission->statusLabel() }}</span>
+                <span class="document-status review-category-badge" style="--review-category-color: {{ $submission->statusColor() }}">{{ $submission->statusLabel() }}</span>
             </div>
             <div class="document-review-actions">
                 <div class="document-file-actions">
@@ -39,7 +39,7 @@
                 </div>
                 <form method="POST" action="{{ route($routePrefix.'.document-reviews.update', $submission) }}" class="document-review-form">
                     @csrf @method('PATCH')
-                    <label class="field-group"><span>Review decision</span><select name="status" required><option value="pending" @selected($submission->status === 'pending')>Pending review</option><option value="verified" @selected($submission->status === 'verified')>Verified</option><option value="needs_correction" @selected($submission->status === 'needs_correction')>Needs correction</option></select></label>
+                    <label class="field-group"><span>Review decision</span><select name="status" required>@foreach($reviewCategories as $statusCategory)<option value="{{ $statusCategory->slug }}" @selected($submission->status === $statusCategory->slug)>{{ $statusCategory->name }}</option>@endforeach</select></label>
                     <label class="field-group grow"><span>Review notes <small>(required for correction)</small></span><textarea name="review_notes" rows="2" maxlength="2000" placeholder="Explain what the student needs to correct">{{ $submission->review_notes }}</textarea></label>
                     <button class="primary-button compact" type="submit">Save review</button>
                 </form>

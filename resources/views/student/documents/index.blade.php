@@ -15,7 +15,7 @@
         <article class="card student-document-card {{ $form->is_required ? 'required' : '' }}">
             <div class="student-document-heading">
                 <div><span class="document-kind">{{ $form->categoryLabel() }}</span><h3>{{ $form->title }}</h3></div>
-                @if($submission)<span class="document-status {{ $submission->status }}">{{ $submission->statusLabel() }}</span>@elseif($form->requires_submission)<span class="document-status not-submitted">Not submitted</span>@else<span class="document-status information">Available</span>@endif
+                @if($submission)<span class="document-status review-category-badge" style="--review-category-color: {{ $submission->statusColor() }}">{{ $submission->statusLabel() }}</span>@elseif($form->requires_submission)<span class="document-status not-submitted">Not submitted</span>@else<span class="document-status information">Available</span>@endif
             </div>
             @if($form->description)<p class="document-description">{{ $form->description }}</p>@endif
             @if($form->instructions)<div class="document-instructions"><strong>Instructions</strong><p>{{ $form->instructions }}</p></div>@endif
@@ -28,7 +28,7 @@
             @if($submission?->review_notes)<div class="document-review-note {{ $submission->status }}"><strong>Reviewer note</strong><p>{{ $submission->review_notes }}</p></div>@endif
             @if($submission)<div class="student-file-row"><span><strong>Uploaded file</strong><small>{{ $submission->original_filename }}</small></span><a class="text-link" href="{{ route('student.documents.submissions.download', $submission) }}">Download</a></div>@endif
             @if($form->requires_submission)
-                @if($submission?->status === 'verified')
+                @if($submission?->isApproved())
                     <p class="document-locked-note">This verified upload is locked. Contact the NSTP Office if it must be changed.</p>
                 @else
                     <form method="POST" enctype="multipart/form-data" action="{{ route('student.documents.store', $form) }}" class="student-document-upload">

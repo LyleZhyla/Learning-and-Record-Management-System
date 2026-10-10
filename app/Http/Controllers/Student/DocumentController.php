@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Student;
 use App\Http\Controllers\Controller;
 use App\Models\DocumentForm;
 use App\Models\DocumentSubmission;
+use App\Models\ReviewCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -41,7 +42,7 @@ class DocumentController extends Controller
             ->where('user_id', $request->user()->id)
             ->where('academic_year', $enrollment?->academic_year)
             ->where('semester', $enrollment?->semester)->first();
-        abort_if($existing?->status === 'verified', 422, 'A verified document cannot be replaced. Contact the NSTP Office if a correction is needed.');
+        abort_if($existing && ReviewCategory::outcomeFor('document_submission', $existing->status) === 'approved', 422, 'A verified document cannot be replaced. Contact the NSTP Office if a correction is needed.');
 
         $file = $validated['file'];
         $newPath = $file->store('configurable-document-submissions', 'local');
@@ -57,7 +58,7 @@ class DocumentController extends Controller
                 'semester' => $enrollment?->semester,
                 'file_path' => $newPath,
                 'original_filename' => $file->getClientOriginalName(),
-                'status' => 'pending',
+                'status' => ReviewCategory::defaultSlug('document_submission', 'pending', 'pending'),
                 'review_notes' => null,
                 'reviewed_by' => null,
                 'reviewed_at' => null,

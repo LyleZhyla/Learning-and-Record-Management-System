@@ -7,12 +7,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DocumentSubmission extends Model
 {
-    public const STATUSES = [
-        'pending' => 'Pending review',
-        'verified' => 'Verified',
-        'needs_correction' => 'Needs correction',
-    ];
-
     protected $fillable = [
         'document_form_id', 'user_id', 'enrollment_id', 'academic_year', 'semester',
         'file_path', 'original_filename', 'status', 'review_notes', 'reviewed_by', 'reviewed_at',
@@ -45,6 +39,16 @@ class DocumentSubmission extends Model
 
     public function statusLabel(): string
     {
-        return self::STATUSES[$this->status] ?? str($this->status)->headline()->toString();
+        return ReviewCategory::labelFor('document_submission', $this->status);
+    }
+
+    public function statusColor(): string
+    {
+        return ReviewCategory::colorFor('document_submission', $this->status);
+    }
+
+    public function isApproved(): bool
+    {
+        return ReviewCategory::outcomeFor('document_submission', $this->status) === 'approved';
     }
 }
