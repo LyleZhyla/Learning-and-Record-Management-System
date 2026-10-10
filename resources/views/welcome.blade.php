@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="The official Smart NSTP portal of Tarlac Agricultural University for student service, community engagement, and program management.">
-    <meta name="theme-color" content="#123f2e">
+    <meta name="theme-color" content="#10264b">
     <title>Smart NSTP | Tarlac Agricultural University</title>
     <link rel="icon" href="{{ asset('images/branding/tau-logo.png') }}">
     <link rel="preconnect" href="https://www.tau.edu.ph">
