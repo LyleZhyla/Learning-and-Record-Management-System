@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Coordinator;
 
 use App\Http\Controllers\Controller;
+use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\NstpSerialNumberRelease;
@@ -23,25 +24,44 @@ class SerialNumberController extends Controller
 
     public function index(Request $request): View
     {
-        $componentId = $request->user()->nstp_component_id ?? 0;
+        $isProgramAdministrator = $this->isProgramAdministrator($request);
+        $components = NstpComponent::query()->where('is_active', true)->orderBy('code')->get();
+        $selectedComponentId = $isProgramAdministrator
+            ? $request->integer('component_id')
+            : (int) ($request->user()->nstp_component_id ?? 0);
+
         $releases = NstpSerialNumberRelease::with(['component', 'uploader'])
             ->withCount('serialNumbers')
-            ->where('component_id', $componentId)
-            ->latest('received_at')->latest('id')->paginate(15);
+            ->when($selectedComponentId > 0, fn ($query) => $query->where('component_id', $selectedComponentId))
+            ->latest('received_at')->latest('id')->paginate(15)->withQueryString();
 
         return view('coordinator.serial-numbers.index', [
             'releases' => $releases,
-            'component' => $request->user()->nstpComponent,
+            'components' => $components,
+            'component' => $isProgramAdministrator
+                ? $components->firstWhere('id', $selectedComponentId)
+                : $request->user()->nstpComponent,
+            'selectedComponentId' => $selectedComponentId,
+            'isProgramAdministrator' => $isProgramAdministrator,
             'semesters' => NstpSection::SEMESTERS,
+            ...$this->viewContext($request),
         ]);
     }
 
     public function store(Request $request): RedirectResponse
     {
-        $componentId = $request->user()->nstp_component_id ?? 0;
-        abort_if($componentId === 0, 422, 'A coordinator component assignment is required.');
+        $isProgramAdministrator = $this->isProgramAdministrator($request);
+        $componentId = $isProgramAdministrator
+            ? $request->integer('component_id')
+            : (int) ($request->user()->nstp_component_id ?? 0);
+        abort_if($componentId === 0, 422, $isProgramAdministrator
+            ? 'Select an NSTP component for this serial-number batch.'
+            : 'A coordinator component assignment is required.');
 
         $validated = $request->validate([
+            'component_id' => $isProgramAdministrator
+                ? ['required', 'integer', Rule::exists('nstp_components', 'id')->where('is_active', true)]
+                : ['nullable'],
             'academic_year' => ['required', 'regex:/^\d{4}-\d{4}$/', function (string $attribute, mixed $value, \Closure $fail): void {
                 [$start, $end] = array_map('intval', explode('-', (string) $value));
                 if ($end !== $start + 1) {
@@ -59,7 +79,7 @@ class SerialNumberController extends Controller
 
         try {
             $release = NstpSerialNumberRelease::create([
-                ...collect($validated)->except('source_file')->all(),
+                ...collect($validated)->except(['source_file', 'component_id'])->all(),
                 'component_id' => $componentId,
                 'source_file_path' => $path,
                 'source_file_original_name' => $file->getClientOriginalName(),
@@ -71,7 +91,7 @@ class SerialNumberController extends Controller
             throw $exception;
         }
 
-        return redirect()->route('coordinator.serial-numbers.show', $release)
+        return redirect()->route($this->routePrefix($request).'.serial-numbers.show', $release)
             ->with('status', 'Official serial-number file uploaded. You can now encode the CHED-provided numbers for qualified graduates.');
     }
 
@@ -82,7 +102,12 @@ class SerialNumberController extends Controller
         $graduates = $this->qualifiedGraduates($serialNumberRelease);
         $encoded = $serialNumberRelease->serialNumbers->keyBy('enrollment_id');
 
-        return view('coordinator.serial-numbers.show', compact('serialNumberRelease', 'graduates', 'encoded'));
+        return view('coordinator.serial-numbers.show', [
+            'serialNumberRelease' => $serialNumberRelease,
+            'graduates' => $graduates,
+            'encoded' => $encoded,
+            ...$this->viewContext($request),
+        ]);
     }
 
     public function storeSerial(Request $request, NstpSerialNumberRelease $serialNumberRelease, NstpEnrollment $enrollment): RedirectResponse
@@ -127,7 +152,40 @@ class SerialNumberController extends Controller
 
     private function authorizeRelease(Request $request, NstpSerialNumberRelease $release): void
     {
+        if ($this->isProgramAdministrator($request)) {
+            return;
+        }
+
         abort_unless((int) $request->user()->nstp_component_id === (int) $release->component_id, 403);
+    }
+
+    private function isProgramAdministrator(Request $request): bool
+    {
+        return $request->user()->isSuperAdmin() || $request->user()->isNstpAdmin();
+    }
+
+    /** @return array{layout: string, routePrefix: string} */
+    private function viewContext(Request $request): array
+    {
+        $routePrefix = $this->routePrefix($request);
+
+        return [
+            'layout' => match ($routePrefix) {
+                'admin' => 'layouts.admin',
+                'nstp_admin' => 'layouts.nstp-admin',
+                default => 'layouts.coordinator',
+            },
+            'routePrefix' => $routePrefix,
+        ];
+    }
+
+    private function routePrefix(Request $request): string
+    {
+        return match (true) {
+            $request->user()->isSuperAdmin() => 'admin',
+            $request->user()->isNstpAdmin() => 'nstp_admin',
+            default => 'coordinator',
+        };
     }
 
     /** @return Collection<int, NstpEnrollment> */

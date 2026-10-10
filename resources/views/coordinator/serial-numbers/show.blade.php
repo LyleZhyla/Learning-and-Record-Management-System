@@ -1,8 +1,8 @@
-@extends('layouts.coordinator')
+@extends($layout)
 @section('title', 'Encode Serial Numbers')
 @section('page-title', 'Encode Serial Numbers')
 @section('content')
-<div class="page-actions"><div><span class="eyebrow">{{ $serialNumberRelease->component->code }} · {{ $serialNumberRelease->academic_year }}</span><h2>{{ \App\Models\NstpSection::SEMESTERS[$serialNumberRelease->semester] ?? str($serialNumberRelease->semester)->headline() }} graduate serials</h2><p>Encode each value exactly as printed in the official uploaded file.</p></div><div><a class="secondary-outline-button" href="{{ route('coordinator.serial-numbers.download', $serialNumberRelease) }}">Download official file</a> <a class="secondary-button" href="{{ route('coordinator.serial-numbers.index') }}">Back to batches</a></div></div>
+<div class="page-actions"><div><span class="eyebrow">{{ $serialNumberRelease->component->code }} · {{ $serialNumberRelease->academic_year }}</span><h2>{{ \App\Models\NstpSection::SEMESTERS[$serialNumberRelease->semester] ?? str($serialNumberRelease->semester)->headline() }} graduate serials</h2><p>Encode each value exactly as printed in the official uploaded file.</p></div><div><a class="secondary-outline-button" href="{{ route($routePrefix.'.serial-numbers.download', $serialNumberRelease) }}">Download official file</a> <a class="secondary-button" href="{{ route($routePrefix.'.serial-numbers.index') }}">Back to batches</a></div></div>
 
 <section class="card" style="margin-bottom:1.25rem">
     <div class="card-heading"><div><h3>Source record</h3><p>The uploaded document is retained as evidence for every serial number in this batch.</p></div><span class="status-badge active"><i></i>Official file received</span></div>
@@ -19,7 +19,7 @@
             <td><strong>{{ $enrollment->student->name }}</strong><br><small class="muted-cell">{{ $enrollment->student->studentProfile?->student_number ?? $enrollment->student->email }}</small></td>
             <td>{{ $enrollment->section?->code }}</td>
             <td>@if($record)<span class="status-badge active"><i></i>{{ $record->serial_number }}</span>@else<span class="status-badge pending"><i></i>Not encoded</span>@endif</td>
-            <td><form method="POST" action="{{ route('coordinator.serial-numbers.students.store', [$serialNumberRelease, $enrollment]) }}" style="display:flex;gap:.5rem;min-width:24rem">@csrf @method('PUT')<input name="serial_number" value="{{ old('serial_number', $record?->serial_number) }}" maxlength="100" placeholder="Enter the CHED-provided serial" required style="flex:1"><button class="primary-button compact" type="submit">{{ $record ? 'Update' : 'Save' }}</button></form></td>
+            <td><form method="POST" action="{{ route($routePrefix.'.serial-numbers.students.store', [$serialNumberRelease, $enrollment]) }}" style="display:flex;gap:.5rem;min-width:24rem">@csrf @method('PUT')<input name="serial_number" value="{{ old('serial_number', $record?->serial_number) }}" maxlength="100" placeholder="Enter the CHED-provided serial" required style="flex:1"><button class="primary-button compact" type="submit">{{ $record ? 'Update' : 'Save' }}</button></form></td>
         </tr>
     @empty
         <tr><td colspan="4"><div class="empty-state"><strong>No qualified graduates found</strong><span>Complete all assessment grading for this component and term before encoding serial numbers.</span></div></td></tr>

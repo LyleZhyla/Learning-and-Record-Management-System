@@ -53,6 +53,7 @@
                 <p class="nav-label">Reports & Records</p>
                 <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" href="{{ route('admin.reports.index') }}" data-admin-tour="reports"><span class="nav-icon">◫</span> Reports Center</a>
                 <a class="nav-link {{ request()->routeIs('admin.ched-applications.*') ? 'active' : '' }}" href="{{ route('admin.ched-applications.index') }}"><span class="nav-icon">↗</span> CHED Applications</a>
+                <a class="nav-link {{ request()->routeIs('admin.serial-numbers.*') ? 'active' : '' }}" href="{{ route('admin.serial-numbers.index') }}"><span class="nav-icon">#</span> Serial Numbers</a>
                 <a class="nav-link {{ request()->routeIs('admin.document-forms.*') ? 'active' : '' }}" href="{{ route('admin.document-forms.index') }}"><span class="nav-icon">▧</span> Documents &amp; Forms</a>
                 <a class="nav-link {{ request()->routeIs('admin.document-reviews.*') ? 'active' : '' }}" href="{{ route('admin.document-reviews.index') }}"><span class="nav-icon">✓</span> Document Reviews</a>
                 <a class="nav-link {{ request()->routeIs('admin.review-categories.*') ? 'active' : '' }}" href="{{ route('admin.review-categories.index') }}"><span class="nav-icon">◈</span> Review Categories</a>

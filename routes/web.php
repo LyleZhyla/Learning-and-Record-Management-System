@@ -249,7 +249,15 @@ $engagementAnalyticsRoutes = function (): void {
     Route::get('/engagement-analytics', EngagementAnalyticsController::class)->name('engagement-analytics.index');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumDocumentPreparationRoutes, $engagementAnalyticsRoutes) {
+$serialNumberRoutes = function (): void {
+    Route::get('/serial-numbers', [CoordinatorSerialNumberController::class, 'index'])->name('serial-numbers.index');
+    Route::post('/serial-numbers', [CoordinatorSerialNumberController::class, 'store'])->name('serial-numbers.store');
+    Route::get('/serial-numbers/{serialNumberRelease}', [CoordinatorSerialNumberController::class, 'show'])->name('serial-numbers.show');
+    Route::get('/serial-numbers/{serialNumberRelease}/source-file', [CoordinatorSerialNumberController::class, 'download'])->name('serial-numbers.download');
+    Route::put('/serial-numbers/{serialNumberRelease}/students/{enrollment}', [CoordinatorSerialNumberController::class, 'storeSerial'])->name('serial-numbers.students.store');
+};
+
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumDocumentPreparationRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
@@ -296,6 +304,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $honorariumRequestRoutes();
     $honorariumDocumentPreparationRoutes();
     $engagementAnalyticsRoutes();
+    $serialNumberRoutes();
     $documentConfigurationRoutes();
     $documentReviewRoutes();
     $reviewCategoryRoutes();
@@ -370,7 +379,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $engagementAnalyticsRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -425,6 +434,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $evaluationRoutes();
     $facilitatorRequirementRoutes();
     $engagementAnalyticsRoutes();
+    $serialNumberRoutes();
     $documentConfigurationRoutes();
     $documentReviewRoutes();
     $reviewCategoryRoutes();
@@ -497,7 +507,7 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     $omrScannerRoutes();
 });
 
-Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $rotcApprovalRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $engagementAnalyticsRoutes) {
+Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $rotcApprovalRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'coordinator.system-guide')->name('system-guide');
     Route::get('/landing-page', [LandingPageContentController::class, 'edit'])->name('landing-page.edit');
@@ -529,11 +539,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/reports/{type}/document', [ReportController::class, 'document'])->name('reports.document');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
-    Route::get('/serial-numbers', [CoordinatorSerialNumberController::class, 'index'])->name('serial-numbers.index');
-    Route::post('/serial-numbers', [CoordinatorSerialNumberController::class, 'store'])->name('serial-numbers.store');
-    Route::get('/serial-numbers/{serialNumberRelease}', [CoordinatorSerialNumberController::class, 'show'])->name('serial-numbers.show');
-    Route::get('/serial-numbers/{serialNumberRelease}/source-file', [CoordinatorSerialNumberController::class, 'download'])->name('serial-numbers.download');
-    Route::put('/serial-numbers/{serialNumberRelease}/students/{enrollment}', [CoordinatorSerialNumberController::class, 'storeSerial'])->name('serial-numbers.students.store');
+    $serialNumberRoutes();
     $communityProjectRoutes();
     $projectTaskRoutes();
     $evaluationRoutes();

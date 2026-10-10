@@ -73,6 +73,50 @@ class SerialNumberVerificationTest extends TestCase
             ->assertOk()->assertSee('No matching official record')->assertDontSee($graduate->name);
     }
 
+    public function test_super_admin_and_nstp_admin_can_upload_files_and_encode_serial_numbers(): void
+    {
+        Storage::fake('local');
+        [$coordinator, $facilitator, $section, $graduate] = $this->programData();
+        $enrollment = $this->enroll($graduate, $section);
+        $this->grade($graduate, $section, $facilitator, 90);
+
+        foreach (['super_admin' => 'admin', 'nstp_admin' => 'nstp-admin'] as $role => $prefix) {
+            $manager = User::factory()->create(['role' => $role, 'status' => 'active']);
+
+            $this->actingAs($manager)->get("/{$prefix}/serial-numbers")
+                ->assertOk()
+                ->assertSee('Upload the official serial-number file')
+                ->assertSee('Select component');
+
+            $this->actingAs($manager)->post("/{$prefix}/serial-numbers", [
+                'component_id' => $section->component_id,
+                'academic_year' => '2026-2027',
+                'semester' => 'first',
+                'received_at' => '2026-10-10',
+                'source_file' => UploadedFile::fake()->create("{$role}-serial-list.pdf", 100, 'application/pdf'),
+            ])->assertRedirect();
+
+            $release = NstpSerialNumberRelease::where('uploaded_by', $manager->id)->firstOrFail();
+            $this->actingAs($manager)->get("/{$prefix}/serial-numbers/{$release->id}")
+                ->assertOk()
+                ->assertSee($graduate->name);
+            $this->actingAs($manager)->get("/{$prefix}/serial-numbers/{$release->id}/source-file")
+                ->assertOk();
+
+            $serialNumber = $role === 'super_admin' ? 'NSTP-ADMIN-2026-001' : 'NSTP-OFFICE-2026-001';
+            $this->actingAs($manager)->put("/{$prefix}/serial-numbers/{$release->id}/students/{$enrollment->id}", [
+                'serial_number' => $serialNumber,
+            ])->assertRedirect()->assertSessionHasNoErrors();
+
+            $this->assertDatabaseHas('nstp_student_serial_numbers', [
+                'release_id' => $release->id,
+                'enrollment_id' => $enrollment->id,
+                'serial_number' => $serialNumber,
+                'encoded_by' => $manager->id,
+            ]);
+        }
+    }
+
     public function test_unqualified_student_and_other_component_coordinator_cannot_encode_serial(): void
     {
         Storage::fake('local');
