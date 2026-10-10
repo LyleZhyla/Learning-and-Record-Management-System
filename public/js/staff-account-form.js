@@ -20,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('[data-staff-account-form]').forEach((form) => {
         const role = form.querySelector('[data-account-role]');
+        const baseRole = form.querySelector('[data-account-base-role]');
         const statusField = form.querySelector('[data-account-status-field]');
         const statusInput = form.querySelector('[data-account-status-input]');
         const componentField = form.querySelector('[data-staff-component-field]');
@@ -31,8 +32,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!role || !componentField || !component || !help) return;
 
         const updateComponentField = () => {
-            const isCoordinator = role.value === 'coordinator';
-            const isFacilitator = role.value === 'facilitator';
+            const selectedRole = role.selectedOptions[0]?.dataset.baseRole || baseRole?.value;
+            if (baseRole) baseRole.value = selectedRole;
+            const isCoordinator = selectedRole === 'coordinator';
+            const isFacilitator = selectedRole === 'facilitator';
             const usesComponent = isCoordinator || isFacilitator;
 
             form.classList.toggle('is-facilitator', isFacilitator);

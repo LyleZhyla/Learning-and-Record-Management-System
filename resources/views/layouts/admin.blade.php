@@ -24,7 +24,7 @@
 
             <div class="role-card">
                 <x-user-avatar :user="auth()->user()" />
-                <span><strong>{{ auth()->user()->name }}</strong><small>Super Administrator</small></span>
+                <span><strong>{{ auth()->user()->name }}</strong><small>{{ auth()->user()->roleLabel() }}</small></span>
             </div>
 
             <nav class="main-nav" aria-label="Main navigation">
@@ -37,6 +37,7 @@
                 <a class="nav-link {{ request()->routeIs('admin.users.*') && !$managingStudentAccount ? 'active' : '' }}" href="{{ route('admin.users.index') }}" data-admin-tour="staff">
                     <span class="nav-icon">♙</span> Staff Accounts
                 </a>
+                <a class="nav-link {{ request()->routeIs('admin.roles.*') ? 'active' : '' }}" href="{{ route('admin.roles.index') }}"><span class="nav-icon">⚿</span> Roles &amp; Permissions</a>
                 <a class="nav-link {{ $managingStudentAccount ? 'active' : '' }}" href="{{ route('admin.students.index') }}" data-admin-tour="students"><span class="nav-icon">♟</span> Student Accounts</a>
                 <a class="nav-link {{ request()->routeIs('admin.registrations.*') ? 'active' : '' }}" href="{{ route('admin.registrations.index') }}"><span class="nav-icon">▣</span> Registration Reviews</a>
                 <p class="nav-label">Program Operations</p>

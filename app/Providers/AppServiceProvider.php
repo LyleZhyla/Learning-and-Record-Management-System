@@ -8,6 +8,7 @@ use App\Models\StudentNotification;
 use App\Services\NotificationService;
 use App\Services\PortalAccessService;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -27,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::defaultView('pagination.compact');
+        Blade::if('permission', fn (string $permission): bool => auth()->user()?->hasPermission($permission) === true);
 
         View::composer('layouts.student', function ($view): void {
             $user = auth()->user();

@@ -23,7 +23,7 @@
 
             <div class="role-card">
                 <x-user-avatar :user="auth()->user()" class="nstp-avatar" />
-                <span><strong>{{ auth()->user()->name }}</strong><small>NSTP Administrator</small></span>
+                <span><strong>{{ auth()->user()->name }}</strong><small>{{ auth()->user()->roleLabel() }}</small></span>
             </div>
 
             <nav class="main-nav" aria-label="NSTP Admin navigation">
@@ -33,24 +33,24 @@
                 </a>
                 <p class="nav-label">People & Registration</p>
                 @php($managingStudentAccount = request()->routeIs('nstp_admin.students.*') || (request()->routeIs('nstp_admin.accounts.show') && request()->route('user')?->isStudent()))
-                <a class="nav-link {{ request()->routeIs('nstp_admin.accounts.*') && !$managingStudentAccount ? 'active' : '' }}" href="{{ route('nstp_admin.accounts.index') }}" data-nstp-admin-tour="staff"><span class="nav-icon">♙</span> Staff Accounts</a>
-                <a class="nav-link {{ $managingStudentAccount ? 'active' : '' }}" href="{{ route('nstp_admin.students.index') }}" data-nstp-admin-tour="students"><span class="nav-icon">♟</span> Student Accounts</a>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.registrations.*') ? 'active' : '' }}" href="{{ route('nstp_admin.registrations.index') }}" data-nstp-admin-tour="registrations"><span class="nav-icon">▣</span> Registration Reviews</a>
+                @permission('accounts.staff')<a class="nav-link {{ request()->routeIs('nstp_admin.accounts.*') && !$managingStudentAccount ? 'active' : '' }}" href="{{ route('nstp_admin.accounts.index') }}" data-nstp-admin-tour="staff"><span class="nav-icon">♙</span> Staff Accounts</a>@endpermission
+                @permission('accounts.students')<a class="nav-link {{ $managingStudentAccount ? 'active' : '' }}" href="{{ route('nstp_admin.students.index') }}" data-nstp-admin-tour="students"><span class="nav-icon">♟</span> Student Accounts</a>@endpermission
+                @permission('registrations.review')<a class="nav-link {{ request()->routeIs('nstp_admin.registrations.*') ? 'active' : '' }}" href="{{ route('nstp_admin.registrations.index') }}" data-nstp-admin-tour="registrations"><span class="nav-icon">▣</span> Registration Reviews</a>@endpermission
                 <p class="nav-label">Program Operations</p>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.components.*') ? 'active' : '' }}" href="{{ route('nstp_admin.components.index') }}" data-nstp-admin-tour="components"><span class="nav-icon">◉</span> NSTP Components</a>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.sections.*', 'nstp_admin.sectioning.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sections.index') }}" data-nstp-admin-tour="sectioning"><span class="nav-icon">▦</span> Sectioning</a>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.schedules.*') ? 'active' : '' }}" href="{{ route('nstp_admin.schedules.index') }}" data-nstp-admin-tour="scheduling"><span class="nav-icon">◷</span> Scheduling</a>
+                @permission('program.components')<a class="nav-link {{ request()->routeIs('nstp_admin.components.*') ? 'active' : '' }}" href="{{ route('nstp_admin.components.index') }}" data-nstp-admin-tour="components"><span class="nav-icon">◉</span> NSTP Components</a>@endpermission
+                @permission('program.sections')<a class="nav-link {{ request()->routeIs('nstp_admin.sections.*', 'nstp_admin.sectioning.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sections.index') }}" data-nstp-admin-tour="sectioning"><span class="nav-icon">▦</span> Sectioning</a>@endpermission
+                @permission('program.schedules')<a class="nav-link {{ request()->routeIs('nstp_admin.schedules.*') ? 'active' : '' }}" href="{{ route('nstp_admin.schedules.index') }}" data-nstp-admin-tour="scheduling"><span class="nav-icon">◷</span> Scheduling</a>@endpermission
                 <p class="nav-label">Learning & Assessment</p>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.attendance.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'attendance') }}" data-nstp-admin-tour="attendance"><span class="nav-icon">▣</span> Attendance @if($sidebarPortalNotificationCounts['attendance'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['attendance'] > 99 ? '99+' : $sidebarPortalNotificationCounts['attendance'] }}</span>@endif</a>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.materials.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'materials') }}"><span class="nav-icon">▤</span> Learning Materials @if($sidebarPortalNotificationCounts['materials'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['materials'] > 99 ? '99+' : $sidebarPortalNotificationCounts['materials'] }}</span>@endif</a>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.assessments.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'assessments') }}" data-nstp-admin-tour="assessments"><span class="nav-icon">✓</span> Assessments @if($sidebarPortalNotificationCounts['assessments'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['assessments'] > 99 ? '99+' : $sidebarPortalNotificationCounts['assessments'] }}</span>@endif</a>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.grades.*') ? 'active' : '' }}" href="{{ route('nstp_admin.grades.index') }}"><span class="nav-icon">◎</span> Grades</a>
+                @permission('learning.attendance')<a class="nav-link {{ request()->routeIs('nstp_admin.attendance.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'attendance') }}" data-nstp-admin-tour="attendance"><span class="nav-icon">▣</span> Attendance @if($sidebarPortalNotificationCounts['attendance'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['attendance'] > 99 ? '99+' : $sidebarPortalNotificationCounts['attendance'] }}</span>@endif</a>@endpermission
+                @permission('learning.materials')<a class="nav-link {{ request()->routeIs('nstp_admin.materials.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'materials') }}"><span class="nav-icon">▤</span> Learning Materials @if($sidebarPortalNotificationCounts['materials'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['materials'] > 99 ? '99+' : $sidebarPortalNotificationCounts['materials'] }}</span>@endif</a>@endpermission
+                @permission('learning.assessments')<a class="nav-link {{ request()->routeIs('nstp_admin.assessments.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'assessments') }}" data-nstp-admin-tour="assessments"><span class="nav-icon">✓</span> Assessments @if($sidebarPortalNotificationCounts['assessments'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['assessments'] > 99 ? '99+' : $sidebarPortalNotificationCounts['assessments'] }}</span>@endif</a>@endpermission
+                @permission('learning.grades')<a class="nav-link {{ request()->routeIs('nstp_admin.grades.*') ? 'active' : '' }}" href="{{ route('nstp_admin.grades.index') }}"><span class="nav-icon">◎</span> Grades</a>@endpermission
                 <p class="nav-label">Reports & Records</p>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.reports.*') ? 'active' : '' }}" href="{{ route('nstp_admin.reports.index') }}" data-nstp-admin-tour="reports"><span class="nav-icon">▤</span> Reports Center</a>
+                @permission('reports.view')<a class="nav-link {{ request()->routeIs('nstp_admin.reports.*') ? 'active' : '' }}" href="{{ route('nstp_admin.reports.index') }}" data-nstp-admin-tour="reports"><span class="nav-icon">▤</span> Reports Center</a>@endpermission
                 <p class="nav-label">Communication</p>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.announcements.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'announcements') }}"><span class="nav-icon">◫</span> Announcements @if($sidebarPortalNotificationCounts['announcements'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['announcements'] > 99 ? '99+' : $sidebarPortalNotificationCounts['announcements'] }}</span>@endif</a>
-                <a class="nav-link {{ request()->routeIs('nstp_admin.messages.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'messages') }}"><span class="nav-icon">◇</span> Messages @if($sidebarUnreadMessageCount > 0)<span class="nav-count" data-unread-message-count="{{ $sidebarUnreadMessageCount }}">{{ $sidebarUnreadMessageCount > 99 ? '99+' : $sidebarUnreadMessageCount }}</span>@endif</a>
-                <a class="nav-link {{ request()->routeIs('ai-assistant.*') ? 'active' : '' }}" href="{{ route('ai-assistant.index') }}" data-nstp-admin-tour="ai"><span class="nav-icon">✦</span> AI Assistant</a>
+                @permission('communication.announcements')<a class="nav-link {{ request()->routeIs('nstp_admin.announcements.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'announcements') }}"><span class="nav-icon">◫</span> Announcements @if($sidebarPortalNotificationCounts['announcements'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['announcements'] > 99 ? '99+' : $sidebarPortalNotificationCounts['announcements'] }}</span>@endif</a>@endpermission
+                @permission('communication.messages')<a class="nav-link {{ request()->routeIs('nstp_admin.messages.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'messages') }}"><span class="nav-icon">◇</span> Messages @if($sidebarUnreadMessageCount > 0)<span class="nav-count" data-unread-message-count="{{ $sidebarUnreadMessageCount }}">{{ $sidebarUnreadMessageCount > 99 ? '99+' : $sidebarUnreadMessageCount }}</span>@endif</a>@endpermission
+                @permission('ai.use')<a class="nav-link {{ request()->routeIs('ai-assistant.*') ? 'active' : '' }}" href="{{ route('ai-assistant.index') }}" data-nstp-admin-tour="ai"><span class="nav-icon">✦</span> AI Assistant</a>@endpermission
                 <p class="nav-label">Account</p>
                 <a class="nav-link {{ request()->routeIs('nstp_admin.profile.*') ? 'active' : '' }}" href="{{ route('nstp_admin.profile.edit') }}">
                     <span class="nav-icon">⚙</span> Profile & Security
@@ -98,7 +98,7 @@
             <footer class="app-footer">© {{ date('Y') }} Tarlac Agricultural University · National Service Training Program</footer>
         </main>
     </div>
-    <x-ai-chat-widget />
+    @permission('ai.use')<x-ai-chat-widget />@endpermission
     <script src="{{ asset('js/sidebar.js') }}"></script>
     <script src="{{ asset('js/theme.js') }}"></script>
     <script src="{{ asset('js/table-sort.js') }}?v={{ filemtime(public_path('js/table-sort.js')) }}"></script>

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\NstpComponent;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\AccountCredentialMailer;
 use Illuminate\Http\RedirectResponse;
@@ -66,15 +67,17 @@ class UserController extends Controller
         return view('admin.users.create', [
             'components' => NstpComponent::where('is_active', true)->orderBy('code')->get(),
             'initialRole' => $initialRole,
-            'roleOptions' => $initialRole === 'student'
-                ? ['student' => User::ROLE_LABELS['student']]
-                : collect(User::ROLE_LABELS)->only(self::CREATABLE_STAFF_ROLES)->all(),
+            'accessRoles' => $this->assignableRoles($initialRole === 'student' ? ['student'] : self::CREATABLE_STAFF_ROLES),
         ]);
     }
 
     public function store(Request $request, AccountCredentialMailer $credentialMailer): RedirectResponse
     {
+        $this->synchronizeRequestedBaseRole($request);
         $validated = $request->validate($this->accountRules());
+        $accessRole = $this->resolveAccessRole($validated);
+        $validated['role'] = $accessRole?->base_role ?? $validated['role'];
+        $validated['role_id'] = $accessRole?->id;
 
         if ($validated['role'] === 'facilitator') {
             $validated['status'] = 'active';
@@ -88,6 +91,7 @@ class UserController extends Controller
                 'email' => str($validated['email'])->lower()->toString(),
                 'password' => $temporaryPassword,
                 'role' => $validated['role'],
+                'role_id' => $validated['role_id'],
                 'status' => $validated['status'],
                 'nstp_component_id' => in_array($validated['role'], ['coordinator', 'facilitator'], true) ? ($validated['nstp_component_id'] ?? null) : null,
                 'must_change_password' => true,
@@ -120,12 +124,20 @@ class UserController extends Controller
     {
         $user->load('facilitatorProfile');
 
-        return view('admin.users.edit', ['user' => $user, 'components' => NstpComponent::where('is_active', true)->orderBy('code')->get()]);
+        return view('admin.users.edit', [
+            'user' => $user,
+            'components' => NstpComponent::where('is_active', true)->orderBy('code')->get(),
+            'accessRoles' => Role::query()->where(fn ($query) => $query->where('is_active', true)->orWhereKey($user->role_id))->orderBy('base_role')->orderBy('name')->get(),
+        ]);
     }
 
     public function update(Request $request, User $user): RedirectResponse
     {
+        $this->synchronizeRequestedBaseRole($request);
         $validated = $request->validate($this->accountRules($user));
+        $accessRole = $this->resolveAccessRole($validated);
+        $validated['role'] = $accessRole?->base_role ?? $validated['role'];
+        $validated['role_id'] = $accessRole?->id;
 
         if ($validated['role'] === 'facilitator') {
             $validated['status'] = $user->status;
@@ -146,6 +158,7 @@ class UserController extends Controller
                 'name' => $validated['name'],
                 'email' => str($validated['email'])->lower()->toString(),
                 'role' => $validated['role'],
+                'role_id' => $validated['role_id'],
                 'status' => $validated['status'],
                 'nstp_component_id' => in_array($validated['role'], ['coordinator', 'facilitator'], true) ? ($validated['nstp_component_id'] ?? null) : null,
             ]);
@@ -259,6 +272,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user?->id)],
             'role' => ['required', Rule::in(array_keys(User::ROLE_LABELS))],
+            'access_role_id' => ['nullable', 'integer', Rule::exists('roles', 'id')->where('is_active', true)],
             'status' => [Rule::requiredIf(! $isFacilitator), 'nullable', Rule::in(array_keys(User::STATUS_LABELS))],
             'nstp_component_id' => ['nullable', 'required_if:role,coordinator,facilitator', 'integer', Rule::exists('nstp_components', 'id')->where('is_active', true)],
             'contact_number' => [Rule::requiredIf($isFacilitator), 'nullable', 'regex:/^09[0-9]{9}$/'],
@@ -307,6 +321,32 @@ class UserController extends Controller
             throw ValidationException::withMessages([
                 'role' => 'At least one active Super Admin account must remain in the system.',
             ]);
+        }
+    }
+
+    /** @param array<int, string> $baseRoles */
+    private function assignableRoles(array $baseRoles)
+    {
+        return Role::query()->where('is_active', true)->whereIn('base_role', $baseRoles)->orderBy('base_role')->orderBy('name')->get();
+    }
+
+    /** @param array<string, mixed> $validated */
+    private function resolveAccessRole(array $validated): ?Role
+    {
+        if (! empty($validated['access_role_id'])) {
+            return Role::query()->where('is_active', true)->findOrFail($validated['access_role_id']);
+        }
+
+        return Role::query()->where('slug', $validated['role'])->first();
+    }
+
+    private function synchronizeRequestedBaseRole(Request $request): void
+    {
+        if ($request->filled('access_role_id')) {
+            $baseRole = Role::query()->where('is_active', true)->whereKey($request->integer('access_role_id'))->value('base_role');
+            if ($baseRole) {
+                $request->merge(['role' => $baseRole]);
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
@@ -43,6 +44,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'role_id',
         'nstp_component_id',
         'student_qr_token',
         'profile_photo_path',
@@ -84,6 +86,10 @@ class User extends Authenticatable
         static::saving(function (User $user): void {
             if ($user->role === 'student' && blank($user->student_qr_token)) {
                 $user->student_qr_token = Str::random(48);
+            }
+
+            if (! $user->role_id && filled($user->role) && Schema::hasTable('roles')) {
+                $user->role_id = Role::where('slug', $user->role)->value('id');
             }
         });
     }
@@ -132,7 +138,29 @@ class User extends Authenticatable
 
     public function roleLabel(): string
     {
-        return self::ROLE_LABELS[$this->role] ?? str($this->role)->headline()->toString();
+        return $this->accessRole?->name
+            ?? self::ROLE_LABELS[$this->role]
+            ?? str($this->role)->headline()->toString();
+    }
+
+    public function accessRole(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role_id');
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($this->accessRole) {
+            return $this->accessRole->is_active && $this->accessRole->hasPermission($permission);
+        }
+
+        $defaults = config('role_permissions.defaults.'.$this->role, []);
+
+        return in_array('*', $defaults, true) || in_array($permission, $defaults, true);
     }
 
     public function statusLabel(): string

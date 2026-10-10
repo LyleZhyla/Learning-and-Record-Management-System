@@ -517,3 +517,14 @@ html[data-theme=dark] .system-brand-copy strong{color:var(--ink)}html[data-theme
 
 /* Super Admin bulk deletion center. */
 .bulk-delete-center{margin-top:20px;border:1px solid #efc4ca}.bulk-delete-option-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 20px 20px}.bulk-delete-option{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:flex-start;gap:12px;border:1px solid var(--line);border-radius:12px;background:#fbfcfe;padding:14px;cursor:pointer}.bulk-delete-option:hover{border-color:#d88b97;background:#fff8f9}.bulk-delete-option input{margin-top:3px}.bulk-delete-option span strong,.bulk-delete-option span small{display:block}.bulk-delete-option span strong{color:var(--navy);font-size:13px}.bulk-delete-option span small{margin-top:4px;color:var(--muted);font-size:11px;line-height:1.5}.bulk-delete-option>b{min-width:34px;border-radius:999px;background:#ffe9ec;padding:5px 8px;color:#ad3145;font-size:11px;text-align:center}.bulk-delete-option.disabled{cursor:not-allowed;opacity:.55}.bulk-delete-confirmation{display:grid;grid-template-columns:minmax(0,1fr) 230px auto;align-items:end;gap:16px;border-top:1px solid #f0d8dc;padding:18px 20px;background:#fffafb}.bulk-delete-confirmation strong{color:#9e2f40}.bulk-delete-confirmation p{margin:4px 0 0;color:var(--muted);font-size:12px;line-height:1.5}.bulk-delete-confirmation .danger-button{min-height:47px}@media(max-width:850px){.bulk-delete-option-grid{grid-template-columns:1fr}.bulk-delete-confirmation{grid-template-columns:1fr}.bulk-delete-confirmation .danger-button{width:100%}}
+/* Configurable role and permission matrix */
+.role-editor { display: grid; gap: 1rem; }
+.role-permission-card .card-heading { align-items: flex-start; gap: 1rem; }
+.permission-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; }
+.permission-group { border: 1px solid var(--border-color, #d9e1ea); border-radius: 12px; padding: 1rem; display: grid; gap: .65rem; align-content: start; }
+.permission-group legend { padding: 0 .4rem; font-weight: 700; color: var(--text-color, #17324d); }
+.permission-option { display: flex; align-items: flex-start; gap: .65rem; padding: .65rem; border-radius: 9px; background: rgba(36, 104, 202, .05); cursor: pointer; }
+.permission-option input { margin-top: .25rem; }
+.permission-option span { display: grid; gap: .15rem; }
+.permission-option small { color: #65758b; font-size: .72rem; }
+.permission-option[hidden] { display: none; }

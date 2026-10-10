@@ -68,6 +68,12 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
+        if ($user->accessRole && ! $user->accessRole->is_active) {
+            throw ValidationException::withMessages([
+                'email' => 'This account role is inactive. Please contact the system administrator.',
+            ]);
+        }
+
         RateLimiter::clear($key);
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();

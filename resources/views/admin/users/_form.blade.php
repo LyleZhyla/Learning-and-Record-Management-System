@@ -12,12 +12,16 @@
     </label>
 
     <label class="field-group" data-account-role-field>
-        <span>Account role</span>
-        <select name="role" required data-account-role>
-            @foreach (($roleOptions ?? \App\Models\User::ROLE_LABELS) as $value => $label)
-                <option value="{{ $value }}" @selected(old('role', $user?->role ?? ($initialRole ?? 'facilitator')) === $value)>{{ $label }}</option>
+        <span>Access role</span>
+        @php($selectedAccessRole = old('access_role_id', $user?->role_id ?? $accessRoles->firstWhere('base_role', $initialRole ?? $user?->role ?? 'facilitator')?->id))
+        <select name="access_role_id" required data-account-role>
+            @foreach ($accessRoles as $accessRole)
+                <option value="{{ $accessRole->id }}" data-base-role="{{ $accessRole->base_role }}" @selected((int) $selectedAccessRole === $accessRole->id)>{{ $accessRole->name }} — {{ \App\Models\User::ROLE_LABELS[$accessRole->base_role] }}</option>
             @endforeach
         </select>
+        <input type="hidden" name="role" value="{{ old('role', $user?->role ?? ($initialRole ?? 'facilitator')) }}" data-account-base-role>
+        <small class="form-help">Custom access is configured in Roles & Permissions.</small>
+        @error('access_role_id') <small class="field-error">{{ $message }}</small> @enderror
         @error('role') <small class="field-error">{{ $message }}</small> @enderror
     </label>
 

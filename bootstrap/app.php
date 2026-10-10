@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\AuditUserActivity;
 use App\Http\Middleware\EnforceInactivityTimeout;
+use App\Http\Middleware\EnforceRolePermissions;
 use App\Http\Middleware\EnsureUserIsCoordinator;
 use App\Http\Middleware\EnsureUserIsFacilitator;
 use App\Http\Middleware\EnsureUserIsNstpAdmin;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
             AuditUserActivity::class,
             EnforceInactivityTimeout::class,
             RequireImportedStudentDocuments::class,
+            EnforceRolePermissions::class,
         ]);
 
         $middleware->alias([
