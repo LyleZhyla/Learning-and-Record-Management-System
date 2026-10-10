@@ -28,6 +28,8 @@ use App\Http\Controllers\Coordinator\RotcApprovalController as CoordinatorRotcAp
 use App\Http\Controllers\CommunityProjectController;
 use App\Http\Controllers\DocumentReviewController;
 use App\Http\Controllers\EvaluationController;
+use App\Http\Controllers\FacilitatorRequirementController;
+use App\Http\Controllers\FacilitatorHonorariumController;
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
 use App\Http\Controllers\Facilitator\StudentController as FacilitatorStudentController;
 use App\Http\Controllers\Learning\AssessmentController;
@@ -211,7 +213,31 @@ $evaluationRoutes = function (): void {
     Route::put('/evaluations/community-projects/{communityProject}/survey', [EvaluationController::class, 'toggleCommunitySurvey'])->name('evaluations.community.toggle');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes) {
+$facilitatorRequirementRoutes = function (): void {
+    Route::get('/facilitator-requirements', [FacilitatorRequirementController::class, 'index'])->name('facilitator-requirements.index');
+    Route::post('/facilitator-requirements', [FacilitatorRequirementController::class, 'storeRequirement'])->name('facilitator-requirements.store');
+    Route::put('/facilitator-requirements/{facilitatorRequirement}', [FacilitatorRequirementController::class, 'updateRequirement'])->name('facilitator-requirements.update');
+    Route::post('/facilitator-requirements/{facilitatorRequirement}/submit', [FacilitatorRequirementController::class, 'submit'])->name('facilitator-requirements.submit');
+    Route::put('/facilitator-requirement-submissions/{submission}/review', [FacilitatorRequirementController::class, 'review'])->name('facilitator-requirements.review');
+    Route::get('/facilitator-requirement-submissions/{submission}/download', [FacilitatorRequirementController::class, 'download'])->name('facilitator-requirements.download');
+};
+
+$honorariumViewerRoutes = function (): void {
+    Route::get('/honoraria', [FacilitatorHonorariumController::class, 'index'])->name('honoraria.index');
+};
+
+$honorariumRequestRoutes = function (): void {
+    Route::get('/honoraria/create', [FacilitatorHonorariumController::class, 'create'])->name('honoraria.create');
+    Route::post('/honoraria', [FacilitatorHonorariumController::class, 'store'])->name('honoraria.store');
+    Route::get('/honoraria/{honorarium}/payslip', [FacilitatorHonorariumController::class, 'payslip'])->name('honoraria.payslip');
+};
+
+$honorariumApprovalRoutes = function (): void {
+    Route::put('/honoraria/{honorarium}/review', [FacilitatorHonorariumController::class, 'review'])->name('honoraria.review');
+    Route::put('/honoraria/{honorarium}/disburse', [FacilitatorHonorariumController::class, 'disburse'])->name('honoraria.disburse');
+};
+
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumApprovalRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
@@ -251,6 +277,10 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $communityProjectRoutes();
     $projectTaskRoutes();
     $evaluationRoutes();
+    $facilitatorRequirementRoutes();
+    $honorariumViewerRoutes();
+    $honorariumRequestRoutes();
+    $honorariumApprovalRoutes();
     $documentConfigurationRoutes();
     $documentReviewRoutes();
     $reviewCategoryRoutes();
@@ -324,7 +354,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -375,6 +405,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $communityProjectRoutes();
     $projectTaskRoutes();
     $evaluationRoutes();
+    $facilitatorRequirementRoutes();
     $documentConfigurationRoutes();
     $documentReviewRoutes();
     $reviewCategoryRoutes();
@@ -417,7 +448,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $scheduleRoutes();
 });
 
-Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes) {
+Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes) {
     Route::get('/dashboard', FacilitatorDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'facilitator.system-guide')->name('system-guide');
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
@@ -439,11 +470,13 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     $communityProjectRoutes();
     $projectTaskRoutes();
     $evaluationRoutes();
+    $facilitatorRequirementRoutes();
+    $honorariumViewerRoutes();
     $learningManagementRoutes();
     $omrScannerRoutes();
 });
 
-Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes) {
+Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'coordinator.system-guide')->name('system-guide');
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
@@ -480,6 +513,9 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     $communityProjectRoutes();
     $projectTaskRoutes();
     $evaluationRoutes();
+    $facilitatorRequirementRoutes();
+    $honorariumViewerRoutes();
+    $honorariumRequestRoutes();
     Route::get('/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
     Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store');
     Route::get('/assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');

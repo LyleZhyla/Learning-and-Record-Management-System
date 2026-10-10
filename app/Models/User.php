@@ -230,6 +230,16 @@ class User extends Authenticatable
         return $this->hasMany(DocumentSubmission::class);
     }
 
+    public function facilitatorRequirementSubmissions(): HasMany
+    {
+        return $this->hasMany(FacilitatorRequirementSubmission::class, 'facilitator_id');
+    }
+
+    public function facilitatorHonoraria(): HasMany
+    {
+        return $this->hasMany(FacilitatorHonorarium::class, 'facilitator_id');
+    }
+
     public function studentNotifications(): HasMany
     {
         return $this->hasMany(StudentNotification::class);
