@@ -29,7 +29,23 @@ class LandingPageController extends Controller
         return view('welcome', [
             'announcements' => $this->publicAnnouncements(),
             'landing' => SystemSetting::landingPageContent(),
+            'landingEditorAuthorized' => $authorizedPreview,
+            'landingEditorMode' => $authorizedPreview && $request->boolean('editor'),
+            'landingEditorRoutePrefix' => $authorizedPreview ? $this->routePrefix($request) : null,
+            'landingSetting' => $authorizedPreview
+                ? SystemSetting::with('updater')->find('landing_page_content')
+                : null,
         ]);
+    }
+
+    private function routePrefix(Request $request): string
+    {
+        return match ($request->user()->role) {
+            'super_admin' => 'admin',
+            'nstp_admin' => 'nstp_admin',
+            'coordinator' => 'coordinator',
+            default => abort(403),
+        };
     }
 
     private function publicAnnouncements(): Collection

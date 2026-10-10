@@ -6,20 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\SystemSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class LandingPageContentController extends Controller
 {
-    public function edit(Request $request): View
+    public function edit(Request $request): RedirectResponse
     {
-        $setting = SystemSetting::with('updater')->find('landing_page_content');
-
-        return view('landing-page.edit', [
-            'landing' => SystemSetting::landingPageContent(),
-            'setting' => $setting,
-            'routePrefix' => $this->routePrefix($request),
-            'layout' => $this->layout($request),
-        ]);
+        return redirect()->route('landing', ['preview' => 1]);
     }
 
     public function update(Request $request): RedirectResponse
@@ -35,7 +27,8 @@ class LandingPageContentController extends Controller
             ],
         );
 
-        return back()->with('status', 'Landing page content was published successfully.');
+        return redirect()->route('landing', ['preview' => 1, 'editor' => 1])
+            ->with('status', 'Landing page changes were published successfully.');
     }
 
     private function rules(): array
@@ -51,23 +44,4 @@ class LandingPageContentController extends Controller
         return $rules;
     }
 
-    private function routePrefix(Request $request): string
-    {
-        return match ($request->user()->role) {
-            'super_admin' => 'admin',
-            'nstp_admin' => 'nstp_admin',
-            'coordinator' => 'coordinator',
-            default => abort(403),
-        };
-    }
-
-    private function layout(Request $request): string
-    {
-        return match ($request->user()->role) {
-            'super_admin' => 'layouts.admin',
-            'nstp_admin' => 'layouts.nstp-admin',
-            'coordinator' => 'layouts.coordinator',
-            default => abort(403),
-        };
-    }
 }

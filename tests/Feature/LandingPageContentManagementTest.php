@@ -22,10 +22,36 @@ class LandingPageContentManagementTest extends TestCase
 
             $this->actingAs($user)
                 ->get(route($route))
+                ->assertRedirect(route('landing', ['preview' => 1]));
+
+            $this->get(route('landing', ['preview' => 1]))
                 ->assertOk()
-                ->assertSee('Landing Page Editor')
-                ->assertSee('Publish landing page');
+                ->assertSee('Landing page')
+                ->assertSee('Editor mode')
+                ->assertSee(SystemSetting::LANDING_PAGE_DEFAULTS['hero_line_1']);
         }
+    }
+
+    public function test_editor_mode_uses_the_actual_landing_page_with_live_editing_controls(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($admin)
+            ->get(route('landing', ['preview' => 1, 'editor' => 1]))
+            ->assertOk()
+            ->assertSee('Edit the live landing page')
+            ->assertSee('Publish changes')
+            ->assertSee('data-landing-preview="hero_line_1"', false)
+            ->assertSee('data-landing-editor-field="hero_line_1"', false)
+            ->assertSee('js/landing-editor.js');
+    }
+
+    public function test_guest_cannot_activate_landing_page_editor_mode(): void
+    {
+        $this->get(route('landing', ['preview' => 1, 'editor' => 1]))
+            ->assertOk()
+            ->assertDontSee('Edit the live landing page')
+            ->assertDontSee('Publish changes');
     }
 
     public function test_facilitator_cannot_open_the_landing_page_editor(): void
