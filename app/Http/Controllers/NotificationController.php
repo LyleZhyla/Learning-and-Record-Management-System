@@ -47,6 +47,7 @@ class NotificationController extends Controller
     public function openEvent(Request $request, StudentNotification $notification): RedirectResponse
     {
         abort_unless($notification->user_id === $request->user()->id, 404);
+        abort_if($notification->available_at?->isFuture(), 404);
         $notification->update(['read_at' => now()]);
 
         return redirect()->to($notification->destination($request->user()));
@@ -67,22 +68,25 @@ class NotificationController extends Controller
             'announcements' => $this->markAnnouncementsRead($user, $now),
             'materials' => StudentNotification::where('user_id', $user->id)
                 ->where('type', StudentNotification::MATERIAL)
+                ->available()
                 ->whereNull('read_at')
                 ->update(['read_at' => $now]),
             'assessments' => StudentNotification::where('user_id', $user->id)
                 ->where('type', StudentNotification::ASSESSMENT)
+                ->available()
                 ->whereNull('read_at')
                 ->update(['read_at' => $now]),
             'attendance' => StudentNotification::where('user_id', $user->id)
                 ->whereIn('type', [StudentNotification::LATE_ATTENDANCE, StudentNotification::ABSENT_ATTENDANCE])
+                ->available()
                 ->whereNull('read_at')
                 ->update(['read_at' => $now]),
             'messages' => DB::table('chat_messages')
                 ->where('recipient_id', $user->id)
                 ->whereNull('read_at')
                 ->update(['read_at' => $now]) + DB::table('chat_group_members')
-                    ->where('user_id', $user->id)
-                    ->update(['last_read_at' => $now, 'updated_at' => $now]),
+                ->where('user_id', $user->id)
+                ->update(['last_read_at' => $now, 'updated_at' => $now]),
         };
 
         return redirect()->to($destination);
@@ -107,6 +111,7 @@ class NotificationController extends Controller
             ->where('user_id', $request->user()->id)
             ->update(['last_read_at' => $now, 'updated_at' => $now]);
         StudentNotification::where('user_id', $request->user()->id)
+            ->available()
             ->whereNull('read_at')
             ->update(['read_at' => $now]);
 

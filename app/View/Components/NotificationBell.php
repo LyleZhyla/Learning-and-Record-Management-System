@@ -2,8 +2,9 @@
 
 namespace App\View\Components;
 
-use App\Models\ChatMessage;
 use App\Models\ChatGroupMessage;
+use App\Models\ChatMessage;
+use App\Models\NotificationRule;
 use App\Models\StudentNotification;
 use App\Services\NotificationService;
 use Closure;
@@ -18,13 +19,15 @@ class NotificationBell extends Component
     public function render(): View|Closure|string
     {
         $user = auth()->user();
-        $query = app(NotificationService::class)->visibleQuery($user);
+        $notificationService = app(NotificationService::class);
+        $query = $notificationService->notificationQuery($user, 'bell');
         $unreadAnnouncements = (clone $query)
             ->whereDoesntHave('readers', fn ($readers) => $readers->whereKey($user->id));
         $unreadAnnouncementCount = (clone $unreadAnnouncements)->count();
         $notifications = $unreadAnnouncements->with(['author', 'component'])
             ->withExists(['readers as is_read' => fn ($readers) => $readers->whereKey($user->id)])
-            ->latest('published_at')->limit(6)->get();
+            ->latest('published_at')->limit(6)->get()
+            ->each(fn ($announcement) => $notificationService->presentAnnouncement($announcement));
 
         $messageRoutePrefix = match ($user->role) {
             'super_admin' => 'admin',
@@ -35,14 +38,28 @@ class NotificationBell extends Component
         $unreadMessageCount = 0;
         $messageNotifications = collect();
         $groupMessageNotifications = collect();
-        $eventNotificationQuery = StudentNotification::where('user_id', $user->id)->whereNull('read_at');
+        $bellEventTypes = collect([
+            StudentNotification::MATERIAL,
+            StudentNotification::ASSESSMENT,
+            StudentNotification::LATE_ATTENDANCE,
+            StudentNotification::ABSENT_ATTENDANCE,
+        ])->filter(fn (string $type): bool => NotificationRule::configured($type)->usesChannel('bell'));
+        $eventNotificationQuery = StudentNotification::where('user_id', $user->id)
+            ->whereIn('type', $bellEventTypes)
+            ->available()
+            ->whereNull('read_at');
         $unreadEventNotificationCount = (clone $eventNotificationQuery)->count();
         $eventNotifications = $eventNotificationQuery->latest()->limit(8)->get();
 
-        if ($messageRoutePrefix) {
+        $messageRule = NotificationRule::configured('message');
+        if ($messageRoutePrefix && $messageRule->usesChannel('bell')) {
+            $messageAvailableBefore = $messageRule->schedule_mode === 'delayed'
+                ? now()->subMinutes(max(1, $messageRule->delay_minutes))
+                : now();
             $unreadMessages = ChatMessage::query()
                 ->where('recipient_id', $user->id)
                 ->whereNull('read_at')
+                ->where('created_at', '<=', $messageAvailableBefore)
                 ->whereHas('sender', fn ($sender) => $sender->where('status', 'active'));
             $unreadMessageCount = (clone $unreadMessages)->count();
             $groups = (clone $unreadMessages)
@@ -55,14 +72,24 @@ class NotificationBell extends Component
                 ->whereIn('id', $groups->pluck('latest_id'))
                 ->get()
                 ->keyBy('id');
-            $messageNotifications = $groups->map(function ($group) use ($latestMessages) {
+            $messageNotifications = $groups->map(function ($group) use ($latestMessages, $messageRule) {
                 $message = $latestMessages->get((int) $group->latest_id);
 
-                return $message?->setAttribute('unread_from_sender', (int) $group->unread_from_sender);
+                if (! $message) {
+                    return null;
+                }
+
+                $values = ['sender_name' => $message->sender->name, 'message_body' => $message->body, 'group_name' => ''];
+
+                return $message
+                    ->setAttribute('unread_from_sender', (int) $group->unread_from_sender)
+                    ->setAttribute('notification_title', $messageRule->renderedTitle($values))
+                    ->setAttribute('notification_body', $messageRule->renderedBody($values));
             })->filter()->values();
 
             if ($user->isFacilitator() || $user->isStudent()) {
-                $unreadGroupMessages = ChatGroupMessage::unreadFor($user);
+                $unreadGroupMessages = ChatGroupMessage::unreadFor($user)
+                    ->where('chat_group_messages.created_at', '<=', $messageAvailableBefore);
                 $unreadMessageCount += (clone $unreadGroupMessages)->count();
                 $groupMessageSummaries = (clone $unreadGroupMessages)
                     ->select('chat_group_messages.chat_group_id')
@@ -75,9 +102,18 @@ class NotificationBell extends Component
                     ->whereIn('id', $groupMessageSummaries->pluck('latest_id'))
                     ->get()
                     ->keyBy('id');
-                $groupMessageNotifications = $groupMessageSummaries->map(function ($summary) use ($latestGroupMessages) {
-                    return $latestGroupMessages->get((int) $summary->latest_id)
-                        ?->setAttribute('unread_from_group', (int) $summary->unread_from_group);
+                $groupMessageNotifications = $groupMessageSummaries->map(function ($summary) use ($latestGroupMessages, $messageRule) {
+                    $message = $latestGroupMessages->get((int) $summary->latest_id);
+                    if (! $message) {
+                        return null;
+                    }
+
+                    $values = ['sender_name' => $message->sender->name, 'message_body' => $message->body, 'group_name' => $message->group->name];
+
+                    return $message
+                        ->setAttribute('unread_from_group', (int) $summary->unread_from_group)
+                        ->setAttribute('notification_title', $messageRule->renderedTitle($values))
+                        ->setAttribute('notification_body', $messageRule->renderedBody($values));
                 })->filter()->values();
             }
         }

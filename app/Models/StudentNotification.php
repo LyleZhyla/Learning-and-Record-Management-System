@@ -15,11 +15,16 @@ class StudentNotification extends Model
 
     public const ABSENT_ATTENDANCE = 'absent_attendance';
 
-    protected $fillable = ['user_id', 'type', 'source_id', 'title', 'body', 'read_at'];
+    protected $fillable = ['user_id', 'type', 'source_id', 'title', 'body', 'available_at', 'read_at'];
 
     protected function casts(): array
     {
-        return ['read_at' => 'datetime'];
+        return ['available_at' => 'datetime', 'read_at' => 'datetime'];
+    }
+
+    public function scopeAvailable($query)
+    {
+        return $query->where(fn ($items) => $items->whereNull('available_at')->orWhere('available_at', '<=', now()));
     }
 
     public function user(): BelongsTo

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Announcement;
+use App\Models\NotificationRule;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -35,5 +36,34 @@ class NotificationService
         return $query
             ->whereIn('audience', ['all', $audience])
             ->where(fn ($items) => $items->whereNull('component_id')->orWhereIn('component_id', $componentIds));
+    }
+
+    public function notificationQuery(User $user, string $channel): Builder
+    {
+        $query = $this->visibleQuery($user);
+        $rule = NotificationRule::configured('announcement');
+        if (! $rule->usesChannel($channel)) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($rule->schedule_mode === 'delayed') {
+            $query->where('published_at', '<=', now()->subMinutes(max(1, $rule->delay_minutes)));
+        }
+
+        return $query;
+    }
+
+    public function presentAnnouncement(Announcement $announcement): Announcement
+    {
+        $rule = NotificationRule::configured('announcement');
+        $values = [
+            'announcement_title' => $announcement->title,
+            'announcement_body' => $announcement->body,
+            'author_name' => $announcement->author?->name,
+        ];
+
+        return $announcement
+            ->setAttribute('notification_title', $rule->renderedTitle($values))
+            ->setAttribute('notification_body', $rule->renderedBody($values));
     }
 }

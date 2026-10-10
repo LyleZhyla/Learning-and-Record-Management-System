@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Assessment;
 use App\Models\AttendanceRecord;
 use App\Models\LearningMaterial;
+use App\Models\NotificationRule;
 use App\Models\NstpEnrollment;
 use App\Models\StudentNotification;
 use App\Models\User;
@@ -14,9 +15,12 @@ class StudentNotificationService
 {
     public function learningMaterialPublished(LearningMaterial $material): void
     {
-        if ($material->status !== 'published') {
+        $rule = NotificationRule::configured(StudentNotification::MATERIAL);
+        if ($material->status !== 'published' || ! $rule->is_enabled || empty($rule->channels)) {
             return;
         }
+
+        $material->loadMissing(['component', 'section']);
 
         $recipients = $this->studentIds($material->component_id, $material->section_id)
             ->merge($this->staffIds($material->component_id, $material->section_id, true))
@@ -24,25 +28,32 @@ class StudentNotificationService
             ->unique()
             ->values();
 
-        $this->upsertForUsers($recipients, StudentNotification::MATERIAL, $material->id,
-            'New learning material', $material->title.' is now available in Learning Materials.');
+        $this->upsertForUsers($recipients, StudentNotification::MATERIAL, $material->id, $rule, [
+            'material_title' => $material->title,
+            'component_code' => $material->component?->code,
+            'section_code' => $material->section?->code,
+        ]);
     }
 
     public function assessmentPublished(Assessment $assessment): void
     {
-        if ($assessment->status !== 'published') {
+        $rule = NotificationRule::configured(StudentNotification::ASSESSMENT);
+        if ($assessment->status !== 'published' || ! $rule->is_enabled || empty($rule->channels)) {
             return;
         }
 
-        $assessment->loadMissing('section');
+        $assessment->loadMissing('section.component');
         $recipients = $this->studentIds(null, $assessment->section_id)
             ->merge($this->staffIds($assessment->section->component_id, $assessment->section_id, true))
             ->reject(fn (int $id) => $id === (int) $assessment->created_by)
             ->unique()
             ->values();
 
-        $this->upsertForUsers($recipients, StudentNotification::ASSESSMENT, $assessment->id,
-            'New assessment', $assessment->title.' is now available in Assessments.');
+        $this->upsertForUsers($recipients, StudentNotification::ASSESSMENT, $assessment->id, $rule, [
+            'assessment_title' => $assessment->title,
+            'component_code' => $assessment->section->component?->code,
+            'section_code' => $assessment->section->code,
+        ]);
     }
 
     public function attendanceRecorded(AttendanceRecord $record): void
@@ -58,18 +69,25 @@ class StudentNotificationService
         $record->loadMissing(['attendanceSession.section', 'student']);
         $late = $record->status === 'late';
         $type = $late ? StudentNotification::LATE_ATTENDANCE : StudentNotification::ABSENT_ATTENDANCE;
+        $rule = NotificationRule::configured($type);
         StudentNotification::where('source_id', $record->id)
             ->whereIn('type', [StudentNotification::LATE_ATTENDANCE, StudentNotification::ABSENT_ATTENDANCE])
             ->where('type', '!=', $type)
             ->delete();
 
-        StudentNotification::firstOrCreate(
-            ['user_id' => $record->student_id, 'type' => $type, 'source_id' => $record->id],
-            [
-                'title' => $late ? 'Late attendance recorded' : 'Absent attendance recorded',
-                'body' => 'Your attendance for '.$record->attendanceSession->title.' was marked '.strtoupper($record->status).'.',
-            ],
-        );
+        if (! $rule->is_enabled || empty($rule->channels)) {
+            StudentNotification::where('source_id', $record->id)->where('type', $type)->delete();
+
+            return;
+        }
+
+        $values = [
+            'student_name' => $record->student->name,
+            'session_title' => $record->attendanceSession->title,
+            'status' => strtoupper($record->status),
+            'section_code' => $record->attendanceSession->section->code,
+        ];
+        $this->upsertForUsers(collect([$record->student_id]), $type, $record->id, $rule, $values);
 
         $section = $record->attendanceSession->section;
         $staffIds = $this->staffIds($section->component_id, $section->id, true)
@@ -80,8 +98,8 @@ class StudentNotificationService
             $staffIds,
             $type,
             $record->id,
-            $late ? 'Late attendance update' : 'Absent attendance update',
-            $record->student->name.' was marked '.strtoupper($record->status).' for '.$record->attendanceSession->title.'.',
+            $rule,
+            $values,
         );
     }
 
@@ -119,22 +137,24 @@ class StudentNotificationService
             ->pluck('id');
     }
 
-    private function upsertForUsers(Collection $userIds, string $type, int $sourceId, string $title, string $body): void
+    /** @param array<string, scalar|null> $values */
+    private function upsertForUsers(Collection $userIds, string $type, int $sourceId, NotificationRule $rule, array $values): void
     {
         $now = now();
         $rows = $userIds->map(fn (int $userId) => [
             'user_id' => $userId,
             'type' => $type,
             'source_id' => $sourceId,
-            'title' => $title,
-            'body' => $body,
+            'title' => $rule->renderedTitle($values),
+            'body' => $rule->renderedBody($values),
+            'available_at' => $rule->availableAt($now),
             'read_at' => null,
             'created_at' => $now,
             'updated_at' => $now,
         ])->all();
 
         if ($rows !== []) {
-            StudentNotification::upsert($rows, ['user_id', 'type', 'source_id'], ['title', 'body', 'read_at', 'updated_at']);
+            StudentNotification::upsert($rows, ['user_id', 'type', 'source_id'], ['title', 'body', 'available_at', 'read_at', 'updated_at']);
         }
     }
 }
