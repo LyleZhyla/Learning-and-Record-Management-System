@@ -3,12 +3,14 @@
 @section('page-title', 'Dynamic Grading Sheet')
 @section('content')
 <div class="page-actions">
-    <div><h2>Excel-style class record</h2><p>@if(auth()->user()->isFacilitator())Enter scores for the students assigned to your section. Grading categories and formulas are managed by administrators.@else Edit raw scores and configure categories. Weighted percentages and the 1.00–5.00 grade are computed automatically.@endif</p></div>
+    <div><h2>NSTP grading and class record</h2><p>@if(auth()->user()->isFacilitator())Enter scores for the students assigned to your section. Grading categories and formulas are managed by administrators.@else Edit raw scores and configure categories. Weighted percentages and the 1.00–5.00 grade are computed automatically.@endif</p></div>
 </div>
 
 <section class="card term-panel">
-    <form class="term-form grade-section-picker" method="GET">
-        <label class="field-group"><span>Section</span><select name="section">@foreach($sections as $item)<option value="{{ $item->id }}" @selected($section?->id === $item->id)>{{ $item->code }} · {{ $item->component->code }}</option>@endforeach</select></label>
+    <form class="term-form grade-section-picker {{ $section?->component?->code === 'ROTC' ? 'has-ms-level' : '' }}" method="GET" data-grade-section-picker>
+        <label class="field-group"><span>Component</span><select name="component" data-grade-component>@foreach($components as $component)<option value="{{ $component->id }}" data-component-code="{{ $component->code }}" @selected((int) $selectedComponentId === $component->id)>{{ $component->code }} — {{ $component->name }}</option>@endforeach</select></label>
+        <label class="field-group"><span>Section</span><select name="section" data-grade-section>@foreach($sections as $item)<option value="{{ $item->id }}" data-component-id="{{ $item->component_id }}" @selected($section?->id === $item->id)>{{ $item->code }} · {{ $item->name }}</option>@endforeach</select></label>
+        <label class="field-group" data-ms-level-field @if($section?->component?->code !== 'ROTC') hidden @endif><span>MS Level</span><select name="ms_level" data-ms-level @disabled($section?->component?->code !== 'ROTC')><option value="">All MS levels</option>@foreach($rotcLevels as $value => $label)<option value="{{ $value }}" @selected($selectedMsLevel === $value)>{{ $label }}</option>@endforeach</select></label>
         <button class="filter-button">Open grading sheet</button>
     </form>
 </section>
@@ -141,6 +143,39 @@
 
 <script>
 (() => {
+    const picker = document.querySelector('[data-grade-section-picker]');
+    const componentSelect = picker?.querySelector('[data-grade-component]');
+    const sectionSelect = picker?.querySelector('[data-grade-section]');
+    const msLevelField = picker?.querySelector('[data-ms-level-field]');
+    const msLevelSelect = picker?.querySelector('[data-ms-level]');
+
+    const syncGradeFilters = () => {
+        if (! componentSelect || ! sectionSelect || ! msLevelField || ! msLevelSelect) return;
+
+        const componentId = componentSelect.value;
+        const componentCode = componentSelect.selectedOptions[0]?.dataset.componentCode;
+        const availableSections = [...sectionSelect.options].filter((option) => option.dataset.componentId === componentId);
+
+        [...sectionSelect.options].forEach((option) => {
+            const matchesComponent = option.dataset.componentId === componentId;
+            option.hidden = ! matchesComponent;
+            option.disabled = ! matchesComponent;
+        });
+
+        if (! availableSections.some((option) => option.selected)) {
+            sectionSelect.value = availableSections[0]?.value ?? '';
+        }
+
+        const isRotc = componentCode === 'ROTC';
+        msLevelField.hidden = ! isRotc;
+        msLevelSelect.disabled = ! isRotc;
+        if (! isRotc) msLevelSelect.value = '';
+        picker.classList.toggle('has-ms-level', isRotc);
+    };
+
+    componentSelect?.addEventListener('change', syncGradeFilters);
+    syncGradeFilters();
+
     const endpoint = @json(route($routePrefix.'.grades.scores.update', $section));
     const token = document.querySelector('meta[name="csrf-token"]').content;
     const status = document.getElementById('grade-save-status');

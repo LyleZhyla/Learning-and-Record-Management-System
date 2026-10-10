@@ -392,7 +392,20 @@ class AssessmentController extends Controller
     public function grades(Request $request): View
     {
         $sections = $this->access->gradebookSections($request->user())->with('component')->orderBy('code')->get();
-        $section = $sections->firstWhere('id', $request->integer('section')) ?? $sections->first();
+        $components = $sections->pluck('component')->filter()->unique('id')->values();
+        $requestedSection = $sections->firstWhere('id', $request->integer('section'));
+        $selectedComponentId = $request->integer('component') ?: $requestedSection?->component_id ?: $components->first()?->id;
+
+        if (! $components->contains('id', $selectedComponentId)) {
+            $selectedComponentId = $components->first()?->id;
+        }
+
+        $componentSections = $sections->where('component_id', $selectedComponentId);
+        $section = $componentSections->firstWhere('id', $request->integer('section')) ?? $componentSections->first();
+        $rotcLevels = NstpEnrollment::ROTC_CATEGORIES;
+        $selectedMsLevel = $section?->component?->code === 'ROTC' && array_key_exists($request->string('ms_level')->toString(), $rotcLevels)
+            ? $request->string('ms_level')->toString()
+            : null;
         $summaries = null;
         $categories = collect();
         $settings = null;
@@ -409,7 +422,13 @@ class AssessmentController extends Controller
             $section->load(['gradingCategories.assessments.submissions', 'gradingSetting']);
             $categories = $section->gradingCategories;
             $settings = $section->gradingSetting;
-            $allSummaries = $section->enrollments()->with('student')
+            $enrollments = $section->enrollments()->with('student');
+
+            if ($selectedMsLevel) {
+                $enrollments->where('rotc_category', $selectedMsLevel);
+            }
+
+            $allSummaries = $enrollments
                 ->join('users', 'users.id', '=', 'nstp_enrollments.student_id')
                 ->select('nstp_enrollments.*')
                 ->orderBy('users.name')->get()->map(
@@ -429,7 +448,18 @@ class AssessmentController extends Controller
             ]);
         }
 
-        return view('learning.grades.index', $this->context($request) + compact('sections', 'section', 'summaries', 'categories', 'settings', 'gradebookMetrics'));
+        return view('learning.grades.index', $this->context($request) + compact(
+            'sections',
+            'components',
+            'selectedComponentId',
+            'rotcLevels',
+            'selectedMsLevel',
+            'section',
+            'summaries',
+            'categories',
+            'settings',
+            'gradebookMetrics',
+        ));
     }
 
     public function updateGradeStructure(Request $request, NstpSection $section): RedirectResponse
