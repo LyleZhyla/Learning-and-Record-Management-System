@@ -9,6 +9,7 @@ use App\Models\AttendanceSession;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Models\StudentProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -26,6 +27,35 @@ class SuperAdminReportsTest extends TestCase
         $this->superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
         $student = User::factory()->create(['role' => 'student', 'status' => 'active', 'name' => 'Demo Student']);
+        StudentProfile::create([
+            'user_id' => $student->id,
+            'last_name' => 'Student',
+            'first_name' => 'Demo',
+            'middle_name' => 'Report',
+            'province' => 'Tarlac',
+            'province_code' => '036900000',
+            'city_municipality' => 'Tarlac City',
+            'city_municipality_code' => '036916000',
+            'barangay' => 'San Vicente',
+            'barangay_code' => '036916001',
+            'date_of_birth' => '2005-01-01',
+            'birth_province' => 'Tarlac',
+            'birth_province_code' => '036900000',
+            'birth_city_municipality' => 'Tarlac City',
+            'birth_city_municipality_code' => '036916000',
+            'religion' => 'Roman Catholic',
+            'sex' => 'Male',
+            'blood_type' => 'O+',
+            'contact_number' => '09171234567',
+            'emergency_contact_name' => 'Sample Guardian',
+            'emergency_relationship' => 'Guardian',
+            'emergency_contact_number' => '09179876543',
+            'emergency_same_address' => true,
+            'student_number' => '2026000001',
+            'college' => 'College of Engineering',
+            'course' => 'BS Agricultural Engineering',
+            'year_section' => '1A',
+        ]);
         $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'is_active' => true]);
         $section = NstpSection::create(['component_id' => $component->id, 'facilitator_id' => $facilitator->id, 'code' => 'CWTS-01', 'name' => 'Section 1', 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);
         NstpEnrollment::create(['student_id' => $student->id, 'component_id' => $component->id, 'section_id' => $section->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
@@ -66,7 +96,16 @@ class SuperAdminReportsTest extends TestCase
             ->assertSee('Choose data to include')
             ->assertSee('Downloadable data')
             ->assertSee('Student')
-            ->assertSee('Email')
+            ->assertSee('Last Name')
+            ->assertSee('First Name')
+            ->assertSee('Student Number')
+            ->assertSee('Date of Birth')
+            ->assertSee('Emergency Contact Name')
+            ->assertSee('College')
+            ->assertSee('Course')
+            ->assertSee('Year and Section')
+            ->assertSee('Registration and enrollment fields')
+            ->assertSee('Email Address')
             ->assertSee('Component')
             ->assertSee('Section')
             ->assertSee('Term')
@@ -78,6 +117,26 @@ class SuperAdminReportsTest extends TestCase
             ->assertSee('data-word-url="'.url('/admin/reports/students/document').'"', false)
             ->assertSee('data-excel-url="'.url('/admin/reports/students/export').'"', false)
             ->assertSee('js/report-download.js', false);
+    }
+
+    public function test_student_report_download_can_select_registration_fields(): void
+    {
+        $response = $this->actingAs($this->superAdmin)
+            ->get('/admin/reports/students/export?columns[]=1&columns[]=5&columns[]=22');
+        $response->assertOk()->assertDownload();
+
+        $temporaryFile = tempnam(sys_get_temp_dir(), 'smart-nstp-registration-fields-');
+        file_put_contents($temporaryFile, $response->streamedContent());
+        $sheet = IOFactory::load($temporaryFile)->getActiveSheet();
+
+        $this->assertSame('Last Name', $sheet->getCell('A6')->getValue());
+        $this->assertSame('Student Number', $sheet->getCell('B6')->getValue());
+        $this->assertSame('College', $sheet->getCell('C6')->getValue());
+        $this->assertSame('Student', $sheet->getCell('A7')->getValue());
+        $this->assertSame('2026000001', $sheet->getCell('B7')->getValue());
+        $this->assertSame('College of Engineering', $sheet->getCell('C7')->getValue());
+
+        unlink($temporaryFile);
     }
 
     public function test_downloaded_report_contains_only_selected_data_columns(): void

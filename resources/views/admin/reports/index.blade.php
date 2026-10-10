@@ -96,6 +96,15 @@
         </div>
     </section>
 
+    @if($isChedSemestralReport && !$isScopedReport)
+        <section class="card" style="margin-bottom: 1.25rem">
+            <div class="section-heading">
+                <div><span class="eyebrow">Manual CHED process</span><h3>Track the application after preparing this workbook</h3><p>The system does not submit to CHED or assign serial numbers. Download the workbook, email it manually, and use the tracker for submission status and follow-ups.</p></div>
+                <a class="primary-button" href="{{ route($routePrefix.'.ched-applications.index') }}">Open CHED application tracker</a>
+            </div>
+        </section>
+    @endif
+
     <section class="card report-filter-card">
         <div class="report-filter-heading">
             <div><span class="eyebrow">Report filters</span><h3>Filter {{ $reportTypes[$filters['type']] }}</h3><p>Set the reporting period and scope before previewing or downloading this report.</p></div>
@@ -150,11 +159,11 @@
                         </select>
                     </label>
                     @if($isOfficialSemestralReport)
-                        <p class="form-help">@if($isChedSemestralReport)Uses the official CHED workbook layout. Only completed, passing CWTS and LTS students are included. NSTP serial number cells remain blank for assignment.@else Uses the AFP ROTC grade-report layout. All enrolled ROTC cadets are included, including failed, incomplete, and ungraded records.@endif</p>
+                        <p class="form-help">@if($isChedSemestralReport)Uses the official CHED workbook layout. Only completed, passing CWTS and LTS students are included. NSTP serial number cells remain blank because CHED assigns the numbers after manual email submission.@else Uses the AFP ROTC grade-report layout. All enrolled ROTC cadets are included, including failed, incomplete, and ungraded records.@endif</p>
                     @else
                     <details class="report-field-selector" data-report-fields>
                         <summary>
-                            <span><strong>Choose data to include</strong><small>Customize downloaded columns</small></span>
+                            <span><strong>Choose data to include</strong><small>{{ in_array($filters['type'], ['students', 'students_by_section'], true) ? 'Registration and enrollment fields' : 'Customize downloaded columns' }}</small></span>
                             <b data-report-field-count>{{ count($report['headers']) }} selected</b>
                         </summary>
                         <fieldset>

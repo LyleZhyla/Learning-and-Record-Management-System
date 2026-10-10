@@ -9,6 +9,7 @@ use App\Models\AttendanceRecord;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Models\StudentRegistration;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Services\AfpSemestralReportService;
@@ -297,14 +298,51 @@ class ReportController extends Controller
                 ->when($filters['facilitator_id'] ?? null, fn ($q, $value) => $q->whereHas('section', fn ($section) => $section->where('facilitator_id', $value)));
         };
         $rows = User::where('role', 'student')
-            ->with(['nstpEnrollments' => fn ($query) => $enrollmentFilter($query->with(['component', 'section.facilitator'])->latest('academic_year')->latest('semester'))])
+            ->with([
+                'studentProfile',
+                'latestStudentRegistration',
+                'nstpEnrollments' => fn ($query) => $enrollmentFilter($query->with(['component', 'section.facilitator'])->latest('academic_year')->latest('semester')),
+            ])
             ->when($hasEnrollmentFilters, fn ($query) => $query->whereHas('nstpEnrollments', $enrollmentFilter))
             ->orderBy('name')->get()->map(function ($student) {
                 $enrollment = $student->nstpEnrollments->first();
+                $details = $student->studentProfile ?? $student->latestStudentRegistration;
+                $registration = $student->latestStudentRegistration;
 
                 return [
                     'student' => $student->name,
+                    'last_name' => $details?->last_name ?? '—',
+                    'first_name' => $details?->first_name ?? '—',
+                    'middle_name' => $details?->middle_name ?? 'N/A',
+                    'extension_name' => $details?->extension_name ?? 'N/A',
+                    'student_number' => $details?->student_number ?? '—',
                     'email' => $student->email,
+                    'contact_number' => $details?->contact_number ?? '—',
+                    'province' => $details?->province ?? '—',
+                    'city_municipality' => $details?->city_municipality ?? '—',
+                    'barangay' => $details?->barangay ?? '—',
+                    'date_of_birth' => $details?->date_of_birth?->format('M d, Y') ?? '—',
+                    'birth_province' => $details?->birth_province ?? '—',
+                    'birth_city_municipality' => $details?->birth_city_municipality ?? '—',
+                    'religion' => $details?->religion ?? '—',
+                    'sex' => $details?->sex ?? '—',
+                    'blood_type' => $details?->blood_type ?? '—',
+                    'emergency_contact_name' => $details?->emergency_contact_name ?? '—',
+                    'emergency_relationship' => $details?->emergency_relationship ?? '—',
+                    'emergency_contact_number' => $details?->emergency_contact_number ?? '—',
+                    'emergency_address' => $details?->emergency_address ?? '—',
+                    'emergency_same_address' => $details ? ($details->emergency_same_address ? 'Yes' : 'No') : '—',
+                    'college' => $details?->college ?? '—',
+                    'course' => $details?->course ?? '—',
+                    'major' => $details?->major ?? 'N/A',
+                    'year_section' => $details?->year_section ?? '—',
+                    'nstp_level' => $registration?->nstp_level
+                        ? (StudentRegistration::NSTP_LEVELS[$registration->nstp_level] ?? str($registration->nstp_level)->headline())
+                        : '—',
+                    'registration_academic_year' => $registration?->academic_year ?? '—',
+                    'registration_semester' => $registration?->semester
+                        ? (NstpSection::SEMESTERS[$registration->semester] ?? str($registration->semester)->headline())
+                        : '—',
                     'component' => $enrollment?->component?->code ?? 'Unassigned',
                     'section' => $enrollment?->section?->code ?? 'Unassigned',
                     'term' => $enrollment ? (($enrollment->section?->semesterLabel() ?? str($enrollment->semester)->headline()).' '.$enrollment->academic_year) : 'Not enrolled',
@@ -313,7 +351,42 @@ class ReportController extends Controller
                 ];
             })->values();
 
-        return $this->report('Student Masterlist', ['Student', 'Email', 'Component', 'Section', 'Term', 'Facilitator', 'Status'], $rows);
+        return $this->report('Student Masterlist', [
+            'Student',
+            'Last Name',
+            'First Name',
+            'Middle Name',
+            'Extension Name',
+            'Student Number',
+            'Email Address',
+            'Contact Number',
+            'Province',
+            'City / Municipality',
+            'Barangay',
+            'Date of Birth',
+            'Birth Province',
+            'Birth City / Municipality',
+            'Religion',
+            'Sex',
+            'Blood Type',
+            'Emergency Contact Name',
+            'Emergency Relationship',
+            'Emergency Contact Number',
+            'Emergency Address',
+            'Emergency Address Same as Student',
+            'College',
+            'Course',
+            'Major',
+            'Year and Section',
+            'NSTP Level',
+            'Registration Academic Year',
+            'Registration Semester',
+            'Component',
+            'Section',
+            'Term',
+            'Facilitator',
+            'Status',
+        ], $rows);
     }
 
     private function studentsBySectionReport(array $filters): array
