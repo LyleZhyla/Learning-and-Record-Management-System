@@ -7,6 +7,7 @@ use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\SystemSetting;
+use App\Models\WorkflowDefinition;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -26,13 +27,20 @@ class ComponentController extends Controller
             ->where('semester', $semester)
             ->with(['component', 'section'])
             ->first();
+        $selectionLocked = $currentEnrollment
+            && WorkflowDefinition::ruleEnabled('component_selection', 'lock_after_submission');
+        $componentSelectionOpen = ! WorkflowDefinition::ruleEnabled('component_selection', 'enforce_selection_window')
+            || SystemSetting::componentSelectionIsOpen();
 
         return view('student.component', [
             'availableComponents' => NstpComponent::query()
                 ->when(
-                    $currentEnrollment,
+                    $selectionLocked,
                     fn ($query) => $query->whereKey($currentEnrollment->component_id),
-                    fn ($query) => $query->where('is_active', true)
+                    fn ($query) => $query->where(function ($query) use ($currentEnrollment): void {
+                        $query->where('is_active', true)
+                            ->when($currentEnrollment, fn ($query) => $query->orWhere('id', $currentEnrollment->component_id));
+                    })
                 )
                 ->orderBy('code')
                 ->get(),
@@ -41,7 +49,9 @@ class ComponentController extends Controller
             'semesterLabel' => NstpSection::SEMESTERS[$semester],
             'shirtSizes' => NstpEnrollment::SHIRT_SIZES,
             'rotcCategories' => NstpEnrollment::ROTC_CATEGORIES,
-            'componentSelectionOpen' => SystemSetting::componentSelectionIsOpen(),
+            'componentSelectionOpen' => $componentSelectionOpen,
+            'selectionLocked' => $selectionLocked,
+            'requiresAdvancedRotcProof' => WorkflowDefinition::ruleEnabled('rotc_approval', 'require_proof'),
         ]);
     }
 
@@ -55,13 +65,13 @@ class ComponentController extends Controller
             'semester' => $semester,
         ]);
 
-        if ($enrollment->exists) {
+        if ($enrollment->exists && WorkflowDefinition::ruleEnabled('component_selection', 'lock_after_submission')) {
             return back()->withErrors([
                 'selection' => 'Your NSTP component, ROTC details, and shirt size are final and can no longer be changed.',
             ]);
         }
 
-        if (! SystemSetting::componentSelectionIsOpen()) {
+        if (WorkflowDefinition::ruleEnabled('component_selection', 'enforce_selection_window') && ! SystemSetting::componentSelectionIsOpen()) {
             return back()->withErrors([
                 'selection' => 'NSTP component selection is currently closed. Please wait for an administrator to reopen it.',
             ]);
@@ -71,6 +81,10 @@ class ComponentController extends Controller
             ->find($request->input('nstp_component_id'));
         $isAdvancedRotc = $selectedComponent?->code === 'ROTC'
             && in_array($request->input('rotc_category'), ['MS-31', 'MS-41'], true);
+        $requiresAdvancedApproval = $isAdvancedRotc
+            && WorkflowDefinition::ruleEnabled('rotc_approval', 'require_advanced_approval');
+        $requiresAdvancedProof = $isAdvancedRotc
+            && WorkflowDefinition::ruleEnabled('rotc_approval', 'require_proof');
 
         $validated = $request->validate([
             'nstp_component_id' => [
@@ -85,7 +99,7 @@ class ComponentController extends Controller
                 Rule::in(array_keys(NstpEnrollment::ROTC_CATEGORIES)),
             ],
             'ms1_proof' => [
-                Rule::requiredIf(fn () => $isAdvancedRotc && blank($enrollment->rotc_proof_path)),
+                Rule::requiredIf(fn () => $requiresAdvancedProof && blank($enrollment->rotc_proof_path)),
                 'nullable',
                 'file',
                 'mimes:pdf,jpg,jpeg,png',
@@ -108,16 +122,19 @@ class ComponentController extends Controller
         try {
             $enrollment->fill([
                 'component_id' => $componentId,
+                'section_id' => $enrollment->exists && $enrollment->component_id !== $componentId ? null : $enrollment->section_id,
                 'shirt_size' => $validated['shirt_size'],
                 'rotc_category' => $rotcCategory,
                 'rotc_proof_path' => $isAdvancedRotc ? ($newProofPath ?? $oldProofPath) : null,
                 'rotc_proof_original_name' => $isAdvancedRotc ? ($newProof?->getClientOriginalName() ?? $enrollment->rotc_proof_original_name) : null,
                 'rotc_approval_status' => $isAdvancedRotc
-                    ? ($approvalMustReset ? 'pending' : $enrollment->rotc_approval_status)
+                    ? ($requiresAdvancedApproval ? ($approvalMustReset ? 'pending' : $enrollment->rotc_approval_status) : 'approved')
                     : null,
-                'rotc_approved_by' => $isAdvancedRotc && ! $approvalMustReset ? $enrollment->rotc_approved_by : null,
-                'rotc_approved_at' => $isAdvancedRotc && ! $approvalMustReset ? $enrollment->rotc_approved_at : null,
-                'status' => $isAdvancedRotc && ($approvalMustReset || $enrollment->rotc_approval_status !== 'approved')
+                'rotc_approved_by' => $requiresAdvancedApproval && ! $approvalMustReset ? $enrollment->rotc_approved_by : null,
+                'rotc_approved_at' => $isAdvancedRotc && ! $requiresAdvancedApproval
+                    ? now()
+                    : ($requiresAdvancedApproval && ! $approvalMustReset ? $enrollment->rotc_approved_at : null),
+                'status' => $requiresAdvancedApproval && ($approvalMustReset || $enrollment->rotc_approval_status !== 'approved')
                     ? 'pending_approval'
                     : 'enrolled',
             ])->save();
@@ -133,7 +150,7 @@ class ComponentController extends Controller
             Storage::disk('local')->delete($oldProofPath);
         }
 
-        $message = $isAdvancedRotc
+        $message = $requiresAdvancedApproval
             ? 'Your ROTC request was submitted and is waiting for coordinator approval.'
             : 'Your NSTP enrollment preferences were updated successfully.';
 

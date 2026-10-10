@@ -54,6 +54,8 @@
                 <a class="nav-link {{ request()->routeIs('admin.document-forms.*') ? 'active' : '' }}" href="{{ route('admin.document-forms.index') }}"><span class="nav-icon">▧</span> Documents &amp; Forms</a>
                 <a class="nav-link {{ request()->routeIs('admin.document-reviews.*') ? 'active' : '' }}" href="{{ route('admin.document-reviews.index') }}"><span class="nav-icon">✓</span> Document Reviews</a>
                 <a class="nav-link {{ request()->routeIs('admin.review-categories.*') ? 'active' : '' }}" href="{{ route('admin.review-categories.index') }}"><span class="nav-icon">◈</span> Review Categories</a>
+                <a class="nav-link {{ request()->routeIs('admin.workflows.*') ? 'active' : '' }}" href="{{ route('admin.workflows.index') }}"><span class="nav-icon">⌘</span> Workflow Rules</a>
+                <a class="nav-link {{ request()->routeIs('admin.notification-rules.*') ? 'active' : '' }}" href="{{ route('admin.notification-rules.index') }}"><span class="nav-icon">♢</span> Notification Rules</a>
                 <a class="nav-link {{ request()->routeIs('admin.archives.*') ? 'active' : '' }}" href="{{ route('admin.archives.index') }}"><span class="nav-icon">▱</span> Records Archive</a>
                 <p class="nav-label">System Administration</p>
                 <a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}" data-admin-tour="backup"><span class="nav-icon">⇩</span> Database Management</a>

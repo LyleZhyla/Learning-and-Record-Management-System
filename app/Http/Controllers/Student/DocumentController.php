@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DocumentForm;
 use App\Models\DocumentSubmission;
 use App\Models\ReviewCategory;
+use App\Models\WorkflowDefinition;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -35,14 +36,21 @@ class DocumentController extends Controller
         abort_unless($documentForm->is_active && $documentForm->requires_submission && $documentForm->appliesTo($enrollment), 404);
         abort_if($documentForm->opens_at?->isFuture() || $documentForm->closes_at?->isPast(), 422, 'This submission window is closed.');
 
-        $validated = $request->validate([
-            'file' => ['required', 'file', 'mimes:'.implode(',', $documentForm->accepted_extensions ?? ['pdf']), 'max:'.$documentForm->max_size_kb],
-        ]);
+        $fileRules = WorkflowDefinition::ruleEnabled('document_verification', 'validate_upload_rules')
+            ? ['required', 'file', 'mimes:'.implode(',', $documentForm->accepted_extensions ?? ['pdf']), 'max:'.$documentForm->max_size_kb]
+            : ['required', 'file', 'mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png', 'max:25600'];
+        $validated = $request->validate(['file' => $fileRules]);
         $existing = DocumentSubmission::query()->where('document_form_id', $documentForm->id)
             ->where('user_id', $request->user()->id)
             ->where('academic_year', $enrollment?->academic_year)
             ->where('semester', $enrollment?->semester)->first();
-        abort_if($existing && ReviewCategory::outcomeFor('document_submission', $existing->status) === 'approved', 422, 'A verified document cannot be replaced. Contact the NSTP Office if a correction is needed.');
+        abort_if(
+            $existing
+                && WorkflowDefinition::ruleEnabled('document_verification', 'lock_approved_uploads')
+                && ReviewCategory::outcomeFor('document_submission', $existing->status) === 'approved',
+            422,
+            'A verified document cannot be replaced. Contact the NSTP Office if a correction is needed.'
+        );
 
         $file = $validated['file'];
         $newPath = $file->store('configurable-document-submissions', 'local');

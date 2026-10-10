@@ -15,11 +15,11 @@
             <div class="archive-actions">
                 <a class="secondary-outline-button" href="{{ route('admin.archives.export', $group['type']) }}">Download archived</a>
                 <form method="POST" action="{{ route('admin.archives.archive', $group['type']) }}" onsubmit="return confirm('Archive all active {{ strtolower($group['label']) }}? They will disappear from normal screens but can be restored here.')">@csrf<button class="secondary-outline-button" type="submit" @disabled(!$group['active_count'])>Archive all active</button></form>
-                <form method="POST" action="{{ route('admin.archives.restore', $group['type']) }}" onsubmit="return confirm('Restore all archived {{ strtolower($group['label']) }} to active screens?')">@csrf @method('PATCH')<button class="clear-filter" type="submit" @disabled(!$group['archived_count'])>Restore all</button></form>
+                @if($allowRestore)<form method="POST" action="{{ route('admin.archives.restore', $group['type']) }}" onsubmit="return confirm('Restore all archived {{ strtolower($group['label']) }} to active screens?')">@csrf @method('PATCH')<button class="clear-filter" type="submit" @disabled(!$group['archived_count'])>Restore all</button></form>@endif
             </div>
             <form class="archive-permanent-delete" method="POST" action="{{ route('admin.archives.destroy', $group['type']) }}" onsubmit="return confirm('Permanently delete all archived {{ strtolower($group['label']) }}? This cannot be undone.')">
                 @csrf @method('DELETE')
-                <label class="field-group"><span>Type DELETE to confirm</span><input name="confirmation" value="" autocomplete="off" required pattern="DELETE" @disabled(!$group['archived_count'])></label>
+                @if($requireDeleteConfirmation)<label class="field-group"><span>Type DELETE to confirm</span><input name="confirmation" value="" autocomplete="off" required pattern="DELETE" @disabled(!$group['archived_count'])></label>@endif
                 <button class="danger-button" type="submit" @disabled(!$group['archived_count'])>Permanently delete archived</button>
             </form>
         </article>
@@ -42,8 +42,8 @@
         @error('targets')<small class="field-error">{{ $message }}</small>@enderror
         @error('targets.*')<small class="field-error">{{ $message }}</small>@enderror
         <div class="bulk-delete-confirmation">
-            <div><strong>This action is permanent</strong><p>Type <b>DELETE SELECTED</b>, then confirm the browser warning. Create a database backup first if these records may be needed later.</p></div>
-            <label class="field-group"><span>Confirmation phrase</span><input name="confirmation" autocomplete="off" required pattern="DELETE SELECTED" placeholder="DELETE SELECTED"></label>
+            <div><strong>This action is permanent</strong><p>@if($requireDeleteConfirmation)Type <b>DELETE SELECTED</b>, then confirm the browser warning. @endif Create a database backup first if these records may be needed later.</p></div>
+            @if($requireDeleteConfirmation)<label class="field-group"><span>Confirmation phrase</span><input name="confirmation" autocomplete="off" required pattern="DELETE SELECTED" placeholder="DELETE SELECTED"></label>@endif
             <button class="danger-button" type="submit">Delete selected categories</button>
         </div>
         @error('confirmation')<small class="field-error">{{ $message }}</small>@enderror

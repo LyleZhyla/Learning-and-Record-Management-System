@@ -8,6 +8,7 @@ use App\Models\AttendanceRecord;
 use App\Models\AuditLog;
 use App\Models\StudentRegistration;
 use App\Models\User;
+use App\Models\WorkflowDefinition;
 use App\Services\SpreadsheetDownloadService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -55,16 +56,21 @@ class ArchiveController extends Controller
                 'target' => $target,
                 'count' => $this->bulkDeleteCount($target),
             ]),
+            'allowRestore' => WorkflowDefinition::ruleEnabled('archiving', 'allow_restore'),
+            'requireDeleteConfirmation' => WorkflowDefinition::ruleEnabled('archiving', 'require_delete_confirmation'),
         ]);
     }
 
     public function bulkDestroy(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $rules = [
             'targets' => ['required', 'array', 'min:1'],
             'targets.*' => ['required', 'distinct', Rule::in(array_keys(self::BULK_DELETE_TARGETS))],
-            'confirmation' => ['required', Rule::in(['DELETE SELECTED'])],
-        ], [
+        ];
+        if (WorkflowDefinition::ruleEnabled('archiving', 'require_delete_confirmation')) {
+            $rules['confirmation'] = ['required', Rule::in(['DELETE SELECTED'])];
+        }
+        $validated = $request->validate($rules, [
             'targets.required' => 'Select at least one record category to delete.',
             'confirmation.required' => 'Type DELETE SELECTED to confirm permanent deletion.',
             'confirmation.in' => 'Type DELETE SELECTED exactly to confirm permanent deletion.',
@@ -111,6 +117,7 @@ class ArchiveController extends Controller
 
     public function restoreAll(string $type): RedirectResponse
     {
+        abort_unless(WorkflowDefinition::ruleEnabled('archiving', 'allow_restore'), 409, 'Restoring archived records is disabled in Workflow Rules.');
         $details = $this->details($type);
         $count = DB::transaction(fn () => $this->records($type, true)->update([
             'archived_at' => null,
@@ -123,12 +130,14 @@ class ArchiveController extends Controller
     public function destroyAll(Request $request, string $type): RedirectResponse
     {
         $details = $this->details($type);
-        $request->validate([
-            'confirmation' => ['required', 'in:DELETE'],
-        ], [
-            'confirmation.in' => 'Type DELETE exactly to permanently remove the archived records.',
-            'confirmation.required' => 'Type DELETE to confirm permanent deletion.',
-        ]);
+        if (WorkflowDefinition::ruleEnabled('archiving', 'require_delete_confirmation')) {
+            $request->validate([
+                'confirmation' => ['required', 'in:DELETE'],
+            ], [
+                'confirmation.in' => 'Type DELETE exactly to permanently remove the archived records.',
+                'confirmation.required' => 'Type DELETE to confirm permanent deletion.',
+            ]);
+        }
 
         $count = DB::transaction(fn () => $this->records($type, true)->delete());
 

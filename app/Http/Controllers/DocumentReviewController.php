@@ -6,6 +6,7 @@ use App\Models\DocumentForm;
 use App\Models\DocumentSubmission;
 use App\Models\NstpComponent;
 use App\Models\ReviewCategory;
+use App\Models\WorkflowDefinition;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -50,7 +51,12 @@ class DocumentReviewController extends Controller
         $selectedOutcome = $activeCategories->get($request->input('status'))?->outcome ?? 'pending';
         $validated = $request->validate([
             'status' => ['required', Rule::in($activeCategories->keys()->all())],
-            'review_notes' => [Rule::requiredIf($selectedOutcome === 'correction'), 'nullable', 'string', 'max:2000'],
+            'review_notes' => [
+                Rule::requiredIf($selectedOutcome === 'correction' && WorkflowDefinition::ruleEnabled('document_verification', 'require_correction_notes')),
+                'nullable',
+                'string',
+                'max:2000',
+            ],
         ]);
         $documentSubmission->update($validated + ['reviewed_by' => $request->user()->id, 'reviewed_at' => now()]);
 

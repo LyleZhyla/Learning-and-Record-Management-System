@@ -11,6 +11,7 @@ use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\OmrSheet;
 use App\Models\User;
+use App\Models\WorkflowDefinition;
 use App\Services\GradeService;
 use App\Services\OpenAiAssessmentScoringService;
 use App\Services\PortalAccessService;
@@ -254,6 +255,7 @@ class AssessmentController extends Controller
             ]);
         }
 
+        $requiresApproval = WorkflowDefinition::ruleEnabled('grading', 'require_ai_approval');
         $submission->update([
             'ai_suggested_score' => $suggestion['total_score'],
             'ai_feedback' => $suggestion['feedback'],
@@ -264,11 +266,21 @@ class AssessmentController extends Controller
             'ai_confidence' => $suggestion['confidence'],
             'ai_model' => $suggestion['model'],
             'ai_generated_at' => now(),
-            'ai_approved_by' => null,
-            'ai_approved_at' => null,
+            'ai_approved_by' => $requiresApproval ? null : $request->user()->id,
+            'ai_approved_at' => $requiresApproval ? null : now(),
+            ...($requiresApproval ? [] : [
+                'score' => $suggestion['total_score'],
+                'feedback' => $suggestion['feedback'],
+                'graded_by' => $request->user()->id,
+                'graded_at' => now(),
+            ]),
         ]);
 
-        return back()->with('status', 'AI score suggestion generated. Review it carefully before approval.')
+        $message = $requiresApproval
+            ? 'AI score suggestion generated. Review it carefully before approval.'
+            : 'AI score generated and applied automatically under the configured grading workflow.';
+
+        return back()->with('status', $message)
             ->with('open_submission_modal', $submission->id);
     }
 
@@ -427,7 +439,7 @@ class AssessmentController extends Controller
         $totalWeight = collect($validated['categories'])->sum(fn ($category) => (float) $category['weight'])
             + ($hasNewCategory ? (float) ($newCategory['weight'] ?? 0) : 0);
 
-        if (abs($totalWeight - 100) > 0.001) {
+        if (WorkflowDefinition::ruleEnabled('grading', 'enforce_weight_total') && abs($totalWeight - 100) > 0.001) {
             throw ValidationException::withMessages(['categories' => 'The total category weight must be exactly 100%. Current total: '.number_format($totalWeight, 2).'%.']);
         }
         if ((float) $validated['highest_grade'] >= (float) $validated['passing_grade'] || (float) $validated['passing_grade'] >= (float) $validated['failing_grade']) {

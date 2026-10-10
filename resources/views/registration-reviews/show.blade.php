@@ -29,11 +29,15 @@
     @if($registration->archived_at)
         <section class="card password-boundary-note"><span>▱</span><div><strong>Archived registration</strong><p>Archived {{ $registration->archived_at->format('M d, Y · g:i A') }} by {{ $registration->archiver?->name ?? 'Former administrator' }}. Restore it to change the review decision.</p></div></section>
         <div class="page-action-buttons">
-            <form method="POST" action="{{ route($routePrefix.'.registrations.restore', $registration) }}">@csrf @method('PATCH')<button class="primary-button compact" type="submit">Restore registration</button></form>
+            @if($allowArchiveRestore)<form method="POST" action="{{ route($routePrefix.'.registrations.restore', $registration) }}">@csrf @method('PATCH')<button class="primary-button compact" type="submit">Restore registration</button></form>@endif
             @if(auth()->user()->isSuperAdmin())
-                <form method="POST" action="{{ route('admin.registrations.destroy', $registration) }}" onsubmit="return confirm('Permanently delete this archived registration and its uploaded files? This cannot be undone.')">@csrf @method('DELETE')<label class="field-group"><span>Type {{ $registration->reference_code }} to confirm</span><input name="confirmation" required autocomplete="off"></label><button class="danger-button" type="submit">Permanently delete</button></form>
+                <form method="POST" action="{{ route('admin.registrations.destroy', $registration) }}" onsubmit="return confirm('Permanently delete this archived registration and its uploaded files? This cannot be undone.')">@csrf @method('DELETE')@if($requireArchiveDeleteConfirmation)<label class="field-group"><span>Type {{ $registration->reference_code }} to confirm</span><input name="confirmation" required autocomplete="off"></label>@endif<button class="danger-button" type="submit">Permanently delete</button></form>
             @endif
         </div>
+    @endif
+
+    @if(!$registration->archived_at && auth()->user()->isSuperAdmin() && !$requireArchiveBeforeDelete)
+        <div class="page-action-buttons"><form method="POST" action="{{ route('admin.registrations.destroy', $registration) }}" onsubmit="return confirm('Permanently delete this registration and its uploaded files? This cannot be undone.')">@csrf @method('DELETE')@if($requireArchiveDeleteConfirmation)<label class="field-group"><span>Type {{ $registration->reference_code }} to confirm</span><input name="confirmation" required autocomplete="off"></label>@endif<button class="danger-button" type="submit">Permanently delete</button></form></div>
     @endif
 
     <div class="registration-review-layout">

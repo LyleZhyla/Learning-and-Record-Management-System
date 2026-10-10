@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Models\WorkflowDefinition;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,9 +42,12 @@ class SectioningController extends Controller
             ->paginate(12)
             ->withQueryString();
 
+        $eligibleStatuses = WorkflowDefinition::ruleEnabled('sectioning', 'enrolled_students_only')
+            ? ['enrolled']
+            : ['enrolled', 'pending_approval'];
         $unsectionedCounts = NstpEnrollment::query()
             ->select('component_id', DB::raw('count(*) as total'))
-            ->where('status', 'enrolled')
+            ->whereIn('status', $eligibleStatuses)
             ->where('academic_year', $academicYear)
             ->where('semester', $semester)
             ->whereNull('section_id')
@@ -77,11 +81,15 @@ class SectioningController extends Controller
             : collect([NstpComponent::findOrFail($validated['component_id'])]);
         $assignedCount = 0;
         $createdCount = 0;
+        $eligibleStatuses = WorkflowDefinition::ruleEnabled('sectioning', 'enrolled_students_only')
+            ? ['enrolled']
+            : ['enrolled', 'pending_approval'];
+        $createSections = WorkflowDefinition::runsAutomatically('sectioning', 'create_sections_when_full');
 
-        DB::transaction(function () use ($validated, $components, &$assignedCount, &$createdCount): void {
+        DB::transaction(function () use ($validated, $components, $eligibleStatuses, $createSections, &$assignedCount, &$createdCount): void {
             foreach ($components as $component) {
                 $unassigned = NstpEnrollment::where('component_id', $component->id)
-                    ->where('status', 'enrolled')
+                    ->whereIn('status', $eligibleStatuses)
                     ->where('academic_year', $validated['academic_year'])
                     ->where('semester', $validated['semester'])
                     ->whereNull('section_id')
@@ -111,6 +119,9 @@ class SectioningController extends Controller
                         ->first();
 
                     if (! $section) {
+                        if (! $createSections) {
+                            continue;
+                        }
                         do {
                             $code = $component->code.'-'.str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT);
                             $nextNumber++;

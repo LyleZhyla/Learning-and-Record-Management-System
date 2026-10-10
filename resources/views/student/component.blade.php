@@ -4,7 +4,7 @@
 
 @section('content')
 <section class="page-actions">
-    <div><span class="eyebrow">Student enrollment</span><h2>{{ $currentEnrollment ? 'Your NSTP selection' : ($componentSelectionOpen ? 'Choose your NSTP component' : 'NSTP selection is closed') }}</h2><p>{{ $currentEnrollment ? 'Your component, ROTC details, and shirt size for this term are final.' : ($componentSelectionOpen ? 'Select your preferred component and required shirt size for '.$semesterLabel.' '.$academicYear.'.' : 'The NSTP Admin or Super Admin has temporarily closed component selection for '.$semesterLabel.' '.$academicYear.'.') }}</p></div>
+    <div><span class="eyebrow">Student enrollment</span><h2>{{ $currentEnrollment ? 'Your NSTP selection' : ($componentSelectionOpen ? 'Choose your NSTP component' : 'NSTP selection is closed') }}</h2><p>{{ $selectionLocked ? 'Your component, ROTC details, and shirt size for this term are final.' : ($componentSelectionOpen ? 'Select or update your preferred component and required shirt size for '.$semesterLabel.' '.$academicYear.'.' : 'The NSTP Admin or Super Admin has temporarily closed component selection for '.$semesterLabel.' '.$academicYear.'.') }}</p></div>
 </section>
 
 @if(! $currentEnrollment && ! $componentSelectionOpen)
@@ -22,24 +22,24 @@
             @method('PUT')
 
             <fieldset class="component-choice-fieldset">
-                <legend>NSTP component @if($currentEnrollment)<span class="component-final-badge">Final selection</span>@endif</legend>
+                <legend>NSTP component @if($selectionLocked)<span class="component-final-badge">Final selection</span>@endif</legend>
                 <div class="component-choice-grid">
                     @foreach($availableComponents as $nstpComponent)
-                        <label class="component-choice-card @if($currentEnrollment) component-choice-locked @endif">
-                            <input type="radio" @if(! $currentEnrollment) name="nstp_component_id" @endif value="{{ $nstpComponent->id }}" data-component-code="{{ $nstpComponent->code }}" @checked((int) old('nstp_component_id', $currentEnrollment?->component_id) === $nstpComponent->id) @disabled($currentEnrollment) required>
+                        <label class="component-choice-card @if($selectionLocked) component-choice-locked @endif">
+                            <input type="radio" @if(! $selectionLocked) name="nstp_component_id" @endif value="{{ $nstpComponent->id }}" data-component-code="{{ $nstpComponent->code }}" @checked((int) old('nstp_component_id', $currentEnrollment?->component_id) === $nstpComponent->id) @disabled($selectionLocked) required>
                             <x-component-logo :component-code="$nstpComponent->code" class="component-choice-mark" />
                             <strong>{{ $nstpComponent->code }}</strong>
                             <small>{{ $nstpComponent->name }}</small>
                         </label>
                     @endforeach
                 </div>
-                @if($currentEnrollment)<p class="component-lock-note">Your entire NSTP selection can no longer be changed.</p>@endif
+                @if($selectionLocked)<p class="component-lock-note">Your entire NSTP selection can no longer be changed.</p>@endif
             </fieldset>
             @error('nstp_component_id')<small class="field-error">{{ $message }}</small>@enderror
 
             <div class="rotc-category-panel" data-rotc-category-panel @if(old('rotc_category', $currentEnrollment?->rotc_category) || $currentEnrollment?->component?->code === 'ROTC') data-initially-visible @endif>
                 <label for="rotc_category">ROTC category</label>
-                <select id="rotc_category" name="rotc_category" data-rotc-category-select @disabled($currentEnrollment)>
+                <select id="rotc_category" name="rotc_category" data-rotc-category-select @disabled($selectionLocked)>
                     <option value="">Choose MS-1, MS-31, or MS-41</option>
                     @foreach($rotcCategories as $value => $label)
                         <option value="{{ $value }}" @selected(old('rotc_category', $currentEnrollment?->rotc_category) === $value)>{{ $label }}</option>
@@ -48,16 +48,16 @@
                 @error('rotc_category')<small class="field-error">{{ $message }}</small>@enderror
             </div>
 
-            <div class="rotc-proof-panel" data-rotc-proof-panel data-has-existing-proof="{{ $currentEnrollment?->rotc_proof_path ? 'true' : 'false' }}" hidden>
+            <div class="rotc-proof-panel" data-rotc-proof-panel data-has-existing-proof="{{ $currentEnrollment?->rotc_proof_path ? 'true' : 'false' }}" data-proof-required="{{ $requiresAdvancedRotcProof ? 'true' : 'false' }}" hidden>
                 <label for="ms1_proof">Proof of completed MS-1</label>
-                @if(! $currentEnrollment)<input id="ms1_proof" name="ms1_proof" type="file" accept=".pdf,.jpg,.jpeg,.png" data-rotc-proof-input>@endif
-                <small>Required for MS-31 and MS-41. Upload a PDF, JPG, or PNG up to 5 MB.</small>
+                @if(! $selectionLocked)<input id="ms1_proof" name="ms1_proof" type="file" accept=".pdf,.jpg,.jpeg,.png" data-rotc-proof-input>@endif
+                <small>{{ $requiresAdvancedRotcProof ? 'Required' : 'Optional' }} for MS-31 and MS-41. Upload a PDF, JPG, or PNG up to 5 MB.</small>
                 @if($currentEnrollment?->rotc_proof_path)<small class="existing-proof-note">Existing proof: {{ $currentEnrollment->rotc_proof_original_name }}</small>@endif
                 @error('ms1_proof')<small class="field-error">{{ $message }}</small>@enderror
             </div>
 
             <label for="shirt_size">Shirt size</label>
-            <select id="shirt_size" name="shirt_size" required @disabled($currentEnrollment)>
+            <select id="shirt_size" name="shirt_size" required @disabled($selectionLocked)>
                 <option value="">Choose your shirt size</option>
                 @foreach($shirtSizes as $value => $label)
                     <option value="{{ $value }}" @selected(old('shirt_size', $currentEnrollment?->shirt_size) === $value)>{{ $label }}</option>
@@ -65,9 +65,9 @@
             </select>
             @error('shirt_size')<small class="field-error">{{ $message }}</small>@enderror
 
-            <p class="form-help">{{ $currentEnrollment ? 'Contact the NSTP Admin if the recorded selection needs administrative correction.' : 'Review everything carefully. The component, ROTC details, and shirt size cannot be changed after the first successful submission.' }}</p>
+            <p class="form-help">{{ $selectionLocked ? 'Contact the NSTP Admin if the recorded selection needs administrative correction.' : 'Review the component, ROTC details, and shirt size before saving.' }}</p>
             @error('selection')<small class="field-error">{{ $message }}</small>@enderror
-            @if(! $currentEnrollment)<div class="form-actions"><button class="primary-button compact" type="submit">Save enrollment preferences</button></div>@endif
+            @if(! $selectionLocked)<div class="form-actions"><button class="primary-button compact" type="submit">{{ $currentEnrollment ? 'Update enrollment details' : 'Save enrollment preferences' }}</button></div>@endif
         </form>
     </section>
 
@@ -107,9 +107,10 @@
         const isAdvancedRotc = selectedComponent?.dataset.componentCode === 'ROTC'
             && ['MS-31', 'MS-41'].includes(rotcCategorySelect.value);
         const hasExistingProof = rotcProofPanel.dataset.hasExistingProof === 'true';
+        const proofRequired = rotcProofPanel.dataset.proofRequired === 'true';
         rotcProofPanel.hidden = !isAdvancedRotc;
         if (rotcProofInput) {
-            rotcProofInput.required = isAdvancedRotc && !hasExistingProof;
+            rotcProofInput.required = isAdvancedRotc && proofRequired && !hasExistingProof;
             if (!isAdvancedRotc) rotcProofInput.value = '';
         }
     }

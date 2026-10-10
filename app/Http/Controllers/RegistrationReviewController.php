@@ -8,6 +8,7 @@ use App\Models\StudentProfile;
 use App\Models\StudentRegistration;
 use App\Models\SystemSetting;
 use App\Models\User;
+use App\Models\WorkflowDefinition;
 use App\Services\RegistrationDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -96,6 +97,9 @@ class RegistrationReviewController extends Controller
             'registration' => $registration,
             'checklist' => $this->documents->checklist($registration),
             'documentStatuses' => ReviewCategory::categories('registration_document', true),
+            'allowArchiveRestore' => WorkflowDefinition::ruleEnabled('archiving', 'allow_restore'),
+            'requireArchiveBeforeDelete' => WorkflowDefinition::ruleEnabled('archiving', 'require_archive_before_delete'),
+            'requireArchiveDeleteConfirmation' => WorkflowDefinition::ruleEnabled('archiving', 'require_delete_confirmation'),
         ]);
     }
 
@@ -112,7 +116,7 @@ class RegistrationReviewController extends Controller
             'cor_review_status' => ['required', Rule::in($activeDocumentStatuses->keys()->all())],
             'formal_photo_review_status' => ['required', Rule::in($activeDocumentStatuses->keys()->all())],
             'review_notes' => [
-                Rule::requiredIf(fn (): bool => $selectedOutcomes->contains('correction')),
+                Rule::requiredIf(fn (): bool => WorkflowDefinition::ruleEnabled('registration_review', 'require_correction_notes') && $selectedOutcomes->contains('correction')),
                 'nullable',
                 'string',
                 'max:2000',
@@ -121,9 +125,11 @@ class RegistrationReviewController extends Controller
 
         $checklist = $this->documents->checklist($registration);
         $errors = [];
-        foreach (['cor', 'formal_photo'] as $document) {
-            if (ReviewCategory::outcomeFor('registration_document', $validated[$document.'_review_status']) === 'approved' && ! $checklist[$document]['complete']) {
-                $errors[$document.'_review_status'] = 'This document cannot be verified because its stored file is missing, empty, too large, or has an unsupported type.';
+        if (WorkflowDefinition::ruleEnabled('registration_review', 'validate_files')) {
+            foreach (['cor', 'formal_photo'] as $document) {
+                if (ReviewCategory::outcomeFor('registration_document', $validated[$document.'_review_status']) === 'approved' && ! $checklist[$document]['complete']) {
+                    $errors[$document.'_review_status'] = 'This document cannot be verified because its stored file is missing, empty, too large, or has an unsupported type.';
+                }
             }
         }
         if ($errors !== []) {
@@ -135,13 +141,17 @@ class RegistrationReviewController extends Controller
         $statusOutcome = $documentOutcomes->contains('correction')
             ? 'correction'
             : ($documentOutcomes->every(fn (string $outcome): bool => $outcome === 'approved') ? 'approved' : 'in_progress');
-        $status = ReviewCategory::defaultSlug('registration', $statusOutcome, match ($statusOutcome) {
-            'approved' => 'verified',
-            'correction' => 'needs_correction',
-            default => 'under_review',
-        });
+        $status = WorkflowDefinition::runsAutomatically('registration_review', 'automatic_status_transition')
+            ? ReviewCategory::defaultSlug('registration', $statusOutcome, match ($statusOutcome) {
+                'approved' => 'verified',
+                'correction' => 'needs_correction',
+                default => 'under_review',
+            })
+            : $registration->status;
+        $shouldProvisionAccount = $statusOutcome === 'approved'
+            && WorkflowDefinition::runsAutomatically('account_creation', 'provision_on_approval');
 
-        $account = DB::transaction(function () use ($registration, $validated, $status, $statusOutcome, $request): ?array {
+        $account = DB::transaction(function () use ($registration, $validated, $status, $shouldProvisionAccount, $request): ?array {
             $registration->update([
                 ...$validated,
                 'status' => $status,
@@ -149,7 +159,7 @@ class RegistrationReviewController extends Controller
                 'reviewed_at' => now(),
             ]);
 
-            return $statusOutcome === 'approved' ? $this->provisionStudentAccount($registration) : null;
+            return $shouldProvisionAccount ? $this->provisionStudentAccount($registration) : null;
         });
 
         $flash = [];
@@ -160,15 +170,17 @@ class RegistrationReviewController extends Controller
             ];
         }
 
+        $message = match (true) {
+            $statusOutcome === 'approved' && $account && $account['existing'] => 'The registration remains approved and its student account is already in the Student Accounts list.',
+            $statusOutcome === 'approved' && $account => 'Enrollment approved. The student account was created and added to the Student Accounts list.',
+            $statusOutcome === 'approved' => 'The registration review was approved. Automatic account provisioning is not enabled, so an administrator may create the account manually.',
+            $statusOutcome === 'correction' => 'The registration was marked as needing correction.',
+            default => 'The document review was saved.',
+        };
+
         return redirect()
             ->route($this->routePrefix($request).'.registrations.show', $registration)
-            ->with($flash + ['status' => $statusOutcome === 'approved'
-                ? ($account['existing']
-                    ? 'The registration remains approved and its student account is already in the Student Accounts list.'
-                    : 'Enrollment approved. The student account was created and added to the Student Accounts list.')
-                : ($statusOutcome === 'correction'
-                    ? 'The registration was marked as needing correction.'
-                    : 'The document review was saved.')]);
+            ->with($flash + ['status' => $message]);
     }
 
     public function archive(Request $request, StudentRegistration $registration): RedirectResponse
@@ -183,6 +195,7 @@ class RegistrationReviewController extends Controller
 
     public function restore(Request $request, StudentRegistration $registration): RedirectResponse
     {
+        abort_unless(WorkflowDefinition::ruleEnabled('archiving', 'allow_restore'), 409, 'Restoring archived records is disabled in Workflow Rules.');
         $registration->update(['archived_at' => null, 'archived_by' => null]);
 
         return redirect()->route($this->routePrefix($request).'.registrations.show', $registration)
@@ -192,13 +205,19 @@ class RegistrationReviewController extends Controller
     public function destroy(Request $request, StudentRegistration $registration): RedirectResponse
     {
         abort_unless($request->user()->isSuperAdmin(), 403);
-        abort_unless($registration->archived_at, 409, 'Archive this registration before permanently deleting it.');
+        abort_unless(
+            $registration->archived_at || ! WorkflowDefinition::ruleEnabled('archiving', 'require_archive_before_delete'),
+            409,
+            'Archive this registration before permanently deleting it.'
+        );
 
-        $request->validate([
-            'confirmation' => ['required', Rule::in([$registration->reference_code])],
-        ], [
-            'confirmation.in' => 'Enter the registration reference code exactly as shown.',
-        ]);
+        if (WorkflowDefinition::ruleEnabled('archiving', 'require_delete_confirmation')) {
+            $request->validate([
+                'confirmation' => ['required', Rule::in([$registration->reference_code])],
+            ], [
+                'confirmation.in' => 'Enter the registration reference code exactly as shown.',
+            ]);
+        }
 
         $paths = collect([$registration->cor_path, $registration->formal_photo_path])->filter()->unique()->values();
         $referenceCode = $registration->reference_code;
@@ -287,7 +306,7 @@ class RegistrationReviewController extends Controller
             'password' => $temporaryPassword,
             'role' => 'student',
             'status' => 'active',
-            'must_change_password' => true,
+            'must_change_password' => WorkflowDefinition::ruleEnabled('account_creation', 'force_password_change'),
             'must_upload_student_documents' => false,
         ]);
 
