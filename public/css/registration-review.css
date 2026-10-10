@@ -48,3 +48,12 @@ html[data-theme=dark] .registration-review-progress li>span{color:#c0ccdb;backgr
 .registration-review-audit strong{font-size:12px}
 .registration-review-audit span,.registration-review-audit small{font-size:11px}
 @media(max-width:760px){.registration-review-table td:not(:first-child)::before{font-size:11px}}
+
+.registration-review-button{display:inline-flex;min-height:44px;align-items:center;gap:12px;padding:4px 5px 4px 16px;border:1px solid #2468ca;border-radius:999px;color:#fff;background:linear-gradient(135deg,#2468ca,#1858a1);box-shadow:0 7px 16px rgba(36,104,202,.2);font-size:12px;font-weight:800;line-height:1;white-space:nowrap;transition:transform .18s,box-shadow .18s,background .18s}
+.registration-review-button i{display:grid;width:34px;height:34px;flex:none;place-items:center;border-radius:50%;color:#164d8e;background:#fff;font-size:16px;font-style:normal;transition:transform .18s}
+.registration-review-button:hover{color:#fff;background:linear-gradient(135deg,#1d5fb7,#123f78);box-shadow:0 10px 24px rgba(25,81,151,.3);transform:translateY(-1px)}
+.registration-review-button:hover i{transform:translateX(2px)}
+.registration-review-button:focus-visible{outline:3px solid rgba(79,145,225,.3);outline-offset:3px}
+html[data-theme=dark] .registration-review-button{border-color:#4b96ed;background:linear-gradient(135deg,#347fd4,#205e9f);box-shadow:0 8px 20px rgba(0,0,0,.3)}
+html[data-theme=dark] .registration-review-button i{color:#174c83;background:#eaf4ff}
+@media(max-width:760px){.registration-review-button{width:100%;justify-content:space-between}}

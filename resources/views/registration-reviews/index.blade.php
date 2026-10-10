@@ -109,7 +109,10 @@
                             <td data-label="Review status"><span class="registration-status review-category-badge" style="--review-category-color: {{ $registration->statusColor() }}">{{ $registration->statusLabel() }}</span></td>
                             <td class="align-right" data-label="Action">
                                 <div class="account-row-actions">
-                                    <a class="table-action" href="{{ route($routePrefix.'.registrations.show', $registration) }}">{{ $registration->archived_at ? 'View record' : 'Review documents' }} →</a>
+                                    <a class="registration-review-button" href="{{ route($routePrefix.'.registrations.show', $registration) }}">
+                                        <span>{{ $registration->archived_at ? 'View record' : 'Review documents' }}</span>
+                                        <i aria-hidden="true">→</i>
+                                    </a>
                                     @if($registration->archived_at)
                                         <form method="POST" action="{{ route($routePrefix.'.registrations.restore', $registration) }}">@csrf @method('PATCH')<button class="clear-filter" type="submit">Restore</button></form>
                                     @else
