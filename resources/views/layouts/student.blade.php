@@ -26,6 +26,7 @@
             <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}" href="{{ route('student.dashboard') }}" data-student-tour="dashboard"><span class="nav-icon">⌂</span> Dashboard</a>
             <p class="nav-label">Enrollment</p>
             @permission('student.component')<a class="nav-link {{ request()->routeIs('student.component.*') ? 'active' : '' }}" href="{{ route('student.component.edit') }}" data-student-tour="component"><span class="nav-icon">◈</span> NSTP Selection</a>@endpermission
+            @permission('student.documents')<a class="nav-link {{ request()->routeIs('student.documents.*') ? 'active' : '' }}" href="{{ route('student.documents.index') }}"><span class="nav-icon">▧</span> My Documents &amp; Forms</a>@endpermission
 
             <p class="nav-label">Learning</p>
             @permission('learning.attendance')<a class="nav-link {{ request()->routeIs('student.attendance.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'attendance') }}" data-student-tour="attendance"><span class="nav-icon">▣</span> Attendance @if($sidebarNotificationCounts['attendance'] > 0)<span class="nav-count" data-attendance-notification-count="{{ $sidebarNotificationCounts['attendance'] }}" aria-label="{{ $sidebarNotificationCounts['attendance'] }} unread attendance notifications">{{ $sidebarNotificationCounts['attendance'] > 99 ? '99+' : $sidebarNotificationCounts['attendance'] }}</span>@endif</a>@endpermission

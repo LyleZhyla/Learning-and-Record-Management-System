@@ -233,7 +233,7 @@ class UserController extends Controller
             $user->profile_photo_path,
             $studentProfile?->cor_path,
             $studentProfile?->formal_photo_path,
-        ])->filter()->unique()->values();
+        ])->merge($user->documentSubmissions()->pluck('file_path'))->filter()->unique()->values();
         $deletedName = $user->name;
         $wasStudent = $user->isStudent();
 

@@ -5,6 +5,8 @@ return [
         'accounts.staff' => ['group' => 'People & Registration', 'label' => 'Manage staff accounts', 'bases' => ['nstp_admin']],
         'accounts.students' => ['group' => 'People & Registration', 'label' => 'Manage student accounts and imports', 'bases' => ['nstp_admin']],
         'registrations.review' => ['group' => 'People & Registration', 'label' => 'Review student registrations', 'bases' => ['nstp_admin']],
+        'documents.configure' => ['group' => 'Documents & Forms', 'label' => 'Configure documents and downloadable forms', 'bases' => ['nstp_admin']],
+        'documents.review' => ['group' => 'Documents & Forms', 'label' => 'Review configurable document submissions', 'bases' => ['nstp_admin']],
         'program.components' => ['group' => 'Program Operations', 'label' => 'Manage NSTP components', 'bases' => ['nstp_admin', 'coordinator']],
         'program.sections' => ['group' => 'Program Operations', 'label' => 'Manage sections and sectioning', 'bases' => ['nstp_admin', 'coordinator']],
         'program.schedules' => ['group' => 'Program Operations', 'label' => 'Manage schedules', 'bases' => ['nstp_admin', 'coordinator']],
@@ -22,12 +24,13 @@ return [
         'ai.use' => ['group' => 'Communication', 'label' => 'Use AI Assistant and AI learning tools', 'bases' => ['nstp_admin', 'coordinator', 'facilitator', 'student']],
         'student.profile' => ['group' => 'Student Services', 'label' => 'Manage own student profile and documents', 'bases' => ['student']],
         'student.component' => ['group' => 'Student Services', 'label' => 'Select NSTP component', 'bases' => ['student']],
+        'student.documents' => ['group' => 'Student Services', 'label' => 'Download forms and submit documents', 'bases' => ['student']],
     ],
 
     'defaults' => [
         'super_admin' => ['*'],
         'nstp_admin' => [
-            'accounts.staff', 'accounts.students', 'registrations.review', 'program.components',
+            'accounts.staff', 'accounts.students', 'registrations.review', 'documents.configure', 'documents.review', 'program.components',
             'program.sections', 'program.schedules', 'learning.attendance', 'learning.materials',
             'learning.assessments', 'learning.grades', 'reports.view', 'records.archives',
             'communication.announcements', 'communication.messages', 'ai.use',
@@ -46,7 +49,7 @@ return [
         'student' => [
             'learning.attendance', 'learning.materials', 'learning.assessments', 'learning.grades',
             'reports.view', 'communication.announcements', 'communication.messages', 'ai.use',
-            'student.profile', 'student.component',
+            'student.profile', 'student.component', 'student.documents',
         ],
     ],
 
@@ -55,6 +58,8 @@ return [
         'admin.users.*' => 'accounts.staff',
         'admin.students.*' => 'accounts.students',
         'admin.registrations.*' => 'registrations.review',
+        'admin.document-forms.*' => 'documents.configure',
+        'admin.document-reviews.*' => 'documents.review',
         'admin.components.*' => 'program.components',
         'admin.sections.*' => 'program.sections',
         'admin.sectioning.*' => 'program.sections',
@@ -70,6 +75,8 @@ return [
         'nstp_admin.accounts.*' => 'accounts.staff',
         'nstp_admin.students.*' => 'accounts.students',
         'nstp_admin.registrations.*' => 'registrations.review',
+        'nstp_admin.document-forms.*' => 'documents.configure',
+        'nstp_admin.document-reviews.*' => 'documents.review',
         'nstp_admin.components.*' => 'program.components',
         'nstp_admin.sections.*' => 'program.sections',
         'nstp_admin.sectioning.*' => 'program.sections',
@@ -107,6 +114,7 @@ return [
         'student.profile.*' => 'student.profile',
         'student.required-documents.*' => 'student.profile',
         'student.component.*' => 'student.component',
+        'student.documents.*' => 'student.documents',
         'student.attendance.*' => 'learning.attendance',
         'student.id-card' => 'learning.attendance',
         'student.materials.*' => 'learning.materials',

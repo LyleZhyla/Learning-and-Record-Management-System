@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\ArchiveController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DirectoryExportController;
+use App\Http\Controllers\Admin\DocumentFormController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RoleController;
@@ -19,6 +20,7 @@ use App\Http\Controllers\Coordinator\AccountController as CoordinatorAccountCont
 use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
 use App\Http\Controllers\Coordinator\MonitoringController as CoordinatorMonitoringController;
 use App\Http\Controllers\Coordinator\RotcApprovalController as CoordinatorRotcApprovalController;
+use App\Http\Controllers\DocumentReviewController;
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
 use App\Http\Controllers\Facilitator\StudentController as FacilitatorStudentController;
 use App\Http\Controllers\Learning\AssessmentController;
@@ -43,6 +45,7 @@ use App\Http\Controllers\RegistrationReviewController;
 use App\Http\Controllers\Student\AttendanceController as StudentAttendanceController;
 use App\Http\Controllers\Student\ComponentController as StudentComponentController;
 use App\Http\Controllers\Student\DashboardController as StudentDashboardController;
+use App\Http\Controllers\Student\DocumentController as StudentDocumentController;
 use App\Http\Controllers\Student\LearningController as StudentLearningController;
 use App\Http\Controllers\Student\LearningRecommendationController as StudentLearningRecommendationController;
 use App\Http\Controllers\Student\ProfileController as StudentProfileController;
@@ -116,7 +119,24 @@ $scheduleRoutes = function (): void {
     Route::put('/schedules/sections/{section}', [ScheduleController::class, 'updateSection'])->name('schedules.sections.update');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes) {
+$documentConfigurationRoutes = function (): void {
+    Route::get('/document-forms', [DocumentFormController::class, 'index'])->name('document-forms.index');
+    Route::get('/document-forms/create', [DocumentFormController::class, 'create'])->name('document-forms.create');
+    Route::post('/document-forms', [DocumentFormController::class, 'store'])->name('document-forms.store');
+    Route::get('/document-forms/{documentForm}/edit', [DocumentFormController::class, 'edit'])->name('document-forms.edit');
+    Route::put('/document-forms/{documentForm}', [DocumentFormController::class, 'update'])->name('document-forms.update');
+    Route::delete('/document-forms/{documentForm}', [DocumentFormController::class, 'destroy'])->name('document-forms.destroy');
+    Route::get('/document-forms/{documentForm}/template', [DocumentFormController::class, 'downloadTemplate'])->name('document-forms.template');
+};
+
+$documentReviewRoutes = function (): void {
+    Route::get('/document-reviews', [DocumentReviewController::class, 'index'])->name('document-reviews.index');
+    Route::patch('/document-reviews/{documentSubmission}', [DocumentReviewController::class, 'update'])->name('document-reviews.update');
+    Route::get('/document-reviews/{documentSubmission}/file', [DocumentReviewController::class, 'file'])->name('document-reviews.file');
+    Route::get('/document-reviews/{documentSubmission}/download', [DocumentReviewController::class, 'download'])->name('document-reviews.download');
+};
+
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
@@ -151,6 +171,8 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/reports/{type}/document', [ReportController::class, 'document'])->name('reports.document');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
+    $documentConfigurationRoutes();
+    $documentReviewRoutes();
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/export', [DirectoryExportController::class, 'components'])->name('components.export');
@@ -217,7 +239,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -263,6 +285,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/reports/{type}/document', [ReportController::class, 'document'])->name('reports.document');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
+    $documentConfigurationRoutes();
+    $documentReviewRoutes();
     Route::get('/database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup.index');
     Route::post('/database-backup/download', [DatabaseBackupController::class, 'download'])->middleware('throttle:2,1')->name('database-backup.download');
     Route::post('/database-backup/archive', [DatabaseBackupController::class, 'archive'])->middleware('throttle:2,1')->name('database-backup.archive');
@@ -400,4 +424,8 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::get('/grades', [StudentLearningController::class, 'grades'])->name('grades.index');
     Route::get('/reports', StudentReportController::class)->name('reports.index');
     Route::get('/reports/download/{type}', [StudentReportController::class, 'download'])->name('reports.download');
+    Route::get('/documents', [StudentDocumentController::class, 'index'])->name('documents.index');
+    Route::post('/documents/{documentForm}', [StudentDocumentController::class, 'store'])->name('documents.store');
+    Route::get('/documents/{documentForm}/template', [StudentDocumentController::class, 'downloadTemplate'])->name('documents.template');
+    Route::get('/documents/submissions/{documentSubmission}', [StudentDocumentController::class, 'downloadSubmission'])->name('documents.submissions.download');
 });
