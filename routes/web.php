@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\ArchiveController;
+use App\Http\Controllers\Admin\ChedApplicationController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DirectoryExportController;
@@ -162,7 +163,15 @@ $policyRequirementRoutes = function (): void {
     Route::put('/policies', [PolicyRequirementController::class, 'update'])->name('policies.update');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes) {
+$chedApplicationRoutes = function (): void {
+    Route::get('/ched-applications', [ChedApplicationController::class, 'index'])->name('ched-applications.index');
+    Route::post('/ched-applications', [ChedApplicationController::class, 'store'])->name('ched-applications.store');
+    Route::get('/ched-applications/{chedApplication}', [ChedApplicationController::class, 'show'])->name('ched-applications.show');
+    Route::put('/ched-applications/{chedApplication}/status', [ChedApplicationController::class, 'updateStatus'])->name('ched-applications.status');
+    Route::get('/ched-applications/{chedApplication}/workbook', [ChedApplicationController::class, 'workbook'])->name('ched-applications.workbook');
+};
+
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
@@ -198,6 +207,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/reports/{type}/document', [ReportController::class, 'document'])->name('reports.document');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
+    $chedApplicationRoutes();
     $documentConfigurationRoutes();
     $documentReviewRoutes();
     $reviewCategoryRoutes();
@@ -210,6 +220,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::patch('/components/selection-availability', [NstpAdminComponentController::class, 'updateSelectionAvailability'])->name('components.selection-availability');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
+    Route::put('/components/{component}/assessment-profile', [NstpAdminComponentController::class, 'updateAssessmentProfile'])->name('components.assessment-profile.update');
     Route::get('/sections', [NstpAdminSectioningController::class, 'index'])->name('sections.index');
     Route::get('/sections/export', [DirectoryExportController::class, 'sections'])->name('sections.export');
     Route::get('/sections/create', [NstpAdminSectionController::class, 'create'])->name('sections.create');
@@ -270,7 +281,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -317,6 +328,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/reports/{type}/document', [ReportController::class, 'document'])->name('reports.document');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
+    $chedApplicationRoutes();
     $documentConfigurationRoutes();
     $documentReviewRoutes();
     $reviewCategoryRoutes();
@@ -346,6 +358,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::patch('/components/selection-availability', [NstpAdminComponentController::class, 'updateSelectionAvailability'])->name('components.selection-availability');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
+    Route::put('/components/{component}/assessment-profile', [NstpAdminComponentController::class, 'updateAssessmentProfile'])->name('components.assessment-profile.update');
     Route::get('/sections', [NstpAdminSectioningController::class, 'index'])->name('sections.index');
     Route::get('/sections/export', [DirectoryExportController::class, 'sections'])->name('sections.export');
     Route::get('/sections/create', [NstpAdminSectionController::class, 'create'])->name('sections.create');

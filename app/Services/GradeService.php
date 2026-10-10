@@ -3,8 +3,10 @@
 namespace App\Services;
 
 use App\Models\Assessment;
+use App\Models\ComponentAssessmentSetting;
 use App\Models\GradingCategory;
 use App\Models\GradingSetting;
+use App\Models\NstpSection;
 use App\Models\SystemSetting;
 use App\Models\User;
 
@@ -152,30 +154,50 @@ class GradeService
             : ['key' => 'needs_improvement', 'label' => 'Needs improvement'];
     }
 
-    private function ensureStructure(int $sectionId): void
+    public function ensureStructure(NstpSection|int $section): void
     {
-        GradingSetting::firstOrCreate(['section_id' => $sectionId], $this->defaultSettings());
-        $defaults = [
-            'activity' => ['name' => 'Class Standing', 'weight' => 20, 'color' => '#f59e0b', 'sort_order' => 0],
-            'project' => ['name' => 'Requirements', 'weight' => 30, 'color' => '#db2777', 'sort_order' => 1],
-            'exam' => ['name' => 'Term Test', 'weight' => 30, 'color' => '#16a34a', 'sort_order' => 2],
-            'quiz' => ['name' => 'Quizzes', 'weight' => 20, 'color' => '#2563eb', 'sort_order' => 3],
-        ];
+        $section = $section instanceof NstpSection
+            ? $section->loadMissing('component.assessmentSetting')
+            : NstpSection::with('component.assessmentSetting')->findOrFail($section);
+        $profile = ComponentAssessmentSetting::configuredFor($section->component);
 
-        if (! GradingCategory::where('section_id', $sectionId)->exists()) {
+        GradingSetting::firstOrCreate(['section_id' => $section->id], $profile->gradingDefaults());
+        $defaults = collect($profile->category_templates ?? [])->values()->map(
+            fn (array $category, int $sortOrder): array => [...$category, 'sort_order' => $sortOrder],
+        );
+
+        if (! GradingCategory::where('section_id', $section->id)->exists()) {
             foreach ($defaults as $default) {
-                GradingCategory::create(['section_id' => $sectionId, ...$default]);
+                GradingCategory::create(['section_id' => $section->id, ...$default]);
             }
         }
 
-        $categories = GradingCategory::where('section_id', $sectionId)->orderBy('sort_order')->get();
-        foreach ($defaults as $type => $default) {
-            $category = $categories->firstWhere('sort_order', $default['sort_order']) ?? $categories->first();
+        $categories = GradingCategory::where('section_id', $section->id)->orderBy('sort_order')->get();
+        foreach (config('component_assessment_profiles.types', []) as $type => $label) {
+            $category = $categories->firstWhere('assessment_type', $type) ?? $categories->first();
             if (! $category) {
                 continue;
             }
-            Assessment::where('section_id', $sectionId)->where('type', $type)->whereNull('grading_category_id')
+            Assessment::where('section_id', $section->id)->where('type', $type)->whereNull('grading_category_id')
                 ->update(['grading_category_id' => $category->id]);
         }
+    }
+
+    public function applyComponentProfile(NstpSection $section): bool
+    {
+        if ($section->assessments()->exists()) {
+            return false;
+        }
+
+        $section->loadMissing('component.assessmentSetting');
+        $profile = ComponentAssessmentSetting::configuredFor($section->component);
+
+        GradingSetting::updateOrCreate(['section_id' => $section->id], $profile->gradingDefaults());
+        $section->gradingCategories()->delete();
+        foreach (collect($profile->category_templates ?? [])->values() as $sortOrder => $category) {
+            $section->gradingCategories()->create([...$category, 'sort_order' => $sortOrder]);
+        }
+
+        return true;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Learning;
 use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\AssessmentSubmission;
+use App\Models\ComponentAssessmentSetting;
 use App\Models\GradingCategory;
 use App\Models\GradingSetting;
 use App\Models\NstpEnrollment;
@@ -55,12 +56,23 @@ class AssessmentController extends Controller
     public function create(Request $request): View
     {
         $sections = ($request->user()->isCoordinator() ? $this->access->gradebookSections($request->user()) : $this->access->manageableSections($request->user()))
-            ->with('component')->where('status', 'active')->orderBy('code')->get();
+            ->with('component.assessmentSetting')->where('status', 'active')->orderBy('code')->get();
         $sections->each(fn ($section) => $this->ensureGradingStructure($section));
         $sections->load('gradingCategories');
 
         return view('learning.assessments.create', $this->context($request) + [
             'sections' => $sections,
+            'assessmentProfiles' => $sections->mapWithKeys(function (NstpSection $section): array {
+                $profile = ComponentAssessmentSetting::configuredFor($section->component);
+
+                return [(string) $section->id => [
+                    'component' => $section->component->code,
+                    'allowed_types' => $profile->allowed_types,
+                    'default_type' => $profile->default_type,
+                    'default_max_score' => (float) $profile->default_max_score,
+                    'rubric_required_types' => $profile->rubric_required_types,
+                ]];
+            }),
         ]);
     }
 
@@ -92,9 +104,20 @@ class AssessmentController extends Controller
         $validated['rubric'] = $this->encodeRubric($validated['rubric_criteria'] ?? [], (float) $validated['max_score']);
         unset($validated['rubric_criteria']);
         $section = NstpSection::findOrFail($validated['section_id']);
+        $section->loadMissing('component.assessmentSetting');
         $this->access->ensureCanAccessGradebookSection($request->user(), $section);
         $this->ensureGradingStructure($section);
+        $profile = ComponentAssessmentSetting::configuredFor($section->component);
+        if (! $profile->allows($validated['type'])) {
+            throw ValidationException::withMessages(['type' => $section->component->code.' does not allow '.str($validated['type'])->headline().' assessments.']);
+        }
+        if ($profile->requiresRubric($validated['type']) && blank($validated['rubric'])) {
+            throw ValidationException::withMessages(['rubric_criteria' => $section->component->code.' requires a scoring rubric for '.str($validated['type'])->headline().' assessments.']);
+        }
         $category = GradingCategory::where('section_id', $section->id)->findOrFail($validated['grading_category_id']);
+        if ($category->assessment_type && $category->assessment_type !== $validated['type']) {
+            throw ValidationException::withMessages(['grading_category_id' => 'Select the configured '.$validated['type'].' category for this component.']);
+        }
         $validated['grading_category_id'] = $category->id;
         $validated['weight'] = $category->weight;
         $createAnswerSheet = (bool) $validated['create_answer_sheet'];
@@ -585,24 +608,15 @@ class AssessmentController extends Controller
 
     private function ensureGradingStructure(NstpSection $section): void
     {
-        GradingSetting::firstOrCreate(['section_id' => $section->id], $this->grades->defaultSettings());
-        if ($section->gradingCategories()->exists()) {
-            return;
-        }
-
-        $defaults = [
-            ['name' => 'Class Standing', 'weight' => 20, 'color' => '#f59e0b'],
-            ['name' => 'Requirements', 'weight' => 30, 'color' => '#db2777'],
-            ['name' => 'Term Test', 'weight' => 30, 'color' => '#16a34a'],
-            ['name' => 'Quizzes', 'weight' => 20, 'color' => '#2563eb'],
-        ];
-        foreach ($defaults as $sortOrder => $default) {
-            $section->gradingCategories()->create([...$default, 'sort_order' => $sortOrder]);
-        }
+        $this->grades->ensureStructure($section);
     }
 
     private function categoryType(GradingCategory $category): string
     {
+        if ($category->assessment_type) {
+            return $category->assessment_type;
+        }
+
         return match (strtolower($category->name)) {
             'quizzes', 'quiz' => 'quiz',
             'term test', 'exam', 'exams' => 'exam',

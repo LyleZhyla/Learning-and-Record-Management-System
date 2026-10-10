@@ -3,15 +3,19 @@
 namespace App\Http\Controllers\NstpAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\ComponentAssessmentSetting;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\SystemSetting;
+use App\Services\GradeService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class ComponentController extends Controller
@@ -111,10 +115,20 @@ class ComponentController extends Controller
 
     public function edit(Request $request, NstpComponent $component): View
     {
-        $component->loadCount(['sections', 'enrollments']);
+        $component->loadCount(['sections', 'enrollments'])->load('assessmentSetting.updater');
+        $assessmentProfile = ComponentAssessmentSetting::configuredFor($component);
+        $fallbackCategories = collect(config('component_assessment_profiles.default.categories', []));
+        $profileCategories = collect($assessmentProfile->category_templates ?? []);
 
         return view('nstp_admin.components.edit', [
             'component' => $component,
+            'assessmentProfile' => $assessmentProfile,
+            'assessmentTypes' => config('component_assessment_profiles.types', []),
+            'assessmentCategoryRows' => collect(config('component_assessment_profiles.types', []))->map(
+                fn (string $label, string $type): array => $profileCategories->firstWhere('assessment_type', $type)
+                    ?? $fallbackCategories->firstWhere('assessment_type', $type)
+                    ?? ['name' => $label, 'assessment_type' => $type, 'weight' => 0, 'color' => '#64748b'],
+            ),
             'routePrefix' => $this->routePrefix($request),
         ]);
     }
@@ -132,6 +146,83 @@ class ComponentController extends Controller
 
         return redirect()->route($this->routePrefix($request).'.sections.index')
             ->with('status', "{$component->code} configuration updated successfully.");
+    }
+
+    public function updateAssessmentProfile(Request $request, NstpComponent $component, GradeService $grades): RedirectResponse
+    {
+        $types = array_keys(config('component_assessment_profiles.types', []));
+        $request->merge(['apply_to_empty_sections' => $request->boolean('apply_to_empty_sections')]);
+        $validated = $request->validate([
+            'allowed_types' => ['required', 'array', 'min:1'],
+            'allowed_types.*' => ['required', 'distinct', Rule::in($types)],
+            'default_type' => ['required', Rule::in($types)],
+            'default_max_score' => ['required', 'numeric', 'min:1', 'max:10000'],
+            'rubric_required_types' => ['nullable', 'array'],
+            'rubric_required_types.*' => ['required', 'distinct', Rule::in($types)],
+            'passing_percentage' => ['required', 'numeric', 'min:1', 'max:99.99'],
+            'highest_grade' => ['required', 'numeric', 'min:0', 'max:5'],
+            'passing_grade' => ['required', 'numeric', 'min:0', 'max:5'],
+            'failing_grade' => ['required', 'numeric', 'min:0', 'max:5'],
+            'categories' => ['required', 'array', 'min:1', 'max:8'],
+            'categories.*.name' => ['required', 'string', 'max:80'],
+            'categories.*.assessment_type' => ['required', 'distinct', Rule::in($types)],
+            'categories.*.weight' => ['required', 'numeric', 'gt:0', 'max:100'],
+            'categories.*.color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'apply_to_empty_sections' => ['required', 'boolean'],
+        ]);
+
+        $allowedTypes = array_values($validated['allowed_types']);
+        $rubricTypes = array_values($validated['rubric_required_types'] ?? []);
+        $categories = collect($validated['categories'])->whereIn('assessment_type', $allowedTypes)->values();
+        $categoryTypes = $categories->pluck('assessment_type')->values()->all();
+
+        if (! in_array($validated['default_type'], $allowedTypes, true)) {
+            throw ValidationException::withMessages(['default_type' => 'The default type must also be enabled for this component.']);
+        }
+        if (array_diff($rubricTypes, $allowedTypes) !== []) {
+            throw ValidationException::withMessages(['rubric_required_types' => 'Rubrics can be required only for enabled assessment types.']);
+        }
+        if (array_diff($allowedTypes, $categoryTypes) !== [] || array_diff($categoryTypes, $allowedTypes) !== []) {
+            throw ValidationException::withMessages(['categories' => 'Create exactly one grading category for every enabled assessment type.']);
+        }
+        $totalWeight = $categories->sum(fn (array $category): float => (float) $category['weight']);
+        if (abs($totalWeight - 100) > 0.001) {
+            throw ValidationException::withMessages(['categories' => 'Component category weights must total exactly 100%. Current total: '.number_format($totalWeight, 2).'%.']);
+        }
+        if ((float) $validated['highest_grade'] >= (float) $validated['passing_grade'] || (float) $validated['passing_grade'] >= (float) $validated['failing_grade']) {
+            throw ValidationException::withMessages(['passing_grade' => 'Use an ascending scale such as 1.00 highest, 3.00 passing, and 5.00 failing.']);
+        }
+
+        $profile = DB::transaction(function () use ($component, $request, $validated, $allowedTypes, $rubricTypes, $categories): ComponentAssessmentSetting {
+            return ComponentAssessmentSetting::updateOrCreate(['component_id' => $component->id], [
+                'allowed_types' => $allowedTypes,
+                'default_type' => $validated['default_type'],
+                'default_max_score' => $validated['default_max_score'],
+                'rubric_required_types' => $rubricTypes,
+                'passing_percentage' => $validated['passing_percentage'],
+                'highest_grade' => $validated['highest_grade'],
+                'passing_grade' => $validated['passing_grade'],
+                'failing_grade' => $validated['failing_grade'],
+                'category_templates' => $categories->all(),
+                'updated_by' => $request->user()->id,
+            ]);
+        });
+
+        $applied = 0;
+        $skipped = 0;
+        if ($validated['apply_to_empty_sections']) {
+            $component->unsetRelation('assessmentSetting')->setRelation('assessmentSetting', $profile);
+            $component->sections()->get()->each(function (NstpSection $section) use ($grades, &$applied, &$skipped): void {
+                $grades->applyComponentProfile($section) ? $applied++ : $skipped++;
+            });
+        }
+
+        $message = "{$component->code} assessment profile updated.";
+        if ($validated['apply_to_empty_sections']) {
+            $message .= " Applied to {$applied} empty section(s)".($skipped ? "; {$skipped} section(s) with assessments kept their overrides." : '.');
+        }
+
+        return back()->with('status', $message);
     }
 
     private function routePrefix(Request $request): string

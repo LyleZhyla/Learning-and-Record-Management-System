@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class NstpComponent extends Model
 {
@@ -31,5 +32,10 @@ class NstpComponent extends Model
     public function enrollments(): HasMany
     {
         return $this->hasMany(NstpEnrollment::class, 'component_id');
+    }
+
+    public function assessmentSetting(): HasOne
+    {
+        return $this->hasOne(ComponentAssessmentSetting::class, 'component_id');
     }
 }

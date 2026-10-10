@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class GradingCategory extends Model
 {
-    protected $fillable = ['section_id', 'name', 'weight', 'color', 'sort_order'];
+    protected $fillable = ['section_id', 'name', 'assessment_type', 'weight', 'color', 'sort_order'];
 
     protected function casts(): array
     {
