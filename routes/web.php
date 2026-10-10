@@ -238,19 +238,18 @@ $honorariumViewerRoutes = function (): void {
 $honorariumRequestRoutes = function (): void {
     Route::get('/honoraria/create', [FacilitatorHonorariumController::class, 'create'])->name('honoraria.create');
     Route::post('/honoraria', [FacilitatorHonorariumController::class, 'store'])->name('honoraria.store');
-    Route::get('/honoraria/{honorarium}/payslip', [FacilitatorHonorariumController::class, 'payslip'])->name('honoraria.payslip');
+    Route::get('/honoraria/{honorarium}/voucher', [FacilitatorHonorariumController::class, 'voucher'])->name('honoraria.voucher');
 };
 
-$honorariumApprovalRoutes = function (): void {
-    Route::put('/honoraria/{honorarium}/review', [FacilitatorHonorariumController::class, 'review'])->name('honoraria.review');
-    Route::put('/honoraria/{honorarium}/disburse', [FacilitatorHonorariumController::class, 'disburse'])->name('honoraria.disburse');
+$honorariumDocumentPreparationRoutes = function (): void {
+    Route::put('/honoraria/{honorarium}/documents', [FacilitatorHonorariumController::class, 'prepareDocuments'])->name('honoraria.documents.update');
 };
 
 $engagementAnalyticsRoutes = function (): void {
     Route::get('/engagement-analytics', EngagementAnalyticsController::class)->name('engagement-analytics.index');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumApprovalRoutes, $engagementAnalyticsRoutes) {
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumDocumentPreparationRoutes, $engagementAnalyticsRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
@@ -295,7 +294,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $facilitatorRequirementRoutes();
     $honorariumViewerRoutes();
     $honorariumRequestRoutes();
-    $honorariumApprovalRoutes();
+    $honorariumDocumentPreparationRoutes();
     $engagementAnalyticsRoutes();
     $documentConfigurationRoutes();
     $documentReviewRoutes();

@@ -25,7 +25,7 @@ class FacilitatorHonorariumController extends Controller
     {
         $user = $request->user();
         $records = $this->visibleRecords($user)
-            ->with(['facilitator', 'component', 'requester', 'approver', 'disburser'])
+            ->with(['facilitator', 'component', 'requester', 'preparer'])
             ->latest('requested_at')->get();
 
         return view('facilitator-honoraria.index', [
@@ -34,12 +34,12 @@ class FacilitatorHonorariumController extends Controller
             'records' => $records,
             'statuses' => FacilitatorHonorarium::STATUSES,
             'canCreateRequests' => $user->isCoordinator() || $user->isNstpAdmin(),
-            'canApprove' => $user->isNstpAdmin(),
+            'canPrepareDocuments' => $user->isNstpAdmin(),
             'metrics' => [
                 'total' => $records->count(),
-                'pending' => $records->where('status', 'pending_approval')->count(),
-                'approved' => $records->where('status', 'approved')->count(),
-                'disbursed' => $records->where('status', 'disbursed')->count(),
+                'for_preparation' => $records->where('status', 'for_document_preparation')->count(),
+                'prepared' => $records->where('status', 'documents_prepared')->count(),
+                'forwarded' => $records->where('status', 'forwarded_to_cashier')->count(),
             ],
         ]);
     }
@@ -95,7 +95,7 @@ class FacilitatorHonorariumController extends Controller
                 'gross_amount' => $gross,
                 'deductions' => $deductions,
                 'net_amount' => $gross - $deductions,
-                'status' => 'pending_approval',
+                'status' => 'for_document_preparation',
                 'requested_by' => $request->user()->id,
                 'requested_at' => now(),
             ]);
@@ -105,68 +105,56 @@ class FacilitatorHonorariumController extends Controller
         });
 
         return redirect()->route($this->access->routePrefix($request->user()).'.honoraria.index')
-            ->with('status', 'Honorarium payment request '.$record->reference_number.' submitted for NSTP Admin approval.');
+            ->with('status', 'Honorarium request '.$record->reference_number.' is ready for NSTP Admin document preparation.');
     }
 
-    public function review(Request $request, FacilitatorHonorarium $honorarium): RedirectResponse
+    public function prepareDocuments(Request $request, FacilitatorHonorarium $honorarium): RedirectResponse
     {
         abort_unless($request->user()->isNstpAdmin(), 403);
-        abort_unless($honorarium->status === 'pending_approval', 422, 'Only pending payment requests can be reviewed.');
         $validated = $request->validate([
-            'decision' => ['required', Rule::in(['approved', 'rejected'])],
-            'approval_notes' => [Rule::requiredIf($request->input('decision') === 'rejected'), 'nullable', 'string', 'max:3000'],
-        ]);
-        $approved = $validated['decision'] === 'approved';
-        $honorarium->update([
-            'status' => $validated['decision'],
-            'approval_notes' => $validated['approval_notes'] ?? null,
-            'approved_by' => $request->user()->id,
-            'approved_at' => now(),
-            'disbursement_reference' => null,
-            'disbursed_by' => null,
-            'disbursed_at' => null,
-        ]);
-
-        return back()->with('status', $approved ? 'Honorarium request approved for payment.' : 'Honorarium request returned or rejected.');
-    }
-
-    public function disburse(Request $request, FacilitatorHonorarium $honorarium): RedirectResponse
-    {
-        abort_unless($request->user()->isNstpAdmin(), 403);
-        abort_unless($honorarium->status === 'approved', 422, 'Only approved honoraria can be marked as disbursed.');
-        $validated = $request->validate([
-            'disbursement_reference' => ['required', 'string', 'max:255'],
-            'disbursed_at' => ['required', 'date', 'before_or_equal:today'],
+            'status' => ['required', Rule::in(['documents_prepared', 'forwarded_to_cashier', 'returned_for_correction'])],
+            'disbursement_voucher_number' => ['required_unless:status,returned_for_correction', 'nullable', 'string', 'max:100'],
+            'obligation_request_number' => ['nullable', 'string', 'max:100'],
+            'payroll_reference' => ['nullable', 'string', 'max:100'],
+            'preparation_notes' => ['required_if:status,returned_for_correction', 'nullable', 'string', 'max:3000'],
+            'cashier_forwarded_at' => ['required_if:status,forwarded_to_cashier', 'nullable', 'date', 'before_or_equal:now'],
         ]);
         $honorarium->update([
             ...$validated,
-            'status' => 'disbursed',
-            'disbursed_by' => $request->user()->id,
+            'prepared_by' => $request->user()->id,
+            'prepared_at' => now(),
+            'cashier_forwarded_at' => $validated['status'] === 'forwarded_to_cashier'
+                ? $validated['cashier_forwarded_at']
+                : null,
         ]);
 
-        return back()->with('status', 'Honorarium disbursement recorded.');
+        return back()->with('status', match ($validated['status']) {
+            'documents_prepared' => 'Disbursement and voucher documents prepared.',
+            'forwarded_to_cashier' => 'Document package recorded as forwarded to the University Cashier.',
+            default => 'Honorarium record returned for document correction.',
+        });
     }
 
-    public function payslip(Request $request, FacilitatorHonorarium $honorarium): Response
+    public function voucher(Request $request, FacilitatorHonorarium $honorarium): Response
     {
         abort_unless($request->user()->isCoordinator() || $request->user()->isNstpAdmin(), 403);
         abort_unless($this->visibleRecords($request->user())->whereKey($honorarium->id)->exists(), 403);
-        abort_unless(in_array($honorarium->status, ['approved', 'disbursed'], true), 422, 'Payslips are available after approval.');
-        $honorarium->load(['facilitator.facilitatorProfile', 'component', 'requester', 'approver', 'disburser']);
+        abort_unless(in_array($honorarium->status, ['documents_prepared', 'forwarded_to_cashier'], true), 422, 'Prepare the cashier documents before generating the voucher.');
+        $honorarium->load(['facilitator.facilitatorProfile', 'component', 'requester', 'preparer']);
         $options = new Options;
         $options->set('isRemoteEnabled', false);
         $dompdf = new Dompdf($options);
-        $dompdf->loadHtml(view('facilitator-honoraria.payslip', compact('honorarium'))->render());
+        $dompdf->loadHtml(view('facilitator-honoraria.voucher', compact('honorarium'))->render());
         $dompdf->setPaper('a4', 'portrait');
         $dompdf->render();
         $honorarium->update([
-            'payslip_generated_by' => $request->user()->id,
-            'payslip_generated_at' => now(),
+            'voucher_generated_by' => $request->user()->id,
+            'voucher_generated_at' => now(),
         ]);
 
         return response($dompdf->output(), 200, [
             'Content-Type' => 'application/pdf',
-            'Content-Disposition' => 'attachment; filename="payslip-'.$honorarium->reference_number.'.pdf"',
+            'Content-Disposition' => 'attachment; filename="cashier-voucher-'.$honorarium->reference_number.'.pdf"',
         ]);
     }
 

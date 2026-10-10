@@ -8,18 +8,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class FacilitatorHonorarium extends Model
 {
     public const STATUSES = [
-        'pending_approval' => 'Pending approval',
-        'approved' => 'Approved for payment',
-        'rejected' => 'Returned / rejected',
-        'disbursed' => 'Disbursed',
+        'for_document_preparation' => 'For document preparation',
+        'documents_prepared' => 'Documents prepared',
+        'forwarded_to_cashier' => 'Forwarded to University Cashier',
+        'returned_for_correction' => 'Returned for correction',
     ];
 
     protected $fillable = [
         'reference_number', 'facilitator_id', 'component_id', 'academic_year', 'semester',
         'period_start', 'period_end', 'gross_amount', 'deductions', 'net_amount', 'status',
-        'request_notes', 'requested_by', 'requested_at', 'approval_notes', 'approved_by',
-        'approved_at', 'disbursement_reference', 'disbursed_by', 'disbursed_at',
-        'payslip_generated_by', 'payslip_generated_at',
+        'request_notes', 'requested_by', 'requested_at', 'disbursement_voucher_number',
+        'obligation_request_number', 'payroll_reference', 'preparation_notes', 'prepared_by',
+        'prepared_at', 'cashier_forwarded_at', 'voucher_generated_by', 'voucher_generated_at',
     ];
 
     protected function casts(): array
@@ -31,9 +31,9 @@ class FacilitatorHonorarium extends Model
             'deductions' => 'decimal:2',
             'net_amount' => 'decimal:2',
             'requested_at' => 'datetime',
-            'approved_at' => 'datetime',
-            'disbursed_at' => 'datetime',
-            'payslip_generated_at' => 'datetime',
+            'prepared_at' => 'datetime',
+            'cashier_forwarded_at' => 'datetime',
+            'voucher_generated_at' => 'datetime',
         ];
     }
 
@@ -52,14 +52,9 @@ class FacilitatorHonorarium extends Model
         return $this->belongsTo(User::class, 'requested_by');
     }
 
-    public function approver(): BelongsTo
+    public function preparer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'approved_by');
-    }
-
-    public function disburser(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'disbursed_by');
+        return $this->belongsTo(User::class, 'prepared_by');
     }
 
     public function statusLabel(): string
