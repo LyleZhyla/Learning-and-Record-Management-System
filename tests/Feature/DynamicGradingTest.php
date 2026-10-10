@@ -7,6 +7,7 @@ use App\Models\AssessmentSubmission;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Models\StudentProfile;
 use App\Models\User;
 use App\Services\GradeService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,6 +63,10 @@ class DynamicGradingTest extends TestCase
         $this->assertDatabaseHas('assessment_submissions', [
             'assessment_id' => $assessment->id, 'student_id' => $student->id, 'score' => 45,
         ]);
+
+        $this->actingAs($facilitator)->get('/facilitator/grades?section='.$section->id)
+            ->assertOk()
+            ->assertSee('Dela Cruz, Juan S.');
     }
 
     public function test_facilitator_cannot_change_the_grading_configuration(): void
@@ -112,7 +117,7 @@ class DynamicGradingTest extends TestCase
             ->assertOk()
             ->assertSee('data-ms-level-field', false)
             ->assertSee('hidden', false)
-            ->assertSee($student->name);
+            ->assertSee('Dela Cruz, Juan S.');
     }
 
     public function test_student_sees_only_their_own_transparent_grade_breakdown(): void
@@ -219,6 +224,34 @@ class DynamicGradingTest extends TestCase
     {
         $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        StudentProfile::create([
+            'user_id' => $student->id,
+            'last_name' => 'Dela Cruz',
+            'first_name' => 'Juan',
+            'middle_name' => 'Santos',
+            'province' => 'Tarlac',
+            'province_code' => '036900000',
+            'city_municipality' => 'Tarlac City',
+            'city_municipality_code' => '036916000',
+            'barangay' => 'San Vicente',
+            'barangay_code' => '036916001',
+            'date_of_birth' => '2005-01-01',
+            'birth_province' => 'Tarlac',
+            'birth_province_code' => '036900000',
+            'birth_city_municipality' => 'Tarlac City',
+            'birth_city_municipality_code' => '036916000',
+            'religion' => 'Roman Catholic',
+            'sex' => 'Male',
+            'blood_type' => 'O+',
+            'contact_number' => '09171234567',
+            'emergency_contact_name' => 'Maria Dela Cruz',
+            'emergency_relationship' => 'Mother',
+            'emergency_contact_number' => '09179876543',
+            'student_number' => '2026000001',
+            'college' => 'College of Engineering',
+            'course' => 'BS Agricultural Engineering',
+            'year_section' => '1-A',
+        ]);
         $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
         $section = NstpSection::create(['component_id' => $component->id, 'facilitator_id' => $facilitator->id, 'code' => 'CWTS-01', 'name' => 'Section 1', 'academic_year' => '2026-2027', 'semester' => 'first', 'capacity' => 40, 'status' => 'active']);
         NstpEnrollment::create(['student_id' => $student->id, 'component_id' => $component->id, 'section_id' => $section->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);

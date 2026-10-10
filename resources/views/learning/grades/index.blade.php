@@ -118,7 +118,7 @@
             <tbody>
                 @forelse($summaries as $row)
                 <tr data-student-row="{{ $row['student']->id }}">
-                    <td class="student-column"><strong>{{ $row['student']->name }}</strong><small>{{ $row['student']->email }}</small></td>
+                    <td class="student-column"><strong>{{ $row['student']->studentRecordName() }}</strong><small>{{ $row['student']->email }}</small></td>
                     @foreach($categories as $category)
                         @php($categorySummary = $row['categories']->first(fn($item) => $item['category']->id === $category->id))
                         @foreach($category->assessments as $assessment)

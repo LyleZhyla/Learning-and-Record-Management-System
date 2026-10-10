@@ -168,6 +168,23 @@ class User extends Authenticatable
         return self::STATUS_LABELS[$this->status] ?? str($this->status)->headline()->toString();
     }
 
+    public function studentRecordName(): string
+    {
+        $profile = $this->studentProfile;
+
+        if (blank($profile?->last_name) || blank($profile?->first_name)) {
+            return $this->name;
+        }
+
+        $middleInitial = filled($profile->middle_name)
+            ? Str::upper(Str::substr(trim($profile->middle_name), 0, 1)).'.'
+            : null;
+
+        $givenNames = collect([$profile->first_name, $middleInitial])->filter()->implode(' ');
+
+        return $profile->last_name.', '.$givenNames;
+    }
+
     public function dashboardRouteName(): ?string
     {
         return match ($this->role) {
