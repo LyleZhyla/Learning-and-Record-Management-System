@@ -23,6 +23,7 @@ class PublicServiceRequestController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $isAssistance = $request->input('request_type') === 'assistance';
+        $isSerialNumber = $request->input('request_type') === 'serial_number';
         $validated = $request->validate([
             'request_type' => ['required', Rule::in(array_keys(NstpServiceRequest::REQUEST_TYPES))],
             'assistance_type' => [Rule::requiredIf($isAssistance), 'nullable', Rule::in(array_keys(NstpServiceRequest::ASSISTANCE_TYPES))],
@@ -31,7 +32,7 @@ class PublicServiceRequestController extends Controller
             'contact_number' => ['required', 'string', 'max:40'],
             'student_number' => ['nullable', 'string', 'max:60'],
             'program' => ['nullable', 'string', 'max:180'],
-            'graduation_year' => ['nullable', 'integer', 'between:1945,'.(now()->year + 1)],
+            'graduation_year' => [Rule::requiredIf($isSerialNumber), 'nullable', 'integer', 'between:1945,'.(now()->year + 1)],
             'purpose' => ['required', 'string', 'max:3000'],
             'event_name' => [Rule::requiredIf($isAssistance), 'nullable', 'string', 'max:180'],
             'event_date' => [Rule::requiredIf($isAssistance), 'nullable', 'date', 'after_or_equal:today'],
@@ -39,6 +40,9 @@ class PublicServiceRequestController extends Controller
             'expected_participants' => ['nullable', 'integer', 'between:1,1000000'],
             'attachment' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:5120'],
             'privacy_consent' => ['accepted'],
+        ], [
+            'graduation_year.required' => 'The year NSTP 02 was completed is required for a serial number request.',
+            'graduation_year.between' => 'Enter a valid year when NSTP 02 was completed.',
         ]);
 
         if (! $isAssistance) {

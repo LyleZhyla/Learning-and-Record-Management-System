@@ -69,6 +69,32 @@ class PublicServiceRequestTest extends TestCase
         $this->assertDatabaseCount('nstp_service_requests', 0);
     }
 
+    public function test_serial_number_request_requires_the_year_nstp_02_was_completed(): void
+    {
+        $payload = [
+            'request_type' => 'serial_number',
+            'requester_name' => 'NSTP Graduate',
+            'email' => 'graduate@example.test',
+            'contact_number' => '09171234567',
+            'student_number' => '2019-00123',
+            'purpose' => 'Serial number follow-up.',
+            'privacy_consent' => '1',
+        ];
+
+        $this->from(route('service-requests.create'))
+            ->post(route('service-requests.store'), $payload)
+            ->assertRedirect(route('service-requests.create'))
+            ->assertSessionHasErrors(['graduation_year']);
+
+        $this->post(route('service-requests.store'), $payload + ['graduation_year' => 2023])
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('nstp_service_requests', [
+            'request_type' => 'serial_number',
+            'graduation_year' => 2023,
+        ]);
+    }
+
     public function test_visitor_can_attach_a_supporting_document_to_an_assistance_request(): void
     {
         Storage::fake('local');

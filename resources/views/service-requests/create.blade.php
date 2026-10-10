@@ -48,7 +48,7 @@
                 <label class="request-field"><span>Contact number *</span><input name="contact_number" value="{{ old('contact_number') }}" maxlength="40" autocomplete="tel" required placeholder="09XX XXX XXXX"></label>
                 <label class="request-field"><span>Student number <small>if applicable</small></span><input name="student_number" value="{{ old('student_number') }}" maxlength="60"></label>
                 <label class="request-field"><span>Program / organization</span><input name="program" value="{{ old('program') }}" maxlength="180" placeholder="e.g. BS Agriculture or office name"></label>
-                <label class="request-field" data-record-field><span>Year graduated <small>if applicable</small></span><input type="number" name="graduation_year" value="{{ old('graduation_year') }}" min="1945" max="{{ now()->year + 1 }}" inputmode="numeric"></label>
+                <label class="request-field" data-record-field><span>Year NSTP 02 completed <small data-completion-year-hint>if applicable</small></span><input type="number" name="graduation_year" value="{{ old('graduation_year') }}" min="1945" max="{{ now()->year + 1 }}" inputmode="numeric" data-serial-required></label>
             </div>
         </section>
 

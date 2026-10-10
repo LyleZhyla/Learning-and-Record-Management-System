@@ -7,6 +7,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const eventFields = form.querySelector('[data-event-fields]');
     const assistanceTypes = [...form.querySelectorAll('input[name="assistance_type"]')];
     const assistanceRequired = [...form.querySelectorAll('[data-assistance-required]')];
+    const serialRequired = [...form.querySelectorAll('[data-serial-required]')];
+    const completionYearHint = form.querySelector('[data-completion-year-hint]');
     const finalStep = form.querySelector('[data-final-step]');
     const purpose = form.querySelector('textarea[name="purpose"]');
     const purposeCount = form.querySelector('[data-purpose-count]');
@@ -16,10 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const syncType = () => {
         const selected = requestTypes.find((input) => input.checked)?.value;
         const isAssistance = selected === 'assistance';
+        const isSerialNumber = selected === 'serial_number';
         assistanceFields.hidden = !isAssistance;
         eventFields.hidden = !isAssistance;
         assistanceTypes.forEach((input) => input.required = isAssistance);
         assistanceRequired.forEach((input) => input.required = isAssistance);
+        serialRequired.forEach((input) => input.required = isSerialNumber);
+        if (completionYearHint) completionYearHint.textContent = isSerialNumber ? 'required' : 'if applicable';
         if (finalStep) finalStep.textContent = isAssistance ? '04' : '03';
     };
 
