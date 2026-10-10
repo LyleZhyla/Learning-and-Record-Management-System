@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DirectoryExportController;
 use App\Http\Controllers\Admin\DocumentFormController;
 use App\Http\Controllers\Admin\NotificationRuleController;
+use App\Http\Controllers\Admin\PolicyRequirementController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewCategoryController;
@@ -156,7 +157,12 @@ $notificationRuleRoutes = function (): void {
     Route::put('/notification-rules/{notificationRule}', [NotificationRuleController::class, 'update'])->name('notification-rules.update');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes) {
+$policyRequirementRoutes = function (): void {
+    Route::get('/policies', [PolicyRequirementController::class, 'index'])->name('policies.index');
+    Route::put('/policies', [PolicyRequirementController::class, 'update'])->name('policies.update');
+};
+
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
@@ -196,6 +202,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $reviewCategoryRoutes();
     $workflowRoutes();
     $notificationRuleRoutes();
+    $policyRequirementRoutes();
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/export', [DirectoryExportController::class, 'components'])->name('components.export');
@@ -262,7 +269,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -313,6 +320,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $reviewCategoryRoutes();
     $workflowRoutes();
     $notificationRuleRoutes();
+    $policyRequirementRoutes();
     Route::get('/database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup.index');
     Route::post('/database-backup/download', [DatabaseBackupController::class, 'download'])->middleware('throttle:2,1')->name('database-backup.download');
     Route::post('/database-backup/archive', [DatabaseBackupController::class, 'archive'])->middleware('throttle:2,1')->name('database-backup.archive');

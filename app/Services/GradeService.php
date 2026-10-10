@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Assessment;
 use App\Models\GradingCategory;
 use App\Models\GradingSetting;
+use App\Models\SystemSetting;
 use App\Models\User;
 
 class GradeService
@@ -124,9 +125,9 @@ class GradeService
     public function defaultSettings(): array
     {
         return [
-            'passing_percentage' => 75,
+            'passing_percentage' => SystemSetting::defaultPassingPercentage(),
             'highest_grade' => 1,
-            'passing_grade' => 3,
+            'passing_grade' => SystemSetting::defaultPassingGrade(),
             'failing_grade' => 5,
         ];
     }

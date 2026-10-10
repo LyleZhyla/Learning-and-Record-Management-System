@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\SystemSetting;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -12,7 +13,7 @@ class RequireImportedStudentDocuments
     {
         $user = $request->user();
 
-        if (! $user?->isStudent() || ! $user->must_upload_student_documents) {
+        if (! $user?->isStudent() || ! $user->must_upload_student_documents || ! SystemSetting::requiredDocumentsAreEnforced()) {
             return $next($request);
         }
 

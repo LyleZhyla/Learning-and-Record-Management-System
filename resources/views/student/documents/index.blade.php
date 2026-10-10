@@ -12,7 +12,7 @@
 <section class="student-document-grid">
     @forelse($forms as $form)
         @php($submission = $submissions->get($form->id))
-        <article class="card student-document-card {{ $form->is_required ? 'required' : '' }}">
+        <article class="card student-document-card {{ $requirementsEnforced && $form->is_required ? 'required' : '' }}">
             <div class="student-document-heading">
                 <div><span class="document-kind">{{ $form->categoryLabel() }}</span><h3>{{ $form->title }}</h3></div>
                 @if($submission)<span class="document-status review-category-badge" style="--review-category-color: {{ $submission->statusColor() }}">{{ $submission->statusLabel() }}</span>@elseif($form->requires_submission)<span class="document-status not-submitted">Not submitted</span>@else<span class="document-status information">Available</span>@endif
@@ -21,7 +21,7 @@
             @if($form->instructions)<div class="document-instructions"><strong>Instructions</strong><p>{{ $form->instructions }}</p></div>@endif
             <dl class="document-meta">
                 <div><dt>Audience</dt><dd>{{ $form->component?->code ?? 'All NSTP students' }}</dd></div>
-                @if($form->requires_submission)<div><dt>Accepted files</dt><dd>{{ $form->acceptedTypesLabel() }}</dd></div><div><dt>Maximum size</dt><dd>{{ number_format($form->max_size_kb / 1024) }} MB</dd></div><div><dt>Requirement</dt><dd>{{ $form->is_required ? 'Required' : 'Optional' }}</dd></div>@endif
+                @if($form->requires_submission)<div><dt>Accepted files</dt><dd>{{ $form->acceptedTypesLabel() }}</dd></div><div><dt>Maximum size</dt><dd>{{ number_format($form->max_size_kb / 1024) }} MB</dd></div><div><dt>Requirement</dt><dd>{{ $requirementsEnforced && $form->is_required ? 'Required' : 'Optional' }}</dd></div>@endif
                 @if($form->closes_at)<div><dt>Deadline</dt><dd>{{ $form->closes_at->format('M j, Y g:i A') }}</dd></div>@endif
             </dl>
             @if($form->template_path)<a class="secondary-outline-button document-template-button" href="{{ route('student.documents.template', $form) }}">Download {{ $form->template_original_name ?: 'template' }}</a>@endif

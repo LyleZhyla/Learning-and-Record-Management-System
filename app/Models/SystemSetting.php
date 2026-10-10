@@ -52,4 +52,25 @@ class SystemSetting extends Model
         return static::query()->where('key', 'student_registration_semester')->value('value')
             ?: (now()->month >= 6 ? 'first' : 'second');
     }
+
+    public static function defaultPassingPercentage(): float
+    {
+        return max(1, min(99.99, (float) (static::query()
+            ->where('key', 'default_passing_percentage')
+            ->value('value') ?: 75)));
+    }
+
+    public static function defaultPassingGrade(): float
+    {
+        return max(1.01, min(4.99, (float) (static::query()
+            ->where('key', 'default_passing_grade')
+            ->value('value') ?: 3)));
+    }
+
+    public static function requiredDocumentsAreEnforced(): bool
+    {
+        return static::query()
+            ->where('key', 'required_documents_enforced')
+            ->value('value') !== '0';
+    }
 }

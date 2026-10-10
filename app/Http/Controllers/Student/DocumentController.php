@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\DocumentForm;
 use App\Models\DocumentSubmission;
 use App\Models\ReviewCategory;
+use App\Models\SystemSetting;
 use App\Models\WorkflowDefinition;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -27,7 +28,9 @@ class DocumentController extends Controller
             ->where('semester', $enrollment?->semester)
             ->get()->keyBy('document_form_id');
 
-        return view('student.documents.index', compact('forms', 'submissions', 'enrollment'));
+        $requirementsEnforced = SystemSetting::requiredDocumentsAreEnforced();
+
+        return view('student.documents.index', compact('forms', 'submissions', 'enrollment', 'requirementsEnforced'));
     }
 
     public function store(Request $request, DocumentForm $documentForm): RedirectResponse

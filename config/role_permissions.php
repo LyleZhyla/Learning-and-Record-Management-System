@@ -10,6 +10,7 @@ return [
         'reviews.configure' => ['group' => 'Documents & Forms', 'label' => 'Configure registration and document review categories', 'bases' => ['nstp_admin']],
         'workflows.configure' => ['group' => 'Configuration', 'label' => 'Configure operational workflow rules', 'bases' => ['nstp_admin']],
         'notifications.configure' => ['group' => 'Configuration', 'label' => 'Configure notification rules, channels, templates, and schedules', 'bases' => ['nstp_admin']],
+        'policies.configure' => ['group' => 'Configuration', 'label' => 'Configure institution policies and student requirements', 'bases' => ['nstp_admin']],
         'program.components' => ['group' => 'Program Operations', 'label' => 'Manage NSTP components', 'bases' => ['nstp_admin', 'coordinator']],
         'program.sections' => ['group' => 'Program Operations', 'label' => 'Manage sections and sectioning', 'bases' => ['nstp_admin', 'coordinator']],
         'program.schedules' => ['group' => 'Program Operations', 'label' => 'Manage schedules', 'bases' => ['nstp_admin', 'coordinator']],
@@ -33,7 +34,7 @@ return [
     'defaults' => [
         'super_admin' => ['*'],
         'nstp_admin' => [
-            'accounts.staff', 'accounts.students', 'registrations.review', 'documents.configure', 'documents.review', 'reviews.configure', 'workflows.configure', 'notifications.configure', 'program.components',
+            'accounts.staff', 'accounts.students', 'registrations.review', 'documents.configure', 'documents.review', 'reviews.configure', 'workflows.configure', 'notifications.configure', 'policies.configure', 'program.components',
             'program.sections', 'program.schedules', 'learning.attendance', 'learning.materials',
             'learning.assessments', 'learning.grades', 'reports.view', 'records.archives',
             'communication.announcements', 'communication.messages', 'ai.use',
@@ -66,6 +67,7 @@ return [
         'admin.review-categories.*' => 'reviews.configure',
         'admin.workflows.*' => 'workflows.configure',
         'admin.notification-rules.*' => 'notifications.configure',
+        'admin.policies.*' => 'policies.configure',
         'admin.components.*' => 'program.components',
         'admin.sections.*' => 'program.sections',
         'admin.sectioning.*' => 'program.sections',
@@ -86,6 +88,7 @@ return [
         'nstp_admin.review-categories.*' => 'reviews.configure',
         'nstp_admin.workflows.*' => 'workflows.configure',
         'nstp_admin.notification-rules.*' => 'notifications.configure',
+        'nstp_admin.policies.*' => 'policies.configure',
         'nstp_admin.components.*' => 'program.components',
         'nstp_admin.sections.*' => 'program.sections',
         'nstp_admin.sectioning.*' => 'program.sections',
