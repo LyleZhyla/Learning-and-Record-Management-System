@@ -118,13 +118,13 @@ class PaginationCoverageTest extends TestCase
         $this->actingAs($facilitator)->get('/facilitator/grades?section='.$section->id.'&page=2')
             ->assertOk()
             ->assertViewHas('summaries', fn ($summaries) => $summaries->total() === 16 && $summaries->count() === 1)
-            ->assertSee('Student 16')
+            ->assertSee('16, Student')
             ->assertDontSee('Student 01');
         $this->actingAs($coordinator)->get('/coordinator/performance?section_id='.$section->id.'&page=2')
             ->assertOk()
             ->assertViewHas('summaries', fn ($summaries) => $summaries->total() === 16 && $summaries->count() === 1)
             ->assertSee('Student 16')
-            ->assertSee('16</strong><small>Enrolled students', false);
+            ->assertSee('16</strong><small>Students', false);
     }
 
     private function section(NstpComponent $component, User $facilitator, string $code): NstpSection
