@@ -15,7 +15,7 @@ class PolicyRequirementConfigurationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_authorized_administrators_can_open_the_policy_configuration(): void
+    public function test_only_the_super_admin_can_open_the_policy_configuration(): void
     {
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
@@ -27,12 +27,9 @@ class PolicyRequirementConfigurationTest extends TestCase
             ->assertSee('Registration opening')
             ->assertSee('Required documents');
 
-        $this->actingAs($nstpAdmin)->get(route('nstp_admin.policies.index'))
-            ->assertOk()
-            ->assertSee('Passing grade');
-
+        $this->actingAs($nstpAdmin)->get('/admin/policies')->assertForbidden();
+        $this->actingAs($nstpAdmin)->get('/nstp-admin/policies')->assertNotFound();
         $this->actingAs($student)->get('/admin/policies')->assertForbidden();
-        $this->actingAs($student)->get('/nstp-admin/policies')->assertForbidden();
     }
 
     public function test_admin_can_update_all_policy_areas_and_existing_grading_settings(): void

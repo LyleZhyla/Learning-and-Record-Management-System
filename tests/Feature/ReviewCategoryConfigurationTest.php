@@ -14,15 +14,15 @@ class ReviewCategoryConfigurationTest extends TestCase
 
     public function test_admin_can_create_and_manage_a_custom_review_category(): void
     {
-        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
 
-        $this->actingAs($admin)->get('/nstp-admin/review-categories')
+        $this->actingAs($admin)->get('/admin/review-categories')
             ->assertOk()
             ->assertSee('Registration status categories')
             ->assertSee('Registration document decision categories')
             ->assertDontSee('Configurable document decision');
 
-        $this->actingAs($admin)->post('/nstp-admin/review-categories', [
+        $this->actingAs($admin)->post('/admin/review-categories', [
             'scope' => 'registration_document',
             'name' => 'For Resubmission',
             'outcome' => 'correction',
@@ -36,7 +36,7 @@ class ReviewCategoryConfigurationTest extends TestCase
         $this->assertSame('for-resubmission', $category->slug);
         $this->assertSame('correction', $category->outcome);
 
-        $this->actingAs($admin)->put('/nstp-admin/review-categories/'.$category->id, [
+        $this->actingAs($admin)->put('/admin/review-categories/'.$category->id, [
             'scope' => 'registration_document',
             'name' => 'Return for Resubmission',
             'outcome' => 'correction',

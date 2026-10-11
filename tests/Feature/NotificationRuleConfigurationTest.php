@@ -17,7 +17,7 @@ class NotificationRuleConfigurationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_notification_rules_are_seeded_and_available_to_authorized_administrators(): void
+    public function test_notification_rules_are_seeded_and_available_only_to_the_super_admin(): void
     {
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
@@ -37,11 +37,9 @@ class NotificationRuleConfigurationTest extends TestCase
             ->assertSee('Notifications Configuration')
             ->assertSee('Portal channels')
             ->assertSee('Available placeholders');
-        $this->actingAs($nstpAdmin)->get(route('nstp_admin.notification-rules.index'))
-            ->assertOk()
-            ->assertSee('New Learning Materials');
+        $this->actingAs($nstpAdmin)->get('/admin/notification-rules')->assertForbidden();
+        $this->actingAs($nstpAdmin)->get('/nstp-admin/notification-rules')->assertNotFound();
         $this->actingAs($facilitator)->get('/admin/notification-rules')->assertForbidden();
-        $this->actingAs($facilitator)->get('/nstp-admin/notification-rules')->assertForbidden();
     }
 
     public function test_admin_can_configure_channels_templates_and_delayed_delivery(): void

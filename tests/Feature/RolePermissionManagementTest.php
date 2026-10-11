@@ -49,6 +49,38 @@ class RolePermissionManagementTest extends TestCase
         $this->assertSame(['learning.assessments'], $role->fresh()->permissions);
     }
 
+    public function test_configuration_permissions_cannot_be_assigned_to_non_super_admin_roles(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($admin)->post('/admin/roles', [
+            'name' => 'Configuration Admin',
+            'base_role' => 'nstp_admin',
+            'permissions' => ['workflows.configure'],
+            'is_active' => '1',
+        ])->assertSessionHasErrors('permissions.0');
+
+        $this->assertNotContains('landing.configure', config('role_permissions.defaults.coordinator'));
+        $this->assertNotContains('workflows.configure', config('role_permissions.defaults.nstp_admin'));
+    }
+
+    public function test_non_super_admin_sidebars_do_not_show_system_configuration_links(): void
+    {
+        $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active']);
+
+        $this->actingAs($nstpAdmin)->get(route('nstp_admin.dashboard'))
+            ->assertOk()
+            ->assertDontSee('System Configuration')
+            ->assertDontSee('Documents &amp; Forms', false)
+            ->assertDontSee('Review Categories')
+            ->assertDontSee('Landing Page Editor');
+
+        $this->actingAs($coordinator)->get(route('coordinator.dashboard'))
+            ->assertOk()
+            ->assertDontSee('Landing Page Editor');
+    }
+
     public function test_custom_role_permissions_are_enforced_and_hidden_from_navigation(): void
     {
         $role = Role::create([

@@ -84,9 +84,10 @@ class DocumentFormConfigurationTest extends TestCase
         $submission = DocumentSubmission::firstOrFail();
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
 
-        $this->actingAs($admin)->get('/nstp-admin/document-forms')
+        $this->actingAs($admin)->get('/nstp-admin/document-forms')->assertNotFound();
+
+        $this->actingAs($admin)->get(route('nstp_admin.assessments.index'))
             ->assertOk()
-            ->assertSee(route('nstp_admin.assessments.index'), false)
             ->assertDontSee('Document Reviews');
 
         $this->actingAs($admin)->get('/nstp-admin/document-reviews')->assertNotFound();

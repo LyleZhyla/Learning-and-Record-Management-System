@@ -250,14 +250,12 @@ $serialNumberRoutes = function (): void {
     Route::put('/serial-numbers/{serialNumberRelease}/students/{enrollment}', [CoordinatorSerialNumberController::class, 'storeSerial'])->name('serial-numbers.students.store');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumDocumentPreparationRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumDocumentPreparationRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [NstpAdminProfileController::class, 'update'])->name('profile.update');
     Route::put('/password', [NstpAdminProfileController::class, 'updatePassword'])->name('password.update');
-    Route::get('/landing-page', [LandingPageContentController::class, 'edit'])->name('landing-page.edit');
-    Route::put('/landing-page', [LandingPageContentController::class, 'update'])->name('landing-page.update');
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::get('/accounts', [NstpAdminAccountController::class, 'index'])->name('accounts.index');
@@ -298,11 +296,6 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $honorariumDocumentPreparationRoutes();
     $engagementAnalyticsRoutes();
     $serialNumberRoutes();
-    $documentConfigurationRoutes();
-    $reviewCategoryRoutes();
-    $workflowRoutes();
-    $notificationRuleRoutes();
-    $policyRequirementRoutes();
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/export', [DirectoryExportController::class, 'components'])->name('components.export');
@@ -501,8 +494,6 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
 Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $rotcApprovalRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'coordinator.system-guide')->name('system-guide');
-    Route::get('/landing-page', [LandingPageContentController::class, 'edit'])->name('landing-page.edit');
-    Route::put('/landing-page', [LandingPageContentController::class, 'update'])->name('landing-page.update');
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');

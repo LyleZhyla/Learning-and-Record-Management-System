@@ -14,7 +14,7 @@ class WorkflowConfigurationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_all_operational_workflows_are_seeded_and_visible_to_authorized_administrators(): void
+    public function test_all_operational_workflows_are_seeded_and_visible_only_to_the_super_admin(): void
     {
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
@@ -43,11 +43,9 @@ class WorkflowConfigurationTest extends TestCase
             ->assertSee('Grading')
             ->assertSee('Archiving');
 
-        $this->actingAs($nstpAdmin)->get(route('nstp_admin.workflows.index'))
-            ->assertOk()
-            ->assertSee('Workflow Rules Builder');
+        $this->actingAs($nstpAdmin)->get('/admin/workflows')->assertForbidden();
+        $this->actingAs($nstpAdmin)->get('/nstp-admin/workflows')->assertNotFound();
         $this->actingAs($facilitator)->get('/admin/workflows')->assertForbidden();
-        $this->actingAs($facilitator)->get('/nstp-admin/workflows')->assertForbidden();
     }
 
     public function test_admin_can_reorder_and_change_workflow_execution_rules(): void

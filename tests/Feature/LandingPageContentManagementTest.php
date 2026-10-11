@@ -11,25 +11,29 @@ class LandingPageContentManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_authorized_management_roles_can_open_the_landing_page_editor(): void
+    public function test_only_the_super_admin_can_open_the_landing_page_editor(): void
     {
-        foreach ([
-            'super_admin' => 'admin.landing-page.edit',
-            'nstp_admin' => 'nstp_admin.landing-page.edit',
-            'coordinator' => 'coordinator.landing-page.edit',
-        ] as $role => $route) {
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($superAdmin)
+            ->get(route('admin.landing-page.edit'))
+            ->assertRedirect(route('landing', ['preview' => 1]));
+
+        $this->get(route('landing', ['preview' => 1]))
+            ->assertOk()
+            ->assertSee('Landing page')
+            ->assertSee('Editor mode')
+            ->assertSee(SystemSetting::LANDING_PAGE_DEFAULTS['hero_line_1']);
+
+        foreach (['nstp_admin', 'coordinator'] as $role) {
             $user = User::factory()->create(['role' => $role, 'status' => 'active']);
-
-            $this->actingAs($user)
-                ->get(route($route))
-                ->assertRedirect(route('landing', ['preview' => 1]));
-
-            $this->get(route('landing', ['preview' => 1]))
-                ->assertOk()
-                ->assertSee('Landing page')
-                ->assertSee('Editor mode')
-                ->assertSee(SystemSetting::LANDING_PAGE_DEFAULTS['hero_line_1']);
+            $this->actingAs($user)->get('/admin/landing-page')->assertForbidden();
         }
+
+        $this->actingAs(User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']))
+            ->get('/nstp-admin/landing-page')->assertNotFound();
+        $this->actingAs(User::factory()->create(['role' => 'coordinator', 'status' => 'active']))
+            ->get('/coordinator/landing-page')->assertNotFound();
     }
 
     public function test_editor_mode_uses_the_actual_landing_page_with_live_editing_controls(): void
@@ -54,31 +58,31 @@ class LandingPageContentManagementTest extends TestCase
             ->assertDontSee('Publish changes');
     }
 
-    public function test_facilitator_cannot_open_the_landing_page_editor(): void
+    public function test_removed_non_super_admin_landing_page_route_is_not_available(): void
     {
         $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
 
         $this->actingAs($facilitator)
             ->get('/coordinator/landing-page')
-            ->assertForbidden();
+            ->assertNotFound();
     }
 
-    public function test_coordinator_can_publish_content_that_appears_on_the_public_landing_page(): void
+    public function test_super_admin_can_publish_content_that_appears_on_the_public_landing_page(): void
     {
-        $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active']);
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $content = array_replace(SystemSetting::LANDING_PAGE_DEFAULTS, [
             'hero_line_1' => 'TAU students lead with purpose.',
             'contact_body' => 'Visit the updated NSTP Office information desk.',
         ]);
 
-        $this->actingAs($coordinator)
-            ->put(route('coordinator.landing-page.update'), $content)
+        $this->actingAs($superAdmin)
+            ->put(route('admin.landing-page.update'), $content)
             ->assertRedirect()
             ->assertSessionHas('status');
 
         $this->assertDatabaseHas('system_settings', [
             'key' => 'landing_page_content',
-            'updated_by' => $coordinator->id,
+            'updated_by' => $superAdmin->id,
         ]);
 
         $this->post(route('logout'));
@@ -91,15 +95,15 @@ class LandingPageContentManagementTest extends TestCase
 
     public function test_landing_page_editor_rejects_invalid_media_urls(): void
     {
-        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $content = array_replace(SystemSetting::LANDING_PAGE_DEFAULTS, [
             'hero_video_url' => 'not-a-url',
         ]);
 
         $this->actingAs($admin)
-            ->from(route('nstp_admin.landing-page.edit'))
-            ->put(route('nstp_admin.landing-page.update'), $content)
-            ->assertRedirect(route('nstp_admin.landing-page.edit'))
+            ->from(route('admin.landing-page.edit'))
+            ->put(route('admin.landing-page.update'), $content)
+            ->assertRedirect(route('admin.landing-page.edit'))
             ->assertSessionHasErrors('hero_video_url');
     }
 }
