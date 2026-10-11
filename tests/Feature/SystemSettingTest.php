@@ -18,9 +18,12 @@ class SystemSettingTest extends TestCase
     public function test_only_super_admin_can_update_the_inactivity_timeout(): void
     {
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
 
         $this->actingAs($student)->get('/admin/settings')->assertForbidden();
+        $this->actingAs($nstpAdmin)->get('/admin/settings')->assertForbidden();
+        $this->actingAs($nstpAdmin)->put('/admin/settings', ['inactivity_timeout_minutes' => 5])->assertForbidden();
         $this->actingAs($superAdmin)->get('/admin/settings')->assertOk()->assertSee('Automatic logout timeout');
         $this->actingAs($superAdmin)->put('/admin/settings', [
             'inactivity_timeout_minutes' => 15,

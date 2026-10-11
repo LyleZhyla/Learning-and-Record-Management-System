@@ -5,8 +5,8 @@
 
 @section('content')
 <section class="policy-config-hero">
-    <div><span class="eyebrow">Configuration layer</span><h2>Set the institution-wide operating policies</h2><p>Manage the active academic term, availability windows, security timeout, grading defaults, and required-document enforcement from one screen.</p></div>
-    <div><strong>6</strong><span>policy areas</span></div>
+    <div><span class="eyebrow">Configuration layer</span><h2>Set the institution-wide operating policies</h2><p>Manage the active academic term, availability windows, grading defaults, and required-document enforcement from one screen.</p></div>
+    <div><strong>5</strong><span>policy areas</span></div>
 </section>
 
 <form method="POST" action="{{ route($routePrefix.'.policies.update') }}" class="policy-config-form">
@@ -30,18 +30,13 @@
         </section>
 
         <section class="card policy-config-card">
-            <header><span>04</span><div><h3>Inactivity timeout</h3><p>Automatically sign out any account after the configured period without a request.</p></div></header>
-            <label class="field-group"><span>Inactive for</span><div class="policy-unit-input"><input type="number" name="inactivity_timeout_minutes" min="1" max="1440" value="{{ old('inactivity_timeout_minutes', $timeoutMinutes) }}" required><strong>minutes</strong></div></label>
-        </section>
-
-        <section class="card policy-config-card">
-            <header><span>05</span><div><h3>Passing grade</h3><p>Define the grading defaults assigned when a new section receives its gradebook.</p></div></header>
+            <header><span>04</span><div><h3>Passing grade</h3><p>Define the grading defaults assigned when a new section receives its gradebook.</p></div></header>
             <div class="form-grid"><label class="field-group"><span>Passing percentage</span><input type="number" name="default_passing_percentage" min="1" max="99.99" step="0.01" value="{{ old('default_passing_percentage', $defaultPassingPercentage) }}" required></label><label class="field-group"><span>Passing grade</span><input type="number" name="default_passing_grade" min="1.01" max="4.99" step="0.01" value="{{ old('default_passing_grade', $defaultPassingGrade) }}" required></label></div>
             <label class="policy-check"><input type="hidden" name="apply_grading_policy_to_existing_sections" value="0"><input type="checkbox" name="apply_grading_policy_to_existing_sections" value="1"><span><strong>Apply to existing sections now</strong><small>Updates the passing percentage and passing grade while preserving their categories and other scale values.</small></span></label>
         </section>
 
         <section class="card policy-config-card">
-            <header><span>06</span><div><h3>Required documents</h3><p>Control whether required uploads are treated as mandatory across student document screens and imported-account access.</p></div></header>
+            <header><span>05</span><div><h3>Required documents</h3><p>Control whether required uploads are treated as mandatory across student document screens and imported-account access.</p></div></header>
             <label class="field-group"><span>Requirement enforcement</span><select name="required_documents_enforced" required><option value="1" @selected(old('required_documents_enforced', $requiredDocumentsEnforced ? '1' : '0') === '1')>Enforced — required uploads remain mandatory</option><option value="0" @selected(old('required_documents_enforced', $requiredDocumentsEnforced ? '1' : '0') === '0')>Advisory — show uploads as optional</option></select></label>
             <div class="policy-document-summary"><strong>{{ $requiredDocumentCount }}</strong><span>active required document {{ Str::plural('definition', $requiredDocumentCount) }}</span><a href="{{ route($routePrefix.'.document-forms.index') }}">Manage document definitions →</a></div>
         </section>

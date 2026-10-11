@@ -25,7 +25,8 @@ class PolicyRequirementConfigurationTest extends TestCase
             ->assertOk()
             ->assertSee('Policies &amp; Requirements', false)
             ->assertSee('Registration opening')
-            ->assertSee('Required documents');
+            ->assertSee('Required documents')
+            ->assertDontSee('Inactivity timeout');
 
         $this->actingAs($nstpAdmin)->get('/admin/policies')->assertForbidden();
         $this->actingAs($nstpAdmin)->get('/nstp-admin/policies')->assertNotFound();
@@ -35,6 +36,7 @@ class PolicyRequirementConfigurationTest extends TestCase
     public function test_admin_can_update_all_policy_areas_and_existing_grading_settings(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        SystemSetting::updateOrCreate(['key' => 'inactivity_timeout_minutes'], ['value' => '45']);
         $component = NstpComponent::create([
             'code' => 'CWTS',
             'name' => 'Civic Welfare Training Service',
@@ -74,7 +76,7 @@ class PolicyRequirementConfigurationTest extends TestCase
         $this->assertSame('2028-2029', SystemSetting::studentRegistrationAcademicYear());
         $this->assertSame('second', SystemSetting::studentRegistrationSemester());
         $this->assertFalse(SystemSetting::componentSelectionIsOpen());
-        $this->assertSame(20, SystemSetting::inactivityTimeoutMinutes());
+        $this->assertSame(45, SystemSetting::inactivityTimeoutMinutes());
         $this->assertSame(80.0, SystemSetting::defaultPassingPercentage());
         $this->assertSame(2.75, SystemSetting::defaultPassingGrade());
         $this->assertFalse(SystemSetting::requiredDocumentsAreEnforced());
