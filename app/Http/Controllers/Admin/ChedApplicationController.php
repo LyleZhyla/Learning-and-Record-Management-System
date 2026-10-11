@@ -8,12 +8,11 @@ use App\Models\NstpSection;
 use App\Models\SystemSetting;
 use App\Services\ChedSemestralReportService;
 use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ChedApplicationController extends Controller
 {
@@ -27,6 +26,10 @@ class ChedApplicationController extends Controller
             ->when($status, fn ($query) => $query->where('status', $status))
             ->when($academicYear, fn ($query) => $query->where('academic_year', $academicYear))
             ->latest()->paginate($this->perPage())->withQueryString();
+        $statusCounts = ChedApplication::query()
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
 
         return view('admin.ched-applications.index', [
             'layout' => $this->layout($request),
@@ -38,6 +41,11 @@ class ChedApplicationController extends Controller
             'defaultSemester' => SystemSetting::studentRegistrationSemester(),
             'selectedStatus' => $status,
             'selectedAcademicYear' => $academicYear,
+            'trackerMetrics' => [
+                'total' => (int) $statusCounts->sum(),
+                'in_progress' => (int) $statusCounts->only(['emailed', 'acknowledged', 'under_review', 'returned'])->sum(),
+                'completed' => (int) $statusCounts->only(['approved', 'serials_released', 'closed'])->sum(),
+            ],
         ]);
     }
 
@@ -51,8 +59,10 @@ class ChedApplicationController extends Controller
                 }
             }],
             'semester' => ['required', Rule::in(array_keys(NstpSection::SEMESTERS))],
-            'submission_email' => ['nullable', 'email', 'max:255'],
-            'notes' => ['nullable', 'string', 'max:3000'],
+            'status_date' => ['required', 'date', 'before_or_equal:today'],
+            'submission_email' => ['required', 'email', 'max:255'],
+            'ched_reference' => ['nullable', 'string', 'max:255'],
+            'notes' => ['required', 'string', 'max:3000'],
         ]);
 
         $application = DB::transaction(function () use ($request, $validated): ChedApplication {
@@ -65,23 +75,24 @@ class ChedApplicationController extends Controller
             $application = ChedApplication::create([
                 ...$validated,
                 'student_count' => $studentCount,
-                'status' => 'draft',
+                'status' => 'emailed',
+                'submitted_at' => $validated['status_date'],
                 'created_by' => $request->user()->id,
                 'updated_by' => $request->user()->id,
             ]);
             $application->update(['reference_number' => sprintf('CHED-%s-%05d', substr($application->academic_year, 0, 4), $application->id)]);
             $application->histories()->create([
-                'to_status' => 'draft',
-                'notes' => 'Application tracking record created. No submission was sent by the system.',
+                'to_status' => 'emailed',
+                'notes' => $validated['notes'],
                 'changed_by' => $request->user()->id,
-                'occurred_at' => now(),
+                'occurred_at' => $validated['status_date'],
             ]);
 
             return $application;
         });
 
         return redirect()->route($this->routePrefix($request).'.ched-applications.show', $application)
-            ->with('status', 'CHED application record created. Download the workbook, email it manually, then record the submission status here.');
+            ->with('status', 'The manual email submission was recorded. Continue updating this tracker when CHED responds.');
     }
 
     public function show(Request $request, ChedApplication $chedApplication): View
@@ -100,7 +111,7 @@ class ChedApplicationController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in(array_keys(ChedApplication::STATUSES))],
-            'status_date' => ['required', 'date'],
+            'status_date' => ['required', 'date', 'before_or_equal:today'],
             'submission_email' => ['nullable', 'email', 'max:255'],
             'ched_reference' => ['nullable', 'string', 'max:255'],
             'notes' => ['required', 'string', 'max:3000'],
@@ -147,37 +158,13 @@ class ChedApplicationController extends Controller
         return back()->with('status', 'CHED application status updated.');
     }
 
-    public function workbook(Request $request, ChedApplication $chedApplication): StreamedResponse
+    public function workbook(Request $request, ChedApplication $chedApplication): RedirectResponse
     {
-        $spreadsheet = $this->reports->createWorkbook([
+        return redirect()->route($this->routePrefix($request).'.reports.index', [
+            'type' => 'ched_semestral',
             'academic_year' => $chedApplication->academic_year,
             'semester' => $chedApplication->semester,
-            'component_id' => null,
-            'section_id' => null,
-        ]);
-
-        DB::transaction(function () use ($request, $chedApplication): void {
-            $updates = ['last_workbook_downloaded_at' => now(), 'updated_by' => $request->user()->id];
-            if (in_array($chedApplication->status, ['draft', 'returned'], true)) {
-                $fromStatus = $chedApplication->status;
-                $updates += ['status' => 'workbook_prepared', 'prepared_at' => now()];
-                $chedApplication->histories()->create([
-                    'from_status' => $fromStatus,
-                    'to_status' => 'workbook_prepared',
-                    'notes' => 'Official CHED workbook downloaded for manual email submission.',
-                    'changed_by' => $request->user()->id,
-                    'occurred_at' => now(),
-                ]);
-            }
-            $chedApplication->update($updates);
-        });
-
-        $filename = str($chedApplication->reference_number)->lower().'-'.$chedApplication->academic_year.'-'.$chedApplication->semester.'.xlsx';
-
-        return response()->streamDownload(function () use ($spreadsheet): void {
-            (new Xlsx($spreadsheet))->save('php://output');
-            $spreadsheet->disconnectWorksheets();
-        }, $filename, ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']);
+        ])->with('status', 'Download the official CHED workbook from Reports Center, then return to the tracker after emailing it.');
     }
 
     private function routePrefix(Request $request): string

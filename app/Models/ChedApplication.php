@@ -62,12 +62,12 @@ class ChedApplication extends Model
     public function availableNextStatuses(): array
     {
         $allowed = match ($this->status) {
-            'draft' => ['workbook_prepared'],
+            'draft' => ['emailed'],
             'workbook_prepared' => ['emailed'],
             'emailed' => ['acknowledged', 'under_review', 'returned'],
             'acknowledged' => ['under_review', 'returned', 'approved'],
             'under_review' => ['returned', 'approved'],
-            'returned' => ['workbook_prepared', 'emailed'],
+            'returned' => ['emailed'],
             'approved' => ['serials_released'],
             'serials_released' => ['closed'],
             default => [],
