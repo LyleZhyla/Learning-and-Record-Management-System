@@ -1,13 +1,10 @@
 @props(['subtitle' => 'Smart NSTP Management Platform'])
-@php($branding = \App\Models\SystemSetting::branding())
-
 <span {{ $attributes->class(['system-brand']) }}>
-    <span class="system-brand-logos" aria-hidden="true">
-        <img src="{{ \App\Models\SystemSetting::brandingLogoUrl('organization') }}" alt="">
-        <img src="{{ \App\Models\SystemSetting::brandingLogoUrl('program') }}" alt="">
+    <span class="system-brand-mark" aria-hidden="true">
+        <img src="{{ asset('images/snapie-logo-160.png') }}" alt="">
     </span>
     <span class="system-brand-copy">
-        <strong>{{ $branding['organization_short_name'] }} {{ $branding['program_short_name'] }}</strong>
+        <strong class="system-brand-name">SNAPIE</strong>
         <small>{{ $subtitle }}</small>
     </span>
 </span>
