@@ -6,7 +6,9 @@ use App\Models\AuditLog;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SystemSettingTest extends TestCase
@@ -55,6 +57,38 @@ class SystemSettingTest extends TestCase
         $log = AuditLog::where('user_id', $student->id)->where('action', 'inactivity_logout')->firstOrFail();
         $this->assertSame(401, $log->status_code);
         $this->assertSame(5, $log->metadata['timeout_minutes']);
+    }
+
+    public function test_super_admin_can_rebrand_the_platform_and_upload_institution_logos(): void
+    {
+        Storage::fake('public');
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($superAdmin)->put('/admin/settings', [
+            'inactivity_timeout_minutes' => 30,
+            'student_registration_open' => '1',
+            'student_registration_academic_year' => '2026-2027',
+            'student_registration_semester' => 'first',
+            'organization_name' => 'Sample State University',
+            'organization_short_name' => 'SSU',
+            'program_name' => 'National Service Training Program',
+            'program_short_name' => 'NSTP',
+            'platform_name' => 'SSU NSTP Management Platform',
+            'organization_website' => 'https://example.edu.ph',
+            'organization_logo' => UploadedFile::fake()->image('university.png'),
+            'program_logo' => UploadedFile::fake()->image('program.png'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $branding = SystemSetting::branding();
+        $this->assertSame('Sample State University', $branding['organization_name']);
+        $this->assertSame('SSU', $branding['organization_short_name']);
+        Storage::disk('public')->assertExists($branding['organization_logo_path']);
+        Storage::disk('public')->assertExists($branding['program_logo_path']);
+
+        $this->actingAs($superAdmin)->get('/admin/dashboard')
+            ->assertOk()
+            ->assertSee('SSU NSTP')
+            ->assertSee('Sample State University');
     }
 
     public function test_nstp_admin_can_manage_the_public_registration_period(): void

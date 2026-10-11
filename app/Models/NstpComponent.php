@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Storage;
 
 class NstpComponent extends Model
 {
@@ -15,6 +16,7 @@ class NstpComponent extends Model
         'code',
         'name',
         'description',
+        'logo_path',
         'default_section_capacity',
         'is_active',
     ];
@@ -22,6 +24,19 @@ class NstpComponent extends Model
     protected function casts(): array
     {
         return ['is_active' => 'boolean'];
+    }
+
+    public function logoUrl(): string
+    {
+        $fallback = in_array(strtoupper($this->code), ['CWTS', 'LTS', 'ROTC'], true)
+            ? 'images/branding/'.strtolower($this->code).'-logo.png'
+            : null;
+
+        if (filled($this->logo_path)) {
+            return Storage::disk('public')->url($this->logo_path);
+        }
+
+        return $fallback ? asset($fallback) : '';
     }
 
     public function sections(): HasMany

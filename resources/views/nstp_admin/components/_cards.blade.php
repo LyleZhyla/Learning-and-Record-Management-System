@@ -2,7 +2,7 @@
     @foreach ($componentCards as $nstpComponent)
         <article class="management-component-card">
             <div class="component-card-top">
-                <x-component-logo :component-code="$nstpComponent->code" class="component-code-mark" />
+                <x-component-logo :component-code="$nstpComponent->code" :logo-path="$nstpComponent->logo_path" class="component-code-mark" />
                 <span class="status-badge {{ $nstpComponent->is_active ? 'active' : 'inactive' }}"><i></i>{{ $nstpComponent->is_active ? 'Active' : 'Inactive' }}</span>
             </div>
             <span class="eyebrow">{{ $nstpComponent->name }}</span>

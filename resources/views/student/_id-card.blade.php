@@ -1,8 +1,9 @@
+@php($branding = \App\Models\SystemSetting::branding())
 <article class="student-id-card" aria-label="Auto-generated student identification card">
     <div class="student-id-accent"></div>
     <header class="student-id-header">
-        <span class="student-id-institution-logos"><img src="{{ asset('images/branding/tau-logo.png') }}" alt="TAU logo"><img src="{{ asset('images/branding/nstp-logo.png') }}" alt="NSTP logo"></span>
-        <div><strong>TAU NSTP</strong><span>Smart Management and AI-Integrated Platform</span></div>
+        <span class="student-id-institution-logos"><img src="{{ \App\Models\SystemSetting::brandingLogoUrl('organization') }}" alt="{{ $branding['organization_short_name'] }} logo"><img src="{{ \App\Models\SystemSetting::brandingLogoUrl('program') }}" alt="{{ $branding['program_short_name'] }} logo"></span>
+        <div><strong>{{ $branding['organization_short_name'] }} {{ $branding['program_short_name'] }}</strong><span>{{ $branding['platform_name'] }}</span></div>
         <b>STUDENT ID</b>
     </header>
 
@@ -33,5 +34,5 @@
         </div>
     </div>
 
-    <footer class="student-id-footer"><span>Valid while enrolled in TAU NSTP</span><strong>{{ $enrollment?->academic_year ?: now()->format('Y') }}</strong></footer>
+    <footer class="student-id-footer"><span>Valid while enrolled in {{ $branding['organization_short_name'] }} {{ $branding['program_short_name'] }}</span><strong>{{ $enrollment?->academic_year ?: now()->format('Y') }}</strong></footer>
 </article>

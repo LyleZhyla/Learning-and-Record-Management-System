@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Your Smart NSTP student account</title>
+    <title>Your student account</title>
     <style>
         @media only screen and (max-width: 620px) {
             .email-shell { width: 100% !important; }
@@ -14,12 +14,17 @@
 </head>
 <body style="margin:0; padding:0; background:#eef3f8; color:#243449; font-family:Arial, Helvetica, sans-serif;">
 @php
-    $tauLogo = public_path('images/branding/tau-logo.png');
-    $nstpLogo = public_path('images/branding/nstp-logo.png');
+    $branding = \App\Models\SystemSetting::branding();
+    $tauLogo = $branding['organization_logo_path']
+        ? \Illuminate\Support\Facades\Storage::disk('public')->path($branding['organization_logo_path'])
+        : public_path('images/branding/tau-logo.png');
+    $nstpLogo = $branding['program_logo_path']
+        ? \Illuminate\Support\Facades\Storage::disk('public')->path($branding['program_logo_path'])
+        : public_path('images/branding/nstp-logo.png');
     $snapieImage = public_path('images/characters/snapie-email-wave.png');
 @endphp
 <div style="display:none; max-height:0; overflow:hidden; opacity:0; color:transparent;">
-    Your Smart NSTP student account is ready. Set your password to access the platform.
+    Your {{ $branding['platform_name'] }} student account is ready. Set your password to access the platform.
 </div>
 
 <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="width:100%; background:#eef3f8;">
@@ -32,19 +37,19 @@
                             <tr>
                                 <td width="104" valign="middle" style="white-space:nowrap;">
                                     @if(is_readable($tauLogo))
-                                        <img src="{{ $message->embed($tauLogo) }}" width="48" height="48" alt="Tarlac Agricultural University logo" style="display:inline-block; width:48px; height:48px; border:0; border-radius:50%; background:#ffffff; object-fit:contain;">
+                                        <img src="{{ $message->embed($tauLogo) }}" width="48" height="48" alt="{{ $branding['organization_name'] }} logo" style="display:inline-block; width:48px; height:48px; border:0; border-radius:50%; background:#ffffff; object-fit:contain;">
                                     @else
-                                        <span style="display:inline-block; width:48px; height:48px; border-radius:50%; background:#ffffff; color:#174d84; font-size:12px; font-weight:800; line-height:48px; text-align:center;">TAU</span>
+                                        <span style="display:inline-block; width:48px; height:48px; border-radius:50%; background:#ffffff; color:#174d84; font-size:12px; font-weight:800; line-height:48px; text-align:center;">{{ $branding['organization_short_name'] }}</span>
                                     @endif
                                     @if(is_readable($nstpLogo))
-                                        <img src="{{ $message->embed($nstpLogo) }}" width="48" height="48" alt="TAU National Service Training Program logo" style="display:inline-block; width:48px; height:48px; margin-left:-8px; border:2px solid #ffffff; border-radius:50%; background:#ffffff; object-fit:contain;">
+                                        <img src="{{ $message->embed($nstpLogo) }}" width="48" height="48" alt="{{ $branding['program_name'] }} logo" style="display:inline-block; width:48px; height:48px; margin-left:-8px; border:2px solid #ffffff; border-radius:50%; background:#ffffff; object-fit:contain;">
                                     @else
-                                        <span style="display:inline-block; width:48px; height:48px; margin-left:-8px; border:2px solid #ffffff; border-radius:50%; background:#2468ca; color:#ffffff; font-size:10px; font-weight:800; line-height:48px; text-align:center;">NSTP</span>
+                                        <span style="display:inline-block; width:48px; height:48px; margin-left:-8px; border:2px solid #ffffff; border-radius:50%; background:#2468ca; color:#ffffff; font-size:10px; font-weight:800; line-height:48px; text-align:center;">{{ $branding['program_short_name'] }}</span>
                                     @endif
                                 </td>
                                 <td valign="middle" style="padding-left:12px; color:#ffffff;">
-                                    <div style="font-size:20px; font-weight:800; line-height:1.2;">TAU NSTP</div>
-                                    <div style="padding-top:3px; color:#dceaff; font-size:12px; line-height:1.3;">Smart Management Platform</div>
+                                    <div style="font-size:20px; font-weight:800; line-height:1.2;">{{ $branding['organization_short_name'] }} {{ $branding['program_short_name'] }}</div>
+                                    <div style="padding-top:3px; color:#dceaff; font-size:12px; line-height:1.3;">{{ $branding['platform_name'] }}</div>
                                 </td>
                                 <td align="right" valign="middle"><span style="display:inline-block; padding:7px 11px; border:1px solid #7fa8d2; border-radius:999px; color:#ffffff; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.7px;">Student</span></td>
                             </tr>
@@ -59,7 +64,7 @@
                                 <td valign="middle" style="padding-right:16px;">
                                     <div style="color:#2468ca; font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:1.1px;">Account invitation</div>
                                     <h1 style="margin:10px 0 14px; color:#163657; font-size:29px; line-height:1.25;">Your student account is ready, {{ $recipientName }}!</h1>
-                                    <p style="margin:0; color:#53657a; font-size:16px; line-height:1.7;">An administrator has invited you to access the Smart NSTP platform. Confirm your account and choose a secure password to get started.</p>
+                                    <p style="margin:0; color:#53657a; font-size:16px; line-height:1.7;">An administrator has invited you to access the {{ $branding['platform_name'] }}. Confirm your account and choose a secure password to get started.</p>
                                 </td>
                                 <td width="142" align="right" valign="bottom" style="width:142px;">
                                     <span style="display:none; max-height:0; overflow:hidden;">Snapie profile head · Snapie waving hello</span>
@@ -102,8 +107,8 @@
 
                 <tr>
                     <td class="email-pad" style="padding:22px 40px; background:#f5f8fb; border-top:1px solid #e3eaf1; color:#7a8999; font-size:12px; line-height:1.6;">
-                        This automated message was sent by the TAU NSTP Smart Management and AI-Integrated Platform.<br>
-                        <span style="color:#9aa7b5;">© {{ date('Y') }} Tarlac Agricultural University · National Service Training Program.</span>
+                        This automated message was sent by the {{ $branding['platform_name'] }}.<br>
+                        <span style="color:#9aa7b5;">© {{ date('Y') }} {{ $branding['organization_name'] }} · {{ $branding['program_name'] }}.</span>
                     </td>
                 </tr>
             </table>

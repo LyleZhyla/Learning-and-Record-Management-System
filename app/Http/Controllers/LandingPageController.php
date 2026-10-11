@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
+use App\Models\NstpComponent;
 use App\Models\SystemSetting;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\QueryException;
@@ -29,6 +30,8 @@ class LandingPageController extends Controller
         return view('welcome', [
             'announcements' => $this->publicAnnouncements(),
             'landing' => SystemSetting::landingPageContent(),
+            'branding' => SystemSetting::branding(),
+            'components' => $this->components(),
             'landingEditorAuthorized' => $authorizedPreview,
             'landingEditorMode' => $authorizedPreview && $request->boolean('editor'),
             'landingEditorRoutePrefix' => $authorizedPreview ? $this->routePrefix($request) : null,
@@ -64,6 +67,15 @@ class LandingPageController extends Controller
                 ->latest('published_at')
                 ->limit(3)
                 ->get();
+        } catch (QueryException) {
+            return collect();
+        }
+    }
+
+    private function components(): Collection
+    {
+        try {
+            return NstpComponent::query()->whereIn('code', ['CWTS', 'LTS', 'ROTC'])->get()->keyBy('code');
         } catch (QueryException) {
             return collect();
         }

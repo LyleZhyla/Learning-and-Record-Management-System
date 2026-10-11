@@ -1,11 +1,12 @@
+@php($branding = \App\Models\SystemSetting::branding())
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'Student') · {{ config('app.name') }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/branding/tau-logo.png') }}">
+    <title>@yield('title', 'Student') · {{ $branding['platform_name'] }}</title>
+    <link rel="icon" type="image/png" href="{{ \App\Models\SystemSetting::brandingLogoUrl('organization') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -28,15 +29,16 @@
             @permission('student.component')<a class="nav-link {{ request()->routeIs('student.component.*') ? 'active' : '' }}" href="{{ route('student.component.edit') }}" data-student-tour="component"><span class="nav-icon">◈</span> NSTP Selection</a>@endpermission
             @permission('student.documents')<a class="nav-link {{ request()->routeIs('student.documents.*') ? 'active' : '' }}" href="{{ route('student.documents.index') }}"><span class="nav-icon">▧</span> My Documents &amp; Forms</a>@endpermission
 
-            <p class="nav-label">Learning</p>
+            <p class="nav-label">Learning & Assessment</p>
             @permission('learning.attendance')<a class="nav-link {{ request()->routeIs('student.attendance.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'attendance') }}" data-student-tour="attendance"><span class="nav-icon">▣</span> Attendance @if($sidebarNotificationCounts['attendance'] > 0)<span class="nav-count" data-attendance-notification-count="{{ $sidebarNotificationCounts['attendance'] }}" aria-label="{{ $sidebarNotificationCounts['attendance'] }} unread attendance notifications">{{ $sidebarNotificationCounts['attendance'] > 99 ? '99+' : $sidebarNotificationCounts['attendance'] }}</span>@endif</a>@endpermission
             @permission('learning.materials')<a class="nav-link {{ request()->routeIs('student.materials.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'materials') }}" data-student-tour="materials"><span class="nav-icon">▤</span> Materials @if($sidebarNotificationCounts['materials'] > 0)<span class="nav-count" data-material-notification-count="{{ $sidebarNotificationCounts['materials'] }}" aria-label="{{ $sidebarNotificationCounts['materials'] }} unread material notifications">{{ $sidebarNotificationCounts['materials'] > 99 ? '99+' : $sidebarNotificationCounts['materials'] }}</span>@endif</a>@endpermission
             @permission('ai.use')<a class="nav-link {{ request()->routeIs('student.recommendations.*') ? 'active' : '' }}" href="{{ route('student.recommendations.index') }}" data-student-tour="recommendations"><span class="nav-icon">✦</span> AI Learning Recommendations</a>
             <a class="nav-link {{ request()->routeIs('student.proposal-guide.*') ? 'active' : '' }}" href="{{ route('student.proposal-guide.index') }}" data-student-tour="proposal"><span class="nav-icon">✎</span> Proposal Guide</a>@endpermission
+            @permission('learning.assessments')<a class="nav-link {{ request()->routeIs('student.assessments.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'assessments') }}" data-student-tour="assessments"><span class="nav-icon">✓</span> Assessments @php($assessmentNavCount = $sidebarNotificationCounts['assessments'] ?: $sidebarPendingAssessmentCount) @if($assessmentNavCount > 0)<span class="nav-count" data-assessment-notification-count="{{ $sidebarNotificationCounts['assessments'] }}" data-pending-assessment-count="{{ $sidebarPendingAssessmentCount }}" aria-label="{{ $sidebarNotificationCounts['assessments'] ? $sidebarNotificationCounts['assessments'].' unread assessment notifications' : $sidebarPendingAssessmentCount.' pending assessments' }}">{{ $assessmentNavCount > 99 ? '99+' : $assessmentNavCount }}</span>@endif</a>@endpermission
+            <p class="nav-label">Projects & Feedback</p>
             <a class="nav-link {{ request()->routeIs('student.community-projects.*') ? 'active' : '' }}" href="{{ route('student.community-projects.index') }}"><span class="nav-icon">⌂</span> Community Projects</a>
             <a class="nav-link {{ request()->routeIs('student.project-tasks.*') ? 'active' : '' }}" href="{{ route('student.project-tasks.index') }}"><span class="nav-icon">✓</span> Implementation Tasks</a>
             <a class="nav-link {{ request()->routeIs('student.evaluations.*') ? 'active' : '' }}" href="{{ route('student.evaluations.index') }}"><span class="nav-icon">☆</span> Evaluations &amp; Feedback</a>
-            @permission('learning.assessments')<a class="nav-link {{ request()->routeIs('student.assessments.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'assessments') }}" data-student-tour="assessments"><span class="nav-icon">✓</span> Assessments @php($assessmentNavCount = $sidebarNotificationCounts['assessments'] ?: $sidebarPendingAssessmentCount) @if($assessmentNavCount > 0)<span class="nav-count" data-assessment-notification-count="{{ $sidebarNotificationCounts['assessments'] }}" data-pending-assessment-count="{{ $sidebarPendingAssessmentCount }}" aria-label="{{ $sidebarNotificationCounts['assessments'] ? $sidebarNotificationCounts['assessments'].' unread assessment notifications' : $sidebarPendingAssessmentCount.' pending assessments' }}">{{ $assessmentNavCount > 99 ? '99+' : $assessmentNavCount }}</span>@endif</a>@endpermission
             <p class="nav-label">Progress & Records</p>
             @permission('learning.grades')<a class="nav-link {{ request()->routeIs('student.grades.*') ? 'active' : '' }}" href="{{ route('student.grades.index') }}" data-student-tour="grades"><span class="nav-icon">◎</span> Grades</a>@endpermission
             <a class="nav-link {{ request()->routeIs('student.engagement-analytics.*') ? 'active' : '' }}" href="{{ route('student.engagement-analytics.index') }}"><span class="nav-icon">◌</span> My Engagement</a>
@@ -62,7 +64,7 @@
     <main class="main-content">
         <header class="topbar">
             <button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button>
-            <div data-student-tour-page-title><small>TAU NSTP / Student</small><h1>@yield('page-title', 'Dashboard')</h1></div>
+            <div data-student-tour-page-title><small>{{ $branding['organization_short_name'] }} {{ $branding['program_short_name'] }} / Student</small><h1>@yield('page-title', 'Dashboard')</h1></div>
             <x-notification-bell />
             <x-theme-toggle />
             <button class="admin-tour-topbar-button" type="button" data-start-student-tour><span aria-hidden="true">?</span> Guided Tour</button>
@@ -71,7 +73,7 @@
         @if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif
         @if($errors->any())<div class="alert danger">{{ $errors->first() }}</div>@endif
         @yield('content')
-        <footer class="app-footer">© {{ date('Y') }} Tarlac Agricultural University · National Service Training Program</footer>
+        <footer class="app-footer">© {{ date('Y') }} {{ $branding['organization_name'] }} · {{ $branding['program_name'] }}</footer>
     </main>
 </div>
 @permission('ai.use')<x-ai-chat-widget />@endpermission

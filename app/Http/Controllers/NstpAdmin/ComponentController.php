@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -140,7 +141,24 @@ class ComponentController extends Controller
             'description' => ['nullable', 'string', 'max:1000'],
             'default_section_capacity' => ['required', 'integer', 'min:1', 'max:200'],
             'is_active' => ['required', 'boolean'],
+            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'remove_logo' => ['nullable', 'boolean'],
         ]);
+
+        unset($validated['logo'], $validated['remove_logo']);
+        if ($request->boolean('remove_logo')) {
+            if (filled($component->logo_path)) {
+                Storage::disk('public')->delete($component->logo_path);
+            }
+            $validated['logo_path'] = null;
+        }
+        if ($request->hasFile('logo')) {
+            $oldPath = $component->logo_path;
+            $validated['logo_path'] = $request->file('logo')->store('branding/components', 'public');
+            if (filled($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        }
 
         $component->update($validated);
 

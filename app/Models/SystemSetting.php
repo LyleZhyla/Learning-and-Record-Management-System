@@ -4,9 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 
 class SystemSetting extends Model
 {
+    public const BRANDING_DEFAULTS = [
+        'organization_name' => 'Tarlac Agricultural University',
+        'organization_short_name' => 'TAU',
+        'program_name' => 'National Service Training Program',
+        'program_short_name' => 'NSTP',
+        'platform_name' => 'Smart NSTP Management and AI-Integrated Platform',
+        'organization_website' => 'https://www.tau.edu.ph',
+        'organization_logo_path' => null,
+        'program_logo_path' => null,
+    ];
+
     public const LANDING_PAGE_DEFAULTS = [
         'hero_video_url' => 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20261005_182346_a590ff3b-72e5-41ce-8f69-a8c823eaecaa.mp4',
         'hero_poster_url' => 'https://tau.edu.ph/images/Content/2026/70.jpg',
@@ -68,6 +81,28 @@ class SystemSetting extends Model
     public function updater(): BelongsTo
     {
         return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    public static function branding(): array
+    {
+        if (! Schema::hasTable('system_settings')) {
+            return self::BRANDING_DEFAULTS;
+        }
+
+        $stored = json_decode((string) static::query()->where('key', 'institution_branding')->value('value'), true);
+
+        return array_replace(self::BRANDING_DEFAULTS, is_array($stored) ? array_intersect_key($stored, self::BRANDING_DEFAULTS) : []);
+    }
+
+    public static function brandingLogoUrl(string $type): string
+    {
+        $branding = self::branding();
+        $key = $type === 'program' ? 'program_logo_path' : 'organization_logo_path';
+        $fallback = $type === 'program' ? 'images/branding/nstp-logo.png' : 'images/branding/tau-logo.png';
+
+        return filled($branding[$key] ?? null)
+            ? Storage::disk('public')->url($branding[$key])
+            : asset($fallback);
     }
 
     public static function landingPageContent(): array

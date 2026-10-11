@@ -9,6 +9,8 @@ use App\Models\StudentProfile;
 use App\Models\User;
 use Database\Seeders\NstpComponentSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class NstpStructureManagementTest extends TestCase
@@ -229,6 +231,7 @@ class NstpStructureManagementTest extends TestCase
 
     public function test_component_edit_from_sectioning_returns_to_the_sectioning_workspace(): void
     {
+        Storage::fake('public');
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
         $component = NstpComponent::where('code', 'CWTS')->firstOrFail();
 
@@ -242,12 +245,14 @@ class NstpStructureManagementTest extends TestCase
             'description' => 'Updated from sectioning.',
             'default_section_capacity' => 45,
             'is_active' => 1,
+            'logo' => UploadedFile::fake()->image('cwts-custom.png'),
         ])->assertRedirect('/nstp-admin/sections');
 
         $this->assertDatabaseHas('nstp_components', [
             'id' => $component->id,
             'default_section_capacity' => 45,
         ]);
+        Storage::disk('public')->assertExists($component->fresh()->logo_path);
     }
 
     public function test_nstp_admin_can_create_a_section_with_a_facilitator(): void

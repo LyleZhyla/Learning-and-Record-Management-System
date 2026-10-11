@@ -1,11 +1,12 @@
+@php($branding = \App\Models\SystemSetting::branding())
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>@yield('title', 'NSTP Admin') · {{ config('app.name') }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('images/branding/tau-logo.png') }}">
+    <title>@yield('title', 'NSTP Admin') · {{ $branding['platform_name'] }}</title>
+    <link rel="icon" type="image/png" href="{{ \App\Models\SystemSetting::brandingLogoUrl('organization') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -36,22 +37,24 @@
                 @permission('accounts.staff')<a class="nav-link {{ request()->routeIs('nstp_admin.accounts.*') && !$managingStudentAccount ? 'active' : '' }}" href="{{ route('nstp_admin.accounts.index') }}" data-nstp-admin-tour="staff"><span class="nav-icon">♙</span> Staff Accounts</a>@endpermission
                 @permission('accounts.students')<a class="nav-link {{ $managingStudentAccount ? 'active' : '' }}" href="{{ route('nstp_admin.students.index') }}" data-nstp-admin-tour="students"><span class="nav-icon">♟</span> Student Accounts</a>@endpermission
                 @permission('registrations.review')<a class="nav-link {{ request()->routeIs('nstp_admin.registrations.*') ? 'active' : '' }}" href="{{ route('nstp_admin.registrations.index') }}" data-nstp-admin-tour="registrations"><span class="nav-icon">▣</span> Registration Reviews</a>@endpermission
-                <p class="nav-label">Program Operations</p>
+                <p class="nav-label">Program Setup</p>
                 @permission('program.components')<a class="nav-link {{ request()->routeIs('nstp_admin.components.*') ? 'active' : '' }}" href="{{ route('nstp_admin.components.index') }}" data-nstp-admin-tour="components"><span class="nav-icon">◉</span> NSTP Components</a>@endpermission
                 @permission('program.sections')<a class="nav-link {{ request()->routeIs('nstp_admin.sections.*', 'nstp_admin.sectioning.*') ? 'active' : '' }}" href="{{ route('nstp_admin.sections.index') }}" data-nstp-admin-tour="sectioning"><span class="nav-icon">▦</span> Sectioning</a>@endpermission
                 @permission('program.schedules')<a class="nav-link {{ request()->routeIs('nstp_admin.schedules.*') ? 'active' : '' }}" href="{{ route('nstp_admin.schedules.index') }}" data-nstp-admin-tour="scheduling"><span class="nav-icon">◷</span> Scheduling</a>@endpermission
-                @permission('rotc.approvals')<a class="nav-link {{ request()->routeIs('nstp_admin.rotc-approvals.*') ? 'active' : '' }}" href="{{ route('nstp_admin.rotc-approvals.index') }}"><span class="nav-icon">✓</span> ROTC Approvals</a>@endpermission
                 <p class="nav-label">Learning & Assessment</p>
                 @permission('learning.attendance')<a class="nav-link {{ request()->routeIs('nstp_admin.attendance.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'attendance') }}" data-nstp-admin-tour="attendance"><span class="nav-icon">▣</span> Attendance @if($sidebarPortalNotificationCounts['attendance'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['attendance'] > 99 ? '99+' : $sidebarPortalNotificationCounts['attendance'] }}</span>@endif</a>@endpermission
                 @permission('learning.materials')<a class="nav-link {{ request()->routeIs('nstp_admin.materials.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'materials') }}"><span class="nav-icon">▤</span> Learning Materials @if($sidebarPortalNotificationCounts['materials'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['materials'] > 99 ? '99+' : $sidebarPortalNotificationCounts['materials'] }}</span>@endif</a>@endpermission
                 @permission('learning.assessments')<a class="nav-link {{ request()->routeIs('nstp_admin.assessments.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'assessments') }}" data-nstp-admin-tour="assessments"><span class="nav-icon">✓</span> Assessments @if($sidebarPortalNotificationCounts['assessments'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['assessments'] > 99 ? '99+' : $sidebarPortalNotificationCounts['assessments'] }}</span>@endif</a>@endpermission
                 @permission('learning.grades')<a class="nav-link {{ request()->routeIs('nstp_admin.grades.*') ? 'active' : '' }}" href="{{ route('nstp_admin.grades.index') }}"><span class="nav-icon">◎</span> Grades</a>@endpermission
+                <p class="nav-label">Operations & Compliance</p>
+                @permission('rotc.approvals')<a class="nav-link {{ request()->routeIs('nstp_admin.rotc-approvals.*') ? 'active' : '' }}" href="{{ route('nstp_admin.rotc-approvals.index') }}"><span class="nav-icon">✓</span> ROTC Approvals</a>@endpermission
+                <a class="nav-link {{ request()->routeIs('nstp_admin.honoraria.*') ? 'active' : '' }}" href="{{ route('nstp_admin.honoraria.index') }}"><span class="nav-icon">₱</span> Honorarium Documents</a>
+                @permission('documents.configure')<a class="nav-link {{ request()->routeIs('nstp_admin.document-forms.*') ? 'active' : '' }}" href="{{ route('nstp_admin.document-forms.index') }}"><span class="nav-icon">▧</span> Documents &amp; Forms</a>@endpermission
                 <p class="nav-label">Reports & Records</p>
                 @permission('reports.view')<a class="nav-link {{ request()->routeIs('nstp_admin.reports.*') ? 'active' : '' }}" href="{{ route('nstp_admin.reports.index') }}" data-nstp-admin-tour="reports"><span class="nav-icon">▤</span> Reports Center</a>@endpermission
                 @permission('reports.view')<a class="nav-link {{ request()->routeIs('nstp_admin.ched-applications.*') ? 'active' : '' }}" href="{{ route('nstp_admin.ched-applications.index') }}"><span class="nav-icon">↗</span> CHED Applications</a>@endpermission
                 @permission('serial_numbers.manage')<a class="nav-link {{ request()->routeIs('nstp_admin.serial-numbers.*') ? 'active' : '' }}" href="{{ route('nstp_admin.serial-numbers.index') }}"><span class="nav-icon">#</span> Serial Numbers</a>@endpermission
-                <a class="nav-link {{ request()->routeIs('nstp_admin.honoraria.*') ? 'active' : '' }}" href="{{ route('nstp_admin.honoraria.index') }}"><span class="nav-icon">₱</span> Honorarium Documents</a>
-                @permission('documents.configure')<a class="nav-link {{ request()->routeIs('nstp_admin.document-forms.*') ? 'active' : '' }}" href="{{ route('nstp_admin.document-forms.index') }}"><span class="nav-icon">▧</span> Documents &amp; Forms</a>@endpermission
+                <p class="nav-label">System Configuration</p>
                 @permission('reviews.configure')<a class="nav-link {{ request()->routeIs('nstp_admin.review-categories.*') ? 'active' : '' }}" href="{{ route('nstp_admin.review-categories.index') }}"><span class="nav-icon">◈</span> Review Categories</a>@endpermission
                 @permission('workflows.configure')<a class="nav-link {{ request()->routeIs('nstp_admin.workflows.*') ? 'active' : '' }}" href="{{ route('nstp_admin.workflows.index') }}"><span class="nav-icon">⌘</span> Workflow Rules</a>@endpermission
                 @permission('notifications.configure')<a class="nav-link {{ request()->routeIs('nstp_admin.notification-rules.*') ? 'active' : '' }}" href="{{ route('nstp_admin.notification-rules.index') }}"><span class="nav-icon">♢</span> Notification Rules</a>@endpermission
@@ -80,7 +83,7 @@
             <header class="topbar">
                 <button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button>
                 <div data-nstp-admin-tour-page-title>
-                    <small>TAU NSTP / NSTP Admin</small>
+                    <small>{{ $branding['organization_short_name'] }} {{ $branding['program_short_name'] }} / NSTP Admin</small>
                     <h1>@yield('page-title', 'Dashboard')</h1>
                 </div>
                 <x-notification-bell />
@@ -105,7 +108,7 @@
 
             @yield('content')
 
-            <footer class="app-footer">© {{ date('Y') }} Tarlac Agricultural University · National Service Training Program</footer>
+            <footer class="app-footer">© {{ date('Y') }} {{ $branding['organization_name'] }} · {{ $branding['program_name'] }}</footer>
         </main>
     </div>
     @permission('ai.use')<x-ai-chat-widget />@endpermission

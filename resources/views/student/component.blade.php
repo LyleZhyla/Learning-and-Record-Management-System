@@ -27,7 +27,7 @@
                     @foreach($availableComponents as $nstpComponent)
                         <label class="component-choice-card @if($selectionLocked) component-choice-locked @endif">
                             <input type="radio" @if(! $selectionLocked) name="nstp_component_id" @endif value="{{ $nstpComponent->id }}" data-component-code="{{ $nstpComponent->code }}" @checked((int) old('nstp_component_id', $currentEnrollment?->component_id) === $nstpComponent->id) @disabled($selectionLocked) required>
-                            <x-component-logo :component-code="$nstpComponent->code" class="component-choice-mark" />
+                            <x-component-logo :component-code="$nstpComponent->code" :logo-path="$nstpComponent->logo_path" class="component-choice-mark" />
                             <strong>{{ $nstpComponent->code }}</strong>
                             <small>{{ $nstpComponent->name }}</small>
                         </label>

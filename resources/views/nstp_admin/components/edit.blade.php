@@ -7,12 +7,14 @@
     <div class="back-row"><a href="{{ route($routePrefix.'.sections.index') }}">← Back to sectioning</a></div>
     <div class="editor-grid">
         <section class="card">
-            <div class="account-heading"><span class="large-avatar small">{{ substr($component->code, 0, 1) }}</span><div><span class="eyebrow">NSTP component</span><h2>{{ $component->code }}</h2><p>{{ $component->name }}</p></div></div>
-            <form method="POST" action="{{ route($routePrefix.'.components.update', $component) }}" class="account-form">
+            <div class="account-heading"><span class="nstp-component-logo large-avatar small"><img src="{{ $component->logoUrl() }}" alt="{{ $component->code }} logo"></span><div><span class="eyebrow">NSTP component</span><h2>{{ $component->code }}</h2><p>{{ $component->name }}</p></div></div>
+            <form method="POST" action="{{ route($routePrefix.'.components.update', $component) }}" class="account-form" enctype="multipart/form-data">
                 @csrf @method('PUT')
                 <div class="form-grid">
                     <label class="field-group full"><span>Official component name</span><input name="name" value="{{ old('name', $component->name) }}" maxlength="150" required>@error('name')<small class="field-error">{{ $message }}</small>@enderror</label>
                     <label class="field-group full"><span>Description</span><textarea name="description" maxlength="1000" rows="5">{{ old('description', $component->description) }}</textarea>@error('description')<small class="field-error">{{ $message }}</small>@enderror</label>
+                    <label class="field-group full"><span>Component logo</span><input type="file" name="logo" accept=".png,.jpg,.jpeg,.webp"><small>Square PNG, JPG, or WebP up to 2 MB. {{ $component->logo_path ? 'A custom logo is active.' : 'The built-in '.$component->code.' logo is active.' }}</small>@error('logo')<small class="field-error">{{ $message }}</small>@enderror</label>
+                    @if($component->logo_path)<label class="review-category-check full"><input type="checkbox" name="remove_logo" value="1"> Restore built-in {{ $component->code }} logo</label>@endif
                     <label class="field-group"><span>Default section capacity</span><input type="number" name="default_section_capacity" value="{{ old('default_section_capacity', $component->default_section_capacity) }}" min="1" max="200" required>@error('default_section_capacity')<small class="field-error">{{ $message }}</small>@enderror</label>
                     <label class="field-group"><span>Component status</span><select name="is_active" required><option value="1" @selected((string) old('is_active', (int) $component->is_active) === '1')>Active</option><option value="0" @selected((string) old('is_active', (int) $component->is_active) === '0')>Inactive</option></select>@error('is_active')<small class="field-error">{{ $message }}</small>@enderror</label>
                 </div>
