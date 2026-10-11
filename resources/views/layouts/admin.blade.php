@@ -116,7 +116,7 @@
 
             @yield('content')
 
-            <footer class="app-footer">© {{ date('Y') }} {{ $branding['organization_name'] }} · {{ $branding['program_name'] }}</footer>
+            <footer class="app-footer">© LZPatalod 2026</footer>
         </main>
     </div>
     <x-ai-chat-widget />

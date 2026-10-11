@@ -24,7 +24,7 @@
         </div>
     </header>
     <main id="main-content">@yield('content')</main>
-    <footer class="request-footer"><div class="page-shell"><span>© {{ date('Y') }} {{ $branding['organization_name'] }} · {{ $branding['program_name'] }}</span><a href="{{ route('landing') }}">{{ $branding['platform_name'] }} home</a></div></footer>
+    <footer class="request-footer"><div class="page-shell"><span>© LZPatalod 2026</span><a href="{{ route('landing') }}">{{ $branding['platform_name'] }} home</a></div></footer>
     @stack('scripts')
 </body>
 </html>

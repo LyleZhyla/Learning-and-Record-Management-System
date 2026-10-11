@@ -108,7 +108,7 @@
                 <tr>
                     <td class="email-pad" style="padding:22px 40px; background:#f5f8fb; border-top:1px solid #e3eaf1; color:#7a8999; font-size:12px; line-height:1.6;">
                         This automated message was sent by the {{ $branding['platform_name'] }}.<br>
-                        <span style="color:#9aa7b5;">© {{ date('Y') }} {{ $branding['organization_name'] }} · {{ $branding['program_name'] }}.</span>
+                        <span style="color:#9aa7b5;">© LZPatalod 2026.</span>
                     </td>
                 </tr>
             </table>
