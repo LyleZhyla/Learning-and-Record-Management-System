@@ -110,7 +110,11 @@
             updateFieldCount();
         });
         clearAllButton?.addEventListener('click', () => {
-            fieldInputs.forEach((field) => { field.checked = false; });
+            fieldInputs.forEach((field) => {
+                if (!field.disabled) {
+                    field.checked = false;
+                }
+            });
             updateFieldCount();
         });
 

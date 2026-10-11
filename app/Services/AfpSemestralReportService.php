@@ -20,7 +20,9 @@ class AfpSemestralReportService
 
     public function report(array $filters): array
     {
-        $rows = $this->cadets($filters)->map(function (array $record): array {
+        $rows = $this->cadets($filters)
+            ->sortBy(fn (array $record): string => $this->studentName($record['enrollment']), SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(function (array $record): array {
             $profile = $record['enrollment']->student->studentProfile;
 
             return [
@@ -32,7 +34,7 @@ class AfpSemestralReportService
                 'final_grade' => $record['summary']['grade'] === null ? '—' : number_format($record['summary']['grade'], 2),
                 'remarks' => $this->remarks($record['summary']),
             ];
-        })->values();
+            })->values();
 
         return [
             'title' => 'AFP Semestral Report - ROTC Grades',

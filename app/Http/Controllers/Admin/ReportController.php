@@ -246,7 +246,7 @@ class ReportController extends Controller
 
     private function buildReport(array $filters): array
     {
-        return match ($filters['type']) {
+        $report = match ($filters['type']) {
             'students_by_section' => $this->studentsBySectionReport($filters),
             'attendance' => $this->attendanceReport($filters),
             'grades' => $this->gradeReport($filters),
@@ -257,6 +257,8 @@ class ReportController extends Controller
             'sections' => $this->sectionReport($filters),
             default => $this->studentReport($filters),
         };
+
+        return $this->withRowNumbers($report);
     }
 
     private function selectDownloadColumns(Request $request, array $report): array
@@ -269,7 +271,12 @@ class ReportController extends Controller
             'columns' => ['required', 'array', 'min:1'],
             'columns.*' => ['required', 'integer', 'distinct', 'min:0', 'max:'.(count($report['headers']) - 1)],
         ]);
-        $indexes = collect($validated['columns'])->map(fn ($index) => (int) $index)->sort()->values();
+        $indexes = collect([0])
+            ->merge($validated['columns'])
+            ->map(fn ($index) => (int) $index)
+            ->unique()
+            ->sort()
+            ->values();
         $selectValues = fn (array $row): array => $indexes
             ->map(fn (int $index) => array_values($row)[$index])
             ->all();
@@ -305,13 +312,13 @@ class ReportController extends Controller
                 'nstpEnrollments' => fn ($query) => $enrollmentFilter($query->with(['component', 'section.facilitator'])->latest('academic_year')->latest('semester')),
             ])
             ->when($hasEnrollmentFilters, fn ($query) => $query->whereHas('nstpEnrollments', $enrollmentFilter))
-            ->orderBy('name')->get()->map(function ($student) {
+            ->get()->map(function ($student) {
                 $enrollment = $student->nstpEnrollments->first();
                 $details = $student->studentProfile ?? $student->latestStudentRegistration;
                 $registration = $student->latestStudentRegistration;
 
                 return [
-                    'student' => $student->name,
+                    'student' => $student->studentRecordName(),
                     'last_name' => $details?->last_name ?? '—',
                     'first_name' => $details?->first_name ?? '—',
                     'middle_name' => $details?->middle_name ?? 'N/A',
@@ -349,8 +356,16 @@ class ReportController extends Controller
                     'term' => $enrollment ? (($enrollment->section?->semesterLabel() ?? str($enrollment->semester)->headline()).' '.$enrollment->academic_year) : 'Not enrolled',
                     'facilitator' => $enrollment?->section?->facilitator?->name ?? 'Unassigned',
                     'status' => $enrollment ? ucfirst($enrollment->status) : $student->statusLabel(),
+                    '_name_sort' => $this->userNameSortKey($student),
                 ];
-            })->values();
+            })
+            ->sortBy('_name_sort', SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(function (array $row): array {
+                unset($row['_name_sort']);
+
+                return $row;
+            })
+            ->values();
 
         return $this->report('Student Masterlist', [
             'Student',
@@ -406,7 +421,7 @@ class ReportController extends Controller
                         : $first['term'].' | Facilitator: '.$first['facilitator'],
                     'sheet_name' => $isUnassigned ? 'Unassigned' : $first['section'],
                     'is_unassigned' => $isUnassigned,
-                    'rows' => $rows->sortBy('student', SORT_NATURAL | SORT_FLAG_CASE)->values(),
+                    'rows' => $rows->sortBy(fn (array $row): string => $this->nameSortKey($row['last_name'], $row['first_name'], $row['student']), SORT_NATURAL | SORT_FLAG_CASE)->values(),
                 ];
             })
             ->sortBy(fn (array $group): string => ($group['is_unassigned'] ? '1' : '0').'|'.$group['title'].'|'.$group['subtitle'], SORT_NATURAL | SORT_FLAG_CASE)
@@ -418,16 +433,18 @@ class ReportController extends Controller
 
     private function attendanceReport(array $filters): array
     {
-        $rows = AttendanceRecord::with(['student', 'attendanceSession.section.component'])
+        $rows = AttendanceRecord::with(['student.studentProfile', 'student.latestStudentRegistration', 'attendanceSession.section.component'])
             ->whereHas('attendanceSession.section', fn ($q) => $this->applySectionFilters($q, $filters))
             ->whereHas('attendanceSession', function ($q) use ($filters) {
                 $q->when($filters['date_from'] ?? null, fn ($query, $date) => $query->whereDate('starts_at', '>=', $date))
                     ->when($filters['date_to'] ?? null, fn ($query, $date) => $query->whereDate('starts_at', '<=', $date));
-            })->latest('checked_in_at')->get()->map(function ($item) {
+            })->get()
+            ->sortBy(fn (AttendanceRecord $item): string => $this->userNameSortKey($item->student).'|'.$item->attendanceSession->starts_at?->format('Y-m-d H:i:s'), SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(function ($item) {
                 $session = $item->attendanceSession;
 
                 return [
-                    'student' => $item->student->name, 'component' => $session->section->component->code,
+                    'student' => $item->student->studentRecordName(), 'component' => $session->section->component->code,
                     'section' => $session->section->code, 'session' => $session->title,
                     'date' => $session->starts_at->format('M d, Y'), 'status' => ucfirst($item->status),
                     'time_in' => $item->checked_in_at?->format('h:i:s A') ?? '—',
@@ -440,13 +457,13 @@ class ReportController extends Controller
 
     private function gradeReport(array $filters): array
     {
-        $rows = NstpEnrollment::with(['student', 'component', 'section'])
+        $rows = NstpEnrollment::with(['student.studentProfile', 'student.latestStudentRegistration', 'component', 'section'])
             ->whereNotNull('section_id')->whereHas('section', fn ($q) => $this->applySectionFilters($q, $filters))
-            ->get()->sortBy(fn ($item) => $item->student->name)->map(function ($item) {
+            ->get()->sortBy(fn ($item) => $this->userNameSortKey($item->student), SORT_NATURAL | SORT_FLAG_CASE)->map(function ($item) {
                 $summary = $this->grades->summary($item->student, $item->section_id);
 
                 return [
-                    'student' => $item->student->name, 'component' => $item->component->code, 'section' => $item->section->code,
+                    'student' => $item->student->studentRecordName(), 'component' => $item->component->code, 'section' => $item->section->code,
                     'graded' => $summary['graded_count'].' of '.$summary['total_count'],
                     'raw_score_rate' => $summary['raw_percentage'] === null ? '—' : number_format($summary['raw_percentage'], 2).'%',
                     'percentage' => $summary['percentage'] === null ? '—' : number_format($summary['percentage'], 2).'%',
@@ -460,10 +477,10 @@ class ReportController extends Controller
 
     private function attendanceSheetReport(array $filters): array
     {
-        $rows = NstpEnrollment::with(['student', 'component', 'section'])
+        $rows = NstpEnrollment::with(['student.studentProfile', 'student.latestStudentRegistration', 'component', 'section'])
             ->whereNotNull('section_id')
             ->whereHas('section', fn ($query) => $this->applySectionFilters($query, $filters))
-            ->get()->sortBy(fn ($enrollment) => $enrollment->section?->code.'|'.$enrollment->student?->name)
+            ->get()->sortBy(fn ($enrollment) => $this->userNameSortKey($enrollment->student).'|'.$enrollment->section?->code, SORT_NATURAL | SORT_FLAG_CASE)
             ->map(function (NstpEnrollment $enrollment): array {
                 $sessionIds = $enrollment->section->attendanceSessions()
                     ->where('starts_at', '<=', now())->pluck('id');
@@ -475,7 +492,7 @@ class ReportController extends Controller
                 $rate = $sessionIds->isEmpty() ? 0 : (($present + $late) / $sessionIds->count()) * 100;
 
                 return [
-                    'student' => $enrollment->student->name,
+                    'student' => $enrollment->student->studentRecordName(),
                     'component' => $enrollment->component->code,
                     'section' => $enrollment->section->code,
                     'sessions' => $sessionIds->count(),
@@ -491,18 +508,17 @@ class ReportController extends Controller
 
     private function gradeSheetReport(array $filters): array
     {
-        $assessments = Assessment::with(['section.component', 'submissions.student'])
+        $assessments = Assessment::with(['section.component', 'submissions.student.studentProfile', 'submissions.student.latestStudentRegistration'])
             ->whereHas('section', fn ($query) => $this->applySectionFilters($query, $filters))
             ->where('status', 'published')->orderBy('section_id')->orderBy('title')->get();
         $rows = $assessments->flatMap(fn (Assessment $assessment) => $assessment->submissions
-            ->sortBy(fn ($submission) => $submission->student?->name)
             ->map(function ($submission) use ($assessment): array {
                 $percentage = $submission->score === null || (float) $assessment->max_score <= 0
                     ? '—'
                     : number_format(((float) $submission->score / (float) $assessment->max_score) * 100, 2).'%';
 
                 return [
-                    'student' => $submission->student?->name ?? 'Deleted student',
+                    'student' => $submission->student?->studentRecordName() ?? 'Deleted student',
                     'component' => $assessment->section->component->code,
                     'section' => $assessment->section->code,
                     'assessment' => $assessment->title,
@@ -511,8 +527,16 @@ class ReportController extends Controller
                     'maximum' => number_format((float) $assessment->max_score, 2),
                     'percentage' => $percentage,
                     'status' => $submission->score === null ? 'Pending' : 'Graded',
+                    '_name_sort' => $submission->student ? $this->userNameSortKey($submission->student) : 'zzzz|deleted student',
                 ];
-            }))->values();
+            }))
+            ->sortBy(fn (array $row): string => $row['_name_sort'].'|'.$row['assessment'], SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(function (array $row): array {
+                unset($row['_name_sort']);
+
+                return $row;
+            })
+            ->values();
 
         return $this->report('Class Grade Sheet', ['Student', 'Component', 'Section', 'Assessment', 'Type', 'Score', 'Maximum', 'Percentage', 'Status'], $rows);
     }
@@ -521,7 +545,11 @@ class ReportController extends Controller
     {
         $sections = NstpSection::with(['component', 'facilitator', 'enrollments.student'])->withCount(['enrollments', 'attendanceSessions', 'assessments']);
         $this->applySectionFilters($sections, $filters);
-        $rows = $sections->orderBy('code')->get()->map(function ($section) {
+        $rows = $sections->get()
+            ->sortBy(fn (NstpSection $section): string => $section->facilitator
+                ? $this->userNameSortKey($section->facilitator).'|'.$section->code
+                : 'zzzz|'.$section->code, SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(function ($section) {
             $grades = $section->enrollments->map(fn ($item) => $this->grades->summary($item->student, $section->id)['grade'])->filter(fn ($grade) => $grade !== null);
 
             return [
@@ -549,6 +577,49 @@ class ReportController extends Controller
     private function report(string $title, array $headers, Collection $rows): array
     {
         return compact('title', 'headers', 'rows') + ['generated_at' => now()];
+    }
+
+    private function withRowNumbers(array $report): array
+    {
+        if (in_array($report['headers'][0] ?? null, ['No.', 'Seq. No.', 'NR'], true)) {
+            return $report;
+        }
+
+        array_unshift($report['headers'], 'No.');
+        $numberRows = fn (Collection $rows): Collection => $rows->values()->map(
+            fn (array $row, int $index): array => ['number' => $index + 1] + $row
+        );
+
+        if (array_key_exists('groups', $report)) {
+            $report['groups'] = $report['groups']->map(function (array $group) use ($numberRows): array {
+                $group['rows'] = $numberRows($group['rows']);
+
+                return $group;
+            });
+            $report['rows'] = $report['groups']->flatMap(fn (array $group) => $group['rows'])->values();
+        } else {
+            $report['rows'] = $numberRows($report['rows']);
+        }
+
+        return $report;
+    }
+
+    private function userNameSortKey(User $user): string
+    {
+        $details = $user->studentProfile ?? $user->latestStudentRegistration;
+        $name = trim($user->name);
+        $fallbackLastName = str($name)->afterLast(' ')->toString();
+
+        return $this->nameSortKey(
+            $details?->last_name ?: $fallbackLastName,
+            $details?->first_name ?: $name,
+            $name,
+        );
+    }
+
+    private function nameSortKey(?string $lastName, ?string $firstName, ?string $fallback = null): string
+    {
+        return mb_strtolower(trim((string) $lastName).'|'.trim((string) $firstName).'|'.trim((string) $fallback));
     }
 
     private function filterSummary(array $filters): string

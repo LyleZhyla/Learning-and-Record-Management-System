@@ -90,14 +90,15 @@ class ChedSemestralReportTest extends TestCase
 
         foreach (['NSTP Enrollment List', 'NSTP Graduates'] as $sheetName) {
             $sheet = $workbook->getSheetByName($sheetName);
-            $this->assertSame('CWTS', $sheet->getCell('C3')->getValue());
-            $this->assertSame('LTS', $sheet->getCell('C4')->getValue());
-            $this->assertSame('Passer', $sheet->getCell('F3')->getValue());
-            $this->assertSame('Graduate', $sheet->getCell('F4')->getValue());
+            $this->assertSame('LTS', $sheet->getCell('C3')->getValue());
+            $this->assertSame('CWTS', $sheet->getCell('C4')->getValue());
+            $this->assertSame('Graduate', $sheet->getCell('F3')->getValue());
+            $this->assertSame('Passer', $sheet->getCell('F4')->getValue());
             $this->assertSame('', (string) $sheet->getCell('E3')->getValue());
             $this->assertSame('Tarlac Agricultural University', $sheet->getCell('O3')->getValue());
             $this->assertSame('SUCs', $sheet->getCell('P3')->getValue());
-            $this->assertSame('4', (string) $sheet->getCell('R3')->getValue());
+            $this->assertSame('3', (string) $sheet->getCell('R3')->getValue());
+            $this->assertSame('4', (string) $sheet->getCell('R4')->getValue());
             $this->assertNull($sheet->getCell('A5')->getValue());
         }
 

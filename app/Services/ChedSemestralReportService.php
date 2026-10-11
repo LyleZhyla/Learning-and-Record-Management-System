@@ -103,10 +103,10 @@ class ChedSemestralReportService
                 $profile = $enrollment->student->studentProfile;
 
                 return implode('|', [
-                    $enrollment->component->code,
                     $profile?->last_name ?? $enrollment->student->name,
                     $profile?->first_name ?? '',
                     $profile?->middle_name ?? '',
+                    $enrollment->component->code,
                 ]);
             }, SORT_NATURAL | SORT_FLAG_CASE)
             ->values();

@@ -177,7 +177,7 @@
                             </div>
                             <div class="report-field-grid">
                                 @foreach($report['headers'] as $columnIndex => $header)
-                                    <label><input type="checkbox" value="{{ $columnIndex }}" checked data-report-field> <span>{{ $header }}</span></label>
+                                    <label><input type="checkbox" value="{{ $columnIndex }}" checked data-report-field @disabled($columnIndex === 0 && $header === 'No.')> <span>{{ $header }}</span></label>
                                 @endforeach
                             </div>
                         </fieldset>

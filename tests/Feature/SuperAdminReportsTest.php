@@ -67,7 +67,7 @@ class SuperAdminReportsTest extends TestCase
 
     public function test_super_admin_can_generate_all_report_types(): void
     {
-        foreach (['students' => 'Demo Student', 'attendance' => 'Demo Student', 'grades' => 'Demo Student', 'sections' => 'CWTS-01'] as $type => $expected) {
+        foreach (['students' => 'Student, Demo R.', 'attendance' => 'Student, Demo R.', 'grades' => 'Student, Demo R.', 'sections' => 'CWTS-01'] as $type => $expected) {
             $this->actingAs($this->superAdmin)->get('/admin/reports?type='.$type.'&academic_year=2026-2027')
                 ->assertOk()->assertSee($expected);
         }
@@ -123,22 +123,42 @@ class SuperAdminReportsTest extends TestCase
         $this->assertStringContainsString('.report-field-grid{grid-template-columns:repeat(5,minmax(0,1fr))}', $styles);
     }
 
+    public function test_report_lists_are_numbered_and_sorted_by_last_name(): void
+    {
+        User::factory()->create(['role' => 'student', 'status' => 'active', 'name' => 'Zoe Abel']);
+        User::factory()->create(['role' => 'student', 'status' => 'active', 'name' => 'Amy Zulu']);
+
+        $this->actingAs($this->superAdmin)->get('/admin/reports?type=students')
+            ->assertOk()
+            ->assertSeeInOrder([
+                '<th>No.</th>',
+                '<td>1</td>',
+                '<td>Abel, Zoe</td>',
+                '<td>2</td>',
+                '<td>Student, Demo R.</td>',
+                '<td>3</td>',
+                '<td>Zulu, Amy</td>',
+            ], false);
+    }
+
     public function test_student_report_download_can_select_registration_fields(): void
     {
         $response = $this->actingAs($this->superAdmin)
-            ->get('/admin/reports/students/export?columns[]=1&columns[]=5&columns[]=22');
+            ->get('/admin/reports/students/export?columns[]=2&columns[]=6&columns[]=23');
         $response->assertOk()->assertDownload();
 
         $temporaryFile = tempnam(sys_get_temp_dir(), 'smart-nstp-registration-fields-');
         file_put_contents($temporaryFile, $response->streamedContent());
         $sheet = IOFactory::load($temporaryFile)->getActiveSheet();
 
-        $this->assertSame('Last Name', $sheet->getCell('A6')->getValue());
-        $this->assertSame('Student Number', $sheet->getCell('B6')->getValue());
-        $this->assertSame('College', $sheet->getCell('C6')->getValue());
-        $this->assertSame('Student', $sheet->getCell('A7')->getValue());
-        $this->assertSame('2026000001', $sheet->getCell('B7')->getValue());
-        $this->assertSame('College of Engineering', $sheet->getCell('C7')->getValue());
+        $this->assertSame('No.', $sheet->getCell('A6')->getValue());
+        $this->assertSame('Last Name', $sheet->getCell('B6')->getValue());
+        $this->assertSame('Student Number', $sheet->getCell('C6')->getValue());
+        $this->assertSame('College', $sheet->getCell('D6')->getValue());
+        $this->assertSame(1, $sheet->getCell('A7')->getValue());
+        $this->assertSame('Student', $sheet->getCell('B7')->getValue());
+        $this->assertSame('2026000001', $sheet->getCell('C7')->getValue());
+        $this->assertSame('College of Engineering', $sheet->getCell('D7')->getValue());
 
         unlink($temporaryFile);
     }
@@ -146,17 +166,19 @@ class SuperAdminReportsTest extends TestCase
     public function test_downloaded_report_contains_only_selected_data_columns(): void
     {
         $response = $this->actingAs($this->superAdmin)
-            ->get('/admin/reports/attendance/export?columns[]=0&columns[]=4');
+            ->get('/admin/reports/attendance/export?columns[]=1&columns[]=5');
         $response->assertOk();
 
         $temporaryFile = tempnam(sys_get_temp_dir(), 'smart-nstp-selected-columns-');
         file_put_contents($temporaryFile, $response->streamedContent());
         $sheet = IOFactory::load($temporaryFile)->getActiveSheet();
 
-        $this->assertSame('Student', $sheet->getCell('A6')->getValue());
-        $this->assertSame('Date', $sheet->getCell('B6')->getValue());
-        $this->assertNull($sheet->getCell('C6')->getValue());
-        $this->assertSame('Demo Student', $sheet->getCell('A7')->getValue());
+        $this->assertSame('No.', $sheet->getCell('A6')->getValue());
+        $this->assertSame('Student', $sheet->getCell('B6')->getValue());
+        $this->assertSame('Date', $sheet->getCell('C6')->getValue());
+        $this->assertNull($sheet->getCell('D6')->getValue());
+        $this->assertSame(1, $sheet->getCell('A7')->getValue());
+        $this->assertSame('Student, Demo R.', $sheet->getCell('B7')->getValue());
 
         unlink($temporaryFile);
 
@@ -178,10 +200,12 @@ class SuperAdminReportsTest extends TestCase
         $sheet = $workbook->getActiveSheet();
 
         $this->assertSame('Attendance Report', $sheet->getCell('A2')->getValue());
-        $this->assertSame('Student', $sheet->getCell('A6')->getValue());
-        $this->assertSame('Demo Student', $sheet->getCell('A7')->getValue());
+        $this->assertSame('No.', $sheet->getCell('A6')->getValue());
+        $this->assertSame('Student', $sheet->getCell('B6')->getValue());
+        $this->assertSame(1, $sheet->getCell('A7')->getValue());
+        $this->assertSame('Student, Demo R.', $sheet->getCell('B7')->getValue());
         $this->assertSame('A7', $sheet->getFreezePane());
-        $this->assertSame('A6:I7', $sheet->getAutoFilter()->getRange());
+        $this->assertSame('A6:J7', $sheet->getAutoFilter()->getRange());
         $this->assertSame('&C&G', $sheet->getHeaderFooter()->getOddHeader());
         $this->assertSame('&C&G', $sheet->getHeaderFooter()->getOddFooter());
         $this->assertCount(2, $sheet->getHeaderFooter()->getImages());
@@ -206,7 +230,7 @@ class SuperAdminReportsTest extends TestCase
     public function test_super_admin_can_download_a_word_report_using_the_official_template(): void
     {
         $response = $this->actingAs($this->superAdmin)
-            ->get('/admin/reports/attendance/document?columns[]=0&columns[]=4');
+            ->get('/admin/reports/attendance/document?columns[]=1&columns[]=5');
 
         $response->assertOk()
             ->assertDownload()
@@ -225,7 +249,7 @@ class SuperAdminReportsTest extends TestCase
         $this->assertStringContainsString('Attendance Report', $documentXml);
         $this->assertStringContainsString('Student', $documentXml);
         $this->assertStringContainsString('Date', $documentXml);
-        $this->assertStringContainsString('Demo Student', $documentXml);
+        $this->assertStringContainsString('Student, Demo R.', $documentXml);
         $this->assertStringNotContainsString('Time In', $documentXml);
         $this->assertStringContainsString('Official document header', $headerXml);
         $this->assertStringContainsString('media/official-document-footer.png', $footerRelationshipsXml);
@@ -272,9 +296,12 @@ class SuperAdminReportsTest extends TestCase
         $workbook = IOFactory::load($temporaryFile);
 
         $this->assertSame(['CWTS-01', 'CWTS-02', 'Unassigned'], $workbook->getSheetNames());
-        $this->assertSame('Demo Student', $workbook->getSheetByName('CWTS-01')->getCell('A7')->getValue());
-        $this->assertSame('Second Student', $workbook->getSheetByName('CWTS-02')->getCell('A7')->getValue());
-        $this->assertSame('Unassigned Student', $workbook->getSheetByName('Unassigned')->getCell('A7')->getValue());
+        $this->assertSame(1, $workbook->getSheetByName('CWTS-01')->getCell('A7')->getValue());
+        $this->assertSame('Student, Demo R.', $workbook->getSheetByName('CWTS-01')->getCell('B7')->getValue());
+        $this->assertSame(1, $workbook->getSheetByName('CWTS-02')->getCell('A7')->getValue());
+        $this->assertSame('Student, Second', $workbook->getSheetByName('CWTS-02')->getCell('B7')->getValue());
+        $this->assertSame(1, $workbook->getSheetByName('Unassigned')->getCell('A7')->getValue());
+        $this->assertSame('Student, Unassigned', $workbook->getSheetByName('Unassigned')->getCell('B7')->getValue());
 
         $workbook->disconnectWorksheets();
         unlink($temporaryFile);
