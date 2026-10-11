@@ -28,7 +28,6 @@ use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboard
 use App\Http\Controllers\Coordinator\MonitoringController as CoordinatorMonitoringController;
 use App\Http\Controllers\Coordinator\RotcApprovalController as CoordinatorRotcApprovalController;
 use App\Http\Controllers\Coordinator\SerialNumberController as CoordinatorSerialNumberController;
-use App\Http\Controllers\DocumentReviewController;
 use App\Http\Controllers\EngagementAnalyticsController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
@@ -151,13 +150,6 @@ $documentConfigurationRoutes = function (): void {
     Route::get('/document-forms/{documentForm}/template', [DocumentFormController::class, 'downloadTemplate'])->name('document-forms.template');
 };
 
-$documentReviewRoutes = function (): void {
-    Route::get('/document-reviews', [DocumentReviewController::class, 'index'])->name('document-reviews.index');
-    Route::patch('/document-reviews/{documentSubmission}', [DocumentReviewController::class, 'update'])->name('document-reviews.update');
-    Route::get('/document-reviews/{documentSubmission}/file', [DocumentReviewController::class, 'file'])->name('document-reviews.file');
-    Route::get('/document-reviews/{documentSubmission}/download', [DocumentReviewController::class, 'download'])->name('document-reviews.download');
-};
-
 $reviewCategoryRoutes = function (): void {
     Route::get('/review-categories', [ReviewCategoryController::class, 'index'])->name('review-categories.index');
     Route::post('/review-categories', [ReviewCategoryController::class, 'store'])->name('review-categories.store');
@@ -252,12 +244,13 @@ $engagementAnalyticsRoutes = function (): void {
 $serialNumberRoutes = function (): void {
     Route::get('/serial-numbers', [CoordinatorSerialNumberController::class, 'index'])->name('serial-numbers.index');
     Route::post('/serial-numbers', [CoordinatorSerialNumberController::class, 'store'])->name('serial-numbers.store');
+    Route::get('/serial-numbers/{serialNumberRelease}/encode', [CoordinatorSerialNumberController::class, 'encode'])->name('serial-numbers.encode');
     Route::get('/serial-numbers/{serialNumberRelease}', [CoordinatorSerialNumberController::class, 'show'])->name('serial-numbers.show');
     Route::get('/serial-numbers/{serialNumberRelease}/source-file', [CoordinatorSerialNumberController::class, 'download'])->name('serial-numbers.download');
     Route::put('/serial-numbers/{serialNumberRelease}/students/{enrollment}', [CoordinatorSerialNumberController::class, 'storeSerial'])->name('serial-numbers.students.store');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumDocumentPreparationRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumDocumentPreparationRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
     Route::get('/profile', [NstpAdminProfileController::class, 'edit'])->name('profile.edit');
@@ -306,7 +299,6 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $engagementAnalyticsRoutes();
     $serialNumberRoutes();
     $documentConfigurationRoutes();
-    $documentReviewRoutes();
     $reviewCategoryRoutes();
     $workflowRoutes();
     $notificationRuleRoutes();
@@ -379,7 +371,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $documentReviewRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -436,7 +428,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $engagementAnalyticsRoutes();
     $serialNumberRoutes();
     $documentConfigurationRoutes();
-    $documentReviewRoutes();
     $reviewCategoryRoutes();
     $workflowRoutes();
     $notificationRuleRoutes();

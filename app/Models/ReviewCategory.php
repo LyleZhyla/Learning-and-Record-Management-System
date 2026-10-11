@@ -13,7 +13,6 @@ class ReviewCategory extends Model
     public const SCOPES = [
         'registration' => 'Registration status',
         'registration_document' => 'Registration document decision',
-        'document_submission' => 'Configurable document decision',
     ];
 
     public const OUTCOMES = [

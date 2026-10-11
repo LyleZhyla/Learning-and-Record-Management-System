@@ -55,7 +55,6 @@
                 <a class="nav-link {{ request()->routeIs('admin.ched-applications.*') ? 'active' : '' }}" href="{{ route('admin.ched-applications.index') }}"><span class="nav-icon">↗</span> CHED Applications</a>
                 <a class="nav-link {{ request()->routeIs('admin.serial-numbers.*') ? 'active' : '' }}" href="{{ route('admin.serial-numbers.index') }}"><span class="nav-icon">#</span> Serial Numbers</a>
                 <a class="nav-link {{ request()->routeIs('admin.document-forms.*') ? 'active' : '' }}" href="{{ route('admin.document-forms.index') }}"><span class="nav-icon">▧</span> Documents &amp; Forms</a>
-                <a class="nav-link {{ request()->routeIs('admin.document-reviews.*') ? 'active' : '' }}" href="{{ route('admin.document-reviews.index') }}"><span class="nav-icon">✓</span> Document Reviews</a>
                 <a class="nav-link {{ request()->routeIs('admin.review-categories.*') ? 'active' : '' }}" href="{{ route('admin.review-categories.index') }}"><span class="nav-icon">◈</span> Review Categories</a>
                 <a class="nav-link {{ request()->routeIs('admin.workflows.*') ? 'active' : '' }}" href="{{ route('admin.workflows.index') }}"><span class="nav-icon">⌘</span> Workflow Rules</a>
                 <a class="nav-link {{ request()->routeIs('admin.notification-rules.*') ? 'active' : '' }}" href="{{ route('admin.notification-rules.index') }}"><span class="nav-icon">♢</span> Notification Rules</a>

@@ -5,7 +5,7 @@
 
 @section('content')
 <section class="page-actions">
-    <div><span class="eyebrow">Configuration layer</span><h2>Review categories and workflow statuses</h2><p>Rename, color, order, deactivate, or extend registration and document review decisions without changing code.</p></div>
+    <div><span class="eyebrow">Configuration layer</span><h2>Registration review categories and statuses</h2><p>Rename, color, order, deactivate, or extend registration review decisions without changing code.</p></div>
 </section>
 
 <section class="card review-category-create-card">

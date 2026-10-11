@@ -39,7 +39,12 @@ class SerialNumberVerificationTest extends TestCase
         $this->assertSame($coordinator->nstp_component_id, $release->component_id);
 
         $this->actingAs($coordinator)->get('/coordinator/serial-numbers/'.$release->id)
-            ->assertOk()->assertSee($graduate->name)->assertSee('ched-serial-list.pdf');
+            ->assertOk()->assertSee($graduate->studentRecordName())->assertSee('ched-serial-list.pdf');
+
+        $this->actingAs($coordinator)->get('/coordinator/serial-numbers/'.$release->id.'/encode')
+            ->assertOk()
+            ->assertSee('Dedicated encoding list')
+            ->assertSee('Missing serial number');
 
         $this->actingAs($coordinator)->put('/coordinator/serial-numbers/'.$release->id.'/students/'.$enrollment->id, [
             'serial_number' => 'nstp-03-2026-00125',
@@ -85,7 +90,7 @@ class SerialNumberVerificationTest extends TestCase
 
             $this->actingAs($manager)->get("/{$prefix}/serial-numbers")
                 ->assertOk()
-                ->assertSee('Upload the official serial-number file')
+                ->assertSee('Upload a CHED serial-number list')
                 ->assertSee('Select component');
 
             $this->actingAs($manager)->post("/{$prefix}/serial-numbers", [
@@ -99,7 +104,7 @@ class SerialNumberVerificationTest extends TestCase
             $release = NstpSerialNumberRelease::where('uploaded_by', $manager->id)->firstOrFail();
             $this->actingAs($manager)->get("/{$prefix}/serial-numbers/{$release->id}")
                 ->assertOk()
-                ->assertSee($graduate->name);
+                ->assertSee($graduate->studentRecordName());
             $this->actingAs($manager)->get("/{$prefix}/serial-numbers/{$release->id}/source-file")
                 ->assertOk();
 
@@ -133,6 +138,40 @@ class SerialNumberVerificationTest extends TestCase
         $otherCoordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active', 'nstp_component_id' => $otherComponent->id]);
         $this->actingAs($otherCoordinator)->get('/coordinator/serial-numbers/'.$release->id)->assertForbidden();
         $this->actingAs($otherCoordinator)->get('/coordinator/serial-numbers/'.$release->id.'/source-file')->assertForbidden();
+    }
+
+    public function test_year_registry_lists_students_and_their_serial_verification_status(): void
+    {
+        Storage::fake('local');
+        [$coordinator, $facilitator, $section, $graduate] = $this->programData();
+        $enrollment = $this->enroll($graduate, $section);
+        $this->grade($graduate, $section, $facilitator, 90);
+        $release = $this->release($coordinator, $section);
+
+        $this->actingAs($coordinator)->get('/coordinator/serial-numbers?academic_year=2026-2027')
+            ->assertOk()
+            ->assertSee('Serial numbers by academic year')
+            ->assertSee('2026-2027 serial-number status')
+            ->assertSee($graduate->studentRecordName())
+            ->assertSee('Missing serial')
+            ->assertSee('Encode →');
+
+        NstpStudentSerialNumber::create([
+            'release_id' => $release->id,
+            'enrollment_id' => $enrollment->id,
+            'student_id' => $graduate->id,
+            'serial_number' => 'NSTP-03-2026-00421',
+            'encoded_by' => $coordinator->id,
+        ]);
+
+        $this->actingAs($coordinator)->get('/coordinator/serial-numbers?academic_year=2026-2027&student_status=encoded')
+            ->assertOk()
+            ->assertSee('NSTP-03-2026-00421')
+            ->assertSee('Has serial')
+            ->assertSee('Review →');
+        $this->actingAs($coordinator)->get('/coordinator/serial-numbers?academic_year=2025-2026')
+            ->assertOk()
+            ->assertDontSee($graduate->studentRecordName());
     }
 
     private function programData(): array

@@ -8,9 +8,11 @@ use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\NstpSerialNumberRelease;
 use App\Models\NstpStudentSerialNumber;
+use App\Models\SystemSetting;
 use App\Services\GradeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
@@ -29,11 +31,44 @@ class SerialNumberController extends Controller
         $selectedComponentId = $isProgramAdministrator
             ? $request->integer('component_id')
             : (int) ($request->user()->nstp_component_id ?? 0);
+        $selectedAcademicYear = $request->string('academic_year')->toString()
+            ?: SystemSetting::studentRegistrationAcademicYear();
 
         $releases = NstpSerialNumberRelease::with(['component', 'uploader'])
             ->withCount('serialNumbers')
             ->when($selectedComponentId > 0, fn ($query) => $query->where('component_id', $selectedComponentId))
+            ->where('academic_year', $selectedAcademicYear)
             ->latest('received_at')->latest('id')->paginate($this->perPage())->withQueryString();
+        $yearReleases = NstpSerialNumberRelease::with(['component', 'serialNumbers'])
+            ->when($selectedComponentId > 0, fn ($query) => $query->where('component_id', $selectedComponentId))
+            ->where('academic_year', $selectedAcademicYear)
+            ->latest('received_at')->latest('id')->get();
+        $coveredEnrollments = $yearReleases->flatMap(function (NstpSerialNumberRelease $release): Collection {
+            return $this->qualifiedGraduates($release)->map(fn (NstpEnrollment $enrollment): array => [
+                'release' => $release,
+                'enrollment' => $enrollment,
+            ]);
+        })->unique(fn (array $row): int => $row['enrollment']->id)->values();
+        $serialRecords = NstpStudentSerialNumber::query()
+            ->with(['release', 'encoder'])
+            ->whereIn('enrollment_id', $coveredEnrollments->pluck('enrollment.id'))
+            ->get()->keyBy('enrollment_id');
+        $studentStatus = $request->string('student_status')->toString();
+        $search = trim($request->string('search')->toString());
+        $studentRows = $coveredEnrollments
+            ->map(fn (array $row): array => $row + ['serial' => $serialRecords->get($row['enrollment']->id)])
+            ->when($studentStatus === 'encoded', fn (Collection $rows) => $rows->filter(fn (array $row): bool => $row['serial'] !== null))
+            ->when($studentStatus === 'missing', fn (Collection $rows) => $rows->filter(fn (array $row): bool => $row['serial'] === null))
+            ->when($search !== '', fn (Collection $rows) => $rows->filter(function (array $row) use ($search): bool {
+                $student = $row['enrollment']->student;
+                $haystack = implode(' ', [$student->name, $student->studentRecordName(), $student->studentProfile?->student_number, $student->email, $row['serial']?->serial_number]);
+
+                return str_contains(mb_strtolower($haystack), mb_strtolower($search));
+            }))
+            ->sortBy(fn (array $row): string => $row['enrollment']->student->studentRecordName(), SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+        $allEligibleCount = $coveredEnrollments->count();
+        $encodedCount = $coveredEnrollments->filter(fn (array $row): bool => $serialRecords->has($row['enrollment']->id))->count();
 
         return view('coordinator.serial-numbers.index', [
             'releases' => $releases,
@@ -42,6 +77,17 @@ class SerialNumberController extends Controller
                 ? $components->firstWhere('id', $selectedComponentId)
                 : $request->user()->nstpComponent,
             'selectedComponentId' => $selectedComponentId,
+            'selectedAcademicYear' => $selectedAcademicYear,
+            'academicYears' => NstpSerialNumberRelease::query()->distinct()->orderByDesc('academic_year')->pluck('academic_year')
+                ->push(SystemSetting::studentRegistrationAcademicYear())->unique()->sortDesc()->values(),
+            'studentStatus' => $studentStatus,
+            'search' => $search,
+            'studentRows' => $this->paginateCollection($studentRows, $request, 'students_page'),
+            'serialMetrics' => [
+                'eligible' => $allEligibleCount,
+                'encoded' => $encodedCount,
+                'missing' => max(0, $allEligibleCount - $encodedCount),
+            ],
             'isProgramAdministrator' => $isProgramAdministrator,
             'semesters' => NstpSection::SEMESTERS,
             ...$this->viewContext($request),
@@ -97,15 +143,38 @@ class SerialNumberController extends Controller
 
     public function show(Request $request, NstpSerialNumberRelease $serialNumberRelease): View
     {
+        return $this->encode($request, $serialNumberRelease);
+    }
+
+    public function encode(Request $request, NstpSerialNumberRelease $serialNumberRelease): View
+    {
         $this->authorizeRelease($request, $serialNumberRelease);
         $serialNumberRelease->load(['component', 'uploader', 'serialNumbers.student']);
-        $graduates = $this->qualifiedGraduates($serialNumberRelease);
-        $encoded = $serialNumberRelease->serialNumbers->keyBy('enrollment_id');
+        $allGraduates = $this->qualifiedGraduates($serialNumberRelease);
+        $encoded = NstpStudentSerialNumber::query()
+            ->whereIn('enrollment_id', $allGraduates->pluck('id'))
+            ->get()->keyBy('enrollment_id');
+        $status = $request->string('status')->toString();
+        $search = trim($request->string('search')->toString());
+        $graduates = $allGraduates
+            ->when($status === 'encoded', fn (Collection $rows) => $rows->filter(fn (NstpEnrollment $enrollment): bool => $encoded->has($enrollment->id)))
+            ->when($status === 'missing', fn (Collection $rows) => $rows->reject(fn (NstpEnrollment $enrollment): bool => $encoded->has($enrollment->id)))
+            ->when($search !== '', fn (Collection $rows) => $rows->filter(function (NstpEnrollment $enrollment) use ($search, $encoded): bool {
+                $student = $enrollment->student;
+                $haystack = implode(' ', [$student->name, $student->studentRecordName(), $student->studentProfile?->student_number, $student->email, $encoded->get($enrollment->id)?->serial_number]);
+
+                return str_contains(mb_strtolower($haystack), mb_strtolower($search));
+            }))
+            ->values();
 
         return view('coordinator.serial-numbers.show', [
             'serialNumberRelease' => $serialNumberRelease,
-            'graduates' => $graduates,
+            'graduates' => $this->paginateCollection($graduates, $request),
             'encoded' => $encoded,
+            'encodedCount' => $encoded->count(),
+            'graduateCount' => $allGraduates->count(),
+            'selectedStatus' => $status,
+            'search' => $search,
             ...$this->viewContext($request),
         ]);
     }
@@ -199,8 +268,22 @@ class SerialNumberController extends Controller
             ->whereNotNull('section_id')
             ->get()
             ->filter(fn (NstpEnrollment $enrollment) => $this->isQualifiedGraduate($enrollment))
-            ->sortBy(fn (NstpEnrollment $enrollment) => $enrollment->student->name, SORT_NATURAL | SORT_FLAG_CASE)
+            ->sortBy(fn (NstpEnrollment $enrollment) => $enrollment->student->studentRecordName(), SORT_NATURAL | SORT_FLAG_CASE)
             ->values();
+    }
+
+    private function paginateCollection(Collection $items, Request $request, string $pageName = 'page'): LengthAwarePaginator
+    {
+        $page = LengthAwarePaginator::resolveCurrentPage($pageName);
+        $perPage = $this->perPage(20);
+
+        return new LengthAwarePaginator(
+            $items->forPage($page, $perPage)->values(),
+            $items->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query(), 'pageName' => $pageName],
+        );
     }
 
     private function enrollmentBelongsToRelease(NstpEnrollment $enrollment, NstpSerialNumberRelease $release): bool

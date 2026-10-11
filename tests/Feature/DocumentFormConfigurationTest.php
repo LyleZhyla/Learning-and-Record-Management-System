@@ -68,7 +68,7 @@ class DocumentFormConfigurationTest extends TestCase
         Storage::disk('local')->assertExists($submission->file_path);
     }
 
-    public function test_student_upload_validation_and_admin_review_flow_are_enforced(): void
+    public function test_student_upload_validation_is_enforced_and_document_reviews_are_handled_in_assessments(): void
     {
         Storage::fake('local');
         [$student] = $this->enrolledStudent();
@@ -84,25 +84,22 @@ class DocumentFormConfigurationTest extends TestCase
         $submission = DocumentSubmission::firstOrFail();
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
 
-        $this->actingAs($admin)->get('/nstp-admin/document-reviews')
+        $this->actingAs($admin)->get('/nstp-admin/document-forms')
             ->assertOk()
-            ->assertSee('Certificate of Registration')
-            ->assertSee($student->name);
+            ->assertSee(route('nstp_admin.assessments.index'), false)
+            ->assertDontSee('Document Reviews');
 
-        $this->actingAs($admin)->patch('/nstp-admin/document-reviews/'.$submission->id, [
-            'status' => 'needs_correction',
-            'review_notes' => '',
-        ])->assertSessionHasErrors('review_notes');
+        $this->actingAs($admin)->get('/nstp-admin/document-reviews')->assertNotFound();
 
         $this->actingAs($admin)->patch('/nstp-admin/document-reviews/'.$submission->id, [
             'status' => 'verified',
             'review_notes' => 'Complete and readable.',
-        ])->assertRedirect()->assertSessionHasNoErrors();
+        ])->assertNotFound();
 
-        $this->assertSame('verified', $submission->fresh()->status);
+        $this->assertSame('pending', $submission->fresh()->status);
         $this->actingAs($student)->post('/student/documents/'.$form->id, [
             'file' => UploadedFile::fake()->create('replacement.pdf', 100, 'application/pdf'),
-        ])->assertStatus(422);
+        ])->assertRedirect()->assertSessionHasNoErrors();
     }
 
     public function test_students_cannot_download_another_students_submission(): void
