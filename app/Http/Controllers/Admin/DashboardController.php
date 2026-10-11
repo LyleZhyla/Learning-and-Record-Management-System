@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\AttendanceRecord;
-use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
@@ -16,48 +15,27 @@ class DashboardController extends Controller
     public function __invoke(): View
     {
         [$academicYear, $semester] = $this->currentTerm();
-        $components = NstpComponent::query()->orderBy('code')->get();
-        $selectionQuery = NstpEnrollment::query()
-            ->whereIn('status', ['enrolled', 'pending_approval'])
-            ->where('academic_year', $academicYear)
-            ->where('semester', $semester);
-        $enrolleeCounts = (clone $selectionQuery)
-            ->selectRaw('component_id, COUNT(DISTINCT student_id) as total')
-            ->groupBy('component_id')
-            ->pluck('total', 'component_id');
-        $rotc = $components->firstWhere('code', 'ROTC');
-        $rotcCategoryCounts = $rotc
-            ? (clone $selectionQuery)->where('component_id', $rotc->id)
-                ->whereNotNull('rotc_category')
-                ->selectRaw('rotc_category, COUNT(DISTINCT student_id) as total')
-                ->groupBy('rotc_category')
-                ->pluck('total', 'rotc_category')
-            : collect();
+        $accountCounts = User::query()
+            ->selectRaw('role, status, COUNT(*) as total')
+            ->groupBy('role', 'status')
+            ->get()
+            ->groupBy('role');
+        $accountAccessOverview = collect(User::ROLE_LABELS)->map(function (string $label, string $role) use ($accountCounts): array {
+            $counts = $accountCounts->get($role, collect())->pluck('total', 'status');
+            $active = (int) ($counts['active'] ?? 0);
+            $inactive = (int) ($counts['inactive'] ?? 0);
+            $total = $active + $inactive;
 
-        $componentEnrollments = $components->flatMap(function (NstpComponent $component) use ($enrolleeCounts, $rotcCategoryCounts) {
-            if ($component->code !== 'ROTC') {
-                return [[
-                    'code' => $component->code,
-                    'name' => $component->name,
-                    'count' => (int) ($enrolleeCounts[$component->id] ?? 0),
-                ]];
-            }
-
-            $categoryRows = collect(NstpEnrollment::ROTC_CATEGORIES)->keys()->map(fn (string $category) => [
-                'code' => $category,
-                'name' => 'ROTC category',
-                'count' => (int) ($rotcCategoryCounts[$category] ?? 0),
-            ]);
-            $unspecifiedCount = max(0, (int) ($enrolleeCounts[$component->id] ?? 0) - (int) $rotcCategoryCounts->sum());
-
-            return $unspecifiedCount > 0
-                ? $categoryRows->push(['code' => 'ROTC-Unset', 'name' => 'ROTC category not set', 'count' => $unspecifiedCount])
-                : $categoryRows;
+            return [
+                'role' => $role,
+                'label' => $label,
+                'active' => $active,
+                'inactive' => $inactive,
+                'total' => $total,
+                'active_percentage' => $total > 0 ? ($active / $total) * 100 : 0,
+                'inactive_percentage' => $total > 0 ? ($inactive / $total) * 100 : 0,
+            ];
         })->values();
-        $largestComponentCount = max(1, (int) $componentEnrollments->max('count'));
-        $componentEnrollments = $componentEnrollments->map(fn (array $component): array => $component + [
-            'percentage' => $component['count'] > 0 ? max(10, ($component['count'] / $largestComponentCount) * 100) : 0,
-        ]);
         $attendanceTrend = AttendanceRecord::query()
             ->select(['id', 'attendance_session_id', 'status'])
             ->with('attendanceSession:id,section_id,starts_at')
@@ -93,8 +71,9 @@ class DashboardController extends Controller
                     ->where('academic_year', $academicYear)
                     ->where('semester', $semester))
                 ->count(),
-            'componentEnrollments' => $componentEnrollments,
-            'componentEnrollmentTotal' => (int) $componentEnrollments->sum('count'),
+            'accountAccessOverview' => $accountAccessOverview,
+            'activeAccountCount' => (int) $accountAccessOverview->sum('active'),
+            'inactiveAccountCount' => (int) $accountAccessOverview->sum('inactive'),
             'attendanceChart' => $this->attendanceChart($attendanceTrend),
             'academicTerm' => (NstpSection::SEMESTERS[$semester] ?? str($semester)->headline()).' '.$academicYear,
         ]);

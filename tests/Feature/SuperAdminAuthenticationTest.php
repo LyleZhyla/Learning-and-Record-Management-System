@@ -98,42 +98,26 @@ class SuperAdminAuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
-    public function test_super_admin_dashboard_shows_enrollees_per_component_graph(): void
+    public function test_super_admin_dashboard_shows_account_access_overview_by_role(): void
     {
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
-        $cwts = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'is_active' => true]);
-        $lts = NstpComponent::create(['code' => 'LTS', 'name' => 'Literacy Training Service', 'is_active' => true]);
-        $rotc = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'is_active' => true]);
-        $students = User::factory()->count(3)->create(['role' => 'student', 'status' => 'active']);
-        $rotcStudents = User::factory()->count(4)->create(['role' => 'student', 'status' => 'active']);
-
-        NstpEnrollment::create(['student_id' => $students[0]->id, 'component_id' => $cwts->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
-        NstpEnrollment::create(['student_id' => $students[0]->id, 'component_id' => $cwts->id, 'academic_year' => '2026-2027', 'semester' => 'second', 'status' => 'enrolled']);
-        NstpEnrollment::create(['student_id' => $students[1]->id, 'component_id' => $cwts->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
-        NstpEnrollment::create(['student_id' => $students[2]->id, 'component_id' => $lts->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'status' => 'enrolled']);
-        NstpEnrollment::create(['student_id' => $rotcStudents[0]->id, 'component_id' => $rotc->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-1', 'status' => 'enrolled']);
-        NstpEnrollment::create(['student_id' => $rotcStudents[1]->id, 'component_id' => $rotc->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-31', 'status' => 'pending_approval']);
-        NstpEnrollment::create(['student_id' => $rotcStudents[2]->id, 'component_id' => $rotc->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-31', 'status' => 'enrolled']);
-        NstpEnrollment::create(['student_id' => $rotcStudents[3]->id, 'component_id' => $rotc->id, 'academic_year' => '2026-2027', 'semester' => 'first', 'rotc_category' => 'MS-41', 'status' => 'pending_approval']);
+        User::factory()->count(2)->create(['role' => 'student', 'status' => 'active']);
+        User::factory()->create(['role' => 'student', 'status' => 'inactive']);
+        User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        User::factory()->count(2)->create(['role' => 'coordinator', 'status' => 'inactive']);
 
         $this->actingAs($superAdmin)->get('/admin/dashboard')
             ->assertOk()
-            ->assertSee('Enrollees per component and ROTC category')
+            ->assertSee('Account access overview')
             ->assertSee('Daily attendance rate')
-            ->assertSee('data-chart-orientation="vertical"', false)
-            ->assertSee('aria-label="CWTS: 2 enrollees"', false)
-            ->assertSee('aria-label="LTS: 1 enrollees"', false)
-            ->assertSee('aria-label="MS-1: 1 enrollees"', false)
-            ->assertSee('aria-label="MS-31: 2 enrollees"', false)
-            ->assertSee('aria-label="MS-41: 1 enrollees"', false)
-            ->assertDontSee('Current session')
-            ->assertDontSee('Account overview')
-            ->assertDontSee('Development roadmap')
-            ->assertViewHas('componentEnrollments', fn ($components) => $components->firstWhere('code', 'CWTS')['count'] === 2
-                && $components->firstWhere('code', 'LTS')['count'] === 1
-                && $components->firstWhere('code', 'MS-1')['count'] === 1
-                && $components->firstWhere('code', 'MS-31')['count'] === 2
-                && $components->firstWhere('code', 'MS-41')['count'] === 1
+            ->assertSee('aria-label="Student: 2 active, 1 inactive"', false)
+            ->assertSee('aria-label="Facilitator: 1 active, 0 inactive"', false)
+            ->assertSee('aria-label="Coordinator: 0 active, 2 inactive"', false)
+            ->assertDontSee('Enrollees per component and ROTC category')
+            ->assertViewHas('accountAccessOverview', fn ($accounts) => $accounts->firstWhere('role', 'student')['active'] === 2
+                && $accounts->firstWhere('role', 'student')['inactive'] === 1
+                && $accounts->firstWhere('role', 'facilitator')['active'] === 1
+                && $accounts->firstWhere('role', 'coordinator')['inactive'] === 2
             );
     }
 
@@ -178,7 +162,7 @@ class SuperAdminAuthenticationTest extends TestCase
 
         $this->actingAs($superAdmin)->get('/admin/dashboard')
             ->assertOk()
-            ->assertSee('Attendance and enrollment overview')
+            ->assertSee('Platform activity and access overview')
             ->assertSee('Attendance rate line graph')
             ->assertSee(now()->subDay()->format('M j'))
             ->assertSee('100.0%')

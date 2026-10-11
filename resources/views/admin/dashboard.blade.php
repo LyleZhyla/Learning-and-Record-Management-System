@@ -41,9 +41,9 @@
 
     <section class="report-analytics-section dashboard-analytics" aria-labelledby="dashboard-analytics-title">
         <div class="report-analytics-heading">
-            <div><span class="eyebrow">Current-term analytics</span><h3 id="dashboard-analytics-title">Attendance and enrollment overview</h3><p>{{ $academicTerm }} institution-wide activity.</p></div>
+            <div><span class="eyebrow">System operations</span><h3 id="dashboard-analytics-title">Platform activity and access overview</h3><p>Institution-wide monitoring for {{ $academicTerm }}.</p></div>
         </div>
-        <div class="report-analytics-grid">
+        <div class="report-analytics-grid report-analytics-grid-single">
             <article class="card report-chart-card">
                 <div class="report-chart-heading">
                     <div><span class="eyebrow">Attendance trend</span><h4>Daily attendance rate</h4><p>Present and late records across the latest 12 attendance dates.</p></div>
@@ -71,22 +71,26 @@
                 @endif
             </article>
 
-            <article class="card report-chart-card enrollee-chart-card">
+            <article class="card report-chart-card account-access-card">
                 <div class="report-chart-heading">
-                    <div><span class="eyebrow">Enrollment overview</span><h4>Enrollees per component and ROTC category</h4><p>Current-term enrolled students and pending ROTC approvals.</p></div>
-                    <span class="report-chart-total green"><strong>{{ number_format($componentEnrollmentTotal) }}</strong><small>Total selections</small></span>
+                    <div><span class="eyebrow">Access governance</span><h4>Account access overview</h4><p>Active and inactive platform accounts grouped by system role.</p></div>
+                    <span class="report-chart-total green"><strong>{{ number_format($activeAccountCount) }}</strong><small>Active accounts</small></span>
                 </div>
-                <div class="enrollee-chart" role="list" aria-label="Vertical bar graph of students per NSTP component and ROTC category" data-chart-orientation="vertical" style="--chart-columns: {{ max(1, $componentEnrollments->count()) }}">
-                    @forelse ($componentEnrollments as $component)
-                        <article class="enrollee-column" role="listitem" aria-label="{{ $component['code'] }}: {{ number_format($component['count']) }} enrollees">
-                            <div class="enrollee-column-track" aria-hidden="true">
-                                <span class="component-{{ strtolower($component['code']) }}" style="height: {{ $component['percentage'] }}%"><b>{{ number_format($component['count']) }}</b></span>
+                <div class="account-access-summary" aria-label="{{ number_format($activeAccountCount) }} active and {{ number_format($inactiveAccountCount) }} inactive accounts">
+                    <span><i class="active" aria-hidden="true"></i>Active <strong>{{ number_format($activeAccountCount) }}</strong></span>
+                    <span><i class="inactive" aria-hidden="true"></i>Inactive <strong>{{ number_format($inactiveAccountCount) }}</strong></span>
+                </div>
+                <div class="account-access-chart" role="list" aria-label="Account access status by system role">
+                    @foreach ($accountAccessOverview as $accountRole)
+                        <article class="account-access-row" role="listitem" aria-label="{{ $accountRole['label'] }}: {{ $accountRole['active'] }} active, {{ $accountRole['inactive'] }} inactive">
+                            <div class="account-access-role"><strong>{{ $accountRole['label'] }}</strong><small>{{ number_format($accountRole['total']) }} total</small></div>
+                            <div class="account-access-track" aria-hidden="true">
+                                @if ($accountRole['active'] > 0)<span class="active" style="width: {{ $accountRole['active_percentage'] }}%"></span>@endif
+                                @if ($accountRole['inactive'] > 0)<span class="inactive" style="width: {{ $accountRole['inactive_percentage'] }}%"></span>@endif
                             </div>
-                            <div class="enrollee-column-label"><strong>{{ $component['code'] }}</strong><small>{{ $component['name'] }}</small></div>
+                            <div class="account-access-counts"><strong>{{ number_format($accountRole['active']) }}</strong><span>/</span><strong>{{ number_format($accountRole['inactive']) }}</strong></div>
                         </article>
-                    @empty
-                        <div class="empty-state"><strong>No NSTP components available</strong><span>Component enrollment data will appear here once configured.</span></div>
-                    @endforelse
+                    @endforeach
                 </div>
             </article>
         </div>
