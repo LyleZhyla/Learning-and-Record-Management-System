@@ -90,7 +90,7 @@ class SystemSettingTest extends TestCase
 
         $this->actingAs($superAdmin)->get('/admin/dashboard')
             ->assertOk()
-            ->assertSee('class="system-brand-name">SNAPIE</strong>', false)
+            ->assertSee('images/snapie-landscape-dark.png', false)
             ->assertSee('SSU NSTP')
             ->assertSee('Sample State University');
     }

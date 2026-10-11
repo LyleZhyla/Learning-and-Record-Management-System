@@ -15,8 +15,8 @@ class ThemeModeTest extends TestCase
         $this->get('/login')
             ->assertOk()
             ->assertSee('data-theme-toggle', false)
-            ->assertSee('images/snapie-logo-160.png', false)
-            ->assertSee('class="system-brand-name">SNAPIE</strong>', false)
+            ->assertSee('images/snapie-landscape-light.png', false)
+            ->assertSee('images/snapie-landscape-dark.png', false)
             ->assertSee('snapie.theme', false)
             ->assertSee('js/theme.js', false);
 
@@ -32,8 +32,8 @@ class ThemeModeTest extends TestCase
             $this->actingAs($user)->get($url)
                 ->assertOk()
                 ->assertSee('data-theme-toggle', false)
-                ->assertSee('images/snapie-logo-160.png', false)
-                ->assertSee('class="system-brand-name">SNAPIE</strong>', false)
+                ->assertSee('images/snapie-landscape-light.png', false)
+                ->assertSee('images/snapie-landscape-dark.png', false)
                 ->assertSee('snapie.theme', false)
                 ->assertSee('js/theme.js', false);
         }
