@@ -31,6 +31,7 @@
 
 <section class="card user-table-card engagement-table-card">
     <div class="card-heading"><div><h3>{{ $isStudent ? 'Signal breakdown' : 'Student engagement details' }}</h3><p>The total is normalized using only signals with available activities or requirements.</p></div><span class="pill">{{ $metrics['total'] }} record{{ $metrics['total'] === 1 ? '' : 's' }}</span></div>
+    @include('pagination.top-page-size', ['paginator' => $rows, 'title' => 'Students per page'])
     <div class="table-wrap"><table class="data-table engagement-table">
         <thead><tr><th>Student</th><th>Score</th><th>Attendance</th><th>Login</th><th>Materials</th><th>Participation</th><th>Submissions</th><th>Band</th></tr></thead>
         <tbody>

@@ -8,6 +8,7 @@
 </section>
 
 <section class="card user-table-card">
+    @include('pagination.top-page-size', ['paginator' => $pendingRequests, 'title' => 'Requests per page'])
     <div class="table-wrap"><table class="data-table">
         <thead><tr><th>Student</th><th>Requested category</th><th>Shirt size</th><th>Term</th><th>MS-1 proof</th><th class="align-right">Approval</th></tr></thead>
         <tbody>

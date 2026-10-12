@@ -33,6 +33,7 @@
         <label class="field-group serial-search-field"><span>Search student or serial number</span><input name="search" value="{{ $search }}" placeholder="Name, student number, email, or serial"></label>
         <div class="report-filter-actions"><button class="filter-button" type="submit">Apply filters</button><a class="clear-filter" href="{{ route($routePrefix.'.serial-numbers.index', ['academic_year' => $selectedAcademicYear]) }}">Clear</a></div>
     </form>
+    @include('pagination.top-page-size', ['paginator' => $studentRows, 'title' => 'Students per page'])
     <div class="table-wrap"><table class="data-table serial-registry-table"><thead><tr><th>#</th><th>Student</th><th>Component</th><th>Section / Term</th><th>Serial number</th><th>Verification</th><th></th></tr></thead><tbody>
         @forelse($studentRows as $row)
             @php($enrollment = $row['enrollment']) @php($record = $row['serial']) @php($release = $row['release'])
@@ -70,6 +71,7 @@
 
     <section class="card user-table-card serial-batches-card">
         <div class="card-heading"><div><span class="eyebrow">{{ $selectedAcademicYear }} source files</span><h3>Official release batches</h3><p>Each batch opens a dedicated student encoding page.</p></div><span class="pill">{{ $releases->total() }} batch{{ $releases->total() === 1 ? '' : 'es' }}</span></div>
+        @include('pagination.top-page-size', ['paginator' => $releases, 'title' => 'Release batches per page'])
         <div class="table-wrap"><table class="data-table"><thead><tr>@if($isProgramAdministrator)<th>Component</th>@endif<th>Semester</th><th>Received</th><th>Source file</th><th>Encoded</th><th></th></tr></thead><tbody>
             @forelse($releases as $release)
                 <tr>@if($isProgramAdministrator)<td><strong>{{ $release->component?->code }}</strong></td>@endif<td>{{ $semesters[$release->semester] ?? str($release->semester)->headline() }}</td><td>{{ $release->received_at->format('M d, Y') }}</td><td title="{{ $release->source_file_original_name }}">{{ Str::limit($release->source_file_original_name, 24) }}</td><td>{{ $release->serial_numbers_count }}</td><td><a class="table-action" href="{{ route($routePrefix.'.serial-numbers.encode', $release) }}">Encode list →</a></td></tr>

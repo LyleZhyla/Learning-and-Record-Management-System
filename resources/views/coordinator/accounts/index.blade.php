@@ -11,6 +11,7 @@
 
 <section class="card user-table-card">
     <form class="filter-bar" method="GET"><label class="search-field"><span>⌕</span><input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Search name or email"></label><select name="role"><option value="">Facilitators and students</option><option value="facilitator" @selected(($filters['role'] ?? '')==='facilitator')>Facilitator</option><option value="student" @selected(($filters['role'] ?? '')==='student')>Student</option></select><button class="filter-button">Apply filters</button>@if(request()->hasAny(['search','role']))<a class="clear-filter" href="{{ route('coordinator.accounts.index') }}">Clear</a>@endif</form>
+    @include('pagination.top-page-size', ['paginator' => $accounts, 'title' => 'Accounts per page'])
     <div class="table-wrap"><table class="data-table"><thead><tr><th>Name and email</th><th>Account type</th><th>Assignment</th><th class="align-right">Details</th></tr></thead><tbody>
     @forelse($accounts as $account)
         @php $assignments = $account->isFacilitator() ? $account->facilitatedSections : $account->nstpEnrollments; @endphp

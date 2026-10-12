@@ -34,7 +34,7 @@
         <select name="component" aria-label="Filter by NSTP component"><option value="">All components</option>@foreach($filterComponents as $component)<option value="{{ $component->id }}" @selected(($filters['component'] ?? '') === (string) $component->id)>{{ $component->code }} — {{ $component->name }}</option>@endforeach<option value="unassigned" @selected(($filters['component'] ?? '') === 'unassigned')>Without component</option></select>
         <button class="filter-button" type="submit">Apply filters</button>
         @if(request()->hasAny(['search', 'status', 'component']))<a class="clear-filter" href="{{ route($routePrefix.'.students.index') }}">Clear</a>@endif
-        @if($routePrefix === 'nstp_admin')<div class="account-list-page-size">@include('pagination.page-size', ['paginator' => $students])</div>@endif
+        <div class="account-list-page-size">@include('pagination.page-size', ['paginator' => $students])</div>
     </form>
 
     <form method="POST" action="{{ route($routePrefix.'.students.email-access') }}" id="bulk-student-form" data-bulk-student-form>
@@ -65,7 +65,7 @@
     </table></div>
 
     </form>
-    @if($students->total() > 0)<div class="pagination-row"><span>Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }}</span>{{ $routePrefix === 'nstp_admin' ? $students->links('pagination.compact', ['showPageSize' => false]) : $students->links() }}</div>@endif
+    @if($students->total() > 0)<div class="pagination-row"><span>Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }}</span>{{ $students->links('pagination.compact', ['showPageSize' => false]) }}</div>@endif
 </section>
 
 <dialog class="student-qr-dialog" data-student-qr-dialog>

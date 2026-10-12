@@ -74,6 +74,7 @@
             <span class="pill" data-attendance-record-count="{{ $attendance->records_count }}">{{ $attendance->records_count }} recorded</span>
         </div>
         @php($recordColumnCount = 4 + ($canScan ? 0 : 1) + ($canManage ? 1 : 0))
+        @include('pagination.top-page-size', ['paginator' => $enrolledStudents, 'title' => 'Students per page'])
         <div class="table-wrap">
             <table class="data-table">
                 <thead><tr><th>Student</th><th>Status</th><th>Time In</th><th>Time Out</th>@unless($canScan)<th>Source</th>@endunless @if($canManage)<th>Manual update</th>@endif</tr></thead>

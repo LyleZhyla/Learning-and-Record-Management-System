@@ -11,6 +11,7 @@
     </div>
 </div>
 
+@include('pagination.top-page-size', ['paginator' => $assessments, 'title' => 'Assessments per page'])
 <section class="classroom-stream" aria-label="Published assessments">
     @forelse ($assessments as $assessment)
         @php

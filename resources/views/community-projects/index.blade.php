@@ -18,6 +18,7 @@
             <label class="field-group"><span>Implementation</span><select name="implementation_status"><option value="">All implementation statuses</option>@foreach($implementationStatuses as $value => $label)<option value="{{ $value }}" @selected(($filters['implementation_status'] ?? '') === $value)>{{ $label }}</option>@endforeach</select></label>
             <div class="report-filter-actions"><button class="filter-button" type="submit">Apply filters</button><a class="clear-filter" href="{{ route($routePrefix.'.community-projects.index') }}">Clear</a></div>
         </form>
+        @include('pagination.top-page-size', ['paginator' => $projects, 'title' => 'Projects per page'])
         <div class="table-wrap"><table class="data-table"><thead><tr><th>Project</th><th>Scope</th><th>Beneficiaries</th><th>Budget</th><th>Approval</th><th>Implementation</th><th>Activities</th><th></th></tr></thead><tbody>
             @forelse($projects as $project)
                 <tr>

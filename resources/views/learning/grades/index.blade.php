@@ -94,6 +94,7 @@
 
 <section class="card gradebook-card">
     <div class="gradebook-toolbar"><div><h3>{{ $section->code }} class record</h3><p>Click a score cell, type the raw score, then press Enter or click outside to save.</p></div><span id="grade-save-status" class="autosave-status">Ready</span></div>
+    @include('pagination.top-page-size', ['paginator' => $summaries, 'title' => 'Students per page'])
     <div class="gradebook-scroll">
         <table class="gradebook-table">
             <thead>

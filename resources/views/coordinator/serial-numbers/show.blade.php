@@ -27,6 +27,7 @@
         <label class="field-group serial-search-field"><span>Search student or serial number</span><input name="search" value="{{ $search }}" placeholder="Name, student number, email, or serial"></label>
         <div class="report-filter-actions"><button class="filter-button" type="submit">Apply filters</button><a class="clear-filter" href="{{ route($routePrefix.'.serial-numbers.encode', $serialNumberRelease) }}">Clear</a></div>
     </form>
+    @include('pagination.top-page-size', ['paginator' => $graduates, 'title' => 'Students per page'])
     <div class="table-wrap"><table class="data-table serial-encoding-table"><thead><tr><th>#</th><th>Qualified student</th><th>Section</th><th>Verification</th><th>CHED serial number</th><th>Action</th></tr></thead><tbody>
         @forelse($graduates as $enrollment)
             @php($record = $encoded->get($enrollment->id))

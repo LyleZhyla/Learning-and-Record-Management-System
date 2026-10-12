@@ -8,6 +8,16 @@
     <div><small>Status</small><strong>{{ $user->statusLabel() }}</strong></div><div><small>Registered</small><strong>{{ $user->created_at?->format('M d, Y') }}</strong></div>
 </section>
 
+<div class="record-page-size-grid">
+    @if($user->isFacilitator())
+        @include('pagination.top-page-size', ['paginator' => $handledSections, 'title' => 'Handled sections'])
+    @else
+        @include('pagination.top-page-size', ['paginator' => $enrollments, 'title' => 'Enrollment records'])
+    @endif
+    @include('pagination.top-page-size', ['paginator' => $attendanceRecords, 'title' => 'Attendance records'])
+    @include('pagination.top-page-size', ['paginator' => $submissions, 'title' => 'Assessment records'])
+</div>
+
 @if($user->isFacilitator())
 <section class="card user-table-card student-data-section"><div class="sectioning-toolbar"><div><span class="eyebrow">Assigned component only</span><h3>Handled sections</h3></div></div><div class="table-wrap"><table class="data-table"><thead><tr><th>Component</th><th>Section</th><th>Academic year</th><th>Semester</th><th>Status</th></tr></thead><tbody>@forelse($user->facilitatedSections as $section)<tr><td>{{ $section->component?->code ?? '—' }}</td><td>{{ $section->code }}</td><td>{{ $section->academic_year }}</td><td>{{ $section->semesterLabel() }}</td><td>{{ ucfirst($section->status) }}</td></tr>@empty<tr><td colspan="5" class="muted-cell">No section in your assigned component.</td></tr>@endforelse</tbody></table></div></section>
 @else

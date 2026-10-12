@@ -1,5 +1,5 @@
 <nav class="pagination-controls" role="navigation" aria-label="Pagination navigation">
-    @if($showPageSize ?? true)
+    @if($showPageSize ?? false)
         <div class="pagination-size-row">@include('pagination.page-size', ['paginator' => $paginator])</div>
     @endif
 

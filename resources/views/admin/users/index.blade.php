@@ -53,6 +53,7 @@
             @endif
         </form>
 
+        @include('pagination.top-page-size', ['paginator' => $users, 'title' => 'Accounts per page'])
         <div class="table-wrap">
             <table class="data-table">
                 <thead><tr><th>User</th><th>Role</th><th>Contact / component</th><th>Status</th><th>Last sign in</th><th class="align-right">Action</th></tr></thead>

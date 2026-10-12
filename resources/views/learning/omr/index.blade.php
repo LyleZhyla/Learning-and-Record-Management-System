@@ -35,6 +35,7 @@
 
     <section class="card user-table-card omr-existing-card">
         <div class="sectioning-toolbar"><div><span class="eyebrow">Saved scanner setups</span><h3>Answer sheets</h3><p class="muted-cell">Open a setup to print sheets or scan student answers.</p></div></div>
+        @include('pagination.top-page-size', ['paginator' => $sheets, 'title' => 'Answer sheets per page'])
         <div class="table-wrap"><table class="data-table"><thead><tr><th>Assessment</th><th>Section</th><th>Format</th><th>Scanned</th><th></th></tr></thead><tbody>
             @forelse($sheets as $sheet)
                 <tr><td><strong>{{ $sheet->assessment->title }}</strong><br><small class="muted-cell">{{ number_format($sheet->assessment->max_score,2) }} points</small></td><td>{{ $sheet->assessment->section->code }} · {{ $sheet->assessment->section->component->code }}</td><td>{{ $sheet->item_count }} items · A–{{ chr(64 + $sheet->choice_count) }}<br><small class="muted-cell">{{ $sheet->hasCompleteAnswerKey() ? 'Answer key ready' : 'Answer key needed' }}</small></td><td>{{ $sheet->results_count }}</td><td><a class="table-action" href="{{ route($routePrefix.'.omr.show',$sheet) }}">{{ $sheet->hasCompleteAnswerKey() ? 'Open scanner' : 'Set answer key' }}</a></td></tr>

@@ -16,6 +16,7 @@
     </form>
 </section>
 <section class="card user-table-card">
+    @include('pagination.top-page-size', ['paginator' => $sessions, 'title' => 'Sessions per page'])
     <div class="table-wrap"><table class="data-table"><thead><tr><th>Session</th><th>Section</th><th>Schedule</th><th>Created by</th><th>Present</th><th>Late</th><th>Absent</th><th>Status</th><th></th></tr></thead><tbody>
         @forelse($sessions as $session)
             <tr><td><strong>{{ $session->title }}</strong></td><td>{{ $session->section->code }} · {{ $session->section->component->code }}</td><td>{{ $session->starts_at->format('M d, Y h:i A') }}<br><small class="muted-cell">to {{ $session->ends_at->format('h:i A') }}</small></td><td>{{ $session->creator->name }}</td><td>{{ $session->present_count }}</td><td>{{ $session->late_count }}</td><td>{{ $session->absent_count }}</td><td><span class="status-badge {{ $session->status==='open'?'active':'inactive' }}"><i></i>{{ ucfirst($session->status) }}</span></td><td><a class="table-action" href="{{ route('coordinator.attendance.show', $session) }}">{{ $session->status === 'open' ? 'Open scanner' : 'View records' }}</a></td></tr>
@@ -23,6 +24,6 @@
             <tr><td colspan="9"><div class="empty-state"><strong>No attendance sessions found</strong><span>Sessions created by facilitators will appear here.</span></div></td></tr>
         @endforelse
     </tbody></table></div>
-    <div class="pagination-row"><span>Showing {{ $sessions->count() }} of {{ $sessions->total() }}</span>{{ $sessions->links() }}</div>
+    <div class="pagination-row"><span>Showing {{ $sessions->count() }} of {{ $sessions->total() }}</span>{{ $sessions->links('pagination.compact', ['showPageSize' => false]) }}</div>
 </section>
 @endsection

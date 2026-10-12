@@ -36,6 +36,7 @@
         <form method="POST" action="{{ route('admin.database-backup.download') }}">@csrf<button class="secondary-outline-button">Download fresh SQL without archiving</button></form>
     </div>
     <div class="settings-impact-note"><span>!</span><p><strong>Restricted institutional data</strong>Archives can contain student profiles, attendance, grades, credentials, and account data. Keep downloaded files secure.</p></div>
+    @include('pagination.top-page-size', ['paginator' => $archives, 'title' => 'Archives per page'])
     <div class="table-wrap"><table class="data-table"><thead><tr><th>Archive</th><th>Created</th><th>Size</th><th>Format</th><th class="align-right">Actions</th></tr></thead><tbody>
         @forelse($archives as $archive)
             <tr>

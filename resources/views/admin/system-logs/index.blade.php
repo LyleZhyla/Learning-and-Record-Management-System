@@ -28,6 +28,7 @@
 </section>
 
 <section class="card user-table-card system-log-card">
+    @include('pagination.top-page-size', ['paginator' => $logs, 'title' => 'Log entries per page'])
     <div class="table-wrap"><table class="data-table system-log-table"><thead><tr><th>Date & time</th><th>User</th><th>Activity</th><th>Request</th><th>Result</th><th>IP / Device</th></tr></thead><tbody>
         @forelse($logs as $log)
             <tr>

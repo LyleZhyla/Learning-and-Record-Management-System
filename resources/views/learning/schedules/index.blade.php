@@ -69,6 +69,7 @@
 
 <section class="card user-table-card schedule-table-card">
     <div class="sectioning-toolbar"><div><span class="eyebrow">Editable results</span><h3>Section schedules</h3><p class="muted-cell">Manual changes must keep the required class hours and cannot overlap another section of the same facilitator.</p></div></div>
+    @include('pagination.top-page-size', ['paginator' => $sections, 'title' => 'Sections per page'])
     <div class="table-wrap"><table class="data-table schedule-table"><thead><tr><th>Section</th><th>Facilitator</th><th>Current schedule</th><th>Manual adjustment</th><th>Source</th></tr></thead><tbody>
         @forelse($sections as $section)
             @php($schedule = $section->schedule)

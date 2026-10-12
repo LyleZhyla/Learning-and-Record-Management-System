@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\File;
 use Tests\TestCase;
 
 class PaginationPageSizeTest extends TestCase
@@ -29,11 +30,13 @@ class PaginationPageSizeTest extends TestCase
 
         $tenItems->assertOk()
             ->assertSee('aria-label="Items per page"', false)
+            ->assertSeeInOrder(['aria-label="Items per page"', '<div class="table-wrap">'], false)
             ->assertSee('<option value="10" selected>10</option>', false)
             ->assertSee('Staff 09')
             ->assertSee('Staff 10')
             ->assertDontSee('Staff 11')
             ->assertSee('per_page=10', false);
+        $this->assertSame(1, substr_count($tenItems->getContent(), 'aria-label="Items per page"'));
 
         $twentyItems = $this->actingAs($admin)->get('/admin/users?role=facilitator&per_page=20');
 
@@ -88,5 +91,35 @@ class PaginationPageSizeTest extends TestCase
         $response->assertOk()
             ->assertSeeInOrder(['class="report-preview-page-size"', 'class="table-wrap"'], false);
         $this->assertSame(1, substr_count($response->getContent(), 'aria-label="Items per page"'));
+    }
+
+    public function test_every_paginated_view_declares_a_top_page_size_control(): void
+    {
+        $acceptedTopMarkers = [
+            'pagination.top-page-size',
+            'pagination.page-size',
+            'account-list-page-size',
+            'service-admin-page-size',
+            'report-preview-page-size',
+            'assessment-top-page-size',
+        ];
+
+        $missingTopControls = collect(File::allFiles(resource_path('views')))
+            ->filter(fn ($file) => $file->getExtension() === 'php')
+            ->mapWithKeys(fn ($file) => [$file->getRelativePathname() => File::get($file->getPathname())])
+            ->filter(fn (string $contents, string $path) => $path !== 'pagination'.DIRECTORY_SEPARATOR.'compact.blade.php'
+                && str_contains($contents, '->links('))
+            ->reject(fn (string $contents) => collect($acceptedTopMarkers)->contains(
+                fn (string $marker) => str_contains($contents, $marker)
+            ))
+            ->keys()
+            ->values();
+
+        $this->assertSame([], $missingTopControls->all(), 'Paginated views without a top page-size control: '.$missingTopControls->implode(', '));
+        $this->assertStringContainsString(
+            '@if($showPageSize ?? false)',
+            File::get(resource_path('views/pagination/compact.blade.php')),
+            'The shared bottom paginator must not render the page-size control by default.'
+        );
     }
 }

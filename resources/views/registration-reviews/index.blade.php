@@ -72,6 +72,7 @@
             @endif
         </form>
 
+        @include('pagination.top-page-size', ['paginator' => $registrations, 'title' => 'Registrations per page'])
         <div class="table-wrap">
             <table class="data-table registration-review-table">
                 <thead>

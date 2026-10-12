@@ -32,6 +32,7 @@
         <div><span class="eyebrow">Sections</span><strong>{{ $showAllComponents ? 'All component sections' : $selectedComponent->code.' sections' }}</strong><span>{{ $sections->total() }} total</span></div>
         <div class="sectioning-list-actions"><small>{{ $academicYear }} · {{ \App\Models\NstpSection::SEMESTERS[$semester] }}</small><a class="secondary-outline-button" href="{{ route($routePrefix.'.sections.create', $selectedComponent ? ['component' => $componentId] : []) }}">+ Create section</a></div>
     </div>
+    @include('pagination.top-page-size', ['paginator' => $sections, 'title' => 'Sections per page'])
     <div class="section-summary-grid">
         @forelse($sections as $section)
             <article class="section-summary-card"><div><span class="role-badge role-student">{{ $section->component->code }}</span><span class="status-badge {{ $section->status }}"><i></i>{{ ucfirst($section->status) }}</span></div><h3>{{ $section->name }}</h3><div class="section-facilitator"><span>Facilitator</span><strong>{{ $section->facilitator?->name ?? 'Unassigned' }}</strong></div><div class="occupancy-track"><span style="width:{{ min(100, $section->capacity ? $section->enrollments_count / $section->capacity * 100 : 0) }}%"></span></div><small>{{ $section->enrollments_count }} of {{ $section->capacity }} seats</small><a class="table-action section-manage-link" href="{{ route($routePrefix.'.sections.edit', $section) }}">Manage section →</a></article>

@@ -19,6 +19,7 @@
 <section class="progress-overview-grid"><article class="card"><small>Average current standing</small><strong>{{ $averageStanding === null ? '—' : number_format($averageStanding, 1).'%' }}</strong></article><article class="card"><small>Average attendance</small><strong>{{ $averageAttendance === null ? '—' : number_format($averageAttendance, 1).'%' }}</strong></article><article class="card"><small>Students with a computed grade</small><strong>{{ $gradedStudents }} / {{ $totalStudents }}</strong></article></section>
 @endif
 <section class="card user-table-card">
+    @include('pagination.top-page-size', ['paginator' => $summaries, 'title' => 'Students per page'])
     <div class="table-wrap"><table class="data-table progress-monitoring-table">
         <thead><tr><th>Student</th><th>Progress</th><th>Current standing</th><th>Recorded weighted</th><th>Computed grade</th><th>Attendance</th><th>Missing</th><th>Status</th></tr></thead>
         <tbody>

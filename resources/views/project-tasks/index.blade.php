@@ -31,6 +31,7 @@
             <label class="field-group"><span>Attention</span><select name="show"><option value="all">All tasks</option><option value="overdue" @selected(($filters['show'] ?? '') === 'overdue')>Overdue only</option><option value="unassigned" @selected(($filters['show'] ?? '') === 'unassigned')>Unassigned only</option></select></label>
             <div class="report-filter-actions"><button class="filter-button" type="submit">Apply filters</button><a class="clear-filter" href="{{ route($routePrefix.'.project-tasks.index') }}">Clear</a></div>
         </form>
+        @include('pagination.top-page-size', ['paginator' => $tasks, 'title' => 'Tasks per page'])
         <div class="table-wrap"><table class="data-table"><thead><tr><th>Task</th><th>Assigned to</th><th>Deadline</th><th>Priority</th><th>Progress</th><th>Status</th><th>Submission / review</th></tr></thead><tbody>
             @forelse($tasks as $task)
                 <tr>
