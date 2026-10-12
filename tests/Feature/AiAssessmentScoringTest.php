@@ -125,6 +125,36 @@ class AiAssessmentScoringTest extends TestCase
         });
     }
 
+    public function test_review_assessment_students_are_ordered_by_last_name(): void
+    {
+        $section = $this->assessment->section;
+        $component = $section->component;
+
+        foreach ([
+            ['name' => 'Aaron Zulu', 'email' => 'aaron.zulu@example.test'],
+            ['name' => 'Zoe Alpha', 'email' => 'zoe.alpha@example.test'],
+        ] as $studentData) {
+            $student = User::factory()->create($studentData + [
+                'role' => 'student',
+                'status' => 'active',
+            ]);
+
+            NstpEnrollment::create([
+                'student_id' => $student->id,
+                'component_id' => $component->id,
+                'section_id' => $section->id,
+                'academic_year' => '2026-2027',
+                'semester' => 'first',
+                'status' => 'enrolled',
+            ]);
+        }
+
+        $this->actingAs($this->facilitator)
+            ->get('/facilitator/assessments/'.$this->assessment->id)
+            ->assertOk()
+            ->assertSeeInOrder(['Zoe Alpha', 'Private Student Name', 'Aaron Zulu']);
+    }
+
     public function test_facilitator_can_save_a_structured_rubric_with_valid_totals(): void
     {
         $criteria = [
