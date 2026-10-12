@@ -24,6 +24,7 @@
         <select name="role" aria-label="Filter by staff role"><option value="">All staff roles</option><option value="coordinator" @selected(($filters['role'] ?? '') === 'coordinator')>Coordinator</option><option value="facilitator" @selected(($filters['role'] ?? '') === 'facilitator')>Facilitator</option></select>
         <button class="filter-button" type="submit">Apply filters</button>
         @if(request()->hasAny(['search', 'role']))<a class="clear-filter" href="{{ route('nstp_admin.accounts.index') }}">Clear</a>@endif
+        <div class="account-list-page-size">@include('pagination.page-size', ['paginator' => $accounts])</div>
     </form>
 
     <div class="table-wrap"><table class="data-table">
@@ -45,6 +46,6 @@
             </tr>
         @empty<tr><td colspan="6"><div class="empty-state"><strong>No matching staff accounts</strong><span>Try changing the role or search filter.</span></div></td></tr>@endforelse</tbody>
     </table></div>
-    @if($accounts->total() > 0)<div class="pagination-row"><span>Showing {{ $accounts->firstItem() }}–{{ $accounts->lastItem() }} of {{ $accounts->total() }}</span>{{ $accounts->links() }}</div>@endif
+    @if($accounts->total() > 0)<div class="pagination-row"><span>Showing {{ $accounts->firstItem() }}–{{ $accounts->lastItem() }} of {{ $accounts->total() }}</span>{{ $accounts->links('pagination.compact', ['showPageSize' => false]) }}</div>@endif
 </section>
 @endsection

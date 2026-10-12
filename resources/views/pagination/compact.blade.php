@@ -1,24 +1,7 @@
-@php
-    $selectedPageSize = request()->query('per_page') === 'all'
-        ? 'all'
-        : (string) $paginator->perPage();
-@endphp
 <nav class="pagination-controls" role="navigation" aria-label="Pagination navigation">
-    <div class="pagination-size-row">
-        <label class="page-size-control">
-            <span>Show</span>
-            <select aria-label="Items per page" onchange="const url = new URL(window.location.href); url.searchParams.set('per_page', this.value); url.searchParams.delete('{{ $paginator->getPageName() }}'); window.location.assign(url.toString());">
-                @if ($selectedPageSize !== 'all' && ! in_array((int) $selectedPageSize, [10, 15, 20, 25, 50], true))
-                    <option value="{{ $selectedPageSize }}" selected>{{ $selectedPageSize }}</option>
-                @endif
-                @foreach ([10, 15, 20, 25, 50] as $pageSize)
-                    <option value="{{ $pageSize }}" @selected($selectedPageSize === (string) $pageSize)>{{ $pageSize }}</option>
-                @endforeach
-                <option value="all" @selected($selectedPageSize === 'all')>All</option>
-            </select>
-            <span>items</span>
-        </label>
-    </div>
+    @if($showPageSize ?? true)
+        <div class="pagination-size-row">@include('pagination.page-size', ['paginator' => $paginator])</div>
+    @endif
 
     <div class="pagination-pages">
         @if ($paginator->hasPages())

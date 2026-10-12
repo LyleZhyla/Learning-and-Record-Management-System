@@ -142,7 +142,8 @@ label,button,input,select,textarea{font-size:15px!important}
 /* One compact pagination structure across every account portal. */
 .pagination-controls{display:flex;align-items:flex-end;flex-direction:column;gap:8px;margin-left:auto}.pagination-size-row,.pagination-pages{display:flex;align-items:center;gap:8px}.pagination-size-row{width:100%;justify-content:flex-end}
 .page-size-control{display:inline-flex;min-height:36px;align-items:center;gap:7px;color:var(--muted);font-size:12px;font-weight:700;white-space:nowrap}.page-size-control select{height:36px;border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:0 28px 0 10px;color:var(--ink);font-size:12px;font-weight:800;outline:none}.page-size-control select:focus{border-color:#4f83d5;box-shadow:0 0 0 3px rgba(79,131,213,.12)}
-@media(max-width:760px){.pagination-controls{width:100%;align-items:stretch;margin-left:0}.pagination-size-row{justify-content:flex-start}.pagination-pages{justify-content:space-between}.pagination-controls .page-current{padding:0}}
+.account-list-page-size{display:flex;align-items:center;margin-left:auto;border-left:1px solid var(--line);padding-left:14px}
+@media(max-width:760px){.pagination-controls{width:100%;align-items:stretch;margin-left:0}.pagination-size-row{justify-content:flex-start}.pagination-pages{justify-content:space-between}.pagination-controls .page-current{padding:0}.account-list-page-size{margin-left:0;border-left:0;padding-left:0}}
 
 .bulk-account-action-bar{display:grid;grid-template-columns:minmax(230px,1fr) minmax(300px,1.25fr) auto;align-items:end;gap:16px;border-bottom:1px solid var(--line)}
 .bulk-account-action-bar.rotc-selected{grid-template-columns:minmax(230px,1fr) minmax(260px,1.1fr) minmax(180px,.75fr) auto}.bulk-account-action-bar [hidden]{display:none}

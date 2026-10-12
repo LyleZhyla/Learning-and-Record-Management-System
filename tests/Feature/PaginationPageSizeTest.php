@@ -61,4 +61,19 @@ class PaginationPageSizeTest extends TestCase
         $response->assertOk()
             ->assertSee('<option value="10" selected>10</option>', false);
     }
+
+    public function test_nstp_admin_account_lists_show_the_page_size_control_above_the_table(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        User::factory()->create(['role' => 'student', 'status' => 'active']);
+
+        foreach (['/nstp-admin/accounts', '/nstp-admin/students'] as $uri) {
+            $response = $this->actingAs($admin)->get($uri);
+
+            $response->assertOk()
+                ->assertSeeInOrder(['aria-label="Items per page"', '<div class="table-wrap">'], false);
+            $this->assertSame(1, substr_count($response->getContent(), 'aria-label="Items per page"'));
+        }
+    }
 }
