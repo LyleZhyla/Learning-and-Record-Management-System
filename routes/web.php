@@ -513,6 +513,8 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     $rotcApprovalRoutes();
     Route::get('/sections', [CoordinatorMonitoringController::class, 'sections'])->name('sections.index');
     Route::get('/sections/export', [DirectoryExportController::class, 'sections'])->name('sections.export');
+    Route::get('/sections/create', [NstpAdminSectionController::class, 'create'])->name('sections.create');
+    Route::post('/sections', [NstpAdminSectionController::class, 'store'])->name('sections.store');
     $scheduleRoutes();
     Route::get('/attendance', [CoordinatorMonitoringController::class, 'attendance'])->name('attendance.index');
     Route::get('/attendance/{attendance}', [ManagementAttendanceController::class, 'show'])->name('attendance.show');

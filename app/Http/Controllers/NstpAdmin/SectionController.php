@@ -48,11 +48,15 @@ class SectionController extends Controller
 
     public function create(Request $request): View
     {
+        $this->ensureCoordinatorHasComponent($request);
+
         return view('nstp_admin.sections.create', [
             'section' => null,
-            'components' => NstpComponent::where('is_active', true)->orderBy('code')->get(),
-            'facilitators' => $this->facilitators(),
-            'selectedComponent' => $request->integer('component') ?: null,
+            'components' => $this->components($request),
+            'facilitators' => $this->facilitators($request),
+            'selectedComponent' => $request->user()->isCoordinator()
+                ? $request->user()->nstp_component_id
+                : ($request->integer('component') ?: null),
             'defaultAcademicYear' => $this->currentAcademicYear(),
             'routePrefix' => $this->routePrefix($request),
         ]);
@@ -60,9 +64,20 @@ class SectionController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate($this->sectionRules());
+        $this->ensureCoordinatorHasComponent($request);
+        if ($request->user()->isCoordinator()) {
+            $request->merge(['component_id' => $request->user()->nstp_component_id]);
+        }
+
+        $validated = $request->validate($this->sectionRules($request));
+        $this->validateCoordinatorFacilitator($request, $validated['facilitator_id'] ?? null);
 
         $section = NstpSection::create($validated);
+
+        if ($request->user()->isCoordinator()) {
+            return redirect()->route('coordinator.sections.index')
+                ->with('status', "Section {$section->code} created successfully.");
+        }
 
         return redirect()->route($this->routePrefix($request).'.sections.edit', $section)
             ->with('status', "Section {$section->code} created successfully.");
@@ -75,7 +90,7 @@ class SectionController extends Controller
         return view('nstp_admin.sections.edit', [
             'section' => $section,
             'components' => NstpComponent::orderBy('code')->get(),
-            'facilitators' => $this->facilitators(),
+            'facilitators' => $this->facilitators($request),
             'selectedComponent' => $section->component_id,
             'defaultAcademicYear' => $section->academic_year,
             'routePrefix' => $this->routePrefix($request),
@@ -84,7 +99,7 @@ class SectionController extends Controller
 
     public function update(Request $request, NstpSection $section): RedirectResponse
     {
-        $validated = $request->validate($this->sectionRules($section));
+        $validated = $request->validate($this->sectionRules($request, $section));
         $enrollmentCount = $section->enrollments()->count();
 
         if ($enrollmentCount > 0 && (
@@ -133,7 +148,7 @@ class SectionController extends Controller
         return back()->with('status', "Section {$section->code} updated successfully.");
     }
 
-    private function sectionRules(?NstpSection $section = null): array
+    private function sectionRules(Request $request, ?NstpSection $section = null): array
     {
         $uniqueCode = Rule::unique('nstp_sections', 'code')
             ->where(fn ($query) => $query
@@ -142,7 +157,13 @@ class SectionController extends Controller
             ->ignore($section?->id);
 
         return [
-            'component_id' => ['required', 'integer', 'exists:nstp_components,id'],
+            'component_id' => [
+                'required',
+                'integer',
+                $request->user()->isCoordinator()
+                    ? Rule::in([(int) $request->user()->nstp_component_id])
+                    : Rule::exists('nstp_components', 'id'),
+            ],
             'facilitator_id' => [
                 'nullable',
                 'integer',
@@ -162,9 +183,56 @@ class SectionController extends Controller
         ];
     }
 
-    private function facilitators()
+    private function components(Request $request)
     {
-        return User::where('role', 'facilitator')->where('status', 'active')->orderByLastName()->get();
+        return NstpComponent::query()
+            ->where('is_active', true)
+            ->when($request->user()->isCoordinator(), fn ($query) => $query->whereKey($request->user()->nstp_component_id))
+            ->orderBy('code')
+            ->get();
+    }
+
+    private function facilitators(Request $request)
+    {
+        return User::query()
+            ->where('role', 'facilitator')
+            ->where('status', 'active')
+            ->when($request->user()->isCoordinator(), function ($query) use ($request): void {
+                $componentId = $request->user()->nstp_component_id;
+                $query->where(function ($match) use ($componentId): void {
+                    $match->where('nstp_component_id', $componentId)
+                        ->orWhereHas('facilitatedSections', fn ($sections) => $sections->where('component_id', $componentId));
+                });
+            })
+            ->orderByLastName()
+            ->get();
+    }
+
+    private function ensureCoordinatorHasComponent(Request $request): void
+    {
+        abort_if($request->user()->isCoordinator() && ! $request->user()->nstp_component_id, 403, 'A component assignment is required before creating sections.');
+    }
+
+    private function validateCoordinatorFacilitator(Request $request, ?int $facilitatorId): void
+    {
+        if (! $request->user()->isCoordinator() || ! $facilitatorId) {
+            return;
+        }
+
+        $componentId = $request->user()->nstp_component_id;
+        $belongsToComponent = User::query()
+            ->whereKey($facilitatorId)
+            ->where(function ($query) use ($componentId): void {
+                $query->where('nstp_component_id', $componentId)
+                    ->orWhereHas('facilitatedSections', fn ($sections) => $sections->where('component_id', $componentId));
+            })
+            ->exists();
+
+        if (! $belongsToComponent) {
+            throw ValidationException::withMessages([
+                'facilitator_id' => 'The facilitator must belong to your assigned component.',
+            ]);
+        }
     }
 
     private function currentAcademicYear(): string
@@ -177,6 +245,10 @@ class SectionController extends Controller
 
     private function routePrefix(Request $request): string
     {
-        return $request->user()->isSuperAdmin() ? 'admin' : 'nstp_admin';
+        return match (true) {
+            $request->user()->isSuperAdmin() => 'admin',
+            $request->user()->isCoordinator() => 'coordinator',
+            default => 'nstp_admin',
+        };
     }
 }

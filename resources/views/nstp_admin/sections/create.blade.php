@@ -1,4 +1,4 @@
-@extends($routePrefix === 'admin' ? 'layouts.admin' : 'layouts.nstp-admin')
+@extends($routePrefix === 'admin' ? 'layouts.admin' : ($routePrefix === 'coordinator' ? 'layouts.coordinator' : 'layouts.nstp-admin'))
 @section('title','Create Section')
 @section('page-title','Create NSTP Section')
 @section('content')

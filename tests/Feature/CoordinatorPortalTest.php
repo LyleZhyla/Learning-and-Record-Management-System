@@ -65,6 +65,81 @@ class CoordinatorPortalTest extends TestCase
             ->assertSee('0 still awaiting a score');
     }
 
+    public function test_coordinator_can_create_sections_only_for_the_assigned_component(): void
+    {
+        $assignedComponent = NstpComponent::findOrFail($this->coordinator->nstp_component_id);
+        $assignedFacilitator = NstpSection::firstOrFail()->facilitator;
+        $otherComponent = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
+        $otherFacilitator = User::factory()->create([
+            'role' => 'facilitator',
+            'status' => 'active',
+            'nstp_component_id' => $otherComponent->id,
+        ]);
+
+        $this->actingAs($this->coordinator)->get('/coordinator/sections')
+            ->assertOk()
+            ->assertSee('+ Create section');
+        $this->actingAs($this->coordinator)->get('/coordinator/sections/create')
+            ->assertOk()
+            ->assertSee($assignedComponent->name)
+            ->assertSee($assignedFacilitator->name)
+            ->assertDontSee($otherComponent->name)
+            ->assertDontSee($otherFacilitator->name);
+
+        $this->actingAs($this->coordinator)->post('/coordinator/sections', [
+            'component_id' => $otherComponent->id,
+            'facilitator_id' => $assignedFacilitator->id,
+            'code' => 'CWTS-02',
+            'name' => 'Section 2',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'capacity' => 40,
+            'status' => 'active',
+        ])->assertRedirect('/coordinator/sections')->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('nstp_sections', [
+            'component_id' => $assignedComponent->id,
+            'facilitator_id' => $assignedFacilitator->id,
+            'code' => 'CWTS-02',
+        ]);
+        $this->assertDatabaseMissing('nstp_sections', [
+            'component_id' => $otherComponent->id,
+            'code' => 'CWTS-02',
+        ]);
+
+        $this->actingAs($this->coordinator)->post('/coordinator/sections', [
+            'facilitator_id' => $otherFacilitator->id,
+            'code' => 'CWTS-03',
+            'name' => 'Section 3',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'capacity' => 40,
+            'status' => 'active',
+        ])->assertSessionHasErrors('facilitator_id');
+        $this->assertDatabaseMissing('nstp_sections', ['code' => 'CWTS-03']);
+    }
+
+    public function test_nstp_admin_can_still_create_a_section_for_any_active_component(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $component = NstpComponent::firstOrFail();
+
+        $this->actingAs($admin)->post('/nstp-admin/sections', [
+            'component_id' => $component->id,
+            'code' => 'CWTS-ADMIN',
+            'name' => 'Admin-created section',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'capacity' => 45,
+            'status' => 'active',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('nstp_sections', [
+            'component_id' => $component->id,
+            'code' => 'CWTS-ADMIN',
+        ]);
+    }
+
     public function test_coordinator_sidebar_groups_related_pages_together(): void
     {
         $this->actingAs($this->coordinator)->get('/coordinator/dashboard')
