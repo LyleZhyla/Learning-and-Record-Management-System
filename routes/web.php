@@ -48,6 +48,7 @@ use App\Http\Controllers\NstpAdmin\DashboardController as NstpAdminDashboardCont
 use App\Http\Controllers\NstpAdmin\ProfileController as NstpAdminProfileController;
 use App\Http\Controllers\NstpAdmin\SectionController as NstpAdminSectionController;
 use App\Http\Controllers\NstpAdmin\SectioningController as NstpAdminSectioningController;
+use App\Http\Controllers\NstpAdmin\ServiceRequestController as NstpAdminServiceRequestController;
 use App\Http\Controllers\Portal\AiAssistantController as PortalAiAssistantController;
 use App\Http\Controllers\Portal\AnnouncementController as PortalAnnouncementController;
 use App\Http\Controllers\Portal\MessageController as PortalMessageController;
@@ -287,6 +288,10 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/reports/{type}/document', [ReportController::class, 'document'])->name('reports.document');
     Route::get('/reports/{type}/pdf', [ReportController::class, 'pdf'])->name('reports.pdf');
     Route::get('/reports/{type}/print', [ReportController::class, 'print'])->name('reports.print');
+    Route::get('/service-requests', [NstpAdminServiceRequestController::class, 'index'])->name('service-requests.index');
+    Route::get('/service-requests/{serviceRequest}', [NstpAdminServiceRequestController::class, 'show'])->name('service-requests.show');
+    Route::patch('/service-requests/{serviceRequest}/status', [NstpAdminServiceRequestController::class, 'update'])->name('service-requests.update');
+    Route::get('/service-requests/{serviceRequest}/attachment', [NstpAdminServiceRequestController::class, 'download'])->name('service-requests.attachment');
     $chedApplicationRoutes();
     $communityProjectRoutes();
     $projectTaskRoutes();

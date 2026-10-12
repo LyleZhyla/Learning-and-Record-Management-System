@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\NstpServiceRequest;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -121,5 +122,64 @@ class PublicServiceRequestTest extends TestCase
         $this->assertSame('honor_guard', $serviceRequest->assistance_type);
         $this->assertSame('invitation.pdf', $serviceRequest->attachment_original_name);
         Storage::disk('local')->assertExists($serviceRequest->attachment_path);
+    }
+
+    public function test_nstp_admin_can_review_and_publish_a_serial_number_application_status(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $serviceRequest = NstpServiceRequest::create([
+            'request_type' => 'serial_number',
+            'requester_name' => 'Juan Dela Cruz',
+            'email' => 'juan@example.test',
+            'contact_number' => '09171234567',
+            'student_number' => '2019-00123',
+            'graduation_year' => 2023,
+            'purpose' => 'Serial number follow-up.',
+            'status' => 'submitted',
+            'privacy_accepted_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->get('/nstp-admin/service-requests')
+            ->assertOk()
+            ->assertSee($serviceRequest->reference_code)
+            ->assertSee('Dela Cruz, Juan')
+            ->assertSee('Serial Number');
+        $this->actingAs($admin)->get('/nstp-admin/service-requests/'.$serviceRequest->reference_code)
+            ->assertOk()
+            ->assertSee('Update application status');
+        $this->actingAs($admin)->patch('/nstp-admin/service-requests/'.$serviceRequest->reference_code.'/status', [
+            'status' => 'approved',
+            'status_note' => 'Your serial number was verified and is ready for release.',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $serviceRequest->refresh();
+        $this->assertSame('approved', $serviceRequest->status);
+        $this->assertSame($admin->id, $serviceRequest->processed_by);
+        $this->assertNotNull($serviceRequest->processed_at);
+        $this->get(route('service-requests.show', $serviceRequest))
+            ->assertOk()
+            ->assertSee('Approved')
+            ->assertSee('Your serial number was verified and is ready for release.');
+    }
+
+    public function test_only_nstp_admin_can_manage_public_service_requests(): void
+    {
+        $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $serviceRequest = NstpServiceRequest::create([
+            'request_type' => 'serial_number',
+            'requester_name' => 'Maria Santos',
+            'email' => 'maria@example.test',
+            'contact_number' => '09170000000',
+            'graduation_year' => 2022,
+            'purpose' => 'Verification request.',
+            'status' => 'submitted',
+            'privacy_accepted_at' => now(),
+        ]);
+
+        $this->actingAs($facilitator)->get('/nstp-admin/service-requests')->assertForbidden();
+        $this->actingAs($facilitator)->patch('/nstp-admin/service-requests/'.$serviceRequest->reference_code.'/status', [
+            'status' => 'completed',
+        ])->assertForbidden();
+        $this->assertSame('submitted', $serviceRequest->fresh()->status);
     }
 }

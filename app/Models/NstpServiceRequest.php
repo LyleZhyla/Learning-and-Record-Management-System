@@ -88,4 +88,37 @@ class NstpServiceRequest extends Model
     {
         return self::STATUSES[$this->status] ?? str($this->status)->headline()->toString();
     }
+
+    public function requesterDisplayName(): string
+    {
+        $name = trim($this->requester_name);
+        if (Str::contains($name, ',')) {
+            return $name;
+        }
+
+        $parts = collect(preg_split('/\s+/', $name) ?: [])->filter()->values();
+        if ($parts->count() < 2) {
+            return $name;
+        }
+
+        $suffixes = ['jr', 'sr', 'ii', 'iii', 'iv', 'v'];
+        $surnameParticles = ['de', 'del', 'dela', 'la', 'da', 'dos', 'van', 'von', 'san', 'santa'];
+        $suffix = null;
+
+        if ($parts->count() > 2 && in_array(Str::lower(trim($parts->last(), '.,')), $suffixes, true)) {
+            $suffix = $parts->pop();
+        }
+
+        $lastNameParts = collect([$parts->pop()]);
+        while ($parts->count() > 1 && in_array(Str::lower(trim($parts->last(), '.,')), $surnameParticles, true)) {
+            $lastNameParts->prepend($parts->pop());
+        }
+
+        $lastName = $lastNameParts->implode(' ');
+        if ($suffix) {
+            $lastName .= ' '.$suffix;
+        }
+
+        return $lastName.', '.$parts->implode(' ');
+    }
 }
