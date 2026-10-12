@@ -197,6 +197,12 @@
                 </div>
             </div>
         </div>
+        @if($preview->total() > 0)
+            <div class="report-preview-page-size">
+                <div><strong>Preview rows</strong><span>Choose how many records to show in the table.</span></div>
+                @include('pagination.page-size', ['paginator' => $preview])
+            </div>
+        @endif
         @if(array_key_exists('groups', $report) && $report['groups']->isNotEmpty())
             @foreach($preview->getCollection()->groupBy('group_index') as $groupRows)
                 @php($group = $groupRows->first())
@@ -206,7 +212,7 @@
         @else
             <div class="table-wrap"><table class="data-table report-table"><thead><tr>@foreach($report['headers'] as $header)<th>{{ $header }}</th>@endforeach</tr></thead><tbody>@forelse($preview as $item)<tr>@foreach($item['row'] as $value)<td>{{ $value }}</td>@endforeach</tr>@empty<tr><td colspan="{{ count($report['headers']) }}"><div class="empty-state"><strong>No records found</strong><span>Try removing one or more report filters.</span></div></td></tr>@endforelse</tbody></table></div>
         @endif
-        @if($preview->total() > 0)<div class="pagination-row"><span>Showing {{ $preview->firstItem() }}–{{ $preview->lastItem() }} of {{ $preview->total() }} records</span>{{ $preview->links() }}</div>@endif
+        @if($preview->total() > 0)<div class="pagination-row"><span>Showing {{ $preview->firstItem() }}–{{ $preview->lastItem() }} of {{ $preview->total() }} records</span>{{ $preview->links('pagination.compact', ['showPageSize' => false]) }}</div>@endif
     </section>
     <script src="{{ asset('js/report-download.js') }}?v={{ filemtime(public_path('js/report-download.js')) }}"></script>
 @endsection
