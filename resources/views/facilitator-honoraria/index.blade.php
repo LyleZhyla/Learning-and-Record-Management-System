@@ -93,16 +93,72 @@
         <article class="metric-card"><span class="metric-icon violet">▤</span><div><small>Documents prepared</small><strong>{{ $metrics['prepared'] }}</strong><p>Voucher package is ready</p></div></article>
         <article class="metric-card"><span class="metric-icon green">→</span><div><small>Forwarded</small><strong>{{ $metrics['forwarded'] }}</strong><p>Sent to University Cashier</p></div></article>
     </section>
-    <section class="card user-table-card">
-        <div class="section-heading"><div><span class="eyebrow">Cashier document records</span><h3>Honorarium requests and vouchers</h3></div></div>
-        <div class="table-wrap"><table class="data-table"><thead><tr><th>Request</th><th>Facilitator</th><th>Term and period</th><th>Amounts</th><th>Status</th><th>Document preparation</th></tr></thead><tbody>
+    <section class="card cashier-records-card">
+        <div class="cashier-records-heading">
+            <div><span class="eyebrow">Cashier document records</span><h3>Honorarium requests and vouchers</h3><p>Review each request, complete its document references, and track the cashier handoff.</p></div>
+            <span class="cashier-record-count"><strong>{{ $records->count() }}</strong> {{ str('request')->plural($records->count()) }}</span>
+        </div>
+        <div class="cashier-record-list">
         @forelse($records as $record)
-            <tr><td><strong>{{ $record->reference_number }}</strong><small class="table-secondary-line">Created by {{ $record->requester?->name ?? 'Former user' }} · {{ $record->requested_at->format('M d, Y') }}</small></td><td>{{ $record->facilitator->studentRecordName() }}<small class="table-secondary-line">{{ $record->component->code }}</small></td><td>{{ $record->academic_year }} · {{ $record->semesterLabel() }}<small class="table-secondary-line">{{ $record->period_start->format('M d') }} – {{ $record->period_end->format('M d, Y') }}</small></td><td>Gross ₱{{ number_format((float)$record->gross_amount, 2) }}<small class="table-secondary-line">Deductions ₱{{ number_format((float)$record->deductions, 2) }} · Net ₱{{ number_format((float)$record->net_amount, 2) }}</small></td><td><strong>{{ $record->statusLabel() }}</strong>@if($record->preparation_notes)<small class="table-secondary-line">{{ $record->preparation_notes }}</small>@endif @if($record->disbursement_voucher_number)<small class="table-secondary-line">DV: {{ $record->disbursement_voucher_number }}</small>@endif</td><td>
-                @if(in_array($record->status, ['documents_prepared', 'forwarded_to_cashier'], true))<a class="table-action" href="{{ route($routePrefix.'.honoraria.voucher', $record) }}">Download cashier voucher</a>@endif
-                @if($canPrepareDocuments)<details><summary>{{ $record->prepared_at ? 'Update document package' : 'Prepare cashier documents' }}</summary><form method="POST" action="{{ route($routePrefix.'.honoraria.documents.update', $record) }}" class="stack-form" style="min-width:20rem">@csrf @method('PUT')<label class="field-group"><span>Processing status</span><select name="status"><option value="documents_prepared" @selected($record->status === 'documents_prepared')>Documents prepared</option><option value="forwarded_to_cashier" @selected($record->status === 'forwarded_to_cashier')>Forwarded to University Cashier</option><option value="returned_for_correction" @selected($record->status === 'returned_for_correction')>Returned for correction</option></select></label><label class="field-group"><span>Disbursement voucher number</span><input name="disbursement_voucher_number" value="{{ $record->disbursement_voucher_number }}" maxlength="100"></label><label class="field-group"><span>Obligation request number</span><input name="obligation_request_number" value="{{ $record->obligation_request_number }}" maxlength="100"></label><label class="field-group"><span>Payroll/reference number</span><input name="payroll_reference" value="{{ $record->payroll_reference }}" maxlength="100"></label><label class="field-group"><span>Forwarded to cashier at</span><input type="datetime-local" name="cashier_forwarded_at" value="{{ $record->cashier_forwarded_at?->format('Y-m-d\TH:i') }}"></label><label class="field-group"><span>Preparation notes</span><textarea name="preparation_notes" rows="3" maxlength="3000">{{ $record->preparation_notes }}</textarea></label><button class="primary-button compact" type="submit">Save document status</button></form></details>@endif
-            </td></tr>
-        @empty<tr><td colspan="6"><div class="empty-state"><strong>No honorarium requests</strong><span>Create the first facilitator payment request for the active term.</span></div></td></tr>@endforelse
-        </tbody></table></div>
+            @php
+                $workflowStep = match ($record->status) {
+                    'documents_prepared' => 2,
+                    'forwarded_to_cashier' => 3,
+                    default => 1,
+                };
+            @endphp
+            <article class="cashier-record-item status-{{ $record->status }}">
+                <header class="cashier-record-header">
+                    <div class="cashier-reference"><span class="cashier-reference-icon">₱</span><div><small>Request reference</small><strong>{{ $record->reference_number }}</strong><span>Filed {{ $record->requested_at->format('M d, Y') }} by {{ $record->requester?->name ?? 'Former user' }}</span></div></div>
+                    <span class="cashier-status-pill status-{{ $record->status }}"><i></i>{{ $record->statusLabel() }}</span>
+                </header>
+
+                <div class="cashier-record-summary">
+                    <div class="cashier-summary-block facilitator"><small>Facilitator</small><strong>{{ $record->facilitator->studentRecordName() }}</strong><span>{{ $record->component->code }} component</span></div>
+                    <div class="cashier-summary-block"><small>Covered term</small><strong>{{ $record->academic_year }} · {{ $record->semesterLabel() }}</strong><span>{{ $record->period_start->format('M d') }} – {{ $record->period_end->format('M d, Y') }}</span></div>
+                    <div class="cashier-amount-block"><small>Net honorarium</small><strong>₱{{ number_format((float) $record->net_amount, 2) }}</strong><span>Gross ₱{{ number_format((float) $record->gross_amount, 2) }} · Less ₱{{ number_format((float) $record->deductions, 2) }}</span></div>
+                </div>
+
+                <div class="cashier-progress" aria-label="Document processing progress">
+                    <div class="cashier-progress-step {{ $workflowStep >= 1 ? 'complete' : '' }}"><span>1</span><div><strong>Request received</strong><small>Ready for preparation</small></div></div>
+                    <div class="cashier-progress-line {{ $workflowStep >= 2 ? 'complete' : '' }}"></div>
+                    <div class="cashier-progress-step {{ $workflowStep >= 2 ? 'complete' : '' }}"><span>2</span><div><strong>Documents prepared</strong><small>Voucher package ready</small></div></div>
+                    <div class="cashier-progress-line {{ $workflowStep >= 3 ? 'complete' : '' }}"></div>
+                    <div class="cashier-progress-step {{ $workflowStep >= 3 ? 'complete' : '' }}"><span>3</span><div><strong>Cashier handoff</strong><small>Forwarded for processing</small></div></div>
+                </div>
+
+                @if($record->status === 'returned_for_correction' || $record->preparation_notes)
+                    <div class="cashier-record-note {{ $record->status === 'returned_for_correction' ? 'warning' : '' }}"><strong>{{ $record->status === 'returned_for_correction' ? 'Correction needed' : 'Preparation note' }}</strong><p>{{ $record->preparation_notes ?: 'Review and correct the document package before resubmitting.' }}</p></div>
+                @endif
+
+                <footer class="cashier-record-footer">
+                    <div class="cashier-document-refs">
+                        <span><small>DV number</small><strong>{{ $record->disbursement_voucher_number ?: 'Not encoded' }}</strong></span>
+                        <span><small>Obligation request</small><strong>{{ $record->obligation_request_number ?: 'Not encoded' }}</strong></span>
+                        <span><small>Payroll reference</small><strong>{{ $record->payroll_reference ?: 'Not encoded' }}</strong></span>
+                    </div>
+                    <div class="cashier-record-actions">
+                        @if(in_array($record->status, ['documents_prepared', 'forwarded_to_cashier'], true))<a class="secondary-outline-button compact" href="{{ route($routePrefix.'.honoraria.voucher', $record) }}">↓ Download voucher</a>@endif
+                        @if($canPrepareDocuments)<details class="cashier-document-editor"><summary>{{ $record->prepared_at ? 'Edit document package' : 'Prepare documents' }} <span>›</span></summary>
+                            <form method="POST" action="{{ route($routePrefix.'.honoraria.documents.update', $record) }}" class="cashier-document-form">
+                                @csrf @method('PUT')
+                                <div class="cashier-form-heading"><div><span class="eyebrow">Document preparation</span><h4>Update {{ $record->reference_number }}</h4></div><small>Required fields depend on the selected status.</small></div>
+                                <label class="field-group"><span>Processing status</span><select name="status"><option value="documents_prepared" @selected($record->status === 'documents_prepared')>Documents prepared</option><option value="forwarded_to_cashier" @selected($record->status === 'forwarded_to_cashier')>Forwarded to University Cashier</option><option value="returned_for_correction" @selected($record->status === 'returned_for_correction')>Returned for correction</option></select></label>
+                                <label class="field-group"><span>Disbursement voucher number</span><input name="disbursement_voucher_number" value="{{ $record->disbursement_voucher_number }}" maxlength="100" placeholder="e.g. DV-2026-00123"></label>
+                                <label class="field-group"><span>Obligation request number</span><input name="obligation_request_number" value="{{ $record->obligation_request_number }}" maxlength="100" placeholder="e.g. ORS-2026-00456"></label>
+                                <label class="field-group"><span>Payroll/reference number</span><input name="payroll_reference" value="{{ $record->payroll_reference }}" maxlength="100" placeholder="Optional internal reference"></label>
+                                <label class="field-group"><span>Forwarded to cashier at</span><input type="datetime-local" name="cashier_forwarded_at" value="{{ $record->cashier_forwarded_at?->format('Y-m-d\TH:i') }}"></label>
+                                <label class="field-group full"><span>Preparation notes</span><textarea name="preparation_notes" rows="3" maxlength="3000" placeholder="Add correction details or internal preparation notes.">{{ $record->preparation_notes }}</textarea></label>
+                                <div class="cashier-form-footer full"><p>The University Cashier remains responsible for final approval and payment release.</p><button class="primary-button compact" type="submit">Save document status</button></div>
+                            </form>
+                        </details>@endif
+                    </div>
+                </footer>
+            </article>
+        @empty
+            <div class="empty-state cashier-empty-state"><span class="empty-state-icon">▤</span><strong>No honorarium requests yet</strong><span>Create the first facilitator payment request for the active term.</span>@if($canCreateRequests)<a class="primary-button compact" href="{{ route($routePrefix.'.honoraria.create') }}">Create honorarium request</a>@endif</div>
+        @endforelse
+        </div>
     </section>
 @endif
 @endsection
