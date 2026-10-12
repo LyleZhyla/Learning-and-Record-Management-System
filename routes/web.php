@@ -225,6 +225,7 @@ $facilitatorRequirementRoutes = function (): void {
 
 $honorariumViewerRoutes = function (): void {
     Route::get('/honoraria', [FacilitatorHonorariumController::class, 'index'])->name('honoraria.index');
+    Route::get('/honoraria/monthly-reports/{report}/download', [FacilitatorHonorariumController::class, 'downloadAccomplishmentReport'])->name('honoraria.monthly-reports.download');
 };
 
 $honorariumRequestRoutes = function (): void {
@@ -292,6 +293,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $evaluationRoutes();
     $facilitatorRequirementRoutes();
     $honorariumViewerRoutes();
+    Route::patch('/honoraria/monthly-reports/{report}/review', [FacilitatorHonorariumController::class, 'reviewAccomplishmentReport'])->name('honoraria.monthly-reports.review');
     $honorariumRequestRoutes();
     $honorariumDocumentPreparationRoutes();
     $engagementAnalyticsRoutes();
@@ -486,6 +488,7 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     $evaluationRoutes();
     $facilitatorRequirementRoutes();
     $honorariumViewerRoutes();
+    Route::post('/honoraria/monthly-reports', [FacilitatorHonorariumController::class, 'storeAccomplishmentReport'])->name('honoraria.monthly-reports.store');
     $engagementAnalyticsRoutes();
     $learningManagementRoutes();
     $omrScannerRoutes();

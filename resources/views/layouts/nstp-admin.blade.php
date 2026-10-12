@@ -48,7 +48,7 @@
                 @permission('learning.grades')<a class="nav-link {{ request()->routeIs('nstp_admin.grades.*') ? 'active' : '' }}" href="{{ route('nstp_admin.grades.index') }}"><span class="nav-icon">◎</span> Grades</a>@endpermission
                 <p class="nav-label">Operations & Compliance</p>
                 @permission('rotc.approvals')<a class="nav-link {{ request()->routeIs('nstp_admin.rotc-approvals.*') ? 'active' : '' }}" href="{{ route('nstp_admin.rotc-approvals.index') }}"><span class="nav-icon">✓</span> ROTC Approvals</a>@endpermission
-                <a class="nav-link {{ request()->routeIs('nstp_admin.honoraria.*') ? 'active' : '' }}" href="{{ route('nstp_admin.honoraria.index') }}"><span class="nav-icon">₱</span> Honorarium Documents</a>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.honoraria.*') ? 'active' : '' }}" href="{{ route('nstp_admin.honoraria.index') }}"><span class="nav-icon">₱</span> Honorarium & Reports</a>
                 <p class="nav-label">Reports & Records</p>
                 @permission('reports.view')<a class="nav-link {{ request()->routeIs('nstp_admin.reports.*') ? 'active' : '' }}" href="{{ route('nstp_admin.reports.index') }}" data-nstp-admin-tour="reports"><span class="nav-icon">▤</span> Reports Center</a>@endpermission
                 @permission('reports.view')<a class="nav-link {{ request()->routeIs('nstp_admin.ched-applications.*') ? 'active' : '' }}" href="{{ route('nstp_admin.ched-applications.index') }}"><span class="nav-icon">↗</span> CHED Applications</a>@endpermission

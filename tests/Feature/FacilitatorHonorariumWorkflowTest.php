@@ -2,11 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\FacilitatorAccomplishmentReport;
 use App\Models\FacilitatorHonorarium;
 use App\Models\NstpComponent;
 use App\Models\NstpSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class FacilitatorHonorariumWorkflowTest extends TestCase
@@ -101,6 +104,76 @@ class FacilitatorHonorariumWorkflowTest extends TestCase
             ->assertDontSee('Download cashier voucher');
         $this->actingAs($facilitator)->get('/facilitator/honoraria/create')->assertNotFound();
         $this->actingAs($facilitator)->get('/facilitator/honoraria/'.$own->id.'/voucher')->assertNotFound();
+    }
+
+    public function test_facilitator_can_submit_and_replace_a_monthly_accomplishment_report(): void
+    {
+        Storage::fake('local');
+        [$component, $facilitator] = $this->facilitatorWorkspace('CWTS');
+        $section = $facilitator->facilitatedSections()->firstOrFail();
+
+        $this->actingAs($facilitator)->post('/facilitator/honoraria/monthly-reports', [
+            'assignment_id' => $section->id,
+            'report_month' => now()->format('Y-m'),
+            'accomplishment_summary' => 'Conducted orientation and completed the monthly learning plan.',
+            'attachment' => UploadedFile::fake()->create('cwts-accomplishment.pdf', 200, 'application/pdf'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $report = FacilitatorAccomplishmentReport::firstOrFail();
+        $this->assertSame($facilitator->id, $report->facilitator_id);
+        $this->assertSame($component->id, $report->component_id);
+        $this->assertSame('submitted', $report->status);
+        Storage::disk('local')->assertExists($report->file_path);
+
+        $oldPath = $report->file_path;
+        $this->actingAs($facilitator)->post('/facilitator/honoraria/monthly-reports', [
+            'assignment_id' => $section->id,
+            'report_month' => now()->format('Y-m'),
+            'accomplishment_summary' => 'Updated summary with the completed community mapping output.',
+            'attachment' => UploadedFile::fake()->create('cwts-accomplishment-revised.docx', 240, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->assertSame(1, FacilitatorAccomplishmentReport::count());
+        $report->refresh();
+        $this->assertSame('cwts-accomplishment-revised.docx', $report->original_name);
+        Storage::disk('local')->assertMissing($oldPath);
+        Storage::disk('local')->assertExists($report->file_path);
+    }
+
+    public function test_nstp_admin_can_view_download_and_review_monthly_reports(): void
+    {
+        Storage::fake('local');
+        [, $facilitator] = $this->facilitatorWorkspace('ROTC');
+        $section = $facilitator->facilitatedSections()->firstOrFail();
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $otherFacilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+
+        $this->actingAs($facilitator)->post('/facilitator/honoraria/monthly-reports', [
+            'assignment_id' => $section->id,
+            'report_month' => now()->format('Y-m'),
+            'accomplishment_summary' => 'Completed monthly formation activities and attendance consolidation.',
+            'attachment' => UploadedFile::fake()->create('rotc-monthly.pdf', 180, 'application/pdf'),
+        ])->assertRedirect();
+        $report = FacilitatorAccomplishmentReport::firstOrFail();
+
+        $this->actingAs($admin)->get('/nstp-admin/honoraria?month='.now()->format('Y-m'))
+            ->assertOk()
+            ->assertSee($facilitator->studentRecordName())
+            ->assertSee('Completed monthly formation activities')
+            ->assertSee('For review');
+        $this->actingAs($admin)->get('/nstp-admin/honoraria/monthly-reports/'.$report->id.'/download')
+            ->assertOk()
+            ->assertDownload('rotc-monthly.pdf');
+        $this->actingAs($otherFacilitator)->get('/facilitator/honoraria/monthly-reports/'.$report->id.'/download')
+            ->assertForbidden();
+
+        $this->actingAs($admin)->patch('/nstp-admin/honoraria/monthly-reports/'.$report->id.'/review', [
+            'status' => 'needs_revision',
+            'review_notes' => 'Please attach the signed attendance consolidation.',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+        $report->refresh();
+        $this->assertSame('needs_revision', $report->status);
+        $this->assertSame($admin->id, $report->reviewed_by);
     }
 
     private function facilitatorWorkspace(string $code): array
