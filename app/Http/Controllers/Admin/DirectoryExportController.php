@@ -102,7 +102,7 @@ class DirectoryExportController extends Controller
             ->when($request->user()->isCoordinator(), fn ($query) => $query->where('component_id', $request->user()->nstp_component_id ?? 0))
             ->when($request->user()->isFacilitator(), fn ($query) => $query->where('facilitator_id', $request->user()->id))
             ->orderByDesc('academic_year')->orderBy('code')->get()->map(fn (NstpSection $section) => [
-                'section' => $section->code,
+                'section' => $section->name,
                 'name' => $section->name,
                 'component' => $section->component->code,
                 'academic_year' => $section->academic_year,

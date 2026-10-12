@@ -445,7 +445,7 @@ class ReportController extends Controller
 
                 return [
                     'student' => $item->student->studentRecordName(), 'component' => $session->section->component->code,
-                    'section' => $session->section->code, 'session' => $session->title,
+                    'section' => $session->section->name, 'session' => $session->title,
                     'date' => $session->starts_at->format('M d, Y'), 'status' => ucfirst($item->status),
                     'time_in' => $item->checked_in_at?->format('h:i:s A') ?? '—',
                     'time_out' => $item->checked_out_at?->format('h:i:s A') ?? '—', 'source' => strtoupper($item->source),
@@ -463,7 +463,7 @@ class ReportController extends Controller
                 $summary = $this->grades->summary($item->student, $item->section_id);
 
                 return [
-                    'student' => $item->student->studentRecordName(), 'component' => $item->component->code, 'section' => $item->section->code,
+                    'student' => $item->student->studentRecordName(), 'component' => $item->component->code, 'section' => $item->section->name,
                     'graded' => $summary['graded_count'].' of '.$summary['total_count'],
                     'raw_score_rate' => $summary['raw_percentage'] === null ? '—' : number_format($summary['raw_percentage'], 2).'%',
                     'percentage' => $summary['percentage'] === null ? '—' : number_format($summary['percentage'], 2).'%',
@@ -494,7 +494,7 @@ class ReportController extends Controller
                 return [
                     'student' => $enrollment->student->studentRecordName(),
                     'component' => $enrollment->component->code,
-                    'section' => $enrollment->section->code,
+                    'section' => $enrollment->section->name,
                     'sessions' => $sessionIds->count(),
                     'present' => $present,
                     'late' => $late,
@@ -520,7 +520,7 @@ class ReportController extends Controller
                 return [
                     'student' => $submission->student?->studentRecordName() ?? 'Deleted student',
                     'component' => $assessment->section->component->code,
-                    'section' => $assessment->section->code,
+                    'section' => $assessment->section->name,
                     'assessment' => $assessment->title,
                     'type' => str($assessment->type)->headline(),
                     'score' => $submission->score === null ? 'Pending' : number_format((float) $submission->score, 2),
@@ -547,13 +547,13 @@ class ReportController extends Controller
         $this->applySectionFilters($sections, $filters);
         $rows = $sections->get()
             ->sortBy(fn (NstpSection $section): string => $section->facilitator
-                ? $this->userNameSortKey($section->facilitator).'|'.$section->code
-                : 'zzzz|'.$section->code, SORT_NATURAL | SORT_FLAG_CASE)
+                ? $this->userNameSortKey($section->facilitator).'|'.$section->name
+                : 'zzzz|'.$section->name, SORT_NATURAL | SORT_FLAG_CASE)
             ->map(function ($section) {
             $grades = $section->enrollments->map(fn ($item) => $this->grades->summary($item->student, $section->id)['grade'])->filter(fn ($grade) => $grade !== null);
 
             return [
-                'component' => $section->component->code, 'section' => $section->code,
+                'component' => $section->component->code, 'section' => $section->name,
                 'term' => $section->semesterLabel().' '.$section->academic_year, 'facilitator' => $section->facilitator?->name ?? 'Unassigned',
                 'enrollment' => $section->enrollments_count.' / '.$section->capacity,
                 'utilization' => $section->capacity ? number_format(($section->enrollments_count / $section->capacity) * 100, 1).'%' : '0%',

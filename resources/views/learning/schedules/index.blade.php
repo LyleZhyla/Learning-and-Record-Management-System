@@ -73,7 +73,7 @@
         @forelse($sections as $section)
             @php($schedule = $section->schedule)
             <tr>
-                <td><strong>{{ $section->code }}</strong><small>{{ $section->name }}</small></td>
+                <td><strong>{{ $section->name }}</strong></td>
                 <td>{{ $section->facilitator?->name ?? 'Unassigned' }}</td>
                 <td>@if($schedule)<strong>{{ $days[$schedule->day_of_week] }}</strong><small>{{ $timeLabel($schedule->starts_at) }} – {{ $timeLabel($schedule->ends_at) }}</small>@else<span class="muted-cell">Not scheduled</span>@endif</td>
                 <td>

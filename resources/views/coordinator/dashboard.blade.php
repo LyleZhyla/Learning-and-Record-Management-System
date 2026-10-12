@@ -56,8 +56,8 @@
             @forelse($sections as $section)
                 @php($sectionUsage = $section->capacity > 0 ? min(100, ($section->enrollments_count / $section->capacity) * 100) : (($section->enrollments_count / $largestSectionEnrollment) * 100))
                 <div class="coordinator-section-row" role="listitem">
-                    <div class="coordinator-section-label"><strong>{{ $section->code }}</strong><small>{{ $section->facilitator?->name ?? 'No facilitator assigned' }}</small></div>
-                    <div class="coordinator-section-track" role="progressbar" aria-label="{{ $section->code }} enrollment" aria-valuemin="0" aria-valuemax="{{ max(1, $section->capacity) }}" aria-valuenow="{{ $section->enrollments_count }}"><span class="{{ $sectionUsage >= 90 ? 'near-capacity' : '' }}" style="width: {{ $sectionUsage }}%"></span></div>
+                    <div class="coordinator-section-label"><strong>{{ $section->name }}</strong><small>{{ $section->facilitator?->name ?? 'No facilitator assigned' }}</small></div>
+                    <div class="coordinator-section-track" role="progressbar" aria-label="{{ $section->name }} enrollment" aria-valuemin="0" aria-valuemax="{{ max(1, $section->capacity) }}" aria-valuenow="{{ $section->enrollments_count }}"><span class="{{ $sectionUsage >= 90 ? 'near-capacity' : '' }}" style="width: {{ $sectionUsage }}%"></span></div>
                     <strong class="coordinator-section-value">{{ $section->enrollments_count }}<small>/ {{ $section->capacity }}</small></strong>
                 </div>
             @empty
@@ -81,7 +81,7 @@
         <div class="card-heading"><div><span class="eyebrow">Recent activity</span><h3>Latest attendance sessions</h3><p>Newest QR attendance activity for the assigned component.</p></div><a class="text-link" href="{{ route('coordinator.attendance.index') }}">View all →</a></div>
         <div class="module-list">
             @forelse($recentSessions as $session)
-                <div class="module-item"><span class="step done">{{ $session->section->component->code[0] }}</span><div><strong>{{ $session->title }}</strong><p>{{ $session->section->code }} · {{ $session->starts_at->format('M d, Y h:i A') }} · {{ $session->records_count }} records</p></div><span class="state {{ $session->status === 'open' ? 'done' : '' }}">{{ $session->status }}</span></div>
+                <div class="module-item"><span class="step done">{{ $session->section->component->code[0] }}</span><div><strong>{{ $session->title }}</strong><p>{{ $session->section->name }} · {{ $session->starts_at->format('M d, Y h:i A') }} · {{ $session->records_count }} records</p></div><span class="state {{ $session->status === 'open' ? 'done' : '' }}">{{ $session->status }}</span></div>
             @empty
                 <div class="empty-state"><strong>No attendance sessions yet</strong><span>Facilitator sessions will appear here.</span></div>
             @endforelse

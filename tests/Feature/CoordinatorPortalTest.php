@@ -59,7 +59,7 @@ class CoordinatorPortalTest extends TestCase
             ->assertSee('Attendance status')
             ->assertSee('Students per section')
             ->assertSee('Grading completion')
-            ->assertSee('CWTS-01')
+            ->assertSee('Section 1')
             ->assertSee('Attendance rate: 100.0 percent', false)
             ->assertSee('1 graded')
             ->assertSee('0 still awaiting a score');
@@ -81,6 +81,7 @@ class CoordinatorPortalTest extends TestCase
             ->assertSee('+ Create section');
         $this->actingAs($this->coordinator)->get('/coordinator/sections/create')
             ->assertOk()
+            ->assertDontSee('Section code')
             ->assertSee($assignedComponent->name)
             ->assertSee($assignedFacilitator->name)
             ->assertDontSee($otherComponent->name)
@@ -89,7 +90,6 @@ class CoordinatorPortalTest extends TestCase
         $this->actingAs($this->coordinator)->post('/coordinator/sections', [
             'component_id' => $otherComponent->id,
             'facilitator_id' => $assignedFacilitator->id,
-            'code' => 'CWTS-02',
             'name' => 'Section 2',
             'academic_year' => '2026-2027',
             'semester' => 'first',
@@ -100,23 +100,30 @@ class CoordinatorPortalTest extends TestCase
         $this->assertDatabaseHas('nstp_sections', [
             'component_id' => $assignedComponent->id,
             'facilitator_id' => $assignedFacilitator->id,
-            'code' => 'CWTS-02',
+            'name' => 'Section 2',
         ]);
         $this->assertDatabaseMissing('nstp_sections', [
             'component_id' => $otherComponent->id,
-            'code' => 'CWTS-02',
+            'name' => 'Section 2',
         ]);
 
         $this->actingAs($this->coordinator)->post('/coordinator/sections', [
             'facilitator_id' => $otherFacilitator->id,
-            'code' => 'CWTS-03',
             'name' => 'Section 3',
             'academic_year' => '2026-2027',
             'semester' => 'first',
             'capacity' => 40,
             'status' => 'active',
         ])->assertSessionHasErrors('facilitator_id');
-        $this->assertDatabaseMissing('nstp_sections', ['code' => 'CWTS-03']);
+        $this->assertDatabaseMissing('nstp_sections', ['name' => 'Section 3']);
+
+        $this->actingAs($this->coordinator)->post('/coordinator/sections', [
+            'name' => 'Section 2',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'capacity' => 40,
+            'status' => 'active',
+        ])->assertSessionHasErrors('name');
     }
 
     public function test_nstp_admin_can_still_create_a_section_for_any_active_component(): void
@@ -126,7 +133,6 @@ class CoordinatorPortalTest extends TestCase
 
         $this->actingAs($admin)->post('/nstp-admin/sections', [
             'component_id' => $component->id,
-            'code' => 'CWTS-ADMIN',
             'name' => 'Admin-created section',
             'academic_year' => '2026-2027',
             'semester' => 'first',
@@ -136,7 +142,7 @@ class CoordinatorPortalTest extends TestCase
 
         $this->assertDatabaseHas('nstp_sections', [
             'component_id' => $component->id,
-            'code' => 'CWTS-ADMIN',
+            'name' => 'Admin-created section',
         ]);
     }
 
@@ -243,7 +249,7 @@ class CoordinatorPortalTest extends TestCase
         $this->actingAs($this->coordinator)->get('/coordinator/reports/students/pdf?component_id='.$otherComponent->id)
             ->assertOk()->assertHeader('content-type', 'application/pdf');
         $this->actingAs($this->coordinator)->get('/coordinator/reports/sections/print?component_id='.$otherComponent->id)
-            ->assertOk()->assertSee('CWTS-01')->assertDontSee('ROTC-RPT');
+            ->assertOk()->assertSee('Section 1')->assertDontSee('Hidden Report Section');
         $this->actingAs($this->coordinator)->get('/coordinator/reports')
             ->assertOk()->assertDontSee('Students by Section');
         $this->actingAs($this->coordinator)->get('/coordinator/reports/students_by_section/export')

@@ -115,7 +115,7 @@ class ScheduleController extends Controller
                 $section->id,
             );
             if ($conflict) {
-                throw ValidationException::withMessages(['starts_at' => 'This conflicts with '.$conflict->section->code.', which is handled by the same facilitator.']);
+                throw ValidationException::withMessages(['starts_at' => 'This conflicts with '.$conflict->section->name.', which is handled by the same facilitator.']);
             }
         }
 
@@ -123,7 +123,7 @@ class ScheduleController extends Controller
             ...$validated, 'is_automatic' => false, 'updated_by' => $request->user()->id,
         ]);
 
-        return back()->with('status', "Schedule for {$section->code} updated successfully.");
+        return back()->with('status', "Schedule for {$section->name} updated successfully.");
     }
 
     private function settingRules(): array

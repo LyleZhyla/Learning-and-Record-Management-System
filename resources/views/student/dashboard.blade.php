@@ -3,7 +3,7 @@
 @section('content')
 <section class="welcome-banner student-dashboard-welcome"><div><span class="eyebrow">Student learning portal</span><h2>Welcome, {{ auth()->user()->name }}.</h2><p>
     @if($enrollment?->section)
-        You are enrolled in {{ $enrollment->component->code }}, section {{ $enrollment->section->code }} for {{ $enrollment->section->semesterLabel() }} {{ $enrollment->academic_year }}.
+        You are enrolled in {{ $enrollment->component->code }}, section {{ $enrollment->section->name }} for {{ $enrollment->section->semesterLabel() }} {{ $enrollment->academic_year }}.
     @elseif($enrollment)
         Your {{ $enrollment->component->code }} enrollment is approved and awaiting section assignment.
     @elseif($pendingEnrollment)

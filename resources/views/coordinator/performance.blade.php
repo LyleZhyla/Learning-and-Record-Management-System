@@ -5,7 +5,7 @@
 <div class="page-actions"><div><h2>Student progress monitoring</h2><p>Review current standing, grade completion, missing requirements, and attendance signals for your assigned component.</p></div></div>
 <section class="card term-panel">
     <form method="GET" class="term-form progress-filter-form">
-        <label class="field-group"><span>Section</span><select name="section_id">@foreach($sections as $item)<option value="{{ $item->id }}" @selected($section?->id===$item->id)>{{ $item->code }} · {{ $item->component->code }} · {{ $item->academic_year }}</option>@endforeach</select></label>
+        <label class="field-group"><span>Section</span><select name="section_id">@foreach($sections as $item)<option value="{{ $item->id }}" @selected($section?->id===$item->id)>{{ $item->name }} · {{ $item->component->code }} · {{ $item->academic_year }}</option>@endforeach</select></label>
         <label class="field-group"><span>Student search</span><input type="search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Name or email"></label>
         <label class="field-group"><span>Progress status</span><select name="progress_status"><option value="">All statuses</option><option value="on_track" @selected(($filters['progress_status'] ?? '')==='on_track')>On track</option><option value="at_risk" @selected(($filters['progress_status'] ?? '')==='at_risk')>Needs attention</option><option value="completed" @selected(($filters['progress_status'] ?? '')==='completed')>Completed</option><option value="needs_improvement" @selected(($filters['progress_status'] ?? '')==='needs_improvement')>Needs improvement</option><option value="not_started" @selected(($filters['progress_status'] ?? '')==='not_started')>Not started</option></select></label>
         <button class="filter-button">Apply filters</button>
@@ -13,7 +13,7 @@
 </section>
 @if($section)
 <section class="card assessment-summary progress-section-summary">
-    <div><span class="eyebrow">Selected section</span><h2>{{ $section->code }}</h2><p>{{ $section->component->code }} · {{ $section->semesterLabel() }} {{ $section->academic_year }}</p></div>
+    <div><span class="eyebrow">Selected section</span><h2>{{ $section->name }}</h2><p>{{ $section->component->code }} · {{ $section->semesterLabel() }} {{ $section->academic_year }}</p></div>
     <div><strong>{{ $totalStudents }}</strong><small>Students</small></div><div><strong>{{ $onTrackStudents }}</strong><small>On track</small></div><div><strong>{{ $atRiskStudents }}</strong><small>Need attention</small></div><div><strong>{{ $completedStudents }}</strong><small>Completed</small></div>
 </section>
 <section class="progress-overview-grid"><article class="card"><small>Average current standing</small><strong>{{ $averageStanding === null ? '—' : number_format($averageStanding, 1).'%' }}</strong></article><article class="card"><small>Average attendance</small><strong>{{ $averageAttendance === null ? '—' : number_format($averageAttendance, 1).'%' }}</strong></article><article class="card"><small>Students with a computed grade</small><strong>{{ $gradedStudents }} / {{ $totalStudents }}</strong></article></section>

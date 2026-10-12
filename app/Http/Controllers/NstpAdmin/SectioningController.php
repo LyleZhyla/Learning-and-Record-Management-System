@@ -124,16 +124,23 @@ class SectioningController extends Controller
                         }
                         do {
                             $code = $component->code.'-'.str_pad((string) $nextNumber, 2, '0', STR_PAD_LEFT);
+                            $name = $component->code.' Section '.$nextNumber;
                             $nextNumber++;
                         } while (NstpSection::where('academic_year', $validated['academic_year'])
                             ->where('semester', $validated['semester'])
-                            ->where('code', $code)
+                            ->where(function ($query) use ($component, $code, $name): void {
+                                $query->where('code', $code)
+                                    ->orWhere(function ($nameQuery) use ($component, $name): void {
+                                        $nameQuery->where('component_id', $component->id)
+                                            ->where('name', $name);
+                                    });
+                            })
                             ->exists());
 
                         $section = NstpSection::create([
                             'component_id' => $component->id,
                             'code' => $code,
-                            'name' => $component->code.' Section '.($nextNumber - 1),
+                            'name' => $name,
                             'academic_year' => $validated['academic_year'],
                             'semester' => $validated['semester'],
                             'capacity' => $component->default_section_capacity,

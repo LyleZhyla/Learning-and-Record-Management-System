@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\AutomaticScheduleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -34,7 +35,7 @@ class SectionController extends Controller
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->orderByDesc('academic_year')
             ->orderByRaw("FIELD(semester, 'first', 'second', 'summer')")
-            ->orderBy('code')
+            ->orderBy('name')
             ->paginate($this->perPage(12))
             ->withQueryString();
 
@@ -71,16 +72,17 @@ class SectionController extends Controller
 
         $validated = $request->validate($this->sectionRules($request));
         $this->validateCoordinatorFacilitator($request, $validated['facilitator_id'] ?? null);
+        $validated['code'] = $this->generateInternalCode($validated);
 
         $section = NstpSection::create($validated);
 
         if ($request->user()->isCoordinator()) {
             return redirect()->route('coordinator.sections.index')
-                ->with('status', "Section {$section->code} created successfully.");
+                ->with('status', "Section {$section->name} created successfully.");
         }
 
         return redirect()->route($this->routePrefix($request).'.sections.edit', $section)
-            ->with('status', "Section {$section->code} created successfully.");
+            ->with('status', "Section {$section->name} created successfully.");
     }
 
     public function edit(Request $request, NstpSection $section): View
@@ -138,22 +140,23 @@ class SectionController extends Controller
 
             if ($conflict) {
                 throw ValidationException::withMessages([
-                    'facilitator_id' => 'This facilitator cannot be assigned because the section schedule conflicts with '.$conflict->section->code.' in the same academic term.',
+                    'facilitator_id' => 'This facilitator cannot be assigned because the section schedule conflicts with '.$conflict->section->name.' in the same academic term.',
                 ]);
             }
         }
 
         $section->update($validated);
 
-        return back()->with('status', "Section {$section->code} updated successfully.");
+        return back()->with('status', "Section {$section->name} updated successfully.");
     }
 
     private function sectionRules(Request $request, ?NstpSection $section = null): array
     {
-        $uniqueCode = Rule::unique('nstp_sections', 'code')
+        $uniqueName = Rule::unique('nstp_sections', 'name')
             ->where(fn ($query) => $query
-                ->where('academic_year', request('academic_year'))
-                ->where('semester', request('semester')))
+                ->where('component_id', $request->input('component_id'))
+                ->where('academic_year', $request->input('academic_year'))
+                ->where('semester', $request->input('semester')))
             ->ignore($section?->id);
 
         return [
@@ -169,8 +172,7 @@ class SectionController extends Controller
                 'integer',
                 Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', 'facilitator')->where('status', 'active')),
             ],
-            'code' => ['required', 'string', 'max:30', $uniqueCode],
-            'name' => ['required', 'string', 'max:100'],
+            'name' => ['required', 'string', 'max:100', $uniqueName],
             'academic_year' => ['required', 'regex:/^\d{4}-\d{4}$/', function (string $attribute, mixed $value, \Closure $fail): void {
                 [$start, $end] = array_map('intval', explode('-', $value));
                 if ($end !== $start + 1) {
@@ -233,6 +235,21 @@ class SectionController extends Controller
                 'facilitator_id' => 'The facilitator must belong to your assigned component.',
             ]);
         }
+    }
+
+    private function generateInternalCode(array $section): string
+    {
+        $componentCode = NstpComponent::findOrFail($section['component_id'])->code;
+
+        do {
+            $code = $componentCode.'-'.Str::upper(Str::random(8));
+        } while (NstpSection::query()
+            ->where('academic_year', $section['academic_year'])
+            ->where('semester', $section['semester'])
+            ->where('code', $code)
+            ->exists());
+
+        return $code;
     }
 
     private function currentAcademicYear(): string

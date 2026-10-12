@@ -78,7 +78,7 @@
             @if($currentEnrollment?->component?->code === 'ROTC')<div><dt>ROTC category</dt><dd>{{ $currentEnrollment->rotc_category ?? 'Not selected' }}</dd></div>@endif
             @if(in_array($currentEnrollment?->rotc_category, ['MS-31', 'MS-41'], true))<div><dt>Approval</dt><dd>{{ $currentEnrollment->rotc_approval_status === 'approved' ? 'Approved' : 'Pending coordinator approval' }}</dd></div>@endif
             <div><dt>Shirt size</dt><dd>{{ $currentEnrollment?->shirt_size ?? 'Not selected' }}</dd></div>
-            <div><dt>Section</dt><dd>{{ $currentEnrollment?->section?->code ?? 'Awaiting assignment' }}</dd></div>
+            <div><dt>Section</dt><dd>{{ $currentEnrollment?->section?->name ?? 'Awaiting assignment' }}</dd></div>
             <div><dt>Term</dt><dd>{{ $semesterLabel }} {{ $academicYear }}</dd></div>
         </dl>
     </aside>

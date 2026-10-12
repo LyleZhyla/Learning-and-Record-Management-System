@@ -52,7 +52,7 @@ class StudentNotificationService
         $this->upsertForUsers($recipients, StudentNotification::ASSESSMENT, $assessment->id, $rule, [
             'assessment_title' => $assessment->title,
             'component_code' => $assessment->section->component?->code,
-            'section_code' => $assessment->section->code,
+            'section_code' => $assessment->section->name,
         ]);
     }
 
@@ -85,7 +85,7 @@ class StudentNotificationService
             'student_name' => $record->student->name,
             'session_title' => $record->attendanceSession->title,
             'status' => strtoupper($record->status),
-            'section_code' => $record->attendanceSession->section->code,
+            'section_code' => $record->attendanceSession->section->name,
         ];
         $this->upsertForUsers(collect([$record->student_id]), $type, $record->id, $rule, $values);
 

@@ -172,8 +172,8 @@ class NstpStructureManagementTest extends TestCase
             ->assertViewHas('componentId', null)
             ->assertViewHas('showAllComponents', true)
             ->assertSee('All component sections')
-            ->assertSee('CWTS-DEFAULT')
-            ->assertSee('LTS-HIDDEN');
+            ->assertSee('Default workspace section')
+            ->assertSee('Other workspace section');
     }
 
     public function test_sectioning_can_show_sections_from_all_components(): void
@@ -210,9 +210,9 @@ class NstpStructureManagementTest extends TestCase
             ->assertViewHas('showAllComponents', true)
             ->assertSee('All components')
             ->assertSee('All component sections')
-            ->assertSee('CWTS-ALL')
-            ->assertSee('LTS-ALL')
-            ->assertSee('ROTC-ALL')
+            ->assertSee('CWTS all-components section')
+            ->assertSee('LTS all-components section')
+            ->assertSee('ROTC all-components section')
             ->assertSee('Run automatic sectioning for all components');
 
         $this->actingAs($admin)->post('/nstp-admin/sectioning/automate', [
@@ -264,7 +264,6 @@ class NstpStructureManagementTest extends TestCase
         $this->actingAs($admin)->post('/nstp-admin/sections', [
             'component_id' => $component->id,
             'facilitator_id' => $facilitator->id,
-            'code' => 'CWTS-01',
             'name' => 'CWTS Section 1',
             'academic_year' => '2026-2027',
             'semester' => 'first',
@@ -273,13 +272,13 @@ class NstpStructureManagementTest extends TestCase
         ])->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('nstp_sections', [
-            'code' => 'CWTS-01',
+            'name' => 'CWTS Section 1',
             'facilitator_id' => $facilitator->id,
             'capacity' => 40,
         ]);
 
         $this->actingAs($admin)->get('/nstp-admin/sections?component_id='.$component->id.'&academic_year=2026-2027&semester=first')
-            ->assertOk()->assertSee('CWTS-01')->assertSee('Manage section')->assertSee($facilitator->name);
+            ->assertOk()->assertSee('CWTS Section 1')->assertSee('Manage section')->assertSee($facilitator->name);
     }
 
     public function test_automated_sectioning_creates_sections_and_assigns_students(): void
@@ -393,7 +392,6 @@ class NstpStructureManagementTest extends TestCase
         $this->actingAs($admin)->put("/nstp-admin/sections/{$section->id}", [
             'component_id' => $component->id,
             'facilitator_id' => null,
-            'code' => $section->code,
             'name' => $section->name,
             'academic_year' => $section->academic_year,
             'semester' => $section->semester,
