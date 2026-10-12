@@ -47,7 +47,7 @@ class FacilitatorRequirementController extends Controller
         $facilitators = User::where('role', 'facilitator')->where('status', 'active')
             ->with(['facilitatedSections.component', 'facilitatorRequirementSubmissions.requirement'])
             ->when($user->isCoordinator(), fn (Builder $query) => $query->whereHas('facilitatedSections', fn (Builder $sections) => $sections->where('component_id', $user->nstp_component_id ?? 0)))
-            ->orderBy('name')->get();
+            ->orderByLastName()->get();
         $submissions = FacilitatorRequirementSubmission::with(['requirement.component', 'facilitator.facilitatedSections', 'reviewer'])
             ->whereIn('facilitator_requirement_id', $requirements->pluck('id'))
             ->when($user->isCoordinator(), fn (Builder $query) => $query->whereHas('facilitator.facilitatedSections', fn (Builder $sections) => $sections->where('component_id', $user->nstp_component_id ?? 0)))

@@ -32,22 +32,7 @@ class MessageController extends Controller
                 ->where('recipient_id', $actor->id)
                 ->whereNull('read_at')]);
 
-        if ($actor->isFacilitator()) {
-            $contactsQuery
-                ->addSelect(['latest_chat_message_id' => ChatMessage::query()
-                    ->selectRaw('MAX(chat_messages.id)')
-                    ->where(fn ($messages) => $messages
-                        ->where(fn ($pair) => $pair
-                            ->whereColumn('chat_messages.sender_id', 'users.id')
-                            ->where('chat_messages.recipient_id', $actor->id))
-                        ->orWhere(fn ($pair) => $pair
-                            ->whereColumn('chat_messages.recipient_id', 'users.id')
-                            ->where('chat_messages.sender_id', $actor->id)))])
-                ->orderByDesc('latest_chat_message_id')
-                ->orderBy('name');
-        } else {
-            $contactsQuery->orderBy('name');
-        }
+        $contactsQuery->orderByLastName();
 
         $contacts = $contactsQuery->get();
 

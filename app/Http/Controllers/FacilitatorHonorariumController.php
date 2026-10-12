@@ -53,7 +53,7 @@ class FacilitatorHonorariumController extends Controller
         $facilitators = User::where('role', 'facilitator')->where('status', 'active')
             ->with(['facilitatedSections.component'])
             ->whereHas('facilitatedSections', fn (Builder $sections) => $sections->whereIn('component_id', $components->pluck('id')))
-            ->orderBy('name')->get();
+            ->orderByLastName()->get();
 
         return view('facilitator-honoraria.form', [
             'layout' => $this->access->layout($request->user()),

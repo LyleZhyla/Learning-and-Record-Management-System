@@ -78,7 +78,7 @@ class MonitoringController extends Controller
             $summaries = $section->enrollments->map(fn ($enrollment) => [
                 'student' => $enrollment->student,
                 ...$this->progress->summary($enrollment->student, $section->id),
-            ])->sortBy(fn ($item) => $item['student']->name)->values();
+            ])->sortBy(fn ($item) => $item['student']->last_name_sort_key)->values();
         }
 
         $totalStudents = $summaries->count();

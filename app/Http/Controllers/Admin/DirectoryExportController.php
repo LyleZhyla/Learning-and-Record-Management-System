@@ -33,7 +33,7 @@ class DirectoryExportController extends Controller
                     ->orWhere('name', 'like', "%{$search}%"))))
             ->when($filters['role'] ?? null, fn ($query, string $role) => $query->where('role', $role))
             ->when($filters['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
-            ->orderBy('role')->orderBy('name')->get()->map(fn (User $user) => [
+            ->orderBy('role')->orderByLastName()->get()->map(fn (User $user) => [
                 'name' => $user->name,
                 'email' => $user->email,
                 'role' => $user->roleLabel(),
@@ -62,7 +62,7 @@ class DirectoryExportController extends Controller
                     ? $query->whereDoesntHave('latestNstpEnrollment')
                     : $query->whereHas('latestNstpEnrollment', fn ($enrollment) => $enrollment->where('component_id', (int) $component));
             })
-            ->orderBy('name')->get()->map(function (User $student): array {
+            ->orderByLastName()->get()->map(function (User $student): array {
                 $enrollment = $student->latestNstpEnrollment;
 
                 return [

@@ -196,7 +196,7 @@ class ProjectTaskController extends Controller
                 ->where('status', 'enrolled')
                 ->where('component_id', $project->component_id)
                 ->when($project->section_id, fn (Builder $query, int $sectionId) => $query->where('section_id', $sectionId)))
-            ->orderBy('name')->get();
+            ->orderByLastName()->get();
     }
 
     private function visibleTasks(Request $request): Builder

@@ -164,7 +164,7 @@ class SectionController extends Controller
 
     private function facilitators()
     {
-        return User::where('role', 'facilitator')->where('status', 'active')->orderBy('name')->get();
+        return User::where('role', 'facilitator')->where('status', 'active')->orderByLastName()->get();
     }
 
     private function currentAcademicYear(): string

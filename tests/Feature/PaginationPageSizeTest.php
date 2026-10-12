@@ -25,28 +25,29 @@ class PaginationPageSizeTest extends TestCase
             ]);
         }
 
-        $tenItems = $this->actingAs($admin)->get('/admin/users?per_page=10');
+        $tenItems = $this->actingAs($admin)->get('/admin/users?role=facilitator&per_page=10');
 
         $tenItems->assertOk()
             ->assertSee('aria-label="Items per page"', false)
             ->assertSee('<option value="10" selected>10</option>', false)
             ->assertSee('Staff 09')
-            ->assertDontSee('Staff 10')
+            ->assertSee('Staff 10')
+            ->assertDontSee('Staff 11')
             ->assertSee('per_page=10', false);
 
-        $twentyItems = $this->actingAs($admin)->get('/admin/users?per_page=20');
+        $twentyItems = $this->actingAs($admin)->get('/admin/users?role=facilitator&per_page=20');
 
         $twentyItems->assertOk()
             ->assertSee('<option value="20" selected>20</option>', false)
-            ->assertSee('Staff 19')
-            ->assertDontSee('Staff 20');
+            ->assertSee('Staff 20')
+            ->assertDontSee('Staff 21');
 
-        $allItems = $this->actingAs($admin)->get('/admin/users?per_page=all');
+        $allItems = $this->actingAs($admin)->get('/admin/users?role=facilitator&per_page=all');
 
         $allItems->assertOk()
             ->assertSee('<option value="all" selected>All</option>', false)
             ->assertSee('Staff 21')
-            ->assertSee('22 items');
+            ->assertSee('21 items');
     }
 
     public function test_invalid_page_size_falls_back_to_the_list_default(): void

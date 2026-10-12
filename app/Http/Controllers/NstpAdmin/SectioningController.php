@@ -95,7 +95,7 @@ class SectioningController extends Controller
                     ->whereNull('section_id')
                     ->with('student')
                     ->get()
-                    ->sortBy(fn ($enrollment) => $enrollment->student->name, SORT_NATURAL | SORT_FLAG_CASE)
+                    ->sortBy(fn ($enrollment) => $enrollment->student->last_name_sort_key, SORT_NATURAL | SORT_FLAG_CASE)
                     ->values();
 
                 if ($unassigned->isEmpty()) {

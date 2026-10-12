@@ -182,6 +182,7 @@ class AssessmentController extends Controller
             ->where('section_id', $assessment->section_id)
             ->join('users', 'users.id', '=', 'nstp_enrollments.student_id')
             ->select('nstp_enrollments.*')
+            ->orderBy('users.last_name_sort_key')
             ->orderBy('users.name')
             ->paginate($this->perPage())
             ->withQueryString();
@@ -434,7 +435,7 @@ class AssessmentController extends Controller
             $allSummaries = $enrollments
                 ->join('users', 'users.id', '=', 'nstp_enrollments.student_id')
                 ->select('nstp_enrollments.*')
-                ->orderBy('users.name')->get()->map(
+                ->orderBy('users.last_name_sort_key')->orderBy('users.name')->get()->map(
                     fn ($enrollment) => ['student' => $enrollment->student] + $this->grades->summary($enrollment->student, $section->id),
                 )->sortBy(
                     fn (array $summary) => $summary['student']->studentRecordName(),

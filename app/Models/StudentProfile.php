@@ -9,6 +9,17 @@ class StudentProfile extends Model
 {
     protected $guarded = [];
 
+    protected static function booted(): void
+    {
+        static::saved(function (StudentProfile $profile): void {
+            if ($profile->wasChanged('last_name') || $profile->wasRecentlyCreated) {
+                $profile->user()->update([
+                    'last_name_sort_key' => strtolower(trim($profile->last_name)),
+                ]);
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [

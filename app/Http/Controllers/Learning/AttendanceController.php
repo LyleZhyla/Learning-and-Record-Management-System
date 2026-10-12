@@ -98,6 +98,7 @@ class AttendanceController extends Controller
             ->where('section_id', $attendance->section_id)
             ->join('users', 'users.id', '=', 'nstp_enrollments.student_id')
             ->select('nstp_enrollments.*')
+            ->orderBy('users.last_name_sort_key')
             ->orderBy('users.name')
             ->paginate($this->perPage(20))
             ->withQueryString();

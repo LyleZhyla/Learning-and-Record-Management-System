@@ -31,7 +31,7 @@ class StudentController extends Controller
                 ->whereHas('nstpEnrollments', fn ($enrollments) => $enrollments
                     ->where('section_id', $sectionId)
                     ->whereIn('section_id', $sectionIds)))
-            ->orderBy('name')
+            ->orderByLastName()
             ->paginate($this->perPage())
             ->withQueryString();
 

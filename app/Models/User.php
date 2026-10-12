@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Schema;
@@ -84,6 +85,10 @@ class User extends Authenticatable
     protected static function booted(): void
     {
         static::saving(function (User $user): void {
+            if ($user->isDirty('name') || blank($user->last_name_sort_key)) {
+                $user->last_name_sort_key = static::lastNameSortKey($user->name);
+            }
+
             if ($user->role === 'student' && blank($user->student_qr_token)) {
                 $user->student_qr_token = Str::random(48);
             }
@@ -92,6 +97,27 @@ class User extends Authenticatable
                 $user->role_id = Role::where('slug', $user->role)->value('id');
             }
         });
+    }
+
+    public function scopeOrderByLastName(Builder $query): Builder
+    {
+        return $query->orderBy('last_name_sort_key')->orderBy('name');
+    }
+
+    public static function lastNameSortKey(?string $name): string
+    {
+        $name = trim((string) $name);
+        if (Str::contains($name, ',')) {
+            return Str::lower(trim(Str::before($name, ',')));
+        }
+
+        $parts = preg_split('/\s+/', $name) ?: [$name];
+        $suffixes = ['jr', 'sr', 'ii', 'iii', 'iv', 'v', 'md', 'dvm', 'dds', 'phd', 'rn', 'cpa', 'esq'];
+        while (count($parts) > 1 && in_array(Str::lower(trim(end($parts), '.,')), $suffixes, true)) {
+            array_pop($parts);
+        }
+
+        return Str::lower((string) end($parts));
     }
 
     public function studentQrPayload(): string

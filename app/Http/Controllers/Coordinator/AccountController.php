@@ -32,8 +32,7 @@ class AccountController extends Controller
                 ->where('name', 'like', "%{$search}%")
                 ->orWhere('email', 'like', "%{$search}%")))
             ->when($filters['role'] ?? null, fn ($query, $role) => $query->where('role', $role))
-            ->orderByRaw("CASE role WHEN 'facilitator' THEN 1 WHEN 'student' THEN 2 ELSE 3 END")
-            ->orderBy('name')
+            ->orderByLastName()
             ->paginate($this->perPage())
             ->withQueryString();
 

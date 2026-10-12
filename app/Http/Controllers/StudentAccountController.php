@@ -52,7 +52,7 @@ class StudentAccountController extends Controller
                     fn ($enrollment) => $enrollment->where('component_id', (int) $component)
                 );
             })
-            ->orderBy('name')
+            ->orderByLastName()
             ->paginate($this->perPage(12))
             ->withQueryString();
 

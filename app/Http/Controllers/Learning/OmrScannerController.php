@@ -92,7 +92,7 @@ class OmrScannerController extends Controller
         $this->ensureCanUse($request->user(), $sheet->assessment);
         $students = NstpEnrollment::with('student')
             ->where('section_id', $sheet->assessment->section_id)->where('status', 'enrolled')->get()
-            ->sortBy(fn ($enrollment) => $enrollment->student->name)->values();
+            ->sortBy(fn ($enrollment) => $enrollment->student->last_name_sort_key)->values();
 
         return view('learning.omr.show', $this->context($request) + compact('sheet', 'students'));
     }
