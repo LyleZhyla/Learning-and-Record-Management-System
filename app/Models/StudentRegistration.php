@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Str;
 
 class StudentRegistration extends Model
 {
@@ -21,6 +22,18 @@ class StudentRegistration extends Model
     }
 
     protected $guarded = [];
+
+    protected static function booted(): void
+    {
+        static::saved(function (StudentRegistration $registration): void {
+            if ($registration->wasChanged(['last_name', 'email']) || $registration->wasRecentlyCreated) {
+                User::query()
+                    ->where('role', 'student')
+                    ->whereRaw('LOWER(email) = ?', [Str::lower($registration->email)])
+                    ->update(['last_name_sort_key' => Str::lower(trim($registration->last_name))]);
+            }
+        });
+    }
 
     protected function casts(): array
     {

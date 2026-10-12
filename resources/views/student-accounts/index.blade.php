@@ -54,7 +54,7 @@
             @php($enrollment = $student->latestNstpEnrollment)
             <tr>
                 <td class="check-column">@if($student->isActive())<input class="student-check" type="checkbox" name="student_ids[]" value="{{ $student->id }}" @checked(in_array($student->id, old('student_ids', []))) aria-label="Select {{ $student->name }}">@else<span class="muted-cell">—</span>@endif</td>
-                <td><div class="user-cell"><span class="table-avatar">{{ strtoupper(substr($student->name, 0, 1)) }}</span><div><strong>{{ $student->name }}</strong><small>{{ $student->email }}</small></div></div></td>
+                <td><div class="user-cell"><span class="table-avatar">{{ strtoupper(substr($student->studentRecordName(), 0, 1)) }}</span><div><strong title="{{ $student->name }}">{{ $student->studentRecordName() }}</strong><small>{{ $student->email }}</small></div></div></td>
                 <td><div class="student-qr-cell"><button type="button" data-student-qr-preview data-qr-url="{{ route($routePrefix.'.students.qr', $student) }}" data-student-name="{{ $student->name }}" aria-label="Preview attendance QR for {{ $student->name }}"><span aria-hidden="true">▦</span> View QR</button><a href="{{ route($routePrefix.'.students.qr.download', $student) }}">Download QR</a></div></td>
                 <td>@if($enrollment?->component)<span class="component-mini-badge">{{ $enrollment->component->code }}</span><small class="student-term-label">{{ $enrollment->academic_year }}</small>@else<span class="muted-cell">Not assigned</span>@endif</td>
                 <td><span class="status-badge {{ $student->status }}"><i></i>{{ $student->statusLabel() }}</span></td>

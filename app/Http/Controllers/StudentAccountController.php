@@ -34,7 +34,12 @@ class StudentAccountController extends Controller
 
         $students = User::query()
             ->where('role', 'student')
-            ->with(['latestNstpEnrollment.component', 'latestNstpEnrollment.section'])
+            ->with([
+                'studentProfile',
+                'latestStudentRegistration',
+                'latestNstpEnrollment.component',
+                'latestNstpEnrollment.section',
+            ])
             ->when($filters['search'] ?? null, fn ($query, string $search) => $query
                 ->where(fn ($nested) => $nested
                     ->where('name', 'like', "%{$search}%")
