@@ -484,25 +484,77 @@
     padding-top: 5px;
 }
 
-.upload-dropzone {
-    position: relative;
+.file-upload-field {
     display: flex;
-    align-items: center;
-    gap: 11px;
-    padding: 13px;
-    border: 1px dashed #9bbce0;
-    border-radius: 11px;
-    background: #f4f8fd;
-    cursor: pointer;
+    min-width: 0;
+    flex-direction: column;
+    gap: 8px;
 }
 
-.upload-dropzone:hover { border-color: #4f85c4; background: #eef6ff; }
-.upload-dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.upload-icon { display: grid; width: 32px; height: 32px; flex: none; place-items: center; border-radius: 9px; background: #dcecff; color: #2468ca; font-size: 18px; font-weight: 800; }
+.file-upload-field > label:first-child {
+    color: #526176;
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.upload-dropzone {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 15px;
+    border: 1px dashed #8cb3de;
+    border-radius: 13px 13px 0 0;
+    background: linear-gradient(135deg, #f7faff, #edf5ff);
+    cursor: pointer;
+    transition: border-color .18s ease, background .18s ease, box-shadow .18s ease;
+}
+
+.upload-dropzone:hover {
+    border-color: #3f7fc8;
+    background: linear-gradient(135deg, #f2f8ff, #e5f1ff);
+    box-shadow: inset 0 0 0 1px rgba(63, 127, 200, .08);
+}
+
+.upload-dropzone:focus-within { outline: 3px solid rgba(64, 127, 201, .16); outline-offset: 2px; }
+.upload-icon { display: grid; width: 42px; height: 42px; flex: none; place-items: center; border-radius: 12px; background: #dcecff; color: #2468ca; font-size: 22px; font-weight: 800; }
+.upload-copy { min-width: 0; flex: 1; }
 .upload-dropzone strong,
 .upload-dropzone small { display: block; }
 .upload-dropzone strong { color: #31577c; font-size: 10px; }
 .upload-dropzone small { margin-top: 2px; color: #7690aa; font-size: 8px; }
+
+.upload-native-input {
+    width: 100%;
+    min-height: 48px;
+    margin-top: -8px;
+    border: 1px solid #cddbea;
+    border-top: 0;
+    border-radius: 0 0 13px 13px;
+    background: #fff;
+    padding: 6px 8px;
+    color: #526176;
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.upload-native-input::file-selector-button {
+    min-height: 34px;
+    margin-right: 11px;
+    border: 0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #276dc6, #174d88);
+    padding: 0 13px;
+    color: #fff;
+    font: inherit;
+    font-size: 11px;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.upload-native-input:hover::file-selector-button { background: linear-gradient(135deg, #3178d2, #195794); }
+.upload-native-input:focus-visible { border-color: #5c91d0; outline: 3px solid rgba(64, 127, 201, .14); outline-offset: 2px; }
+.upload-selection-note { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 
 .requirement-field { display: flex; min-width: 0; flex-direction: column; gap: 7px; }
 .requirement-field > span,
@@ -698,6 +750,71 @@
 .edit-requirement-panel > summary { padding: 0 19px; }
 .edit-requirement-form { padding: 19px; border-top: 1px solid var(--line); }
 
+/* Readable type scale for the full requirements workspace. */
+.requirements-kicker { font-size: 12px; }
+.requirements-hero-copy > p { font-size: 15px; }
+.hero-legend span { font-size: 13px; }
+.compliance-ring-inner span { font-size: 12px; }
+.requirement-stat-card div > span { font-size: 12px; }
+.requirement-stat-card small { font-size: 11px; }
+.requirements-section-heading p { font-size: 13px; line-height: 1.5; }
+.section-count { font-size: 12px; }
+.requirement-scope { font-size: 11px; }
+.requirement-status { font-size: 11px; }
+.requirement-description { font-size: 14px; }
+.instruction-callout strong { font-size: 12px; }
+.instruction-callout p { font-size: 12px; }
+.requirement-meta-row span,
+.review-metadata span { font-size: 11px; }
+.file-icon,
+.review-document-icon,
+.library-icon { font-size: 10px; }
+.file-details strong { font-size: 12px; }
+.file-details span { font-size: 11px; }
+.secondary-action { font-size: 11px; }
+.reviewer-note strong { font-size: 12px; }
+.reviewer-note p { font-size: 12px; }
+.verified-message strong,
+.pending-message strong { font-size: 12px; }
+.verified-message small,
+.pending-message small { font-size: 11px; }
+.upload-panel > summary,
+.edit-requirement-panel > summary { font-size: 12px; }
+.upload-dropzone strong { font-size: 12px; }
+.upload-dropzone small { font-size: 11px; }
+.requirement-field > span,
+.requirement-field legend { font-size: 12px; }
+.requirement-field > span small { font-size: 10px; }
+.requirement-field input:not([type="checkbox"]),
+.requirement-field select,
+.requirement-field textarea { font-size: 13px; }
+.requirement-primary-button { font-size: 12px; }
+.requirements-empty-state p { font-size: 12px; }
+.hero-primary-action,
+.hero-secondary-action { font-size: 12px; }
+.hero-primary-action span { font-size: 11px; }
+.reviewer-hero-summary div:last-child span { font-size: 11px; }
+.reviewer-hero-summary div:last-child small { font-size: 10px; }
+.configuration-panel > summary strong { font-size: 14px; }
+.configuration-panel > summary small { font-size: 11px; }
+.configuration-toggle,
+.configuration-panel[open] .configuration-toggle::after { font-size: 11px; }
+.option-row span { font-size: 11px; }
+.toggle-options label > span strong { font-size: 12px; }
+.toggle-options label > span small { font-size: 10px; }
+.facilitator-profile strong { font-size: 14px; }
+.facilitator-profile div > span { margin-top: 3px; font-size: 12px; }
+.facilitator-profile small { margin-top: 7px; font-size: 12px; }
+.progress-copy { margin-bottom: 9px; font-size: 12px; }
+.progress-copy strong { font-size: 16px; }
+.progress-track { height: 10px; }
+.progress-breakdown { margin-top: 11px; gap: 12px; }
+.progress-breakdown span { font-size: 11px; }
+.review-document-details > p { font-size: 12px; }
+.submitter-note { font-size: 11px; }
+.library-details > p { font-size: 12px; }
+.availability-badge { font-size: 11px; }
+
 html[data-theme="dark"] .requirement-stat-card,
 html[data-theme="dark"] .workspace-section,
 html[data-theme="dark"] .configuration-panel,
@@ -712,6 +829,9 @@ html[data-theme="dark"] .instruction-callout strong,
 html[data-theme="dark"] .upload-dropzone strong { color: #a9ceef; }
 html[data-theme="dark"] .instruction-callout p,
 html[data-theme="dark"] .upload-dropzone small { color: #8ba7c0; }
+html[data-theme="dark"] .file-upload-field > label:first-child { color: #b8c7d9; }
+html[data-theme="dark"] .upload-native-input { border-color: #344f6d; background: #101b2c; color: #c3cfdd; }
+html[data-theme="dark"] .upload-native-input::file-selector-button { background: linear-gradient(135deg, #397fce, #205a96); }
 html[data-theme="dark"] .requirement-meta-row span,
 html[data-theme="dark"] .review-metadata span,
 html[data-theme="dark"] .section-count { background: #203248; color: #aebdd0; }

@@ -124,11 +124,26 @@
                                 <summary>{{ $submission ? ($canResubmit ? 'Upload corrected file' : 'Replace submitted file') : 'Upload requirement' }}</summary>
                                 <form method="POST" action="{{ route($routePrefix.'.facilitator-requirements.submit', $requirement) }}" enctype="multipart/form-data" class="requirement-form">
                                     @csrf
-                                    <label class="upload-dropzone">
-                                        <span class="upload-icon" aria-hidden="true">↑</span>
-                                        <span><strong>Choose a file to upload</strong><small>{{ $requirement->acceptedTypesLabel() }} · Maximum {{ number_format($requirement->max_size_kb / 1024) }} MB</small></span>
-                                        <input type="file" name="file" required accept="{{ collect($requirement->accepted_extensions)->map(fn($extension) => '.'.$extension)->implode(',') }}">
-                                    </label>
+                                    <div class="file-upload-field">
+                                        <label for="requirement-file-{{ $requirement->id }}">File to submit</label>
+                                        <label class="upload-dropzone" for="requirement-file-{{ $requirement->id }}">
+                                            <span class="upload-icon" aria-hidden="true">↑</span>
+                                            <span class="upload-copy">
+                                                <strong>{{ $submission ? 'Select a replacement file' : 'Select a document' }}</strong>
+                                                <small id="requirement-file-help-{{ $requirement->id }}">{{ $requirement->acceptedTypesLabel() }} · Maximum {{ number_format($requirement->max_size_kb / 1024) }} MB</small>
+                                            </span>
+                                        </label>
+                                        <input
+                                            id="requirement-file-{{ $requirement->id }}"
+                                            class="upload-native-input"
+                                            type="file"
+                                            name="file"
+                                            required
+                                            aria-describedby="requirement-file-help-{{ $requirement->id }}"
+                                            accept="{{ collect($requirement->accepted_extensions)->map(fn($extension) => '.'.$extension)->implode(',') }}"
+                                        >
+                                        <p class="upload-selection-note">The selected file name will appear beside the button.</p>
+                                    </div>
                                     <label class="requirement-field">
                                         <span>Notes for reviewer <small>Optional</small></span>
                                         <textarea name="facilitator_notes" rows="2" maxlength="2000" placeholder="Add context about this document...">{{ old('facilitator_notes', $submission?->facilitator_notes) }}</textarea>

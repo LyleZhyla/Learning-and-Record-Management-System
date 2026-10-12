@@ -39,6 +39,8 @@ class FacilitatorRequirementWorkflowTest extends TestCase
             ->assertOk()
             ->assertSee('Your checklist')
             ->assertSee('Appointment or Designation')
+            ->assertSee('File to submit')
+            ->assertSee('upload-native-input', false)
             ->assertSee('data-compliance-percentage="0"', false)
             ->assertSee('0%');
         $this->actingAs($facilitator)->post('/facilitator/facilitator-requirements/'.$requirement->id.'/submit', [
