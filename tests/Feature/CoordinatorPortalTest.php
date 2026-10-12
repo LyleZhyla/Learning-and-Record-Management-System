@@ -75,7 +75,7 @@ class CoordinatorPortalTest extends TestCase
                 'Program Oversight',
                 'Components',
                 'Facilitators & Students',
-                'Sections & Facilitators',
+                'Sections',
                 'Attendance & Learning',
                 'Attendance',
                 'Assessment & Grading',

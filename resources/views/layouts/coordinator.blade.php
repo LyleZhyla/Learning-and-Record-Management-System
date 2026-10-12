@@ -17,7 +17,7 @@
             <p class="nav-label">Program Oversight</p>
             @permission('program.components')<a class="nav-link {{ request()->routeIs('coordinator.components.*') ? 'active' : '' }}" href="{{ route('coordinator.components.index') }}" data-coordinator-tour="components"><span class="nav-icon">◉</span> Components</a>
             <a class="nav-link {{ request()->routeIs('coordinator.accounts.*') ? 'active' : '' }}" href="{{ route('coordinator.accounts.index') }}" data-coordinator-tour="accounts"><span class="nav-icon">♙</span> Facilitators & Students</a>@endpermission
-            @permission('program.sections')<a class="nav-link {{ request()->routeIs('coordinator.sections.*') ? 'active' : '' }}" href="{{ route('coordinator.sections.index') }}" data-coordinator-tour="sections"><span class="nav-icon">▦</span> Sections & Facilitators</a>@endpermission
+            @permission('program.sections')<a class="nav-link {{ request()->routeIs('coordinator.sections.*') ? 'active' : '' }}" href="{{ route('coordinator.sections.index') }}" data-coordinator-tour="sections"><span class="nav-icon">▦</span> Sections</a>@endpermission
             @permission('program.schedules')<a class="nav-link {{ request()->routeIs('coordinator.schedules.*') ? 'active' : '' }}" href="{{ route('coordinator.schedules.index') }}" data-coordinator-tour="scheduling"><span class="nav-icon">◷</span> Scheduling</a>@endpermission
             @permission('rotc.approvals')
                 @if(auth()->user()->nstpComponent?->code === 'ROTC')<a class="nav-link {{ request()->routeIs('coordinator.rotc-approvals.*') ? 'active' : '' }}" href="{{ route('coordinator.rotc-approvals.index') }}"><span class="nav-icon">✓</span> ROTC Approvals</a>@endif
