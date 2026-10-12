@@ -2,8 +2,11 @@
 
 namespace Tests\Feature;
 
+use App\Models\AttendanceRecord;
+use App\Models\AttendanceSession;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
+use App\Models\NstpSection;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
@@ -67,6 +70,62 @@ class NstpAdminDashboardTest extends TestCase
             ->assertViewHas('unassignedStudentCount', 1)
             ->assertSee('Without component')
             ->assertSee('data-unassigned-student-count="1"', false);
+    }
+
+    public function test_nstp_admin_dashboard_summarizes_current_term_student_and_attendance_data(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $component = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'is_active' => true]);
+        $year = now()->year;
+        $start = now()->month >= 6 ? $year : $year - 1;
+        $academicYear = $start.'-'.($start + 1);
+        $semester = now()->month >= 6 ? 'first' : 'second';
+        $section = NstpSection::create([
+            'component_id' => $component->id,
+            'code' => 'CWTS-DASH',
+            'name' => 'Dashboard Section',
+            'academic_year' => $academicYear,
+            'semester' => $semester,
+            'capacity' => 40,
+            'status' => 'active',
+        ]);
+
+        NstpEnrollment::create([
+            'student_id' => $student->id,
+            'component_id' => $component->id,
+            'section_id' => $section->id,
+            'academic_year' => $academicYear,
+            'semester' => $semester,
+            'status' => 'enrolled',
+        ]);
+        $session = AttendanceSession::create([
+            'section_id' => $section->id,
+            'created_by' => $admin->id,
+            'title' => 'Dashboard Attendance',
+            'starts_at' => now()->subHour(),
+            'ends_at' => now()->addHour(),
+            'token' => 'nstp-admin-dashboard-test',
+            'qr_payload' => 'dashboard-test',
+            'qr_svg' => '<svg></svg>',
+            'status' => 'open',
+        ]);
+        AttendanceRecord::create([
+            'attendance_session_id' => $session->id,
+            'student_id' => $student->id,
+            'status' => 'present',
+            'checked_in_at' => now(),
+        ]);
+
+        $this->actingAs($admin)->get('/nstp-admin/dashboard')
+            ->assertOk()
+            ->assertViewHas('enrolledStudentCount', 1)
+            ->assertViewHas('sectionedStudentCount', 1)
+            ->assertViewHas('attendanceRate', 100.0)
+            ->assertSee('Student participation by component')
+            ->assertSee('Attendance per component')
+            ->assertSee('CWTS: 1 present, 0 late, 0 absent', false)
+            ->assertSee('100.0% of enrolled students have a section');
     }
 
     public function test_nstp_admin_cannot_access_super_admin_routes(): void
