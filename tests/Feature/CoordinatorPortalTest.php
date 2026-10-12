@@ -51,6 +51,20 @@ class CoordinatorPortalTest extends TestCase
         }
     }
 
+    public function test_coordinator_dashboard_shows_component_scoped_operational_graphics(): void
+    {
+        $this->actingAs($this->coordinator)->get('/coordinator/dashboard')
+            ->assertOk()
+            ->assertSee('Operational checklist')
+            ->assertSee('Attendance status')
+            ->assertSee('Students per section')
+            ->assertSee('Grading completion')
+            ->assertSee('CWTS-01')
+            ->assertSee('Attendance rate: 100.0 percent', false)
+            ->assertSee('1 graded')
+            ->assertSee('0 still awaiting a score');
+    }
+
     public function test_coordinator_sidebar_groups_related_pages_together(): void
     {
         $this->actingAs($this->coordinator)->get('/coordinator/dashboard')
