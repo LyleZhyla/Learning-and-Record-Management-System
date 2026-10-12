@@ -36,7 +36,11 @@ class FacilitatorRequirementWorkflowTest extends TestCase
 
         $requirement = FacilitatorRequirement::firstOrFail();
         $this->actingAs($facilitator)->get('/facilitator/facilitator-requirements')
-            ->assertOk()->assertSee('Appointment or Designation')->assertSee('0%');
+            ->assertOk()
+            ->assertSee('Your checklist')
+            ->assertSee('Appointment or Designation')
+            ->assertSee('data-compliance-percentage="0"', false)
+            ->assertSee('0%');
         $this->actingAs($facilitator)->post('/facilitator/facilitator-requirements/'.$requirement->id.'/submit', [
             'file' => UploadedFile::fake()->create('appointment.pdf', 100, 'application/pdf'),
             'facilitator_notes' => 'Signed appointment document.',
@@ -100,7 +104,11 @@ class FacilitatorRequirementWorkflowTest extends TestCase
         $rotcSubmission = $this->submission($rotcRequirement, $rotcFacilitator, 'rotc-certificate.pdf');
 
         $this->actingAs($coordinator)->get('/coordinator/facilitator-requirements')
-            ->assertOk()->assertSee($cwtsFacilitator->name)->assertDontSee($rotcFacilitator->name);
+            ->assertOk()
+            ->assertSee('Facilitator progress')
+            ->assertSee('Verification queue')
+            ->assertSee($cwtsFacilitator->name)
+            ->assertDontSee($rotcFacilitator->name);
         $this->actingAs($coordinator)->put('/coordinator/facilitator-requirement-submissions/'.$cwtsSubmission->id.'/review', [
             'status' => 'verified',
             'review_notes' => 'Verified within component.',
