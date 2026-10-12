@@ -75,6 +75,41 @@ class AttendanceLearningTest extends TestCase
             ->assertSee('data-attendance-record-count="1"', false);
     }
 
+    public function test_attendance_records_are_listed_by_student_last_name(): void
+    {
+        $session = AttendanceSession::create([
+            'section_id' => $this->section->id,
+            'created_by' => $this->facilitator->id,
+            'title' => 'Last Name Ordered Records',
+            'starts_at' => now()->subMinute(),
+            'ends_at' => now()->addHour(),
+            'token' => str()->random(48),
+            'qr_payload' => '',
+            'qr_svg' => '',
+            'status' => 'open',
+        ]);
+
+        foreach ([
+            ['name' => 'Aaron Zulu', 'email' => 'attendance.zulu@example.test'],
+            ['name' => 'Zoe Alpha', 'email' => 'attendance.alpha@example.test'],
+        ] as $studentData) {
+            $student = User::factory()->create($studentData + ['role' => 'student', 'status' => 'active']);
+            NstpEnrollment::create([
+                'student_id' => $student->id,
+                'component_id' => $this->section->component_id,
+                'section_id' => $this->section->id,
+                'academic_year' => '2026-2027',
+                'semester' => 'first',
+                'status' => 'enrolled',
+            ]);
+        }
+
+        $this->actingAs($this->facilitator)
+            ->get('/facilitator/attendance/'.$session->id)
+            ->assertOk()
+            ->assertSeeInOrder(['Zoe Alpha', 'Aaron Zulu']);
+    }
+
     public function test_scanner_indicates_and_records_the_selected_time_in_or_time_out_mode(): void
     {
         $session = AttendanceSession::create(['section_id' => $this->section->id, 'created_by' => $this->facilitator->id, 'title' => 'Time In and Out Session', 'starts_at' => now()->subMinute(), 'late_after' => now()->addMinute(), 'ends_at' => now()->addHour(), 'token' => str()->random(48), 'qr_payload' => '', 'qr_svg' => '', 'status' => 'open']);
@@ -340,7 +375,7 @@ class AttendanceLearningTest extends TestCase
             ->assertOk()
             ->assertSee('My section reports')
             ->assertSee('Reports Center')
-            ->assertSee($this->student->name)
+            ->assertSee($this->student->studentRecordName())
             ->assertDontSee($hiddenStudent->name)
             ->assertDontSee($otherSection->code);
 

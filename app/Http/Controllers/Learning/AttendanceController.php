@@ -97,9 +97,11 @@ class AttendanceController extends Controller
         $enrolledStudents = NstpEnrollment::with('student')
             ->where('section_id', $attendance->section_id)
             ->join('users', 'users.id', '=', 'nstp_enrollments.student_id')
+            ->leftJoin('student_profiles', 'student_profiles.user_id', '=', 'users.id')
             ->select('nstp_enrollments.*')
-            ->orderBy('users.last_name_sort_key')
+            ->orderByRaw("COALESCE(NULLIF(LOWER(TRIM(student_profiles.last_name)), ''), NULLIF(users.last_name_sort_key, ''), LOWER(users.name))")
             ->orderBy('users.name')
+            ->orderBy('users.id')
             ->paginate($this->perPage(20))
             ->withQueryString();
         $attendance->loadCount('records');
