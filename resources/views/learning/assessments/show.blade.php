@@ -72,7 +72,13 @@
 <section class="assessment-submissions-panel">
     <div class="assessment-submissions-heading">
         <div><span class="eyebrow">Review queue</span><h3>Student scores and submissions</h3><p>Open each submitted response, check the evidence, and save the official score.</p></div>
-        <div class="submission-summary-pills"><span class="pending">{{ $pendingReviewCount }} pending</span><span class="graded">{{ $gradedCount }} graded</span></div>
+        <div class="assessment-review-heading-actions">
+            <div class="assessment-top-page-size">
+                <div><strong>Students per page</strong><span>Control the review list size</span></div>
+                @include('pagination.page-size', ['paginator' => $students])
+            </div>
+            <div class="submission-summary-pills"><span class="pending">{{ $pendingReviewCount }} pending</span><span class="graded">{{ $gradedCount }} graded</span></div>
+        </div>
     </div>
 
     <div class="assessment-review-list">
@@ -168,7 +174,7 @@
         @endforelse
     </div>
 
-    @if($students->total() > 0)<div class="pagination-row assessment-review-pagination"><span>Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }} students</span>{{ $students->links() }}</div>@endif
+    @if($students->total() > 0)<div class="pagination-row assessment-review-pagination"><span>Showing {{ $students->firstItem() }}–{{ $students->lastItem() }} of {{ $students->total() }} students</span>{{ $students->links('pagination.compact', ['showPageSize' => false]) }}</div>@endif
 </section>
 </div>
 <script src="{{ asset('js/rubric-builder.js') }}?v={{ filemtime(public_path('js/rubric-builder.js')) }}"></script>

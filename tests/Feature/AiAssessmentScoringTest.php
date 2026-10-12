@@ -89,6 +89,8 @@ class AiAssessmentScoringTest extends TestCase
             ->assertSee('assessment-review-hero', false)
             ->assertSee('assessment-review-list', false)
             ->assertSee('submission-review-primary', false)
+            ->assertSee('assessment-top-page-size', false)
+            ->assertSee('Students per page')
             ->assertSee('View student work')
             ->assertSee('Ask AI to suggest a score')
             ->assertSee('data-submission-dialog', false)
