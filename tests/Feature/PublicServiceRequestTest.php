@@ -156,6 +156,12 @@ class PublicServiceRequestTest extends TestCase
         $this->assertSame('approved', $serviceRequest->status);
         $this->assertSame($admin->id, $serviceRequest->processed_by);
         $this->assertNotNull($serviceRequest->processed_at);
+        $this->assertDatabaseHas('nstp_service_requests', [
+            'id' => $serviceRequest->id,
+            'status' => 'approved',
+            'status_note' => 'Your serial number was verified and is ready for release.',
+            'processed_by' => $admin->id,
+        ]);
         $this->get(route('service-requests.show', $serviceRequest))
             ->assertOk()
             ->assertSee('Approved')
