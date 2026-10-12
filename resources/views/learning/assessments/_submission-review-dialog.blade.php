@@ -4,10 +4,10 @@
     $manualOnly = $hasAttachment && ($preview['too_large'] || !$preview['exists']);
     $needsReview = ($submission->ai_breakdown['needs_manual_review'] ?? false) || (float) $submission->ai_confidence < 70;
 @endphp
-<dialog class="submission-review-dialog" id="submission-review-{{ $submission->id }}" data-submission-dialog @if(session('open_submission_modal') === $submission->id) data-auto-open @endif>
+<dialog class="submission-review-dialog" id="submission-review-{{ $submission->id }}" data-submission-dialog aria-labelledby="submission-review-title-{{ $submission->id }}" @if(session('open_submission_modal') === $submission->id) data-auto-open @endif>
     <div class="submission-dialog-shell">
         <header class="submission-dialog-header">
-            <div><span class="eyebrow">Student submission</span><h3>{{ $enrollment->student->name }}</h3><p>{{ $assessment->title }} · Submitted {{ $submission->submitted_at?->format('M d, Y g:i A') }}</p></div>
+            <div><span class="eyebrow">Student submission</span><h3 id="submission-review-title-{{ $submission->id }}">{{ $enrollment->student->name }}</h3><p>{{ $assessment->title }} · Submitted {{ $submission->submitted_at?->format('M d, Y g:i A') }}</p></div>
             <button type="button" data-submission-close aria-label="Close submission review">×</button>
         </header>
 
