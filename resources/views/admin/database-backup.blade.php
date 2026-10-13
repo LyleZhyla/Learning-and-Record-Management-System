@@ -20,7 +20,7 @@
     <form method="POST" enctype="multipart/form-data" action="{{ route('admin.database-backup.upload') }}">
         @csrf
         <div class="form-grid">
-            <label class="field-group full"><span>SNAPIE SQL backup</span><input type="file" name="database_file" accept=".sql" required><small class="form-help">Maximum size: 100 MB. The backup driver must match the active database.</small>@error('database_file')<small class="field-error">{{ $message }}</small>@enderror</label>
+            <label class="field-group full"><span>SNAPIE SQL backup</span><input class="file-input" type="file" name="database_file" accept=".sql" required><small class="form-help">Maximum size: 100 MB. The backup driver must match the active database.</small>@error('database_file')<small class="field-error">{{ $message }}</small>@enderror</label>
             <label class="field-group"><span>Restore confirmation</span><input name="confirmation" value="" autocomplete="off" placeholder="Type RESTORE for immediate restore"><small class="form-help">Leave blank when uploading to the archive list only.</small>@error('confirmation')<small class="field-error">{{ $message }}</small>@enderror</label>
         </div>
         <div class="form-actions">

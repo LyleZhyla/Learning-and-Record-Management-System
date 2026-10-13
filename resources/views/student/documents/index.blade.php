@@ -33,7 +33,7 @@
                 @else
                     <form method="POST" enctype="multipart/form-data" action="{{ route('student.documents.store', $form) }}" class="student-document-upload">
                         @csrf
-                        <label class="field-group"><span>{{ $submission ? 'Replace upload' : 'Upload file' }}</span><input type="file" name="file" accept="{{ collect($form->accepted_extensions)->map(fn($extension) => '.'.$extension)->implode(',') }}" required></label>
+                        <label class="field-group"><span>{{ $submission ? 'Replace upload' : 'Upload file' }}</span><input class="file-input" type="file" name="file" accept="{{ collect($form->accepted_extensions)->map(fn($extension) => '.'.$extension)->implode(',') }}" required></label>
                         <button class="primary-button compact" type="submit">{{ $submission ? 'Submit replacement' : 'Submit for review' }}</button>
                     </form>
                 @endif

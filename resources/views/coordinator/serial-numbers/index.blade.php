@@ -63,7 +63,7 @@
             @endif
             <div class="form-grid"><label class="field-group"><span>Academic year</span><input name="academic_year" value="{{ old('academic_year', $selectedAcademicYear) }}" pattern="\d{4}-\d{4}" required></label><label class="field-group"><span>Semester</span><select name="semester" required>@foreach($semesters as $value => $label)<option value="{{ $value }}" @selected(old('semester', \App\Models\SystemSetting::studentRegistrationSemester()) === $value)>{{ $label }}</option>@endforeach</select></label></div>
             <label class="field-group"><span>Date received by the office</span><input type="date" name="received_at" value="{{ old('received_at', now()->toDateString()) }}" max="{{ now()->toDateString() }}" required></label>
-            <label class="field-group"><span>Official file from CHED</span><input type="file" name="source_file" accept=".pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png" required><small class="form-help">Private evidence file. Maximum size: 10 MB.</small></label>
+            <label class="field-group"><span>Official file from CHED</span><input class="file-input" type="file" name="source_file" accept=".pdf,.xlsx,.xls,.csv,.jpg,.jpeg,.png" required><small class="form-help">Private evidence file. Maximum size: 10 MB.</small></label>
             <label class="field-group"><span>Notes <small>Optional</small></span><textarea name="notes" rows="3" maxlength="3000" placeholder="Reference, coverage, or instructions">{{ old('notes') }}</textarea></label>
             <button class="primary-button" type="submit">Upload and open encoding page</button>
         </form>

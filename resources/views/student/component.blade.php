@@ -50,7 +50,7 @@
 
             <div class="rotc-proof-panel" data-rotc-proof-panel data-has-existing-proof="{{ $currentEnrollment?->rotc_proof_path ? 'true' : 'false' }}" data-proof-required="{{ $requiresAdvancedRotcProof ? 'true' : 'false' }}" hidden>
                 <label for="ms1_proof">Proof of completed MS-1</label>
-                @if(! $selectionLocked)<input id="ms1_proof" name="ms1_proof" type="file" accept=".pdf,.jpg,.jpeg,.png" data-rotc-proof-input>@endif
+                @if(! $selectionLocked)<input class="file-input" id="ms1_proof" name="ms1_proof" type="file" accept=".pdf,.jpg,.jpeg,.png" data-rotc-proof-input>@endif
                 <small>{{ $requiresAdvancedRotcProof ? 'Required' : 'Optional' }} for MS-31 and MS-41. Upload a PDF, JPG, or PNG up to 5 MB.</small>
                 @if($currentEnrollment?->rotc_proof_path)<small class="existing-proof-note">Existing proof: {{ $currentEnrollment->rotc_proof_original_name }}</small>@endif
                 @error('ms1_proof')<small class="field-error">{{ $message }}</small>@enderror
