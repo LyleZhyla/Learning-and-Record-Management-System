@@ -23,19 +23,45 @@ class LearningRecommendationController extends Controller
     public function index(Request $request): View
     {
         $page = $this->pageData($request);
-        $savedRecommendation = $page['enrollment']
-            ? AiLearningRecommendation::query()
-                ->where('student_id', $request->user()->id)
-                ->where('nstp_enrollment_id', $page['enrollment']->id)
-                ->latest()
-                ->first()
-            : null;
+        $studentRecommendations = AiLearningRecommendation::query()
+            ->with(['enrollment.component', 'enrollment.section'])
+            ->where('student_id', $request->user()->id);
+        $recommendationHistory = (clone $studentRecommendations)
+            ->latest()
+            ->paginate(6, ['*'], 'history_page')
+            ->withQueryString();
 
-        return view('student.learning-recommendations', $page + [
+        if ($request->filled('recommendation')) {
+            $savedRecommendation = (clone $studentRecommendations)
+                ->whereKey($request->integer('recommendation'))
+                ->firstOrFail();
+        } else {
+            $savedRecommendation = $page['enrollment']
+                ? (clone $studentRecommendations)
+                    ->where('nstp_enrollment_id', $page['enrollment']->id)
+                    ->latest()
+                    ->first()
+                : null;
+        }
+
+        $recommendedMaterialIds = collect($savedRecommendation?->guidance['recommendations'] ?? [])
+            ->pluck('material_id')
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique();
+        $recommendedMaterialsById = LearningMaterial::query()
+            ->with(['component', 'section'])
+            ->whereIn('id', $recommendedMaterialIds)
+            ->get()
+            ->keyBy('id');
+
+        return view('student.learning-recommendations', array_merge($page, [
             'guidance' => $savedRecommendation?->guidance,
             'preferences' => $savedRecommendation?->preferences ?? [],
             'savedRecommendation' => $savedRecommendation,
-        ]);
+            'recommendationHistory' => $recommendationHistory,
+            'materialsById' => $recommendedMaterialsById,
+        ]));
     }
 
     public function generate(Request $request, OpenAiLearningRecommendationService $recommender): View|RedirectResponse
@@ -68,6 +94,20 @@ class LearningRecommendationController extends Controller
                     : 'AI learning recommendations are temporarily unavailable. Please try again later.',
             ])->withInput();
         }
+
+        $guidance['recommendations'] = collect($guidance['recommendations'])
+            ->map(function (array $recommendation) use ($page): array {
+                $material = $page['materialsById']->get($recommendation['material_id']);
+
+                return $recommendation + [
+                    'material_title' => $material?->title,
+                    'component_code' => $material?->component?->code,
+                    'section_code' => $material?->section?->code,
+                    'resource_type' => $material?->file_path ? 'file' : 'link',
+                ];
+            })
+            ->values()
+            ->all();
 
         AiLearningRecommendation::create([
             'student_id' => $request->user()->id,

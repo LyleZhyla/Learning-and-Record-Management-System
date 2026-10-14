@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AiLearningRecommendation;
 use App\Models\Assessment;
 use App\Models\AssessmentSubmission;
 use App\Models\LearningMaterial;
@@ -64,9 +65,13 @@ class LearningResourceRecommendationTest extends TestCase
         $this->assertDatabaseHas('ai_learning_recommendations', [
             'student_id' => $student->id,
         ]);
+        $savedRecommendation = AiLearningRecommendation::where('student_id', $student->id)->firstOrFail();
+        $this->assertSame($visibleMaterial->title, $savedRecommendation->guidance['recommendations'][0]['material_title']);
 
         $this->actingAs($student)->get('/student/learning-recommendations')
             ->assertOk()
+            ->assertSee('Previous learning recommendations')
+            ->assertSee('1 saved')
             ->assertSee('Your recommended learning path')
             ->assertSee($visibleMaterial->title)
             ->assertSee('Read once, then create a five-point summary.')
@@ -105,6 +110,55 @@ class LearningResourceRecommendationTest extends TestCase
         Http::assertNothingSent();
     }
 
+    public function test_student_can_open_their_previous_recommendations_but_not_another_students_record(): void
+    {
+        [$student, $visibleMaterial] = $this->studentContext();
+        $enrollment = NstpEnrollment::where('student_id', $student->id)->firstOrFail();
+
+        $olderRecommendation = AiLearningRecommendation::create([
+            'student_id' => $student->id,
+            'nstp_enrollment_id' => $enrollment->id,
+            'preferences' => $this->preferences(),
+            'guidance' => $this->guidance($visibleMaterial, 'Older saved learning path'),
+            'created_at' => now()->subDay(),
+            'updated_at' => now()->subDay(),
+        ]);
+        AiLearningRecommendation::create([
+            'student_id' => $student->id,
+            'nstp_enrollment_id' => $enrollment->id,
+            'preferences' => $this->preferences(),
+            'guidance' => $this->guidance($visibleMaterial, 'Newest saved learning path'),
+        ]);
+
+        $otherStudent = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $otherEnrollment = NstpEnrollment::create([
+            'student_id' => $otherStudent->id,
+            'component_id' => $enrollment->component_id,
+            'section_id' => $enrollment->section_id,
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'status' => 'enrolled',
+        ]);
+        $privateRecommendation = AiLearningRecommendation::create([
+            'student_id' => $otherStudent->id,
+            'nstp_enrollment_id' => $otherEnrollment->id,
+            'preferences' => $this->preferences(),
+            'guidance' => $this->guidance($visibleMaterial, 'Another student private path'),
+        ]);
+
+        $this->actingAs($student)
+            ->get('/student/learning-recommendations?recommendation='.$olderRecommendation->id)
+            ->assertOk()
+            ->assertSee('2 saved')
+            ->assertSee('Older saved learning path')
+            ->assertSee('Newest saved learning path')
+            ->assertDontSee('Another student private path');
+
+        $this->actingAs($student)
+            ->get('/student/learning-recommendations?recommendation='.$privateRecommendation->id)
+            ->assertNotFound();
+    }
+
     /** @return array{User, LearningMaterial, LearningMaterial} */
     private function studentContext(): array
     {
@@ -135,6 +189,26 @@ class LearningResourceRecommendationTest extends TestCase
             'weekly_time' => '2_to_4',
             'learning_style' => 'mixed',
             'specific_goal' => 'Prepare for the community analysis activity.',
+        ];
+    }
+
+    /** @return array<string, mixed> */
+    private function guidance(LearningMaterial $material, string $overview): array
+    {
+        return [
+            'overview' => $overview,
+            'recommendations' => [[
+                'material_id' => $material->id,
+                'material_title' => $material->title,
+                'component_code' => $material->component->code,
+                'section_code' => $material->section?->code,
+                'resource_type' => 'link',
+                'priority' => 'high',
+                'reason' => 'Review this resource for the activity.',
+                'study_action' => 'Read and prepare a short summary.',
+            ]],
+            'focus_areas' => ['Community needs'],
+            'study_plan' => [['title' => 'Review', 'action' => 'Read the resource.']],
         ];
     }
 }

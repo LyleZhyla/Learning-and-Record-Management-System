@@ -26,6 +26,55 @@
 @endif
 @error('recommendations')<div class="alert danger" role="alert">{{ $message }}</div>@enderror
 
+<section class="card learning-history" aria-labelledby="learning-history-title">
+    <div class="learning-history-heading">
+        <div>
+            <span class="eyebrow">Saved in your account</span>
+            <h2 id="learning-history-title">Previous learning recommendations</h2>
+            <p>Open any saved learning path to review its priorities, focus areas, and study plan.</p>
+        </div>
+        <span class="learning-history-count">{{ $recommendationHistory->total() }} saved</span>
+    </div>
+
+    <div class="learning-history-list">
+        @forelse($recommendationHistory as $historyItem)
+            @php
+                $historyGoal = match ($historyItem->preferences['study_goal'] ?? null) {
+                    'catch_up' => 'Catch up',
+                    'prepare_assessment' => 'Prepare for assessment',
+                    'improve_performance' => 'Improve performance',
+                    'deepen_understanding' => 'Deepen understanding',
+                    default => 'Personalized learning path',
+                };
+            @endphp
+            <a class="learning-history-item {{ $savedRecommendation?->is($historyItem) ? 'active' : '' }}"
+               href="{{ route('student.recommendations.index', ['recommendation' => $historyItem->id]) }}#learning-path-results"
+               @if($savedRecommendation?->is($historyItem)) aria-current="true" @endif>
+                <span class="learning-history-icon" aria-hidden="true">✦</span>
+                <span class="learning-history-copy">
+                    <small>{{ $historyItem->created_at->format('M d, Y · h:i A') }}</small>
+                    <strong>{{ $historyGoal }}</strong>
+                    <span>{{ str($historyItem->guidance['overview'] ?? 'Saved AI learning recommendation')->limit(105) }}</span>
+                </span>
+                <span class="learning-history-class">{{ $historyItem->enrollment?->component?->code ?? 'NSTP' }}<small>{{ $historyItem->enrollment?->section?->code ?? 'Previous class' }}</small></span>
+                <span class="learning-history-open">View <span aria-hidden="true">→</span></span>
+            </a>
+        @empty
+            <div class="learning-history-empty">
+                <span aria-hidden="true">✦</span>
+                <div><strong>No saved recommendations yet</strong><small>Your first generated learning path will automatically appear here.</small></div>
+            </div>
+        @endforelse
+    </div>
+
+    @if($recommendationHistory->hasPages())
+        <div class="learning-history-pagination">
+            <span>Showing {{ $recommendationHistory->firstItem() }}–{{ $recommendationHistory->lastItem() }} of {{ $recommendationHistory->total() }}</span>
+            {{ $recommendationHistory->links('pagination.compact', ['showPageSize' => false]) }}
+        </div>
+    @endif
+</section>
+
 <section class="learning-recommendation-layout">
     <form class="card learning-preference-form" method="POST" action="{{ route('student.recommendations.generate') }}">
         @csrf
@@ -70,19 +119,23 @@
 </section>
 
 @if($guidance)
-<section class="learning-path-results" aria-labelledby="learning-path-title">
+<section class="learning-path-results" id="learning-path-results" aria-labelledby="learning-path-title">
     <div class="learning-path-heading"><div><span class="eyebrow">Personalized advisory result</span><h2 id="learning-path-title">Your recommended learning path</h2><p>{{ $guidance['overview'] }}</p></div><span>{{ $savedRecommendation ? 'Saved '.$savedRecommendation->created_at->format('M d, Y · h:i A') : 'Based on current available materials' }}</span></div>
 
     <div class="recommended-material-list">
         @foreach($guidance['recommendations'] as $index => $recommendation)
-            @php($material = $materialsById->get($recommendation['material_id']))
-            @if($material)
-                <article class="card recommended-material-card priority-{{ $recommendation['priority'] }}">
-                    <div class="recommended-material-order"><span>{{ $index + 1 }}</span><small>{{ ucfirst($recommendation['priority']) }} priority</small></div>
-                    <div class="recommended-material-copy"><small>{{ $material->section?->code ?? 'All '.$material->component->code.' sections' }}</small><h3>{{ $material->title }}</h3><p>{{ $recommendation['reason'] }}</p><div><strong>How to study it</strong><span>{{ $recommendation['study_action'] }}</span></div></div>
-                    <div class="recommended-material-action">@if($material->file_path)<a class="secondary-outline-button" href="{{ route('student.materials.download', $material) }}">Download resource</a>@elseif($material->external_url)<a class="secondary-outline-button" target="_blank" rel="noopener" href="{{ $material->external_url }}">Open resource</a>@else<span>Review in Materials</span>@endif</div>
-                </article>
-            @endif
+            @php
+                $material = $materialsById->get($recommendation['material_id']);
+                $isCurrentlyAvailable = $material && $materials->contains('id', $material->id);
+                $materialTitle = $material?->title ?? ($recommendation['material_title'] ?? 'Previously recommended material');
+                $componentCode = $material?->component?->code ?? ($recommendation['component_code'] ?? 'NSTP');
+                $sectionCode = $material?->section?->code ?? ($recommendation['section_code'] ?? null);
+            @endphp
+            <article class="card recommended-material-card priority-{{ $recommendation['priority'] }}">
+                <div class="recommended-material-order"><span>{{ $index + 1 }}</span><small>{{ ucfirst($recommendation['priority']) }} priority</small></div>
+                <div class="recommended-material-copy"><small>{{ $sectionCode ?: 'All '.$componentCode.' sections' }}</small><h3>{{ $materialTitle }}</h3><p>{{ $recommendation['reason'] }}</p><div><strong>How to study it</strong><span>{{ $recommendation['study_action'] }}</span></div></div>
+                <div class="recommended-material-action">@if($isCurrentlyAvailable && $material->file_path)<a class="secondary-outline-button" href="{{ route('student.materials.download', $material) }}">Download resource</a>@elseif($isCurrentlyAvailable && $material->external_url)<a class="secondary-outline-button" target="_blank" rel="noopener" href="{{ $material->external_url }}">Open resource</a>@else<span>No longer in your current catalog</span>@endif</div>
+            </article>
         @endforeach
     </div>
 
