@@ -4,26 +4,54 @@ namespace App\Http\Controllers\Student;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\UpdateStudentProfileRequest;
+use App\Models\NstpEnrollment;
 use App\Models\StudentRegistration;
 use App\Services\ProfilePhotoService;
+use App\Services\QrCodeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
-    public function edit(Request $request): View
+    public function edit(Request $request, QrCodeService $qrCode): View
     {
         $user = $request->user()->load('studentProfile');
+        if (blank($user->student_qr_token)) {
+            $user->save();
+        }
         $registration = $user->studentProfile
             ? null
             : StudentRegistration::where('email', $user->email)->latest()->first();
+        $details = $user->studentProfile ?? $registration;
+        $enrollment = NstpEnrollment::with('component')
+            ->where('student_id', $user->id)
+            ->where('status', 'enrolled')
+            ->latest('id')
+            ->first();
+        $middleInitial = filled($details?->middle_name)
+            ? Str::upper(Str::substr(trim($details->middle_name), 0, 1)).'.'
+            : null;
+        $idDisplayName = collect([
+            $details?->first_name,
+            $middleInitial,
+            $details?->last_name,
+            $details?->extension_name,
+        ])->filter()->implode(' ') ?: $user->name;
 
         return view('student.profile', [
             'user' => $user,
-            'details' => $user->studentProfile ?? $registration,
+            'details' => $details,
+            'idCard' => [
+                'student' => $user,
+                'details' => $details,
+                'enrollment' => $enrollment,
+                'displayName' => $idDisplayName,
+                'qrSvg' => $qrCode->generateSvg($user->studentQrPayload()),
+            ],
             'locationEndpoints' => [
                 'cities' => route('locations.cities', ['provinceCode' => '__CODE__'], false),
                 'barangays' => route('locations.barangays', ['cityCode' => '__CODE__'], false),

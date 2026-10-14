@@ -21,6 +21,11 @@ class StudentProfileTest extends TestCase
             ->assertSee('Personal Information')
             ->assertSee('Emergency Contact')
             ->assertSee('Academic Information')
+            ->assertSee('Your Student ID')
+            ->assertSee('student-id-card', false)
+            ->assertSee('Open / Print ID')
+            ->assertSee('Download PNG')
+            ->assertSee('Download JPG')
             ->assertSee('Edit profile')
             ->assertDontSee('student-profile-form', false)
             ->assertDontSee('student-profile.js');

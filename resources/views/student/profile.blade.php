@@ -63,6 +63,20 @@
         </dl></section>
     </div>
 </section>
+
+<section class="card student-profile-id-card">
+    <div class="card-heading student-profile-id-heading">
+        <div><span class="eyebrow">Account identification</span><h3>Your Student ID</h3><p>This ID uses your saved profile, current NSTP enrollment, and permanent attendance QR.</p></div>
+        <div class="student-id-download-actions">
+            <a class="primary-button compact" href="{{ route('student.id-card') }}">Open / Print ID</a>
+            <a class="secondary-outline-button" href="{{ route('student.id-card.download', 'png') }}">Download PNG</a>
+            <a class="secondary-outline-button" href="{{ route('student.id-card.download', 'jpg') }}">Download JPG</a>
+        </div>
+    </div>
+    <div class="student-id-stage profile-student-id">
+        @include('student._id-card', $idCard)
+    </div>
+</section>
 @else
 @if ($errors->any())
     <div class="alert danger"><strong>Please check the highlighted information.</strong><ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
