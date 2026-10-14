@@ -22,10 +22,12 @@ class ProjectProposalGuideTest extends TestCase
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
         $this->actingAs($student)->get('/student/project-proposal-guide')
             ->assertOk()
-            ->assertSee('Turn your project idea into a clearer proposal.')
-            ->assertSee('A short project idea is enough.')
-            ->assertSee('This tool does not approve proposals')
+            ->assertSee('Shape your community idea into a proposal you can discuss.')
+            ->assertSee('A simple description is enough.')
+            ->assertSee('Guidance, not approval')
             ->assertSee('Proposal Guide')
+            ->assertSee('data-proposal-workspace', false)
+            ->assertSee('Proposal readiness guide')
             ->assertSee('data-student-tour="proposal"', false);
     }
 
@@ -74,8 +76,10 @@ class ProjectProposalGuideTest extends TestCase
             ->assertSee('Your proposal guidance')
             ->assertSee('The target learners are clearly identified.')
             ->assertSee('Baseline consultation')
-            ->assertSee('Requires facilitator review')
+            ->assertSee('Facilitator review required')
             ->assertSee('This guidance is not an approval')
+            ->assertSee('data-proposal-results', false)
+            ->assertSee('Starter implementation plan')
             ->assertSee('Barangay Reading Buddies');
 
         Http::assertSent(function (Request $request) use ($student): bool {
