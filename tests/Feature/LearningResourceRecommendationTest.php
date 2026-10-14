@@ -59,14 +59,15 @@ class LearningResourceRecommendationTest extends TestCase
             ]],
         ])]);
 
-        $this->actingAs($student)->post('/student/learning-recommendations', $this->preferences())
-            ->assertRedirect('/student/learning-recommendations')
-            ->assertSessionHas('status');
+        $response = $this->actingAs($student)->post('/student/learning-recommendations', $this->preferences());
 
         $this->assertDatabaseHas('ai_learning_recommendations', [
             'student_id' => $student->id,
         ]);
         $savedRecommendation = AiLearningRecommendation::where('student_id', $student->id)->firstOrFail();
+        $response
+            ->assertRedirect(route('student.recommendations.show', $savedRecommendation))
+            ->assertSessionHas('status');
         $this->assertSame($visibleMaterial->title, $savedRecommendation->guidance['recommendations'][0]['material_title']);
 
         $this->actingAs($student)->get('/student/learning-recommendations')
@@ -75,10 +76,19 @@ class LearningResourceRecommendationTest extends TestCase
             ->assertSee('data-learning-history-group', false)
             ->assertSee('data-learning-history-item', false)
             ->assertSee('1 saved')
+            ->assertSee($visibleMaterial->title)
+            ->assertDontSee('Your recommended learning path')
+            ->assertDontSee('Read once, then create a five-point summary.')
+            ->assertDontSee($hiddenMaterial->title)
+            ->assertDontSee('Should be filtered.');
+
+        $this->actingAs($student)
+            ->get(route('student.recommendations.show', $savedRecommendation))
+            ->assertOk()
+            ->assertSee('Back to recommendations')
             ->assertSee('Your recommended learning path')
             ->assertSee($visibleMaterial->title)
             ->assertSee('Read once, then create a five-point summary.')
-            ->assertSee('Saved')
             ->assertDontSee($hiddenMaterial->title)
             ->assertDontSee('Should be filtered.');
 
@@ -150,7 +160,7 @@ class LearningResourceRecommendationTest extends TestCase
         ]);
 
         $this->actingAs($student)
-            ->get('/student/learning-recommendations?recommendation='.$olderRecommendation->id)
+            ->get('/student/learning-recommendations')
             ->assertOk()
             ->assertSee('data-learning-history-group', false)
             ->assertDontSee('data-learning-history-dropdown', false)
@@ -160,7 +170,14 @@ class LearningResourceRecommendationTest extends TestCase
             ->assertDontSee('Another student private path');
 
         $this->actingAs($student)
-            ->get('/student/learning-recommendations?recommendation='.$privateRecommendation->id)
+            ->get(route('student.recommendations.show', $olderRecommendation))
+            ->assertOk()
+            ->assertSee('Older saved learning path')
+            ->assertDontSee('Newest saved learning path')
+            ->assertDontSee('Another student private path');
+
+        $this->actingAs($student)
+            ->get(route('student.recommendations.show', $privateRecommendation))
             ->assertNotFound();
     }
 

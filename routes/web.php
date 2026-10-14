@@ -579,6 +579,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
     Route::get('/learning-recommendations', [StudentLearningRecommendationController::class, 'index'])->name('recommendations.index');
     Route::post('/learning-recommendations', [StudentLearningRecommendationController::class, 'generate'])->middleware('throttle:5,1')->name('recommendations.generate');
+    Route::get('/learning-recommendations/{recommendation}', [StudentLearningRecommendationController::class, 'show'])->name('recommendations.show');
     Route::get('/project-proposal-guide', [StudentProjectProposalGuideController::class, 'index'])->name('proposal-guide.index');
     Route::post('/project-proposal-guide', [StudentProjectProposalGuideController::class, 'generate'])->middleware('throttle:5,1')->name('proposal-guide.generate');
     $communityProjectRoutes();

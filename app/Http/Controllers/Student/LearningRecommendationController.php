@@ -30,37 +30,38 @@ class LearningRecommendationController extends Controller
             ->latest()
             ->paginate(6, ['*'], 'history_page')
             ->withQueryString();
+        $latestRecommendation = $page['enrollment']
+            ? (clone $studentRecommendations)
+                ->where('nstp_enrollment_id', $page['enrollment']->id)
+                ->latest()
+                ->first()
+            : null;
 
-        if ($request->filled('recommendation')) {
-            $savedRecommendation = (clone $studentRecommendations)
-                ->whereKey($request->integer('recommendation'))
-                ->firstOrFail();
-        } else {
-            $savedRecommendation = $page['enrollment']
-                ? (clone $studentRecommendations)
-                    ->where('nstp_enrollment_id', $page['enrollment']->id)
-                    ->latest()
-                    ->first()
-                : null;
-        }
+        return view('student.learning-recommendations', array_merge($page, [
+            'preferences' => $latestRecommendation?->preferences ?? [],
+            'recommendationHistory' => $recommendationHistory,
+        ]));
+    }
 
-        $recommendedMaterialIds = collect($savedRecommendation?->guidance['recommendations'] ?? [])
+    public function show(Request $request, AiLearningRecommendation $recommendation): View
+    {
+        abort_unless((int) $recommendation->student_id === (int) $request->user()->id, 404);
+
+        $recommendation->load(['enrollment.component', 'enrollment.section']);
+        $page = $this->pageData($request);
+        $recommendedMaterialIds = collect($recommendation->guidance['recommendations'] ?? [])
             ->pluck('material_id')
             ->filter()
             ->map(fn ($id) => (int) $id)
             ->unique();
-        $recommendedMaterialsById = LearningMaterial::query()
-            ->with(['component', 'section'])
+        $materialsById = $page['materials']
             ->whereIn('id', $recommendedMaterialIds)
-            ->get()
             ->keyBy('id');
 
-        return view('student.learning-recommendations', array_merge($page, [
-            'guidance' => $savedRecommendation?->guidance,
-            'preferences' => $savedRecommendation?->preferences ?? [],
-            'savedRecommendation' => $savedRecommendation,
-            'recommendationHistory' => $recommendationHistory,
-            'materialsById' => $recommendedMaterialsById,
+        return view('student.learning-recommendation-show', array_merge($page, [
+            'savedRecommendation' => $recommendation,
+            'guidance' => $recommendation->guidance,
+            'materialsById' => $materialsById,
         ]));
     }
 
@@ -109,14 +110,14 @@ class LearningRecommendationController extends Controller
             ->values()
             ->all();
 
-        AiLearningRecommendation::create([
+        $savedRecommendation = AiLearningRecommendation::create([
             'student_id' => $request->user()->id,
             'nstp_enrollment_id' => $page['enrollment']->id,
             'preferences' => $preferences,
             'guidance' => $guidance,
         ]);
 
-        return redirect()->route('student.recommendations.index')
+        return redirect()->route('student.recommendations.show', $savedRecommendation)
             ->with('status', 'Your AI learning recommendation was generated and saved.');
     }
 
