@@ -28,7 +28,8 @@ class StudentComponentSelectionTest extends TestCase
             ->assertSee('Choose your NSTP component')
             ->assertSee('ROTC category')
             ->assertSee('Height')
-            ->assertSee('Choose your height')
+            ->assertSee('Height in feet')
+            ->assertSee('Height in inches')
             ->assertSee('Proof of completed MS-1')
             ->assertSee('Shirt size')
             ->assertSee('Save enrollment preferences')
@@ -99,20 +100,22 @@ class StudentComponentSelectionTest extends TestCase
         $this->actingAs($student)->put('/student/component', [
             'nstp_component_id' => $rotc->id,
             'shirt_size' => 'M',
-        ])->assertSessionHasErrors(['rotc_category', 'rotc_height_cm']);
+        ])->assertSessionHasErrors(['rotc_category', 'rotc_height_feet', 'rotc_height_inches']);
 
         $this->actingAs($student)->put('/student/component', [
             'nstp_component_id' => $rotc->id,
             'shirt_size' => 'M',
             'rotc_category' => 'MS-1',
-            'rotc_height_cm' => 221,
-        ])->assertSessionHasErrors('rotc_height_cm');
+            'rotc_height_feet' => 5,
+            'rotc_height_inches' => 12,
+        ])->assertSessionHasErrors('rotc_height_inches');
 
         $this->actingAs($student)->put('/student/component', [
             'nstp_component_id' => $rotc->id,
             'shirt_size' => 'M',
             'rotc_category' => 'MS-31',
-            'rotc_height_cm' => 168,
+            'rotc_height_feet' => 5,
+            'rotc_height_inches' => 6,
             'ms1_proof' => UploadedFile::fake()->create('ms1-proof.pdf', 200, 'application/pdf'),
         ])->assertRedirect()->assertSessionHasNoErrors();
 
@@ -121,7 +124,8 @@ class StudentComponentSelectionTest extends TestCase
             'component_id' => $rotc->id,
             'shirt_size' => 'M',
             'rotc_category' => 'MS-31',
-            'rotc_height_cm' => 168,
+            'rotc_height_feet' => 5,
+            'rotc_height_inches' => 6,
             'rotc_approval_status' => 'pending',
             'status' => 'pending_approval',
         ]);
@@ -138,6 +142,10 @@ class StudentComponentSelectionTest extends TestCase
             'shirt_size' => 'M',
             'rotc_category' => 'MS-31',
         ]);
+
+        $this->actingAs($student)->get('/student/component')
+            ->assertOk()
+            ->assertSee("5'6");
     }
 
     public function test_student_cannot_change_component_after_the_first_selection(): void

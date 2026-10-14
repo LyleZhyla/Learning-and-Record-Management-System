@@ -47,14 +47,14 @@
                 </select>
                 @error('rotc_category')<small class="field-error">{{ $message }}</small>@enderror
 
-                <label class="rotc-height-label" for="rotc_height_cm">Height</label>
-                <select id="rotc_height_cm" name="rotc_height_cm" data-rotc-height-select @disabled($selectionLocked)>
-                    <option value="">Choose your height</option>
-                    @foreach($rotcHeights as $height)
-                        <option value="{{ $height }}" @selected((int) old('rotc_height_cm', $currentEnrollment?->rotc_height_cm) === $height)>{{ $height }} cm</option>
-                    @endforeach
-                </select>
-                @error('rotc_height_cm')<small class="field-error">{{ $message }}</small>@enderror
+                <span class="rotc-height-label">Height</span>
+                <div class="rotc-height-inputs">
+                    <label><input type="number" name="rotc_height_feet" value="{{ old('rotc_height_feet', $currentEnrollment?->rotc_height_feet) }}" min="3" max="8" step="1" inputmode="numeric" placeholder="5" aria-label="Height in feet" data-rotc-height-feet @disabled($selectionLocked)> <span>ft</span></label>
+                    <label><input type="number" name="rotc_height_inches" value="{{ old('rotc_height_inches', $currentEnrollment?->rotc_height_inches) }}" min="0" max="11" step="1" inputmode="numeric" placeholder="1" aria-label="Height in inches" data-rotc-height-inches @disabled($selectionLocked)> <span>in</span></label>
+                </div>
+                <small class="rotc-height-example">Example: 5 ft 1 in will appear in the record as 5'1.</small>
+                @error('rotc_height_feet')<small class="field-error">{{ $message }}</small>@enderror
+                @error('rotc_height_inches')<small class="field-error">{{ $message }}</small>@enderror
             </div>
 
             <div class="rotc-proof-panel" data-rotc-proof-panel data-has-existing-proof="{{ $currentEnrollment?->rotc_proof_path ? 'true' : 'false' }}" data-proof-required="{{ $requiresAdvancedRotcProof ? 'true' : 'false' }}" hidden>
@@ -85,7 +85,7 @@
         <dl>
             <div><dt>Component</dt><dd>{{ $currentEnrollment?->component?->code ?? 'Not selected' }}</dd></div>
             @if($currentEnrollment?->component?->code === 'ROTC')<div><dt>ROTC category</dt><dd>{{ $currentEnrollment->rotc_category ?? 'Not selected' }}</dd></div>@endif
-            @if($currentEnrollment?->component?->code === 'ROTC')<div><dt>Height</dt><dd>{{ $currentEnrollment->rotc_height_cm ? $currentEnrollment->rotc_height_cm.' cm' : 'Not selected' }}</dd></div>@endif
+            @if($currentEnrollment?->component?->code === 'ROTC')<div><dt>Height</dt><dd>{{ $currentEnrollment->formatted_rotc_height ?? 'Not selected' }}</dd></div>@endif
             @if(in_array($currentEnrollment?->rotc_category, ['MS-31', 'MS-41'], true))<div><dt>Approval</dt><dd>{{ $currentEnrollment->rotc_approval_status === 'approved' ? 'Approved' : 'Pending coordinator approval' }}</dd></div>@endif
             <div><dt>Shirt size</dt><dd>{{ $currentEnrollment?->shirt_size ?? 'Not selected' }}</dd></div>
             <div><dt>Section</dt><dd>{{ $currentEnrollment?->section?->name ?? 'Awaiting assignment' }}</dd></div>
@@ -100,7 +100,8 @@
     const componentOptions = [...document.querySelectorAll('[data-component-code]')];
     const rotcCategoryPanel = document.querySelector('[data-rotc-category-panel]');
     const rotcCategorySelect = document.querySelector('[data-rotc-category-select]');
-    const rotcHeightSelect = document.querySelector('[data-rotc-height-select]');
+    const rotcHeightFeet = document.querySelector('[data-rotc-height-feet]');
+    const rotcHeightInches = document.querySelector('[data-rotc-height-inches]');
     const rotcProofPanel = document.querySelector('[data-rotc-proof-panel]');
     const rotcProofInput = document.querySelector('[data-rotc-proof-input]');
 
@@ -109,9 +110,11 @@
         const isRotc = selectedComponent?.dataset.componentCode === 'ROTC';
         rotcCategoryPanel.hidden = !isRotc;
         rotcCategorySelect.required = isRotc;
-        rotcHeightSelect.required = isRotc;
+        rotcHeightFeet.required = isRotc;
+        rotcHeightInches.required = isRotc;
         if (!isRotc) rotcCategorySelect.value = '';
-        if (!isRotc) rotcHeightSelect.value = '';
+        if (!isRotc) rotcHeightFeet.value = '';
+        if (!isRotc) rotcHeightInches.value = '';
         updateRotcProof();
     }
 

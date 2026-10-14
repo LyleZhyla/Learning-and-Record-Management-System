@@ -27,9 +27,9 @@ class NstpEnrollment extends Model
         'MS-41' => 'MS-41',
     ];
 
-    public const ROTC_HEIGHT_MIN_CM = 120;
+    public const ROTC_HEIGHT_MIN_FEET = 3;
 
-    public const ROTC_HEIGHT_MAX_CM = 220;
+    public const ROTC_HEIGHT_MAX_FEET = 8;
 
     protected $fillable = [
         'student_id',
@@ -39,7 +39,8 @@ class NstpEnrollment extends Model
         'semester',
         'shirt_size',
         'rotc_category',
-        'rotc_height_cm',
+        'rotc_height_feet',
+        'rotc_height_inches',
         'rotc_proof_path',
         'rotc_proof_original_name',
         'rotc_approval_status',
@@ -71,6 +72,15 @@ class NstpEnrollment extends Model
     public function aiLearningRecommendations(): HasMany
     {
         return $this->hasMany(AiLearningRecommendation::class);
+    }
+
+    public function getFormattedRotcHeightAttribute(): ?string
+    {
+        if ($this->rotc_height_feet === null || $this->rotc_height_inches === null) {
+            return null;
+        }
+
+        return $this->rotc_height_feet."'".$this->rotc_height_inches;
     }
 
     protected function casts(): array
