@@ -27,20 +27,18 @@
 @error('recommendations')<div class="alert danger" role="alert">{{ $message }}</div>@enderror
 
 @if($recommendationHistory->total() > 0)
-<details class="card learning-history" data-learning-history-dropdown @if(request()->filled('recommendation') || request()->has('history_page')) open @endif>
-    <summary class="learning-history-summary">
-        <span class="learning-history-summary-icon" aria-hidden="true">✦</span>
-        <span class="learning-history-summary-copy">
-            <small>Saved in your account</small>
-            <strong id="learning-history-title">Previous learning recommendations</strong>
-            <span>Open and review an earlier personalized learning path.</span>
-        </span>
+<section class="card learning-history" data-learning-history-group aria-labelledby="learning-history-title">
+    <div class="learning-history-group-heading">
+        <span class="learning-history-group-icon" aria-hidden="true">✦</span>
+        <div>
+            <span class="eyebrow">Generated content</span>
+            <h2 id="learning-history-title">Saved AI Learning Paths</h2>
+            <p>Select a generated path below to open and read its complete recommendation.</p>
+        </div>
         <span class="learning-history-count">{{ $recommendationHistory->total() }} saved</span>
-        <span class="learning-history-chevron" aria-hidden="true">⌄</span>
-    </summary>
+    </div>
 
-    <div class="learning-history-dropdown-content">
-        <div class="learning-history-list">
+    <div class="learning-history-list">
         @foreach($recommendationHistory as $historyItem)
             @php
                 $historyGoal = match ($historyItem->preferences['study_goal'] ?? null) {
@@ -51,7 +49,7 @@
                     default => 'Personalized learning path',
                 };
             @endphp
-            <a class="learning-history-item {{ $savedRecommendation?->is($historyItem) ? 'active' : '' }}"
+            <a class="learning-history-item {{ $savedRecommendation?->is($historyItem) ? 'active' : '' }}" data-learning-history-item
                href="{{ route('student.recommendations.index', ['recommendation' => $historyItem->id]) }}#learning-path-results"
                @if($savedRecommendation?->is($historyItem)) aria-current="true" @endif>
                 <span class="learning-history-icon" aria-hidden="true">✦</span>
@@ -61,19 +59,18 @@
                     <span>{{ str($historyItem->guidance['overview'] ?? 'Saved AI learning recommendation')->limit(105) }}</span>
                 </span>
                 <span class="learning-history-class">{{ $historyItem->enrollment?->component?->code ?? 'NSTP' }}<small>{{ $historyItem->enrollment?->section?->code ?? 'Previous class' }}</small></span>
-                <span class="learning-history-open">View <span aria-hidden="true">→</span></span>
+                <span class="learning-history-open">Open <span aria-hidden="true">→</span></span>
             </a>
         @endforeach
-        </div>
-
-        @if($recommendationHistory->hasPages())
-            <div class="learning-history-pagination">
-                <span>Showing {{ $recommendationHistory->firstItem() }}–{{ $recommendationHistory->lastItem() }} of {{ $recommendationHistory->total() }}</span>
-                {{ $recommendationHistory->links('pagination.compact', ['showPageSize' => false]) }}
-            </div>
-        @endif
     </div>
-</details>
+
+    @if($recommendationHistory->hasPages())
+        <div class="learning-history-pagination">
+            <span>Showing {{ $recommendationHistory->firstItem() }}–{{ $recommendationHistory->lastItem() }} of {{ $recommendationHistory->total() }}</span>
+            {{ $recommendationHistory->links('pagination.compact', ['showPageSize' => false]) }}
+        </div>
+    @endif
+</section>
 @endif
 
 <section class="learning-recommendation-layout">
