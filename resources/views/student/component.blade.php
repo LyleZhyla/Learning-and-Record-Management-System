@@ -4,7 +4,7 @@
 
 @section('content')
 <section class="page-actions">
-    <div><span class="eyebrow">Student enrollment</span><h2>{{ $currentEnrollment ? 'Your NSTP selection' : ($componentSelectionOpen ? 'Choose your NSTP component' : 'NSTP selection is closed') }}</h2><p>{{ $selectionLocked ? 'Your component, ROTC details, and shirt size for this term are final.' : ($componentSelectionOpen ? 'Select or update your preferred component and required shirt size for '.$semesterLabel.' '.$academicYear.'.' : 'The NSTP Admin or Super Admin has temporarily closed component selection for '.$semesterLabel.' '.$academicYear.'.') }}</p></div>
+    <div><span class="eyebrow">Student enrollment</span><h2>{{ $currentEnrollment ? 'Your NSTP selection' : ($componentSelectionOpen ? 'Choose your NSTP component' : 'NSTP selection is closed') }}</h2><p>{{ $selectionLocked ? 'Your component, ROTC details, and shirt size for this term are final.' : ($componentSelectionOpen ? 'Select or update your preferred component and required shirt size for '.$semesterLabel.' '.$academicYear.'. ROTC students must also provide their height.' : 'The NSTP Admin or Super Admin has temporarily closed component selection for '.$semesterLabel.' '.$academicYear.'.') }}</p></div>
 </section>
 
 @if(! $currentEnrollment && ! $componentSelectionOpen)
@@ -46,6 +46,15 @@
                     @endforeach
                 </select>
                 @error('rotc_category')<small class="field-error">{{ $message }}</small>@enderror
+
+                <label class="rotc-height-label" for="rotc_height_cm">Height</label>
+                <select id="rotc_height_cm" name="rotc_height_cm" data-rotc-height-select @disabled($selectionLocked)>
+                    <option value="">Choose your height</option>
+                    @foreach($rotcHeights as $height)
+                        <option value="{{ $height }}" @selected((int) old('rotc_height_cm', $currentEnrollment?->rotc_height_cm) === $height)>{{ $height }} cm</option>
+                    @endforeach
+                </select>
+                @error('rotc_height_cm')<small class="field-error">{{ $message }}</small>@enderror
             </div>
 
             <div class="rotc-proof-panel" data-rotc-proof-panel data-has-existing-proof="{{ $currentEnrollment?->rotc_proof_path ? 'true' : 'false' }}" data-proof-required="{{ $requiresAdvancedRotcProof ? 'true' : 'false' }}" hidden>
@@ -65,7 +74,7 @@
             </select>
             @error('shirt_size')<small class="field-error">{{ $message }}</small>@enderror
 
-            <p class="form-help">{{ $selectionLocked ? 'Contact the NSTP Admin if the recorded selection needs administrative correction.' : 'Review the component, ROTC details, and shirt size before saving.' }}</p>
+            <p class="form-help">{{ $selectionLocked ? 'Contact the NSTP Admin if the recorded selection needs administrative correction.' : 'Review the component, ROTC category and height, and shirt size before saving.' }}</p>
             @error('selection')<small class="field-error">{{ $message }}</small>@enderror
             @if(! $selectionLocked)<div class="form-actions"><button class="primary-button compact" type="submit">{{ $currentEnrollment ? 'Update enrollment details' : 'Save enrollment preferences' }}</button></div>@endif
         </form>
@@ -76,6 +85,7 @@
         <dl>
             <div><dt>Component</dt><dd>{{ $currentEnrollment?->component?->code ?? 'Not selected' }}</dd></div>
             @if($currentEnrollment?->component?->code === 'ROTC')<div><dt>ROTC category</dt><dd>{{ $currentEnrollment->rotc_category ?? 'Not selected' }}</dd></div>@endif
+            @if($currentEnrollment?->component?->code === 'ROTC')<div><dt>Height</dt><dd>{{ $currentEnrollment->rotc_height_cm ? $currentEnrollment->rotc_height_cm.' cm' : 'Not selected' }}</dd></div>@endif
             @if(in_array($currentEnrollment?->rotc_category, ['MS-31', 'MS-41'], true))<div><dt>Approval</dt><dd>{{ $currentEnrollment->rotc_approval_status === 'approved' ? 'Approved' : 'Pending coordinator approval' }}</dd></div>@endif
             <div><dt>Shirt size</dt><dd>{{ $currentEnrollment?->shirt_size ?? 'Not selected' }}</dd></div>
             <div><dt>Section</dt><dd>{{ $currentEnrollment?->section?->name ?? 'Awaiting assignment' }}</dd></div>
@@ -90,6 +100,7 @@
     const componentOptions = [...document.querySelectorAll('[data-component-code]')];
     const rotcCategoryPanel = document.querySelector('[data-rotc-category-panel]');
     const rotcCategorySelect = document.querySelector('[data-rotc-category-select]');
+    const rotcHeightSelect = document.querySelector('[data-rotc-height-select]');
     const rotcProofPanel = document.querySelector('[data-rotc-proof-panel]');
     const rotcProofInput = document.querySelector('[data-rotc-proof-input]');
 
@@ -98,7 +109,9 @@
         const isRotc = selectedComponent?.dataset.componentCode === 'ROTC';
         rotcCategoryPanel.hidden = !isRotc;
         rotcCategorySelect.required = isRotc;
+        rotcHeightSelect.required = isRotc;
         if (!isRotc) rotcCategorySelect.value = '';
+        if (!isRotc) rotcHeightSelect.value = '';
         updateRotcProof();
     }
 

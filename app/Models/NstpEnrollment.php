@@ -27,6 +27,10 @@ class NstpEnrollment extends Model
         'MS-41' => 'MS-41',
     ];
 
+    public const ROTC_HEIGHT_MIN_CM = 120;
+
+    public const ROTC_HEIGHT_MAX_CM = 220;
+
     protected $fillable = [
         'student_id',
         'component_id',
@@ -35,6 +39,7 @@ class NstpEnrollment extends Model
         'semester',
         'shirt_size',
         'rotc_category',
+        'rotc_height_cm',
         'rotc_proof_path',
         'rotc_proof_original_name',
         'rotc_approval_status',

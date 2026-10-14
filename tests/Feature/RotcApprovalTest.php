@@ -24,12 +24,14 @@ class RotcApprovalTest extends TestCase
         $this->actingAs($student)->put('/student/component', [
             'nstp_component_id' => $rotc->id,
             'rotc_category' => 'MS-31',
+            'rotc_height_cm' => 170,
             'shirt_size' => 'M',
         ])->assertSessionHasErrors('ms1_proof');
 
         $this->actingAs($student)->put('/student/component', [
             'nstp_component_id' => $rotc->id,
             'rotc_category' => 'MS-31',
+            'rotc_height_cm' => 170,
             'shirt_size' => 'M',
             'ms1_proof' => UploadedFile::fake()->create('ms1-completion.pdf', 250, 'application/pdf'),
         ])->assertRedirect()->assertSessionHasNoErrors();

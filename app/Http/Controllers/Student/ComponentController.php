@@ -49,6 +49,7 @@ class ComponentController extends Controller
             'semesterLabel' => NstpSection::SEMESTERS[$semester],
             'shirtSizes' => NstpEnrollment::SHIRT_SIZES,
             'rotcCategories' => NstpEnrollment::ROTC_CATEGORIES,
+            'rotcHeights' => range(NstpEnrollment::ROTC_HEIGHT_MIN_CM, NstpEnrollment::ROTC_HEIGHT_MAX_CM),
             'componentSelectionOpen' => $componentSelectionOpen,
             'selectionLocked' => $selectionLocked,
             'requiresAdvancedRotcProof' => WorkflowDefinition::ruleEnabled('rotc_approval', 'require_proof'),
@@ -67,7 +68,7 @@ class ComponentController extends Controller
 
         if ($enrollment->exists && WorkflowDefinition::ruleEnabled('component_selection', 'lock_after_submission')) {
             return back()->withErrors([
-                'selection' => 'Your NSTP component, ROTC details, and shirt size are final and can no longer be changed.',
+                'selection' => 'Your NSTP component, ROTC category, height, and shirt size are final and can no longer be changed.',
             ]);
         }
 
@@ -98,6 +99,12 @@ class ComponentController extends Controller
                 'nullable',
                 Rule::in(array_keys(NstpEnrollment::ROTC_CATEGORIES)),
             ],
+            'rotc_height_cm' => [
+                Rule::requiredIf(fn () => $selectedComponent?->code === 'ROTC'),
+                'nullable',
+                'integer',
+                'between:'.NstpEnrollment::ROTC_HEIGHT_MIN_CM.','.NstpEnrollment::ROTC_HEIGHT_MAX_CM,
+            ],
             'ms1_proof' => [
                 Rule::requiredIf(fn () => $requiresAdvancedProof && blank($enrollment->rotc_proof_path)),
                 'nullable',
@@ -107,10 +114,13 @@ class ComponentController extends Controller
             ],
         ], [
             'nstp_component_id.exists' => 'The selected NSTP component is not available.',
+            'rotc_height_cm.required' => 'Please select your height for ROTC.',
+            'rotc_height_cm.between' => 'ROTC height must be between '.NstpEnrollment::ROTC_HEIGHT_MIN_CM.' and '.NstpEnrollment::ROTC_HEIGHT_MAX_CM.' cm.',
         ]);
 
         $componentId = (int) $validated['nstp_component_id'];
         $rotcCategory = $selectedComponent?->code === 'ROTC' ? $validated['rotc_category'] : null;
+        $rotcHeightCm = $selectedComponent?->code === 'ROTC' ? (int) $validated['rotc_height_cm'] : null;
         $oldProofPath = $enrollment->rotc_proof_path;
         $newProof = $request->file('ms1_proof');
         $newProofPath = $newProof?->store('rotc-ms1-proofs');
@@ -125,6 +135,7 @@ class ComponentController extends Controller
                 'section_id' => $enrollment->exists && $enrollment->component_id !== $componentId ? null : $enrollment->section_id,
                 'shirt_size' => $validated['shirt_size'],
                 'rotc_category' => $rotcCategory,
+                'rotc_height_cm' => $rotcHeightCm,
                 'rotc_proof_path' => $isAdvancedRotc ? ($newProofPath ?? $oldProofPath) : null,
                 'rotc_proof_original_name' => $isAdvancedRotc ? ($newProof?->getClientOriginalName() ?? $enrollment->rotc_proof_original_name) : null,
                 'rotc_approval_status' => $isAdvancedRotc
