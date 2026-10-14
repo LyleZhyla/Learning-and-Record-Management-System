@@ -33,14 +33,62 @@ class LearningController extends Controller
 
     public function assessments(Request $request): View
     {
+        $filters = $request->validate([
+            'type' => ['nullable', Rule::in(array_keys(Assessment::TYPES))],
+        ]);
         $enrollment = $this->access->currentEnrollment($request->user());
-        $assessments = Assessment::with(['section.component', 'submissions' => fn ($q) => $q->where('student_id', $request->user()->id)])->whereRaw('1 = 0')->paginate($this->perPage())->withQueryString();
+        $studentSubmission = fn ($query) => $query->where('student_id', $request->user()->id);
+        $assessments = Assessment::with(['section.component', 'gradingCategory', 'submissions' => $studentSubmission])
+            ->whereRaw('1 = 0')
+            ->paginate($this->perPage())
+            ->withQueryString();
+        $assessmentTypes = Assessment::TYPES;
+        $typeCounts = collect($assessmentTypes)->map(fn () => 0);
+        $summary = [
+            'total' => 0,
+            'to_do' => 0,
+            'turned_in' => 0,
+            'graded' => 0,
+        ];
+
         if ($enrollment) {
-            $assessments = Assessment::with(['section.component', 'submissions' => fn ($q) => $q->where('student_id', $request->user()->id)])
-                ->where('section_id', $enrollment->section_id)->where('status', 'published')->latest()->paginate($this->perPage())->withQueryString();
+            $publishedAssessments = Assessment::with(['submissions' => $studentSubmission])
+                ->where('section_id', $enrollment->section_id)
+                ->where('status', 'published')
+                ->get(['id', 'type', 'due_at']);
+
+            $typeCounts = collect($assessmentTypes)->map(
+                fn (string $label, string $type) => $publishedAssessments->where('type', $type)->count()
+            );
+            $summary = [
+                'total' => $publishedAssessments->count(),
+                'to_do' => $publishedAssessments->filter(fn (Assessment $assessment) => $assessment->submissions->isEmpty())->count(),
+                'turned_in' => $publishedAssessments->filter(function (Assessment $assessment): bool {
+                    $submission = $assessment->submissions->first();
+
+                    return $submission && $submission->score === null;
+                })->count(),
+                'graded' => $publishedAssessments->filter(fn (Assessment $assessment) => $assessment->submissions->first()?->score !== null)->count(),
+            ];
+
+            $assessments = Assessment::with(['section.component', 'gradingCategory', 'submissions' => $studentSubmission])
+                ->where('section_id', $enrollment->section_id)
+                ->where('status', 'published')
+                ->when($filters['type'] ?? null, fn ($query, string $type) => $query->where('type', $type))
+                ->latest('published_at')
+                ->latest('id')
+                ->paginate($this->perPage())
+                ->withQueryString();
         }
 
-        return view('student.assessments.index', compact('enrollment', 'assessments'));
+        return view('student.assessments.index', compact(
+            'enrollment',
+            'assessments',
+            'assessmentTypes',
+            'typeCounts',
+            'summary',
+            'filters',
+        ));
     }
 
     public function show(Request $request, Assessment $assessment): View
