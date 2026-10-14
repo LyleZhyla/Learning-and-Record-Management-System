@@ -75,7 +75,21 @@ class StudentIdCardTest extends TestCase
             ->assertSee('2026123456')
             ->assertSee('SCAN FOR ATTENDANCE')
             ->assertSee('<svg', false)
-            ->assertSee('Print / Save as PDF');
+            ->assertSee('Print / Save as PDF')
+            ->assertSee('Download PNG')
+            ->assertSee('Download JPG')
+            ->assertSee('85.60 × 53.98 mm');
+
+        foreach (['png' => 'image/png', 'jpg' => 'image/jpeg'] as $format => $contentType) {
+            $response = $this->actingAs($student)->get('/student/student-id/download/'.$format)
+                ->assertOk()
+                ->assertHeader('content-type', $contentType)
+                ->assertDownload('juan-santos-dela-cruz-snapie-student-id.'.$format);
+
+            $imageSize = getimagesizefromstring($response->getContent());
+            $this->assertSame(1011, $imageSize[0]);
+            $this->assertSame(638, $imageSize[1]);
+        }
     }
 
     public function test_student_id_page_is_restricted_to_student_accounts(): void
@@ -83,7 +97,9 @@ class StudentIdCardTest extends TestCase
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
 
         $this->get('/student/student-id')->assertRedirect('/login');
+        $this->get('/student/student-id/download/png')->assertRedirect('/login');
         $this->actingAs($admin)->get('/student/student-id')->assertForbidden();
+        $this->actingAs($admin)->get('/student/student-id/download/png')->assertForbidden();
     }
 
     public function test_student_id_still_renders_with_an_incomplete_profile(): void
@@ -111,6 +127,8 @@ class StudentIdCardTest extends TestCase
             ->assertSee('Your Student ID')
             ->assertSee('student-id-card', false)
             ->assertSee('Print / Save Student ID')
+            ->assertSee('Download PNG')
+            ->assertSee('Download JPG')
             ->assertDontSee('View / Print Student ID');
     }
 }

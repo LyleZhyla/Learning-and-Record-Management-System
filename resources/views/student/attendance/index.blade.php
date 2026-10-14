@@ -3,7 +3,7 @@
 @section('page-title', 'Attendance')
 
 @section('content')
-<div class="page-actions student-id-page-actions attendance-id-actions"><div><span class="eyebrow">Attendance identification</span><h2>Your Student ID</h2><p>Present the generated ID below when your facilitator or coordinator records attendance.</p></div><div class="student-qr-actions"><button class="primary-button compact" type="button" onclick="window.print()">Print / Save Student ID</button><a class="secondary-outline-button" href="{{ route('student.attendance.qr') }}">Download QR</a></div></div>
+<div class="page-actions student-id-page-actions attendance-id-actions"><div><span class="eyebrow">Attendance identification</span><h2>Your Student ID</h2><p>Present the generated ID below when your facilitator or coordinator records attendance. Print at 100% scale for the standard 85.60 × 53.98 mm card size.</p></div><div class="student-id-download-actions"><button class="primary-button compact" type="button" onclick="window.print()">Print / Save Student ID</button><a class="secondary-outline-button" href="{{ route('student.id-card.download', 'png') }}">Download PNG</a><a class="secondary-outline-button" href="{{ route('student.id-card.download', 'jpg') }}">Download JPG</a><a class="secondary-outline-button" href="{{ route('student.attendance.qr') }}">Download QR</a></div></div>
 <section class="student-id-stage attendance-student-id">
     @include('student._id-card')
 </section>

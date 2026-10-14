@@ -5,8 +5,8 @@ use App\Http\Controllers\Admin\ChedApplicationController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DirectoryExportController;
-use App\Http\Controllers\Admin\LandingPageContentController;
 use App\Http\Controllers\Admin\DocumentFormController;
+use App\Http\Controllers\Admin\LandingPageContentController;
 use App\Http\Controllers\Admin\NotificationRuleController;
 use App\Http\Controllers\Admin\PolicyRequirementController;
 use App\Http\Controllers\Admin\ProfileController;
@@ -34,12 +34,12 @@ use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboard
 use App\Http\Controllers\Facilitator\StudentController as FacilitatorStudentController;
 use App\Http\Controllers\FacilitatorHonorariumController;
 use App\Http\Controllers\FacilitatorRequirementController;
+use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\Learning\AssessmentController;
 use App\Http\Controllers\Learning\AttendanceController as ManagementAttendanceController;
 use App\Http\Controllers\Learning\MaterialController;
 use App\Http\Controllers\Learning\OmrScannerController;
 use App\Http\Controllers\Learning\ScheduleController;
-use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NstpAdmin\AccountController as NstpAdminAccountController;
 use App\Http\Controllers\NstpAdmin\AnnouncementController as NstpAdminAnnouncementController;
@@ -572,6 +572,9 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::get('/attendance', [StudentAttendanceController::class, 'index'])->name('attendance.index');
     Route::get('/attendance/qr', [StudentAttendanceController::class, 'qr'])->name('attendance.qr');
     Route::get('/student-id', [StudentAttendanceController::class, 'studentId'])->name('id-card');
+    Route::get('/student-id/download/{format}', [StudentAttendanceController::class, 'studentIdImage'])
+        ->whereIn('format', ['png', 'jpg'])
+        ->name('id-card.download');
     Route::get('/materials', [StudentLearningController::class, 'materials'])->name('materials.index');
     Route::get('/materials/{material}/download', [MaterialController::class, 'download'])->name('materials.download');
     Route::get('/learning-recommendations', [StudentLearningRecommendationController::class, 'index'])->name('recommendations.index');

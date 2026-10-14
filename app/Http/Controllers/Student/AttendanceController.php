@@ -8,7 +8,9 @@ use App\Models\NstpEnrollment;
 use App\Models\StudentRegistration;
 use App\Models\User;
 use App\Services\QrCodeService;
+use App\Services\StudentIdCardImageService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -56,6 +58,28 @@ class AttendanceController extends Controller
         $qrSvg = $qrCode->generateSvg($student->studentQrPayload());
 
         return view('student.id-card', $this->studentIdData($student, $qrSvg));
+    }
+
+    public function studentIdImage(
+        Request $request,
+        QrCodeService $qrCode,
+        StudentIdCardImageService $imageService,
+        string $format
+    ): Response {
+        $student = $request->user()->load('studentProfile');
+        if (blank($student->student_qr_token)) {
+            $student->save();
+        }
+
+        $data = $this->studentIdData($student, '');
+        $image = $imageService->render($data, $qrCode->generatePng($student->studentQrPayload(), 300), $format);
+        $filename = str($student->name)->slug().'-snapie-student-id.'.$format;
+
+        return response($image, 200, [
+            'Content-Type' => $format === 'png' ? 'image/png' : 'image/jpeg',
+            'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+            'Cache-Control' => 'private, no-store',
+        ]);
     }
 
     private function studentIdData(User $student, string $qrSvg): array
