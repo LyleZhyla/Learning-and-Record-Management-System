@@ -8,6 +8,12 @@ use RuntimeException;
 
 class StudentIdCardImageService
 {
+    public const WIDTH_MM = 85.60;
+
+    public const HEIGHT_MM = 53.98;
+
+    public const DPI = 300;
+
     public const WIDTH = 1011;
 
     public const HEIGHT = 638;
@@ -17,6 +23,7 @@ class StudentIdCardImageService
     {
         $image = imagecreatetruecolor(self::WIDTH, self::HEIGHT);
         imageantialias($image, true);
+        imageresolution($image, self::DPI, self::DPI);
 
         $white = imagecolorallocate($image, 255, 255, 255);
         $design = SystemSetting::studentIdDesign();

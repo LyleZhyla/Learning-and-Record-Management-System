@@ -79,7 +79,9 @@ class StudentIdCardTest extends TestCase
             ->assertSee('Print / Save as PDF')
             ->assertSee('Download PNG')
             ->assertSee('Download JPG')
-            ->assertSee('85.60 × 53.98 mm');
+            ->assertSee('85.60 × 53.98 mm')
+            ->assertSee('data-card-standard="ISO/IEC 7810 ID-1"', false)
+            ->assertSee('data-card-size="85.60 × 53.98 mm"', false);
 
         foreach (['png' => 'image/png', 'jpg' => 'image/jpeg'] as $format => $contentType) {
             $response = $this->actingAs($student)->get('/student/student-id/download/'.$format)
@@ -90,6 +92,10 @@ class StudentIdCardTest extends TestCase
             $imageSize = getimagesizefromstring($response->getContent());
             $this->assertSame(1011, $imageSize[0]);
             $this->assertSame(638, $imageSize[1]);
+
+            $image = imagecreatefromstring($response->getContent());
+            $this->assertSame([300, 300], imageresolution($image));
+            imagedestroy($image);
         }
     }
 

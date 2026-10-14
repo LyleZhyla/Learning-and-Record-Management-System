@@ -1,6 +1,6 @@
 @php($branding = \App\Models\SystemSetting::branding())
 @php($idDesign = \App\Models\SystemSetting::studentIdDesign())
-<article class="student-id-card" aria-label="Auto-generated student identification card" style="--id-primary:{{ $idDesign['primary_color'] }};--id-secondary:{{ $idDesign['secondary_color'] }};--id-accent:{{ $idDesign['accent_color'] }}">
+<article class="student-id-card" aria-label="Auto-generated student identification card" data-card-standard="ISO/IEC 7810 ID-1" data-card-size="85.60 × 53.98 mm" style="--id-primary:{{ $idDesign['primary_color'] }};--id-secondary:{{ $idDesign['secondary_color'] }};--id-accent:{{ $idDesign['accent_color'] }}">
     <div class="student-id-accent"></div>
     <div class="student-id-watermark" aria-hidden="true">{{ $branding['program_short_name'] }}</div>
     <header class="student-id-header">
