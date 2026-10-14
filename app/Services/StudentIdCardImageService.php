@@ -19,13 +19,14 @@ class StudentIdCardImageService
         imageantialias($image, true);
 
         $white = imagecolorallocate($image, 255, 255, 255);
-        $navy = imagecolorallocate($image, 23, 61, 109);
-        $blue = imagecolorallocate($image, 40, 120, 206);
-        $green = imagecolorallocate($image, 39, 167, 139);
+        $design = SystemSetting::studentIdDesign();
+        $navy = $this->allocateHexColor($image, $design['primary_color']);
+        $blue = $this->allocateHexColor($image, $design['secondary_color']);
+        $green = $this->allocateHexColor($image, $design['accent_color']);
         $ink = imagecolorallocate($image, 22, 43, 71);
         $muted = imagecolorallocate($image, 101, 118, 139);
         $line = imagecolorallocate($image, 225, 232, 240);
-        $photoBlue = imagecolorallocate($image, 31, 93, 158);
+        $photoBlue = $blue;
 
         imagefill($image, 0, 0, $white);
         imagefilledrectangle($image, 0, 0, 570, 12, $navy);
@@ -37,10 +38,10 @@ class StudentIdCardImageService
         $this->drawContainedImage($image, $this->brandingLogoPath($branding, 'organization'), 29, 28, 82, 82);
         $this->drawContainedImage($image, $this->brandingLogoPath($branding, 'program'), 90, 28, 82, 82);
 
-        $this->drawText($image, $branding['organization_short_name'].' '.$branding['program_short_name'], 26, 182, 68, $navy, true);
-        $this->drawText($image, $branding['platform_name'], 12, 182, 94, $muted);
+        $this->drawFittedText($image, $branding['organization_name'], 24, 16, 182, 66, 620, $navy, true);
+        $this->drawFittedText($image, $branding['program_name'], 13, 10, 182, 94, 620, $muted);
         imagefilledrectangle($image, 829, 48, 978, 91, $navy);
-        $this->drawCenteredText($image, 'STUDENT ID', 15, 829, 978, 76, $white, true);
+        $this->drawCenteredFittedText($image, $design['title'], 15, 10, 829, 978, 76, $white, true);
 
         $student = $data['student'];
         $details = $data['details'];
@@ -56,19 +57,29 @@ class StudentIdCardImageService
             imagefilledrectangle($image, 34, 166, 224, 440, $photoBlue);
             $this->drawCenteredText($image, mb_strtoupper(mb_substr($displayName, 0, 1)), 72, 34, 224, 330, $white, true);
         }
+        imagefilledrectangle($image, 34, 410, 224, 440, $navy);
+        $this->drawCenteredText($image, 'OFFICIAL STUDENT', 9, 34, 224, 431, $white, true);
 
-        $this->drawText($image, 'FULL NAME', 11, 255, 177, $muted, true);
+        $this->drawText($image, 'OFFICIAL STUDENT RECORD', 11, 255, 177, $muted, true);
         $this->drawFittedText($image, mb_strtoupper($displayName), 34, 22, 255, 222, 485, $navy, true);
 
-        $this->drawField($image, 'STUDENT NUMBER', $details?->student_number ?: 'Not provided', 255, 269, 220, $line, $muted, $ink);
-        $this->drawField($image, 'NSTP COMPONENT', $enrollment?->component?->code ?: 'Not assigned', 500, 269, 220, $line, $muted, $ink);
-        $this->drawField($image, 'COURSE', $details?->course ?: 'Not provided', 255, 346, 465, $line, $muted, $ink);
+        $this->drawText($image, 'STUDENT NUMBER', 10, 255, 254, $muted, true);
+        $this->drawFittedText($image, $details?->student_number ?: 'Not provided', 22, 14, 255, 283, 465, $navy, true);
+        if ($design['show_component']) {
+            $this->drawField($image, 'NSTP COMPONENT', $enrollment?->component?->code ?: 'Not assigned', 255, 310, 220, $line, $muted, $ink);
+        }
+        $this->drawField($image, 'ACADEMIC YEAR', $enrollment?->academic_year ?: now()->format('Y'), 500, 310, 220, $line, $muted, $ink);
+        if ($design['show_course']) {
+            $this->drawField($image, 'COURSE', $details?->course ?: 'Not provided', 255, 375, 465, $line, $muted, $ink);
+        }
         $emergencyContact = $details?->emergency_contact_name ?: 'Not provided';
         if ($details?->emergency_relationship) {
             $emergencyContact .= ' · '.$details->emergency_relationship;
         }
-        $this->drawField($image, 'EMERGENCY CONTACT', $emergencyContact, 255, 423, 465, $line, $muted, $ink);
-        $this->drawText($image, $details?->emergency_contact_number ?: 'Contact number not provided', 12, 255, 512, $muted);
+        if ($design['show_emergency_contact']) {
+            $this->drawField($image, 'EMERGENCY CONTACT', $emergencyContact, 255, 440, 465, $line, $muted, $ink);
+            $this->drawText($image, $details?->emergency_contact_number ?: 'Contact number not provided', 12, 255, 529, $muted);
+        }
 
         imagefilledrectangle($image, 759, 168, 977, 456, $white);
         imagerectangle($image, 759, 168, 977, 456, $line);
@@ -81,8 +92,8 @@ class StudentIdCardImageService
         $this->drawCenteredText($image, 'Permanent student QR', 10, 759, 977, 425, $muted);
 
         imagefilledrectangle($image, 0, 566, self::WIDTH, self::HEIGHT, $navy);
-        $this->drawText($image, 'Valid while enrolled in '.$branding['organization_short_name'].' '.$branding['program_short_name'], 12, 31, 609, $white);
-        $this->drawText($image, $enrollment?->academic_year ?: now()->format('Y'), 15, 883, 609, $white, true);
+        $this->drawFittedText($image, $design['footer_text'], 12, 9, 31, 609, 690, $white);
+        $this->drawFittedText($image, $branding['organization_short_name'].' · '.$branding['program_short_name'], 15, 10, 820, 609, 158, $white, true);
 
         ob_start();
         if ($format === 'png') {
@@ -174,6 +185,19 @@ class StudentIdCardImageService
         $this->drawText($image, $text, $size, $left + intdiv(($right - $left) - $width, 2), $baseline, $color, $bold);
     }
 
+    private function drawCenteredFittedText($image, string $text, int $size, int $minimumSize, int $left, int $right, int $baseline, int $color, bool $bold = false): void
+    {
+        while ($size > $minimumSize) {
+            $box = imagettfbbox($size, 0, $this->font($bold), $text);
+            if (($box[2] - $box[0]) <= ($right - $left - 16)) {
+                break;
+            }
+            $size--;
+        }
+
+        $this->drawCenteredText($image, $text, $size, $left, $right, $baseline, $color, $bold);
+    }
+
     private function drawFittedText($image, string $text, int $size, int $minimumSize, int $x, int $baseline, int $maximumWidth, int $color, bool $bold = false): void
     {
         while ($size > $minimumSize) {
@@ -190,6 +214,18 @@ class StudentIdCardImageService
     private function drawText($image, string $text, int $size, int $x, int $baseline, int $color, bool $bold = false): void
     {
         imagettftext($image, $size, 0, $x, $baseline, $color, $this->font($bold), $text);
+    }
+
+    private function allocateHexColor($image, string $hex): int
+    {
+        $hex = ltrim($hex, '#');
+
+        return imagecolorallocate(
+            $image,
+            hexdec(substr($hex, 0, 2)),
+            hexdec(substr($hex, 2, 2)),
+            hexdec(substr($hex, 4, 2)),
+        );
     }
 
     private function font(bool $bold): string

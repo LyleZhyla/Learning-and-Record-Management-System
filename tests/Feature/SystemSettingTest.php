@@ -80,6 +80,14 @@ class SystemSettingTest extends TestCase
             'organization_website' => 'https://example.edu.ph',
             'organization_logo' => UploadedFile::fake()->image('university.png'),
             'program_logo' => UploadedFile::fake()->image('program.png'),
+            'student_id_title' => 'UNIVERSITY ID',
+            'student_id_primary_color' => '#4A174D',
+            'student_id_secondary_color' => '#B87333',
+            'student_id_accent_color' => '#F4C95D',
+            'student_id_footer_text' => 'Property of Sample State University',
+            'student_id_show_course' => '1',
+            'student_id_show_component' => '1',
+            'student_id_show_emergency_contact' => '0',
         ])->assertRedirect()->assertSessionHasNoErrors();
 
         $branding = SystemSetting::branding();
@@ -87,12 +95,22 @@ class SystemSettingTest extends TestCase
         $this->assertSame('SSU', $branding['organization_short_name']);
         Storage::disk('public')->assertExists($branding['organization_logo_path']);
         Storage::disk('public')->assertExists($branding['program_logo_path']);
+        $idDesign = SystemSetting::studentIdDesign();
+        $this->assertSame('UNIVERSITY ID', $idDesign['title']);
+        $this->assertSame('#4A174D', $idDesign['primary_color']);
+        $this->assertSame('Property of Sample State University', $idDesign['footer_text']);
+        $this->assertFalse($idDesign['show_emergency_contact']);
 
         $this->actingAs($superAdmin)->get('/admin/dashboard')
             ->assertOk()
             ->assertSee('images/snapie-landscape-dark.png', false)
-            ->assertSee('SSU NSTP')
-            ->assertSee('Sample State University');
+            ->assertSee('SSU NSTP');
+
+        $this->actingAs($superAdmin)->get('/admin/settings')
+            ->assertOk()
+            ->assertSee('Student ID card design')
+            ->assertSee('Sample State University')
+            ->assertSee('UNIVERSITY ID');
     }
 
     public function test_nstp_admin_can_manage_the_public_registration_period(): void

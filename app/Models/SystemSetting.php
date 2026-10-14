@@ -20,6 +20,17 @@ class SystemSetting extends Model
         'program_logo_path' => null,
     ];
 
+    public const STUDENT_ID_DESIGN_DEFAULTS = [
+        'title' => 'STUDENT ID',
+        'primary_color' => '#123B70',
+        'secondary_color' => '#2878CE',
+        'accent_color' => '#27A78B',
+        'footer_text' => 'Official identification for enrolled NSTP students',
+        'show_course' => true,
+        'show_component' => true,
+        'show_emergency_contact' => true,
+    ];
+
     public const LANDING_PAGE_DEFAULTS = [
         'hero_video_url' => 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20261005_182346_a590ff3b-72e5-41ce-8f69-a8c823eaecaa.mp4',
         'hero_poster_url' => 'https://tau.edu.ph/images/Content/2026/70.jpg',
@@ -103,6 +114,25 @@ class SystemSetting extends Model
         return filled($branding[$key] ?? null)
             ? Storage::disk('public')->url($branding[$key])
             : asset($fallback);
+    }
+
+    public static function studentIdDesign(): array
+    {
+        if (! Schema::hasTable('system_settings')) {
+            return self::STUDENT_ID_DESIGN_DEFAULTS;
+        }
+
+        $stored = json_decode((string) static::query()->where('key', 'student_id_design')->value('value'), true);
+        $design = array_replace(
+            self::STUDENT_ID_DESIGN_DEFAULTS,
+            is_array($stored) ? array_intersect_key($stored, self::STUDENT_ID_DESIGN_DEFAULTS) : []
+        );
+
+        foreach (['show_course', 'show_component', 'show_emergency_contact'] as $key) {
+            $design[$key] = filter_var($design[$key], FILTER_VALIDATE_BOOL);
+        }
+
+        return $design;
     }
 
     public static function landingPageContent(): array

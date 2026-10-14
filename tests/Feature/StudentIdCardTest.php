@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\StudentProfile;
+use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -100,6 +101,35 @@ class StudentIdCardTest extends TestCase
         $this->get('/student/student-id/download/png')->assertRedirect('/login');
         $this->actingAs($admin)->get('/student/student-id')->assertForbidden();
         $this->actingAs($admin)->get('/student/student-id/download/png')->assertForbidden();
+    }
+
+    public function test_student_id_uses_the_configured_design_on_screen_and_in_downloads(): void
+    {
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        SystemSetting::updateOrCreate(['key' => 'student_id_design'], ['value' => json_encode([
+            'title' => 'CAMPUS ID',
+            'primary_color' => '#5B214D',
+            'secondary_color' => '#C47A2C',
+            'accent_color' => '#E3B341',
+            'footer_text' => 'Return this card to the NSTP Office',
+            'show_course' => false,
+            'show_component' => true,
+            'show_emergency_contact' => false,
+        ])]);
+
+        $this->actingAs($student)->get('/student/student-id')
+            ->assertOk()
+            ->assertSee('CAMPUS ID')
+            ->assertSee('Return this card to the NSTP Office')
+            ->assertSee('--id-primary:#5B214D', false)
+            ->assertDontSee('Emergency contact')
+            ->assertDontSee('<span>Course</span>', false);
+
+        $response = $this->actingAs($student)->get('/student/student-id/download/png')->assertOk();
+        $image = imagecreatefromstring($response->getContent());
+        $footerColor = imagecolorsforindex($image, imagecolorat($image, 10, 600));
+        $this->assertSame(['red' => 91, 'green' => 33, 'blue' => 77], array_intersect_key($footerColor, array_flip(['red', 'green', 'blue'])));
+        imagedestroy($image);
     }
 
     public function test_student_id_still_renders_with_an_incomplete_profile(): void

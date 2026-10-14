@@ -29,6 +29,30 @@
                     @if($branding['program_logo_path'])<label class="review-category-check"><input type="checkbox" name="remove_program_logo" value="1"> Restore built-in program logo</label>@endif
                 </div>
             </div>
+
+            <div class="registration-cycle-settings student-id-design-settings">
+                <div class="card-heading"><div><h3>Student ID card design</h3><p>Customize the official ID shown in student profiles, printed cards, and PNG/JPG downloads.</p></div></div>
+                <div class="form-grid">
+                    <label class="field-group full"><span>Card title</span><input name="student_id_title" value="{{ old('student_id_title', $studentIdDesign['title']) }}" maxlength="40" required></label>
+                    <label class="field-group full"><span>Footer text</span><input name="student_id_footer_text" value="{{ old('student_id_footer_text', $studentIdDesign['footer_text']) }}" maxlength="120" required></label>
+                    <label class="field-group id-design-color-field"><span>Primary color</span><input type="color" name="student_id_primary_color" value="{{ old('student_id_primary_color', $studentIdDesign['primary_color']) }}" required><small>Header, name, and footer</small></label>
+                    <label class="field-group id-design-color-field"><span>Secondary color</span><input type="color" name="student_id_secondary_color" value="{{ old('student_id_secondary_color', $studentIdDesign['secondary_color']) }}" required><small>Photo and supporting accents</small></label>
+                    <label class="field-group id-design-color-field"><span>Accent color</span><input type="color" name="student_id_accent_color" value="{{ old('student_id_accent_color', $studentIdDesign['accent_color']) }}" required><small>Top stripe and highlights</small></label>
+                </div>
+                <fieldset class="id-design-field-visibility">
+                    <legend>Information shown on the ID</legend>
+                    @foreach([
+                        'student_id_show_course' => ['Course', $studentIdDesign['show_course']],
+                        'student_id_show_component' => ['NSTP component', $studentIdDesign['show_component']],
+                        'student_id_show_emergency_contact' => ['Emergency contact', $studentIdDesign['show_emergency_contact']],
+                    ] as $field => [$label, $enabled])
+                        <label><input type="hidden" name="{{ $field }}" value="0"><input type="checkbox" name="{{ $field }}" value="1" @checked(old($field, $enabled))> <span>{{ $label }}</span></label>
+                    @endforeach
+                </fieldset>
+                <div class="id-design-color-preview" style="--preview-primary:{{ old('student_id_primary_color', $studentIdDesign['primary_color']) }};--preview-secondary:{{ old('student_id_secondary_color', $studentIdDesign['secondary_color']) }};--preview-accent:{{ old('student_id_accent_color', $studentIdDesign['accent_color']) }}" data-id-design-preview>
+                    <i></i><strong data-id-preview-title>{{ old('student_id_title', $studentIdDesign['title']) }}</strong><span></span><small data-id-preview-footer>{{ old('student_id_footer_text', $studentIdDesign['footer_text']) }}</small>
+                </div>
+            </div>
             <label class="field-group">
                 <span>Inactive for</span>
                 <div class="timeout-input-wrap"><input type="number" name="inactivity_timeout_minutes" min="1" max="1440" value="{{ old('inactivity_timeout_minutes', $timeoutMinutes) }}" required><strong>minutes</strong></div>

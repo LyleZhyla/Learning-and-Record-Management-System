@@ -3,8 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\SystemSetting;
 use App\Models\NstpSection;
+use App\Models\SystemSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -24,6 +24,7 @@ class SystemSettingController extends Controller
             'registrationSemester' => SystemSetting::studentRegistrationSemester(),
             'semesters' => NstpSection::SEMESTERS,
             'branding' => SystemSetting::branding(),
+            'studentIdDesign' => SystemSetting::studentIdDesign(),
         ]);
     }
 
@@ -49,6 +50,14 @@ class SystemSettingController extends Controller
             'program_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
             'remove_organization_logo' => ['nullable', 'boolean'],
             'remove_program_logo' => ['nullable', 'boolean'],
+            'student_id_title' => ['sometimes', 'required', 'string', 'max:40'],
+            'student_id_primary_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'student_id_secondary_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'student_id_accent_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'student_id_footer_text' => ['sometimes', 'required', 'string', 'max:120'],
+            'student_id_show_course' => ['sometimes', 'boolean'],
+            'student_id_show_component' => ['sometimes', 'boolean'],
+            'student_id_show_emergency_contact' => ['sometimes', 'boolean'],
         ]);
 
         $branding = SystemSetting::branding();
@@ -82,6 +91,27 @@ class SystemSettingController extends Controller
             ['value' => json_encode($branding, JSON_UNESCAPED_SLASHES), 'updated_by' => $request->user()->id],
         );
 
+        $studentIdDesign = SystemSetting::studentIdDesign();
+        $studentIdFieldMap = [
+            'student_id_title' => 'title',
+            'student_id_primary_color' => 'primary_color',
+            'student_id_secondary_color' => 'secondary_color',
+            'student_id_accent_color' => 'accent_color',
+            'student_id_footer_text' => 'footer_text',
+            'student_id_show_course' => 'show_course',
+            'student_id_show_component' => 'show_component',
+            'student_id_show_emergency_contact' => 'show_emergency_contact',
+        ];
+        foreach ($studentIdFieldMap as $requestKey => $designKey) {
+            if (array_key_exists($requestKey, $validated)) {
+                $studentIdDesign[$designKey] = $validated[$requestKey];
+            }
+        }
+        SystemSetting::updateOrCreate(
+            ['key' => 'student_id_design'],
+            ['value' => json_encode($studentIdDesign, JSON_UNESCAPED_SLASHES), 'updated_by' => $request->user()->id],
+        );
+
         SystemSetting::updateOrCreate(
             ['key' => 'inactivity_timeout_minutes'],
             ['value' => (string) $validated['inactivity_timeout_minutes'], 'updated_by' => $request->user()->id],
@@ -98,7 +128,7 @@ class SystemSettingController extends Controller
             );
         }
 
-        return back()->with('status', 'System, registration, and institutional branding settings were updated.');
+        return back()->with('status', 'System, registration, institutional branding, and student ID design settings were updated.');
     }
 
     public function updateRegistration(Request $request): RedirectResponse

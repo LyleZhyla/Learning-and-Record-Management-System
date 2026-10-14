@@ -9,3 +9,26 @@
         });
     });
 })();
+
+(function () {
+    const preview = document.querySelector('[data-id-design-preview]');
+    if (!preview) return;
+
+    const bindings = [
+        ['student_id_primary_color', '--preview-primary'],
+        ['student_id_secondary_color', '--preview-secondary'],
+        ['student_id_accent_color', '--preview-accent'],
+    ];
+    bindings.forEach(([name, property]) => {
+        document.querySelector(`[name="${name}"]`)?.addEventListener('input', (event) => {
+            preview.style.setProperty(property, event.target.value);
+        });
+    });
+
+    document.querySelector('[name="student_id_title"]')?.addEventListener('input', (event) => {
+        preview.querySelector('[data-id-preview-title]').textContent = event.target.value || 'STUDENT ID';
+    });
+    document.querySelector('[name="student_id_footer_text"]')?.addEventListener('input', (event) => {
+        preview.querySelector('[data-id-preview-footer]').textContent = event.target.value;
+    });
+})();
