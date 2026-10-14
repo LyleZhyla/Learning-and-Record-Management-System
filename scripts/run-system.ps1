@@ -17,6 +17,19 @@ if (-not (Test-Path -LiteralPath $configPath)) {
 
 Set-Location -LiteralPath $projectRoot
 
+# Keep every child process on the project's isolated MariaDB instance even if
+# the local .env file was copied again from the default 3306 configuration.
+$env:DB_CONNECTION = 'mysql'
+$env:DB_HOST = '127.0.0.1'
+$env:DB_PORT = '3307'
+$env:DB_DATABASE = 'smart_nstp'
+
+& php artisan config:clear --ansi
+
+if ($LASTEXITCODE -ne 0) {
+    throw 'Laravel failed to clear its cached configuration.'
+}
+
 $commands = [System.Collections.Generic.List[string]]::new()
 $names = [System.Collections.Generic.List[string]]::new()
 $colors = [System.Collections.Generic.List[string]]::new()
