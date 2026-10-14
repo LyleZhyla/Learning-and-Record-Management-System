@@ -32,6 +32,7 @@ class LearningResourceRecommendationTest extends TestCase
             ->assertSee('Study the right material at the right time.')
             ->assertSee('Recommendation catalog')
             ->assertSee('AI Learning Recommendations')
+            ->assertDontSee('data-learning-history-dropdown', false)
             ->assertSee('data-student-tour="recommendations"', false);
     }
 
@@ -71,6 +72,7 @@ class LearningResourceRecommendationTest extends TestCase
         $this->actingAs($student)->get('/student/learning-recommendations')
             ->assertOk()
             ->assertSee('Previous learning recommendations')
+            ->assertSee('data-learning-history-dropdown', false)
             ->assertSee('1 saved')
             ->assertSee('Your recommended learning path')
             ->assertSee($visibleMaterial->title)
@@ -149,6 +151,8 @@ class LearningResourceRecommendationTest extends TestCase
         $this->actingAs($student)
             ->get('/student/learning-recommendations?recommendation='.$olderRecommendation->id)
             ->assertOk()
+            ->assertSee('data-learning-history-dropdown', false)
+            ->assertSee(' open ', false)
             ->assertSee('2 saved')
             ->assertSee('Older saved learning path')
             ->assertSee('Newest saved learning path')

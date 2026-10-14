@@ -26,18 +26,22 @@
 @endif
 @error('recommendations')<div class="alert danger" role="alert">{{ $message }}</div>@enderror
 
-<section class="card learning-history" aria-labelledby="learning-history-title">
-    <div class="learning-history-heading">
-        <div>
-            <span class="eyebrow">Saved in your account</span>
-            <h2 id="learning-history-title">Previous learning recommendations</h2>
-            <p>Open any saved learning path to review its priorities, focus areas, and study plan.</p>
-        </div>
+@if($recommendationHistory->total() > 0)
+<details class="card learning-history" data-learning-history-dropdown @if(request()->filled('recommendation') || request()->has('history_page')) open @endif>
+    <summary class="learning-history-summary">
+        <span class="learning-history-summary-icon" aria-hidden="true">✦</span>
+        <span class="learning-history-summary-copy">
+            <small>Saved in your account</small>
+            <strong id="learning-history-title">Previous learning recommendations</strong>
+            <span>Open and review an earlier personalized learning path.</span>
+        </span>
         <span class="learning-history-count">{{ $recommendationHistory->total() }} saved</span>
-    </div>
+        <span class="learning-history-chevron" aria-hidden="true">⌄</span>
+    </summary>
 
-    <div class="learning-history-list">
-        @forelse($recommendationHistory as $historyItem)
+    <div class="learning-history-dropdown-content">
+        <div class="learning-history-list">
+        @foreach($recommendationHistory as $historyItem)
             @php
                 $historyGoal = match ($historyItem->preferences['study_goal'] ?? null) {
                     'catch_up' => 'Catch up',
@@ -59,21 +63,18 @@
                 <span class="learning-history-class">{{ $historyItem->enrollment?->component?->code ?? 'NSTP' }}<small>{{ $historyItem->enrollment?->section?->code ?? 'Previous class' }}</small></span>
                 <span class="learning-history-open">View <span aria-hidden="true">→</span></span>
             </a>
-        @empty
-            <div class="learning-history-empty">
-                <span aria-hidden="true">✦</span>
-                <div><strong>No saved recommendations yet</strong><small>Your first generated learning path will automatically appear here.</small></div>
-            </div>
-        @endforelse
-    </div>
-
-    @if($recommendationHistory->hasPages())
-        <div class="learning-history-pagination">
-            <span>Showing {{ $recommendationHistory->firstItem() }}–{{ $recommendationHistory->lastItem() }} of {{ $recommendationHistory->total() }}</span>
-            {{ $recommendationHistory->links('pagination.compact', ['showPageSize' => false]) }}
+        @endforeach
         </div>
-    @endif
-</section>
+
+        @if($recommendationHistory->hasPages())
+            <div class="learning-history-pagination">
+                <span>Showing {{ $recommendationHistory->firstItem() }}–{{ $recommendationHistory->lastItem() }} of {{ $recommendationHistory->total() }}</span>
+                {{ $recommendationHistory->links('pagination.compact', ['showPageSize' => false]) }}
+            </div>
+        @endif
+    </div>
+</details>
+@endif
 
 <section class="learning-recommendation-layout">
     <form class="card learning-preference-form" method="POST" action="{{ route('student.recommendations.generate') }}">
