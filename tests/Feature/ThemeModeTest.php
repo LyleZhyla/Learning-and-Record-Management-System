@@ -63,13 +63,15 @@ class ThemeModeTest extends TestCase
             ->assertOk()
             ->assertSee('student-dashboard-welcome', false)
             ->assertSee('student-dashboard-metrics', false)
-            ->assertSee('student-dashboard-actions', false);
+            ->assertSee('student-dashboard.css', false);
 
         $styles = file_get_contents(public_path('css/app.css'));
+        $dashboardStyles = file_get_contents(public_path('css/student-dashboard.css'));
 
         $this->assertStringContainsString('html[data-theme=dark] .student-dashboard-welcome', $styles);
         $this->assertStringContainsString('html[data-theme=dark] .student-dashboard-metrics .metric-icon', $styles);
-        $this->assertStringContainsString('html[data-theme=dark] .student-dashboard-actions a', $styles);
+        $this->assertStringContainsString('html[data-theme=dark] .student-progress-ring', $dashboardStyles);
+        $this->assertStringContainsString('html[data-theme=dark] :is(.student-progress-ring strong', $dashboardStyles);
     }
 
     public function test_every_portal_uses_a_distinct_snapie_background_character(): void
