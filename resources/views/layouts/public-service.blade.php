@@ -9,6 +9,7 @@
     <title>@yield('title', $branding['program_short_name'].' Services') | {{ $branding['organization_name'] }}</title>
     <link rel="icon" href="{{ \App\Models\SystemSetting::brandingLogoUrl('organization') }}">
     <link rel="stylesheet" href="{{ asset('css/landing.css') }}?v={{ filemtime(public_path('css/landing.css')) }}">
+    <x-system-colors />
     <link rel="stylesheet" href="{{ asset('css/service-requests.css') }}?v={{ filemtime(public_path('css/service-requests.css')) }}">
     @stack('head')
 </head>

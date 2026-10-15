@@ -11,6 +11,21 @@
 })();
 
 (function () {
+    const preview = document.querySelector('[data-system-color-preview]');
+    if (!preview) return;
+
+    [
+        ['system_primary_color', '--system-preview-primary'],
+        ['system_secondary_color', '--system-preview-secondary'],
+        ['system_accent_color', '--system-preview-accent'],
+    ].forEach(([name, property]) => {
+        document.querySelector(`[name="${name}"]`)?.addEventListener('input', (event) => {
+            preview.style.setProperty(property, event.target.value);
+        });
+    });
+})();
+
+(function () {
     const preview = document.querySelector('[data-id-design-preview]');
     if (!preview) return;
 

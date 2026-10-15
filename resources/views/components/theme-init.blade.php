@@ -1,3 +1,4 @@
+<x-system-colors />
 <script>
     (() => {
         const savedTheme = localStorage.getItem('snapie.theme');

@@ -31,6 +31,12 @@ class SystemSetting extends Model
         'show_emergency_contact' => true,
     ];
 
+    public const SYSTEM_COLOR_DEFAULTS = [
+        'primary_color' => '#2563EB',
+        'secondary_color' => '#10264B',
+        'accent_color' => '#15996F',
+    ];
+
     public const LANDING_PAGE_DEFAULTS = [
         'hero_video_url' => 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20261005_182346_a590ff3b-72e5-41ce-8f69-a8c823eaecaa.mp4',
         'hero_poster_url' => 'https://tau.edu.ph/images/Content/2026/70.jpg',
@@ -133,6 +139,27 @@ class SystemSetting extends Model
         }
 
         return $design;
+    }
+
+    public static function systemColors(): array
+    {
+        if (! Schema::hasTable('system_settings')) {
+            return self::SYSTEM_COLOR_DEFAULTS;
+        }
+
+        $stored = json_decode((string) static::query()->where('key', 'system_colors')->value('value'), true);
+        $colors = array_replace(
+            self::SYSTEM_COLOR_DEFAULTS,
+            is_array($stored) ? array_intersect_key($stored, self::SYSTEM_COLOR_DEFAULTS) : []
+        );
+
+        foreach ($colors as $key => $color) {
+            if (! is_string($color) || preg_match('/^#[0-9A-Fa-f]{6}$/', $color) !== 1) {
+                $colors[$key] = self::SYSTEM_COLOR_DEFAULTS[$key];
+            }
+        }
+
+        return $colors;
     }
 
     public static function landingPageContent(): array

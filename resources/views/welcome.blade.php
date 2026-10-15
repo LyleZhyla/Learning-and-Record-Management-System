@@ -9,6 +9,7 @@
     <link rel="icon" href="{{ \App\Models\SystemSetting::brandingLogoUrl('organization') }}">
     <link rel="preconnect" href="https://www.tau.edu.ph">
     <link rel="stylesheet" href="{{ asset('css/landing.css') }}">
+    <x-system-colors />
     @if($landingEditorAuthorized)<link rel="stylesheet" href="{{ asset('css/landing-editor.css') }}">@endif
     <script src="{{ asset('js/landing.js') }}" defer></script>
     @if($landingEditorMode)<script src="{{ asset('js/landing-editor.js') }}" defer></script>@endif

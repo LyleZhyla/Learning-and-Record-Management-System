@@ -7,7 +7,6 @@ use App\Models\NstpSection;
 use App\Models\SystemSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 class SystemSettingController extends Controller
@@ -24,62 +23,40 @@ class SystemSettingController extends Controller
             'registrationSemester' => SystemSetting::studentRegistrationSemester(),
             'semesters' => NstpSection::SEMESTERS,
             'branding' => SystemSetting::branding(),
+            'systemColors' => SystemSetting::systemColors(),
             'studentIdDesign' => SystemSetting::studentIdDesign(),
         ]);
     }
 
     public function update(Request $request): RedirectResponse
     {
+        $section = $request->validate([
+            'settings_section' => ['required', 'in:branding,student_id,registration,security'],
+        ])['settings_section'];
+
+        return match ($section) {
+            'branding' => $this->updateBranding($request),
+            'student_id' => $this->updateStudentIdDesign($request),
+            'registration' => $this->updateRegistration($request),
+            'security' => $this->updateSecurity($request),
+        };
+    }
+
+    private function updateBranding(Request $request): RedirectResponse
+    {
         $validated = $request->validate([
-            'inactivity_timeout_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
-            'student_registration_open' => ['required', 'boolean'],
-            'student_registration_academic_year' => ['required', 'regex:/^(\d{4})-(\d{4})$/', function (string $attribute, mixed $value, \Closure $fail): void {
-                [$start, $end] = array_map('intval', explode('-', (string) $value));
-                if ($end !== $start + 1) {
-                    $fail('The academic year must contain consecutive years, such as 2026-2027.');
-                }
-            }],
-            'student_registration_semester' => ['required', 'in:'.implode(',', array_keys(NstpSection::SEMESTERS))],
-            'organization_name' => ['sometimes', 'required', 'string', 'max:150'],
-            'organization_short_name' => ['sometimes', 'required', 'string', 'max:20'],
-            'program_name' => ['sometimes', 'required', 'string', 'max:150'],
-            'program_short_name' => ['sometimes', 'required', 'string', 'max:20'],
-            'platform_name' => ['sometimes', 'required', 'string', 'max:180'],
+            'organization_name' => ['required', 'string', 'max:150'],
+            'organization_short_name' => ['required', 'string', 'max:20'],
+            'program_name' => ['required', 'string', 'max:150'],
+            'program_short_name' => ['required', 'string', 'max:20'],
+            'platform_name' => ['required', 'string', 'max:180'],
             'organization_website' => ['nullable', 'url:http,https', 'max:255'],
-            'organization_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
-            'program_logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
-            'remove_organization_logo' => ['nullable', 'boolean'],
-            'remove_program_logo' => ['nullable', 'boolean'],
-            'student_id_title' => ['sometimes', 'required', 'string', 'max:40'],
-            'student_id_primary_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'student_id_secondary_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'student_id_accent_color' => ['sometimes', 'required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
-            'student_id_footer_text' => ['sometimes', 'required', 'string', 'max:120'],
-            'student_id_show_course' => ['sometimes', 'boolean'],
-            'student_id_show_component' => ['sometimes', 'boolean'],
-            'student_id_show_emergency_contact' => ['sometimes', 'boolean'],
+            'system_primary_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'system_secondary_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'system_accent_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
         ]);
 
         $branding = SystemSetting::branding();
-        foreach (['organization', 'program'] as $type) {
-            $pathKey = $type.'_logo_path';
-            $removeKey = 'remove_'.$type.'_logo';
-            $fileKey = $type.'_logo';
-
-            if ($request->boolean($removeKey)) {
-                if (filled($branding[$pathKey])) {
-                    Storage::disk('public')->delete($branding[$pathKey]);
-                }
-                $branding[$pathKey] = null;
-            }
-            if ($request->hasFile($fileKey)) {
-                $oldPath = $branding[$pathKey] ?? null;
-                $branding[$pathKey] = $request->file($fileKey)->store('branding/institution', 'public');
-                if (filled($oldPath)) {
-                    Storage::disk('public')->delete($oldPath);
-                }
-            }
-        }
         foreach (array_keys(SystemSetting::BRANDING_DEFAULTS) as $key) {
             if (! str_ends_with($key, '_logo_path')) {
                 $branding[$key] = $validated[$key] ?? $branding[$key];
@@ -90,9 +67,33 @@ class SystemSettingController extends Controller
             ['key' => 'institution_branding'],
             ['value' => json_encode($branding, JSON_UNESCAPED_SLASHES), 'updated_by' => $request->user()->id],
         );
+        SystemSetting::updateOrCreate(
+            ['key' => 'system_colors'],
+            ['value' => json_encode([
+                'primary_color' => strtoupper($validated['system_primary_color']),
+                'secondary_color' => strtoupper($validated['system_secondary_color']),
+                'accent_color' => strtoupper($validated['system_accent_color']),
+            ]), 'updated_by' => $request->user()->id],
+        );
+
+        return back()->with('status', 'Brand names and system colors were updated. Protected assets were not changed.');
+    }
+
+    private function updateStudentIdDesign(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'student_id_title' => ['required', 'string', 'max:40'],
+            'student_id_primary_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'student_id_secondary_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'student_id_accent_color' => ['required', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'student_id_footer_text' => ['required', 'string', 'max:120'],
+            'student_id_show_course' => ['required', 'boolean'],
+            'student_id_show_component' => ['required', 'boolean'],
+            'student_id_show_emergency_contact' => ['required', 'boolean'],
+        ]);
 
         $studentIdDesign = SystemSetting::studentIdDesign();
-        $studentIdFieldMap = [
+        foreach ([
             'student_id_title' => 'title',
             'student_id_primary_color' => 'primary_color',
             'student_id_secondary_color' => 'secondary_color',
@@ -101,34 +102,30 @@ class SystemSettingController extends Controller
             'student_id_show_course' => 'show_course',
             'student_id_show_component' => 'show_component',
             'student_id_show_emergency_contact' => 'show_emergency_contact',
-        ];
-        foreach ($studentIdFieldMap as $requestKey => $designKey) {
-            if (array_key_exists($requestKey, $validated)) {
-                $studentIdDesign[$designKey] = $validated[$requestKey];
-            }
+        ] as $requestKey => $designKey) {
+            $studentIdDesign[$designKey] = $validated[$requestKey];
         }
+
         SystemSetting::updateOrCreate(
             ['key' => 'student_id_design'],
             ['value' => json_encode($studentIdDesign, JSON_UNESCAPED_SLASHES), 'updated_by' => $request->user()->id],
         );
+
+        return back()->with('status', 'Student ID design settings were updated.');
+    }
+
+    private function updateSecurity(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'inactivity_timeout_minutes' => ['required', 'integer', 'min:1', 'max:1440'],
+        ]);
 
         SystemSetting::updateOrCreate(
             ['key' => 'inactivity_timeout_minutes'],
             ['value' => (string) $validated['inactivity_timeout_minutes'], 'updated_by' => $request->user()->id],
         );
 
-        foreach ([
-            'student_registration_open' => $validated['student_registration_open'] ? '1' : '0',
-            'student_registration_academic_year' => $validated['student_registration_academic_year'],
-            'student_registration_semester' => $validated['student_registration_semester'],
-        ] as $key => $value) {
-            SystemSetting::updateOrCreate(
-                ['key' => $key],
-                ['value' => $value, 'updated_by' => $request->user()->id],
-            );
-        }
-
-        return back()->with('status', 'System, registration, institutional branding, and student ID design settings were updated.');
+        return back()->with('status', 'Security timeout was updated.');
     }
 
     public function updateRegistration(Request $request): RedirectResponse

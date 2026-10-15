@@ -6,9 +6,7 @@ use App\Models\AuditLog;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
-use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class SystemSettingTest extends TestCase
@@ -23,10 +21,14 @@ class SystemSettingTest extends TestCase
 
         $this->actingAs($student)->get('/admin/settings')->assertForbidden();
         $this->actingAs($nstpAdmin)->get('/admin/settings')->assertForbidden();
-        $this->actingAs($nstpAdmin)->put('/admin/settings', ['inactivity_timeout_minutes' => 5])->assertForbidden();
+        $this->actingAs($nstpAdmin)->put('/admin/settings', ['settings_section' => 'security', 'inactivity_timeout_minutes' => 5])->assertForbidden();
         $this->actingAs($superAdmin)->get('/admin/settings')->assertOk()->assertSee('Automatic logout timeout');
         $this->actingAs($superAdmin)->put('/admin/settings', [
+            'settings_section' => 'security',
             'inactivity_timeout_minutes' => 15,
+        ])->assertSessionHasNoErrors();
+        $this->actingAs($superAdmin)->put('/admin/settings', [
+            'settings_section' => 'registration',
             'student_registration_open' => '0',
             'student_registration_academic_year' => '2027-2028',
             'student_registration_semester' => 'second',
@@ -62,24 +64,25 @@ class SystemSettingTest extends TestCase
         $this->assertSame(5, $log->metadata['timeout_minutes']);
     }
 
-    public function test_super_admin_can_rebrand_the_platform_and_upload_institution_logos(): void
+    public function test_super_admin_can_update_branding_colors_and_student_id_while_core_assets_stay_protected(): void
     {
-        Storage::fake('public');
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
 
         $this->actingAs($superAdmin)->put('/admin/settings', [
-            'inactivity_timeout_minutes' => 30,
-            'student_registration_open' => '1',
-            'student_registration_academic_year' => '2026-2027',
-            'student_registration_semester' => 'first',
+            'settings_section' => 'branding',
             'organization_name' => 'Sample State University',
             'organization_short_name' => 'SSU',
             'program_name' => 'National Service Training Program',
             'program_short_name' => 'NSTP',
             'platform_name' => 'SSU NSTP Management Platform',
             'organization_website' => 'https://example.edu.ph',
-            'organization_logo' => UploadedFile::fake()->image('university.png'),
-            'program_logo' => UploadedFile::fake()->image('program.png'),
+            'system_primary_color' => '#4A174D',
+            'system_secondary_color' => '#20102F',
+            'system_accent_color' => '#B87333',
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->actingAs($superAdmin)->put('/admin/settings', [
+            'settings_section' => 'student_id',
             'student_id_title' => 'UNIVERSITY ID',
             'student_id_primary_color' => '#4A174D',
             'student_id_secondary_color' => '#B87333',
@@ -93,8 +96,11 @@ class SystemSettingTest extends TestCase
         $branding = SystemSetting::branding();
         $this->assertSame('Sample State University', $branding['organization_name']);
         $this->assertSame('SSU', $branding['organization_short_name']);
-        Storage::disk('public')->assertExists($branding['organization_logo_path']);
-        Storage::disk('public')->assertExists($branding['program_logo_path']);
+        $this->assertNull($branding['organization_logo_path']);
+        $this->assertNull($branding['program_logo_path']);
+        $this->assertSame('#4A174D', SystemSetting::systemColors()['primary_color']);
+        $this->assertSame('#20102F', SystemSetting::systemColors()['secondary_color']);
+        $this->assertSame('#B87333', SystemSetting::systemColors()['accent_color']);
         $idDesign = SystemSetting::studentIdDesign();
         $this->assertSame('UNIVERSITY ID', $idDesign['title']);
         $this->assertSame('#4A174D', $idDesign['primary_color']);
@@ -109,8 +115,36 @@ class SystemSettingTest extends TestCase
         $this->actingAs($superAdmin)->get('/admin/settings')
             ->assertOk()
             ->assertSee('Student ID card design')
+            ->assertSee('Protected brand assets')
+            ->assertDontSee('name="organization_logo"', false)
+            ->assertDontSee('name="program_logo"', false)
             ->assertSee('Sample State University')
             ->assertSee('UNIVERSITY ID');
+    }
+
+    public function test_each_settings_section_validates_only_its_own_fields(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($superAdmin)->put('/admin/settings', [
+            'settings_section' => 'security',
+            'inactivity_timeout_minutes' => 45,
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(45, SystemSetting::inactivityTimeoutMinutes());
+
+        $this->actingAs($superAdmin)->from('/admin/settings')->put('/admin/settings', [
+            'settings_section' => 'branding',
+            'organization_name' => 'Sample University',
+            'organization_short_name' => 'SU',
+            'program_name' => 'NSTP',
+            'program_short_name' => 'NSTP',
+            'platform_name' => 'Sample Platform',
+            'organization_website' => 'https://example.edu.ph',
+            'system_primary_color' => 'not-a-color',
+            'system_secondary_color' => '#10264B',
+            'system_accent_color' => '#15996F',
+        ])->assertSessionHasErrors('system_primary_color');
     }
 
     public function test_nstp_admin_can_manage_the_public_registration_period(): void
