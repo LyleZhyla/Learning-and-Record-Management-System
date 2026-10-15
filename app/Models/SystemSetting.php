@@ -38,8 +38,10 @@ class SystemSetting extends Model
     ];
 
     public const LANDING_PAGE_DEFAULTS = [
-        'hero_video_url' => 'https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20261005_182346_a590ff3b-72e5-41ce-8f69-a8c823eaecaa.mp4',
-        'hero_poster_url' => 'https://tau.edu.ph/images/Content/2026/70.jpg',
+        'hero_slide_1_url' => '/images/landing/hero-first-aid.webp',
+        'hero_slide_2_url' => '/images/landing/hero-rotc-leadership.webp',
+        'hero_slide_3_url' => '/images/landing/hero-community-environment.webp',
+        'hero_slide_4_url' => '/images/landing/hero-literacy-service.webp',
         'hero_brand' => 'Smart NSTP',
         'hero_line_1' => 'Empowering Students.',
         'hero_line_2' => 'Serving Communities.',

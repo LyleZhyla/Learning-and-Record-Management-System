@@ -1,7 +1,8 @@
 @php
     $editorGroups = [
         'hero' => ['Hero section', [
-            ['hero_video_url', 'Background video URL', 'url'], ['hero_poster_url', 'Poster image URL', 'url'],
+            ['hero_slide_1_url', 'Slideshow image 1 URL or path', 'text'], ['hero_slide_2_url', 'Slideshow image 2 URL or path', 'text'],
+            ['hero_slide_3_url', 'Slideshow image 3 URL or path', 'text'], ['hero_slide_4_url', 'Slideshow image 4 URL or path', 'text'],
             ['hero_brand', 'Brand label', 'text'], ['hero_line_1', 'Headline line 1', 'text'],
             ['hero_line_2', 'Headline line 2', 'text'], ['hero_line_3', 'Headline line 3', 'text'],
             ['hero_lead_1', 'Supporting line 1', 'textarea'], ['hero_lead_2', 'Supporting line 2', 'textarea'],

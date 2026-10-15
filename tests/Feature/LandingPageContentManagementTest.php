@@ -97,13 +97,13 @@ class LandingPageContentManagementTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $content = array_replace(SystemSetting::LANDING_PAGE_DEFAULTS, [
-            'hero_video_url' => 'not-a-url',
+            'hero_slide_2_url' => 'not-a-url',
         ]);
 
         $this->actingAs($admin)
             ->from(route('admin.landing-page.edit'))
             ->put(route('admin.landing-page.update'), $content)
             ->assertRedirect(route('admin.landing-page.edit'))
-            ->assertSessionHasErrors('hero_video_url');
+            ->assertSessionHasErrors('hero_slide_2_url');
     }
 }

@@ -34,15 +34,21 @@
                 <a href="#home">Home</a><a href="#about">About</a><a href="#components">Components</a><a href="#activities">Activities</a><a href="#announcements">Announcements</a><a href="#services">Services</a><a href="#faqs">FAQs</a><a href="#contact">Contact</a>
                 <a class="nav-portal" href="{{ route('login') }}">Student Portal <span aria-hidden="true">→</span></a>
             </div>
-            <button class="sound-toggle" type="button" aria-label="Toggle background video sound" aria-pressed="false" data-sound-toggle><svg viewBox="0 0 40 40" aria-hidden="true"><path class="speaker-body" d="M8 16h6l8-6v20l-8-6H8z"/><path class="sound-wave" d="M26 15c3 3 3 7 0 10M30 11c5 5 5 13 0 18"/></svg></button>
         </nav>
     </header>
 
     <main id="main-content">
         <section class="hero" id="home" aria-labelledby="hero-title">
-            <video class="hero-video" autoplay muted loop playsinline preload="metadata" poster="{{ $landing['hero_poster_url'] }}" data-hero-video>
-                <source src="{{ $landing['hero_video_url'] }}" type="video/mp4">
-            </video>
+            <div class="hero-slideshow" data-hero-slideshow aria-hidden="true">
+                @foreach([
+                    [$landing['hero_slide_1_url'], 'center 42%'],
+                    [$landing['hero_slide_2_url'], 'center 38%'],
+                    [$landing['hero_slide_3_url'], 'center 44%'],
+                    [$landing['hero_slide_4_url'], 'center 36%'],
+                ] as [$image, $position])
+                    <figure class="hero-slide {{ $loop->first ? 'is-active' : '' }}" data-hero-slide style="--slide-position: {{ $position }}"><img src="{{ $image }}" alt="" @if($loop->first) fetchpriority="high" @else loading="lazy" @endif></figure>
+                @endforeach
+            </div>
             <div class="hero-shade hero-shade-horizontal" aria-hidden="true"></div>
             <div class="hero-shade hero-shade-vertical" aria-hidden="true"></div>
             <div class="hero-shade hero-shade-corner" aria-hidden="true"></div>
@@ -52,6 +58,14 @@
                     <h1 id="hero-title"><span data-landing-preview="hero_line_1">{{ $landing['hero_line_1'] }}</span><span data-landing-preview="hero_line_2">{{ $landing['hero_line_2'] }}</span><span data-landing-preview="hero_line_3">{{ $landing['hero_line_3'] }}</span></h1>
                     <p class="hero-lead"><span data-landing-preview="hero_lead_1">{{ $landing['hero_lead_1'] }}</span><span data-landing-preview="hero_lead_2">{{ $landing['hero_lead_2'] }}</span></p>
                     <div class="hero-actions"><a class="button hero-cta" href="{{ route('register') }}">Register for NSTP <span class="action-disc" aria-hidden="true">→</span></a><a class="text-link" href="#components">Explore the program <span aria-hidden="true">↗</span></a></div>
+                </div>
+                <div class="hero-slide-controls" data-hero-controls aria-label="Hero slideshow controls">
+                    <button type="button" data-hero-previous aria-label="Show previous image">←</button>
+                    <div role="group" aria-label="Choose a hero image">
+                        @for($slide = 0; $slide < 4; $slide++)<button type="button" data-hero-dot="{{ $slide }}" aria-label="Show image {{ $slide + 1 }}" aria-current="{{ $slide === 0 ? 'true' : 'false' }}"></button>@endfor
+                    </div>
+                    <span data-hero-count>01 / 04</span>
+                    <button type="button" data-hero-next aria-label="Show next image">→</button>
                 </div>
                 <a class="hero-scroll" href="#about">Scroll for program details <span aria-hidden="true">⌄</span></a>
             </div>

@@ -3,9 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!form) return;
 
     const state = form.querySelector('[data-editor-save-state]');
-    const video = document.querySelector('[data-hero-video]');
-    const videoSource = video?.querySelector('source');
-    let videoRefreshTimer;
+    const heroSlides = [...document.querySelectorAll('[data-hero-slide] img')];
 
     form.querySelectorAll('[data-landing-editor-field]').forEach((field) => {
         field.addEventListener('input', () => {
@@ -14,14 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 target.textContent = field.value;
             });
 
-            if (key === 'hero_poster_url' && video) video.poster = field.value;
-            if (key === 'hero_video_url' && videoSource) {
-                window.clearTimeout(videoRefreshTimer);
-                videoRefreshTimer = window.setTimeout(() => {
-                    videoSource.src = field.value;
-                    video.load();
-                    video.play().catch(() => {});
-                }, 600);
+            const slideMatch = key.match(/^hero_slide_(\d)_url$/);
+            if (slideMatch && heroSlides[Number(slideMatch[1]) - 1]) {
+                heroSlides[Number(slideMatch[1]) - 1].src = field.value;
             }
 
             if (state) state.textContent = 'Unpublished changes';

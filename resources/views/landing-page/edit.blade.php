@@ -16,10 +16,11 @@
     @method('PUT')
 
     <section class="card form-card">
-        <div class="card-heading"><div><span class="eyebrow">01 · Hero</span><h3>Opening message and media</h3><p>The video uses the poster image automatically whenever the remote video is unavailable.</p></div></div>
+        <div class="card-heading"><div><span class="eyebrow">01 · Hero</span><h3>Opening message and slideshow</h3><p>Add four landscape images. The slideshow automatically pauses when a visitor interacts with its controls.</p></div></div>
         <div class="form-grid">
-            <label class="field-group"><span>Video URL</span><input type="url" name="hero_video_url" value="{{ old('hero_video_url', $landing['hero_video_url']) }}" required>@error('hero_video_url')<small class="field-error">{{ $message }}</small>@enderror</label>
-            <label class="field-group"><span>Poster image URL</span><input type="url" name="hero_poster_url" value="{{ old('hero_poster_url', $landing['hero_poster_url']) }}" required>@error('hero_poster_url')<small class="field-error">{{ $message }}</small>@enderror</label>
+            @for($slide = 1; $slide <= 4; $slide++)
+                <label class="field-group"><span>Slideshow image {{ $slide }} URL or path</span><input name="hero_slide_{{ $slide }}_url" value="{{ old('hero_slide_'.$slide.'_url', $landing['hero_slide_'.$slide.'_url']) }}" required>@error('hero_slide_'.$slide.'_url')<small class="field-error">{{ $message }}</small>@enderror</label>
+            @endfor
             <label class="field-group"><span>Brand label</span><input name="hero_brand" value="{{ old('hero_brand', $landing['hero_brand']) }}" maxlength="180" required></label>
             <label class="field-group"><span>Headline line 1</span><input name="hero_line_1" value="{{ old('hero_line_1', $landing['hero_line_1']) }}" maxlength="180" required></label>
             <label class="field-group"><span>Headline line 2</span><input name="hero_line_2" value="{{ old('hero_line_2', $landing['hero_line_2']) }}" maxlength="180" required></label>

@@ -2,8 +2,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const header = document.querySelector('[data-header]');
     const menuToggle = document.querySelector('[data-menu-toggle]');
     const menu = document.querySelector('[data-menu]');
-    const soundToggle = document.querySelector('[data-sound-toggle]');
-    const heroVideo = document.querySelector('[data-hero-video]');
+    const slideshow = document.querySelector('[data-hero-slideshow]');
+    const slides = [...document.querySelectorAll('[data-hero-slide]')];
+    const slideDots = [...document.querySelectorAll('[data-hero-dot]')];
+    const slideCount = document.querySelector('[data-hero-count]');
+    const slideControls = document.querySelector('[data-hero-controls]');
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let activeSlide = 0;
+    let slideTimer;
 
     const closeMenu = () => {
         if (!menuToggle || !menu) return;
@@ -30,11 +36,39 @@ document.addEventListener('DOMContentLoaded', () => {
         closeMenu();
     });
 
-    soundToggle?.addEventListener('click', () => {
-        if (!heroVideo) return;
-        heroVideo.muted = !heroVideo.muted;
-        soundToggle.setAttribute('aria-pressed', String(!heroVideo.muted));
+    const showSlide = (index) => {
+        if (!slides.length) return;
+        activeSlide = (index + slides.length) % slides.length;
+        slides.forEach((slide, slideIndex) => slide.classList.toggle('is-active', slideIndex === activeSlide));
+        slideDots.forEach((dot, slideIndex) => dot.setAttribute('aria-current', String(slideIndex === activeSlide)));
+        if (slideCount) slideCount.textContent = `${String(activeSlide + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+    };
+    const stopSlideshow = () => window.clearInterval(slideTimer);
+    const startSlideshow = () => {
+        stopSlideshow();
+        if (!reduceMotion && slides.length > 1 && !document.hidden) {
+            slideTimer = window.setInterval(() => showSlide(activeSlide + 1), 6500);
+        }
+    };
+
+    document.querySelector('[data-hero-previous]')?.addEventListener('click', () => {
+        showSlide(activeSlide - 1);
+        startSlideshow();
     });
+    document.querySelector('[data-hero-next]')?.addEventListener('click', () => {
+        showSlide(activeSlide + 1);
+        startSlideshow();
+    });
+    slideDots.forEach((dot) => dot.addEventListener('click', () => {
+        showSlide(Number(dot.dataset.heroDot));
+        startSlideshow();
+    }));
+    slideshow?.addEventListener('mouseenter', stopSlideshow);
+    slideshow?.addEventListener('mouseleave', startSlideshow);
+    slideControls?.addEventListener('focusin', stopSlideshow);
+    slideControls?.addEventListener('focusout', startSlideshow);
+    document.addEventListener('visibilitychange', startSlideshow);
+    startSlideshow();
 
     menu?.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeMenu));
     window.addEventListener('resize', () => {
