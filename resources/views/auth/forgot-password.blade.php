@@ -58,6 +58,7 @@
             <img class="snapie-character snapie-auth-character" src="{{ asset('images/characters/snapie-ai-guide.webp') }}" alt="SNAPIE mascot guiding account recovery">
         </section>
     </main>
+    <x-system-loader />
     <script src="{{ asset('js/theme.js') }}"></script>
 </body>
 </html>

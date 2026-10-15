@@ -90,6 +90,7 @@
             <img class="snapie-character snapie-auth-character" src="{{ asset('images/characters/snapie-hero.webp') }}" alt="SNAPIE mascot pointing forward">
         </section>
     </main>
+    <x-system-loader />
     <script src="{{ asset('js/theme.js') }}"></script>
     <script src="{{ asset('js/login-password-toggle.js') }}?v={{ filemtime(public_path('js/login-password-toggle.js')) }}"></script>
 </body>

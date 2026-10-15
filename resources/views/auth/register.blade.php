@@ -161,6 +161,7 @@
             @endif
         </section>
     </main>
+    <x-system-loader />
     <script src="{{ asset('js/theme.js') }}"></script>
     @if(session('status'))
         <script>try { sessionStorage.removeItem('smartNstpRegistrationDraft'); } catch (error) {}</script>

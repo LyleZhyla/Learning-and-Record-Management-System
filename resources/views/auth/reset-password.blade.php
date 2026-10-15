@@ -63,6 +63,7 @@
             <img class="snapie-character snapie-auth-character" src="{{ asset('images/characters/snapie-learning.webp') }}" alt="SNAPIE mascot supporting secure password setup">
         </section>
     </main>
+    <x-system-loader />
     <script src="{{ asset('js/theme.js') }}"></script>
 </body>
 </html>
