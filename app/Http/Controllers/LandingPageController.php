@@ -57,7 +57,7 @@ class LandingPageController extends Controller
             return Announcement::query()
                 ->with('component:id,code')
                 ->where('status', 'published')
-                ->whereIn('audience', ['all', 'students'])
+                ->where('is_public', true)
                 ->where(function ($query): void {
                     $query->whereNull('published_at')->orWhere('published_at', '<=', now());
                 })

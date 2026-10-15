@@ -18,11 +18,13 @@ class AnnouncementController extends Controller
         $filters = $request->validate([
             'status' => ['nullable', Rule::in(['draft', 'published'])],
             'audience' => ['nullable', Rule::in(array_keys(Announcement::AUDIENCES))],
+            'visibility' => ['nullable', Rule::in(['public', 'portal'])],
         ]);
         $announcements = Announcement::with(['author', 'component'])
             ->when(! $request->user()->isSuperAdmin(), fn ($query) => $query->where('author_id', $request->user()->id))
             ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
             ->when($filters['audience'] ?? null, fn ($query, $audience) => $query->where('audience', $audience))
+            ->when($filters['visibility'] ?? null, fn ($query, $visibility) => $query->where('is_public', $visibility === 'public'))
             ->latest()->paginate($this->perPage())->withQueryString();
 
         return view('nstp_admin.announcements.index', $this->viewData($request) + compact('announcements', 'filters'));
@@ -88,6 +90,7 @@ class AnnouncementController extends Controller
             'attachment' => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,txt,jpg,jpeg,png', 'max:10240'],
             'remove_attachment' => ['nullable', 'boolean'],
             'audience' => ['required', Rule::in(array_keys(Announcement::AUDIENCES))],
+            'is_public' => ['nullable', 'boolean'],
             'component_id' => ['nullable', 'integer', 'exists:nstp_components,id'],
             'status' => ['required', Rule::in(['draft', 'published'])],
             'expires_at' => ['nullable', 'date', 'after:now'],
@@ -99,6 +102,8 @@ class AnnouncementController extends Controller
         if ($request->user()->isCoordinator()) {
             $validated['component_id'] = $request->user()->nstp_component_id;
         }
+
+        $validated['is_public'] = $request->boolean('is_public');
 
         unset($validated['attachment'], $validated['remove_attachment']);
         if ($request->hasFile('attachment')) {

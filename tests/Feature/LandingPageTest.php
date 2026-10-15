@@ -31,12 +31,22 @@ class LandingPageTest extends TestCase
             ->assertSee(route('serial-numbers.verify'), false);
     }
 
-    public function test_public_landing_page_only_shows_current_student_facing_announcements(): void
+    public function test_public_landing_page_only_shows_current_announcements_marked_as_public(): void
     {
         Announcement::create([
             'title' => 'Visible NSTP advisory',
             'body' => 'This notice should be visible on the public landing page.',
             'audience' => 'students',
+            'is_public' => true,
+            'status' => 'published',
+            'published_at' => now()->subMinute(),
+        ]);
+
+        Announcement::create([
+            'title' => 'Portal-only student advisory',
+            'body' => 'This notice requires a portal account.',
+            'audience' => 'students',
+            'is_public' => false,
             'status' => 'published',
             'published_at' => now()->subMinute(),
         ]);
@@ -45,6 +55,7 @@ class LandingPageTest extends TestCase
             'title' => 'Internal facilitator advisory',
             'body' => 'This notice is for facilitators only.',
             'audience' => 'facilitators',
+            'is_public' => false,
             'status' => 'published',
             'published_at' => now()->subMinute(),
         ]);
@@ -59,6 +70,7 @@ class LandingPageTest extends TestCase
         $this->get(route('landing'))
             ->assertOk()
             ->assertSee('Visible NSTP advisory')
+            ->assertDontSee('Portal-only student advisory')
             ->assertDontSee('Internal facilitator advisory')
             ->assertDontSee('Draft advisory');
     }

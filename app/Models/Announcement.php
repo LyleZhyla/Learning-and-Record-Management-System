@@ -20,12 +20,12 @@ class Announcement extends Model
     ];
 
     protected $fillable = [
-        'author_id', 'component_id', 'title', 'body', 'attachment_path', 'attachment_original_name', 'audience', 'status', 'published_at', 'expires_at',
+        'author_id', 'component_id', 'title', 'body', 'attachment_path', 'attachment_original_name', 'audience', 'is_public', 'status', 'published_at', 'expires_at',
     ];
 
     protected function casts(): array
     {
-        return ['published_at' => 'datetime', 'expires_at' => 'datetime', 'archived_at' => 'datetime'];
+        return ['is_public' => 'boolean', 'published_at' => 'datetime', 'expires_at' => 'datetime', 'archived_at' => 'datetime'];
     }
 
     public function author(): BelongsTo

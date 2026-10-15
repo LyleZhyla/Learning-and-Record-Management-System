@@ -29,10 +29,10 @@ class AnnouncementManagementTest extends TestCase
             ->assertRedirect();
 
         $this->assertDatabaseHas('announcements', [
-            'title' => 'NSTP Admin Notice', 'author_id' => $nstpAdmin->id, 'component_id' => $component->id,
+            'title' => 'NSTP Admin Notice', 'author_id' => $nstpAdmin->id, 'component_id' => $component->id, 'is_public' => true,
         ]);
         $this->assertDatabaseHas('announcements', [
-            'title' => 'Coordinator Notice', 'author_id' => $coordinator->id, 'component_id' => $component->id,
+            'title' => 'Coordinator Notice', 'author_id' => $coordinator->id, 'component_id' => $component->id, 'is_public' => true,
         ]);
     }
 
@@ -103,13 +103,48 @@ class AnnouncementManagementTest extends TestCase
         $this->assertDatabaseHas('announcements', ['id' => $second->id]);
     }
 
+    public function test_nstp_admin_and_coordinator_forms_include_public_visibility_control(): void
+    {
+        $component = NstpComponent::create([
+            'code' => 'LTS', 'name' => 'Literacy Training Service',
+            'default_section_capacity' => 40, 'is_active' => true,
+        ]);
+        $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $coordinator = User::factory()->create([
+            'role' => 'coordinator', 'status' => 'active', 'nstp_component_id' => $component->id,
+        ]);
+
+        $this->actingAs($nstpAdmin)->get('/nstp-admin/announcements/create')
+            ->assertOk()
+            ->assertSee('Show on the public landing page');
+        $this->actingAs($coordinator)->get('/coordinator/announcements/create')
+            ->assertOk()
+            ->assertSee('Show on the public landing page');
+    }
+
+    public function test_creator_can_remove_an_announcement_from_the_public_landing_page(): void
+    {
+        $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $announcement = $this->announcement($nstpAdmin, 'Public NSTP Notice');
+        $announcement->update(['is_public' => true]);
+
+        $this->actingAs($nstpAdmin)->put("/nstp-admin/announcements/{$announcement->id}", $this->payload('Portal Notice', null, false))
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('announcements', [
+            'id' => $announcement->id,
+            'is_public' => false,
+        ]);
+    }
+
     /** @return array<string, mixed> */
-    private function payload(string $title, ?int $componentId = null): array
+    private function payload(string $title, ?int $componentId = null, bool $isPublic = true): array
     {
         return [
             'title' => $title,
             'body' => 'Important announcement details.',
             'audience' => 'all',
+            'is_public' => $isPublic ? '1' : '0',
             'component_id' => $componentId,
             'status' => 'published',
             'expires_at' => null,
