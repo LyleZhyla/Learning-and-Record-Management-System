@@ -14,6 +14,9 @@
 </head>
 <body class="auth-body">
     <x-theme-toggle />
+    <a class="auth-home-button" href="{{ route('landing') }}" aria-label="Back to home page">
+        <span aria-hidden="true">←</span> Back to home page
+    </a>
     <main class="auth-shell auth-animated">
         <section class="auth-panel">
             <div class="auth-form-wrap">

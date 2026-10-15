@@ -27,6 +27,8 @@ class SuperAdminAuthenticationTest extends TestCase
         $this->get('/login')
             ->assertOk()
             ->assertSee('Complete your registration')
+            ->assertSee('Back to home page')
+            ->assertSee('href="'.route('landing').'"', false)
             ->assertSee('data-password-visibility-toggle', false)
             ->assertSee('aria-label="Show password"', false)
             ->assertSee('login-password-toggle.js');
