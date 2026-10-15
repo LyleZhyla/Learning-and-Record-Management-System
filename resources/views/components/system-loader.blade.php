@@ -4,8 +4,8 @@
             <span class="system-loader-orbit" aria-hidden="true"></span>
             <img src="{{ asset('images/characters/snapie-loading.png') }}" alt="" aria-hidden="true">
         </div>
-        <strong>Sandali lang!</strong>
-        <span>Inaayos ni SNAPIE ang susunod mong page</span>
+        <strong>Just a moment!</strong>
+        <span>SNAPIE is preparing your next page</span>
         <div class="system-loader-dots" aria-hidden="true"><i></i><i></i><i></i></div>
     </div>
 </div>
