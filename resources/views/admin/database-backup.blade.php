@@ -2,6 +2,10 @@
 @section('title', 'Database Management')
 @section('page-title', 'Database Management')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/archive-management.css') }}?v={{ filemtime(public_path('css/archive-management.css')) }}">
+@endpush
+
 @section('content')
 <div class="page-actions">
     <div><span class="eyebrow">Administration</span><h2>Database management</h2><p>Create, download, restore, and permanently delete private database archives.</p></div>
@@ -74,4 +78,6 @@
     </tbody></table></div>
     @if($archives->total() > 0)<div class="pagination-row"><span>Showing {{ $archives->firstItem() }}–{{ $archives->lastItem() }} of {{ $archives->total() }}</span>{{ $archives->links() }}</div>@endif
 </section>
+
+@include('admin.database-backup._record-maintenance')
 @endsection

@@ -41,6 +41,15 @@ class ArchiveController extends Controller
 
     public function index(): View
     {
+        $data = $this->maintenanceData();
+
+        return view('admin.archives.index', $data + [
+            'recentArchives' => $this->recentArchives(),
+        ]);
+    }
+
+    public function maintenanceData(): array
+    {
         $groups = collect(self::TYPES)->map(function (array $details, string $type): array {
             return $details + [
                 'type' => $type,
@@ -49,16 +58,15 @@ class ArchiveController extends Controller
             ];
         });
 
-        return view('admin.archives.index', [
+        return [
             'groups' => $groups,
-            'recentArchives' => $this->recentArchives(),
             'bulkDeleteTargets' => collect(self::BULK_DELETE_TARGETS)->map(fn (array $details, string $target): array => $details + [
                 'target' => $target,
                 'count' => $this->bulkDeleteCount($target),
             ]),
             'allowRestore' => WorkflowDefinition::ruleEnabled('archiving', 'allow_restore'),
             'requireDeleteConfirmation' => WorkflowDefinition::ruleEnabled('archiving', 'require_delete_confirmation'),
-        ]);
+        ];
     }
 
     public function bulkDestroy(Request $request): RedirectResponse

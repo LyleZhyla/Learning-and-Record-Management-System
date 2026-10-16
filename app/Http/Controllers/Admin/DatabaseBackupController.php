@@ -14,7 +14,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class DatabaseBackupController extends Controller
 {
-    public function __construct(private DatabaseBackupService $backups) {}
+    public function __construct(
+        private DatabaseBackupService $backups,
+        private ArchiveController $recordArchives,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -26,7 +29,7 @@ class DatabaseBackupController extends Controller
             'query' => $request->query(),
         ]);
 
-        return view('admin.database-backup', [
+        return view('admin.database-backup', $this->recordArchives->maintenanceData() + [
             'database' => $this->backups->information(),
             'archives' => $pagedArchives,
             'archiveSize' => (int) $archives->sum('size'),

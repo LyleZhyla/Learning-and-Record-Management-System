@@ -35,12 +35,19 @@ class ArchiveManagementTest extends TestCase
 
         $this->actingAs($superAdmin)->get('/admin/archives')
             ->assertOk()
-            ->assertSee('Operational records archive')
+            ->assertSee('Records archive')
+            ->assertSee('Restore and delete controls moved')
+            ->assertSee('Recently archived records')
+            ->assertDontSee('Bulk deletion center')
+            ->assertDontSee('Permanently delete archived')
+            ->assertSee($notification->title);
+
+        $this->actingAs($superAdmin)->get('/admin/database-backup')
+            ->assertOk()
+            ->assertSee('Restore or permanently remove records')
             ->assertSee('Bulk deletion center')
             ->assertSee('Student accounts')
-            ->assertSee('Facilitator and coordinator accounts')
-            ->assertSee('Recently archived records')
-            ->assertSee($notification->title);
+            ->assertSee('Facilitator and coordinator accounts');
 
         foreach (['attendance', 'system-logs', 'notifications'] as $type) {
             $this->actingAs($superAdmin)->patch('/admin/archives/'.$type.'/restore')
@@ -151,7 +158,7 @@ class ArchiveManagementTest extends TestCase
             'status_code' => 200,
         ]);
 
-        $this->actingAs($superAdmin)->get('/admin/archives')
+        $this->actingAs($superAdmin)->get('/admin/database-backup')
             ->assertOk()
             ->assertSee('Permanently delete archived')
             ->assertSee('Type DELETE to confirm');

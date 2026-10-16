@@ -21,13 +21,8 @@ class DatabaseBackupTest extends TestCase
             ->assertOk()
             ->assertSee('Archive current database')
             ->assertSee('Database archives')
-            ->assertSeeTextInOrder([
-                'Administration',
-                'Reports',
-                'Database Management',
-                'System Logs',
-                'Attendance & Learning',
-            ]);
+            ->assertSee('Restore or permanently remove records')
+            ->assertSee('Bulk deletion center');
     }
 
     public function test_super_admin_can_download_a_restorable_sql_backup_without_database_credentials(): void

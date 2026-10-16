@@ -2,73 +2,56 @@
 @section('title', 'Records Archive')
 @section('page-title', 'Records Archive')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/archive-management.css') }}?v={{ filemtime(public_path('css/archive-management.css')) }}">
+@endpush
+
 @section('content')
+@php
+    $totalActive = $groups->sum('active_count');
+    $totalArchived = $groups->sum('archived_count');
+@endphp
+
 <section class="page-actions archive-page-heading">
-    <div><span class="eyebrow">Data retention</span><h2>Operational records archive</h2><p>Move completed records out of active screens without deleting them. Archived records may be restored or permanently deleted by the Super Admin.</p></div>
-    <a class="secondary-outline-button" href="{{ route('admin.workflows.index', ['module' => 'archives']) }}">Workflow settings</a>
+    <div><span class="eyebrow">Data retention</span><h2>Records archive</h2><p>Review archived operational records, export retained data, and move completed active records into the archive.</p></div>
+    <div class="page-action-buttons"><a class="secondary-outline-button" href="{{ route('admin.workflows.index', ['module' => 'archives']) }}">Archiving rules</a><a class="primary-button compact" href="{{ route('admin.database-backup.index') }}#record-maintenance">Database maintenance →</a></div>
 </section>
+
+<section class="system-log-metrics archive-overview-metrics" aria-label="Archive overview">
+    <article><span class="metric-icon blue">▱</span><div><strong>{{ $groups->count() }}</strong><small>Record groups</small></div></article>
+    <article><span class="metric-icon green">●</span><div><strong>{{ number_format($totalActive) }}</strong><small>Active records</small></div></article>
+    <article><span class="metric-icon orange">◫</span><div><strong>{{ number_format($totalArchived) }}</strong><small>Archived records</small></div></article>
+    <article><span class="metric-icon violet">⇩</span><div><strong>CSV</strong><small>Export format</small></div></article>
+</section>
+
+<section class="card password-boundary-note archive-safety-note"><span>ℹ</span><div><strong>Restore and delete controls moved</strong><p>Record restoration and permanent deletion are now handled only in Database Management, together with backups and recovery snapshots.</p></div><a class="secondary-outline-button" href="{{ route('admin.database-backup.index') }}#record-maintenance">Open Database Management</a></section>
 
 <section class="archive-group-grid" aria-label="Archivable record groups">
     @foreach($groups as $group)
+        @php($total = $group['active_count'] + $group['archived_count'])
         <article class="card archive-group-card">
             <div class="archive-group-title"><span>{{ $group['icon'] }}</span><div><h3>{{ $group['label'] }}</h3><p>{{ $group['description'] }}</p></div></div>
             <dl><div><dt>Active</dt><dd>{{ number_format($group['active_count']) }}</dd></div><div><dt>Archived</dt><dd>{{ number_format($group['archived_count']) }}</dd></div></dl>
+            <div class="archive-retention-bar" aria-label="{{ $group['label'] }} archive ratio"><span style="width:{{ $total ? round(($group['archived_count'] / $total) * 100) : 0 }}%"></span></div>
+            <small class="archive-retention-caption">{{ $total ? round(($group['archived_count'] / $total) * 100) : 0 }}% currently archived</small>
             <div class="archive-actions">
-                <a class="secondary-outline-button" href="{{ route('admin.archives.export', $group['type']) }}">Download archived</a>
-                <form method="POST" action="{{ route('admin.archives.archive', $group['type']) }}" onsubmit="return confirm('Archive all active {{ strtolower($group['label']) }}? They will disappear from normal screens but can be restored here.')">@csrf<button class="secondary-outline-button" type="submit" @disabled(!$group['active_count'])>Archive all active</button></form>
-                @if($allowRestore)<form method="POST" action="{{ route('admin.archives.restore', $group['type']) }}" onsubmit="return confirm('Restore all archived {{ strtolower($group['label']) }} to active screens?')">@csrf @method('PATCH')<button class="clear-filter" type="submit" @disabled(!$group['archived_count'])>Restore all</button></form>@endif
+                <a class="secondary-outline-button" href="{{ route('admin.archives.export', $group['type']) }}">Download archive</a>
+                <form method="POST" action="{{ route('admin.archives.archive', $group['type']) }}" onsubmit="return confirm('Archive all active {{ strtolower($group['label']) }}? They will be removed from normal operational screens.')">@csrf<button class="primary-button compact" type="submit" @disabled(!$group['active_count'])>Archive all active</button></form>
             </div>
-            <form class="archive-permanent-delete" method="POST" action="{{ route('admin.archives.destroy', $group['type']) }}" onsubmit="return confirm('Permanently delete all archived {{ strtolower($group['label']) }}? This cannot be undone.')">
-                @csrf @method('DELETE')
-                @if($requireDeleteConfirmation)<label class="field-group"><span>Type DELETE to confirm</span><input name="confirmation" value="" autocomplete="off" required pattern="DELETE" @disabled(!$group['archived_count'])></label>@endif
-                <button class="danger-button" type="submit" @disabled(!$group['archived_count'])>Permanently delete archived</button>
-            </form>
         </article>
     @endforeach
 </section>
 
-<section class="card bulk-delete-center">
-    <div class="sectioning-toolbar"><div><span class="eyebrow">Super Admin control</span><h3>Bulk deletion center</h3><p class="muted-cell">Select one or more categories to permanently delete in a single operation. Account deletion cannot be restored.</p></div></div>
-    <form method="POST" action="{{ route('admin.archives.bulk-destroy') }}" data-bulk-delete-form>
-        @csrf @method('DELETE')
-        <div class="bulk-delete-option-grid">
-            @foreach($bulkDeleteTargets as $target)
-                <label class="bulk-delete-option {{ $target['count'] ? '' : 'disabled' }}">
-                    <input type="checkbox" name="targets[]" value="{{ $target['target'] }}" @disabled(!$target['count'])>
-                    <span><strong>{{ $target['label'] }}</strong><small>{{ $target['description'] }}</small></span>
-                    <b>{{ number_format($target['count']) }}</b>
-                </label>
-            @endforeach
-        </div>
-        @error('targets')<small class="field-error">{{ $message }}</small>@enderror
-        @error('targets.*')<small class="field-error">{{ $message }}</small>@enderror
-        <div class="bulk-delete-confirmation">
-            <div><strong>This action is permanent</strong><p>@if($requireDeleteConfirmation)Type <b>DELETE SELECTED</b>, then confirm the browser warning. @endif Create a database backup first if these records may be needed later.</p></div>
-            @if($requireDeleteConfirmation)<label class="field-group"><span>Confirmation phrase</span><input name="confirmation" autocomplete="off" required pattern="DELETE SELECTED" placeholder="DELETE SELECTED"></label>@endif
-            <button class="danger-button" type="submit">Delete selected categories</button>
-        </div>
-        @error('confirmation')<small class="field-error">{{ $message }}</small>@enderror
-    </form>
-</section>
-
 <section class="card user-table-card archive-history-card">
-    <div class="sectioning-toolbar"><div><span class="eyebrow">Archive activity</span><h3>Recently archived records</h3><p class="muted-cell">Latest records moved out of active operational screens.</p></div></div>
+    <div class="sectioning-toolbar"><div><span class="eyebrow">Archive activity</span><h3>Recently archived records</h3><p class="muted-cell">Latest records moved out of active operational screens.</p></div><a class="secondary-outline-button" href="{{ route('admin.database-backup.index') }}#record-maintenance">Manage archived records</a></div>
     <div class="table-wrap"><table class="data-table"><thead><tr><th>Record type</th><th>Record</th><th>Details</th><th>Archived</th></tr></thead><tbody>
         @forelse($recentArchives as $record)
             <tr><td><span class="component-mini-badge">{{ $record['type'] }}</span></td><td><strong>{{ $record['title'] }}</strong></td><td class="muted-cell">{{ $record['detail'] }}</td><td>{{ $record['archived_at']?->format('M d, Y · h:i A') }}</td></tr>
         @empty
-            <tr><td colspan="4"><div class="empty-state"><strong>No archived records yet</strong><span>Use an Archive all active button above to move records here.</span></div></td></tr>
+            <tr><td colspan="4"><div class="empty-state"><strong>No archived records yet</strong><span>Archive completed operational records using the cards above.</span></div></td></tr>
         @endforelse
     </tbody></table></div>
 </section>
 
-<section class="card password-boundary-note archive-accountability-note"><span>ℹ</span><div><strong>Permanent deletion boundary</strong><p>Operational records and registrations must be archived before deletion. Account categories are deleted directly with their linked data. Every operation remains attributable to the signed-in Super Admin through the active audit log.</p></div></section>
-<script>
-document.querySelector('[data-bulk-delete-form]')?.addEventListener('submit', (event) => {
-    const selected = [...event.currentTarget.querySelectorAll('input[name="targets[]"]:checked')];
-    if (!selected.length || !window.confirm(`Permanently delete ${selected.length} selected record categor${selected.length === 1 ? 'y' : 'ies'}? This cannot be undone.`)) {
-        event.preventDefault();
-    }
-});
-</script>
+<section class="card password-boundary-note archive-accountability-note"><span>✓</span><div><strong>Archive actions remain auditable</strong><p>Archiving keeps records available for reporting while removing them from active screens. Every archive operation remains attributable through System Logs.</p></div></section>
 @endsection
