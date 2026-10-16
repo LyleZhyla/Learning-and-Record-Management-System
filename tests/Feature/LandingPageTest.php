@@ -75,12 +75,14 @@ class LandingPageTest extends TestCase
             ->assertDontSee('Draft advisory');
     }
 
-    public function test_authenticated_user_is_redirected_to_their_dashboard(): void
+    public function test_authenticated_user_can_view_the_public_landing_page(): void
     {
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
 
         $this->actingAs($student)
             ->get(route('landing'))
-            ->assertRedirect(route('student.dashboard'));
+            ->assertOk()
+            ->assertSee('Empowering Students.')
+            ->assertSee('Student Portal');
     }
 }
