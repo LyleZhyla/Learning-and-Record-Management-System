@@ -74,7 +74,16 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', () => {
         if (window.innerWidth > 1180) closeMenu();
     });
-    window.addEventListener('scroll', () => header?.classList.toggle('is-scrolled', window.scrollY > 10), { passive: true });
+    const backToTop = document.querySelector('[data-back-to-top]');
+    const updateScrollState = () => {
+        header?.classList.toggle('is-scrolled', window.scrollY > 10);
+        if (backToTop) backToTop.hidden = window.scrollY < 480;
+    };
+    window.addEventListener('scroll', updateScrollState, { passive: true });
+    backToTop?.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+    });
+    updateScrollState();
 
     const tabs = [...document.querySelectorAll('[data-component-tab]')];
     const panels = [...document.querySelectorAll('[data-component-panel]')];

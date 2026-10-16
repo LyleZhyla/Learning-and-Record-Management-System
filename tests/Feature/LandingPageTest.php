@@ -75,6 +75,8 @@ class LandingPageTest extends TestCase
 
         $this->get(route('landing'))
             ->assertOk()
+            ->assertSee('data-back-to-top', false)
+            ->assertSee('aria-label="Back to top"', false)
             ->assertSee('Visible NSTP advisory')
             ->assertDontSee('Portal-only student advisory')
             ->assertDontSee('Internal facilitator advisory')
