@@ -450,6 +450,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::patch('/archives/{type}/restore', [ArchiveController::class, 'restoreAll'])->name('archives.restore');
     Route::delete('/archives/{type}', [ArchiveController::class, 'destroyAll'])->name('archives.destroy');
     Route::get('/settings', [SystemSettingController::class, 'edit'])->name('settings.edit');
+    Route::get('/settings/account-protection', [SystemSettingController::class, 'security'])->name('settings.security');
     Route::put('/settings', [SystemSettingController::class, 'update'])->name('settings.update');
     Route::post('/settings/reset-defaults', [SystemSettingController::class, 'resetDefaults'])->name('settings.reset-defaults');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');

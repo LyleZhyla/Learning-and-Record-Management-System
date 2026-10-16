@@ -61,7 +61,8 @@
                 <a class="nav-link {{ request()->routeIs('admin.serial-numbers.*') ? 'active' : '' }}" href="{{ route('admin.serial-numbers.index') }}"><span class="nav-icon">#</span> Serial Numbers</a>
                 <a class="nav-link {{ request()->routeIs('admin.archives.*') ? 'active' : '' }}" href="{{ route('admin.archives.index') }}"><span class="nav-icon">▱</span> Records Archive</a>
                 <p class="nav-label">System Settings</p>
-                <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.edit') }}"><span class="nav-icon">⚙</span> Global Configuration</a>
+                <a class="nav-link {{ request()->routeIs('admin.settings.edit') ? 'active' : '' }}" href="{{ route('admin.settings.edit') }}"><span class="nav-icon">◆</span> Branding Configuration</a>
+                <a class="nav-link {{ request()->routeIs('admin.settings.security') ? 'active' : '' }}" href="{{ route('admin.settings.security') }}"><span class="nav-icon">⚿</span> Account Protection</a>
                 <a class="nav-link {{ request()->routeIs('admin.landing-page.*') ? 'active' : '' }}" href="{{ route('admin.landing-page.edit') }}"><span class="nav-icon">▤</span> Landing Page Editor</a>
                 <p class="nav-label">System Administration</p>
                 <a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}" data-admin-tour="backup"><span class="nav-icon">⇩</span> Database Management</a>

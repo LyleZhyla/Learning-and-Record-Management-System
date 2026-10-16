@@ -21,21 +21,29 @@ class SystemSettingTest extends TestCase
 
         $this->actingAs($student)->get('/admin/settings')->assertForbidden();
         $this->actingAs($nstpAdmin)->get('/admin/settings')->assertForbidden();
+        $this->actingAs($student)->get('/admin/settings/account-protection')->assertForbidden();
+        $this->actingAs($nstpAdmin)->get('/admin/settings/account-protection')->assertForbidden();
         $this->actingAs($nstpAdmin)->put('/admin/settings', ['settings_section' => 'security', 'inactivity_timeout_minutes' => 5])->assertForbidden();
         $this->actingAs($nstpAdmin)->post('/admin/settings/reset-defaults')->assertForbidden();
         $this->actingAs($superAdmin)->get('/admin/settings')
             ->assertOk()
             ->assertSee('System Settings')
-            ->assertSee('Global Configuration')
-            ->assertSee('Global system configuration')
+            ->assertSee('Branding Configuration')
+            ->assertSee('Branding configuration')
             ->assertDontSee('Student ID card design')
-            ->assertSee('Automatic logout timeout')
+            ->assertSee('Account Protection')
+            ->assertDontSee('Automatic logout timeout')
             ->assertDontSee('Student registration cycle')
             ->assertDontSee('Review Categories')
             ->assertDontSee('Workflow Rules')
             ->assertDontSee('Notification Rules')
             ->assertDontSee('Policies &amp; Requirements', false)
             ->assertSee('Landing Page Editor');
+        $this->actingAs($superAdmin)->get('/admin/settings/account-protection')
+            ->assertOk()
+            ->assertSee('Account protection')
+            ->assertSee('Automatic logout timeout')
+            ->assertDontSee('Branding &amp; system colors', false);
         $this->actingAs($superAdmin)->get('/admin/settings')
             ->assertSee('Reset branding to default settings')
             ->assertSee('css/system-settings-reset.css', false);
