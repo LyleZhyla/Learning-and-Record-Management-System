@@ -27,15 +27,15 @@ class SystemSettingTest extends TestCase
             ->assertOk()
             ->assertSee('System Settings')
             ->assertSee('Global Configuration')
-            ->assertSee('Global branding configuration')
+            ->assertSee('Global system configuration')
             ->assertDontSee('Student ID card design')
-            ->assertDontSee('Automatic logout timeout')
+            ->assertSee('Automatic logout timeout')
             ->assertDontSee('Student registration cycle')
             ->assertDontSee('Review Categories')
             ->assertDontSee('Workflow Rules')
             ->assertDontSee('Notification Rules')
             ->assertDontSee('Policies &amp; Requirements', false)
-            ->assertDontSee('Landing Page Editor');
+            ->assertSee('Landing Page Editor');
         $this->actingAs($superAdmin)->get('/admin/settings')
             ->assertSee('Reset branding to default settings')
             ->assertSee('css/system-settings-reset.css', false);

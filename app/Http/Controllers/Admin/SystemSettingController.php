@@ -14,9 +14,13 @@ class SystemSettingController extends Controller
 {
     public function edit(): View
     {
+        $securitySetting = SystemSetting::with('updater')->find('inactivity_timeout_minutes');
+
         return view('admin.settings.edit', [
             'branding' => SystemSetting::branding(),
             'systemColors' => SystemSetting::systemColors(),
+            'timeoutMinutes' => SystemSetting::inactivityTimeoutMinutes(),
+            'securitySetting' => $securitySetting,
         ]);
     }
 

@@ -62,6 +62,7 @@
                 <a class="nav-link {{ request()->routeIs('admin.archives.*') ? 'active' : '' }}" href="{{ route('admin.archives.index') }}"><span class="nav-icon">▱</span> Records Archive</a>
                 <p class="nav-label">System Settings</p>
                 <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.edit') }}"><span class="nav-icon">⚙</span> Global Configuration</a>
+                <a class="nav-link {{ request()->routeIs('admin.landing-page.*') ? 'active' : '' }}" href="{{ route('admin.landing-page.edit') }}"><span class="nav-icon">▤</span> Landing Page Editor</a>
                 <p class="nav-label">System Administration</p>
                 <a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}" data-admin-tour="backup"><span class="nav-icon">⇩</span> Database Management</a>
                 <a class="nav-link {{ request()->routeIs('admin.system-logs.*') ? 'active' : '' }}" href="{{ route('admin.system-logs.index') }}" data-admin-tour="logs"><span class="nav-icon">☷</span> System Logs</a>
