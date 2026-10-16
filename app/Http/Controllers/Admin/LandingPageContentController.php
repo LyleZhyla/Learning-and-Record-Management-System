@@ -65,18 +65,27 @@ class LandingPageContentController extends Controller
         $newUploads = [];
         $replacedUploads = [];
 
-        for ($slide = 1; $slide <= 4; $slide++) {
-            $uploadKey = "hero_slide_{$slide}_image";
-            $contentKey = "hero_slide_{$slide}_url";
+        $imageUploads = [
+            'hero_slide_1_url' => ['input' => 'hero_slide_1_image', 'directory' => 'hero'],
+            'hero_slide_2_url' => ['input' => 'hero_slide_2_image', 'directory' => 'hero'],
+            'hero_slide_3_url' => ['input' => 'hero_slide_3_image', 'directory' => 'hero'],
+            'hero_slide_4_url' => ['input' => 'hero_slide_4_image', 'directory' => 'hero'],
+            'rotc_image_url' => ['input' => 'rotc_image', 'directory' => 'components'],
+            'cwts_image_url' => ['input' => 'cwts_image', 'directory' => 'components'],
+            'lts_image_url' => ['input' => 'lts_image', 'directory' => 'components'],
+        ];
+
+        foreach ($imageUploads as $contentKey => $upload) {
+            $uploadKey = $upload['input'];
 
             if (! $request->hasFile($uploadKey)) {
                 continue;
             }
 
-            $storedPath = $request->file($uploadKey)->store('landing-page/hero', 'public');
+            $storedPath = $request->file($uploadKey)->store('landing-page/'.$upload['directory'], 'public');
             $newUploads[] = $storedPath;
 
-            if ($oldPath = $this->managedHeroPath($currentContent[$contentKey] ?? null)) {
+            if ($oldPath = $this->managedLandingImagePath($currentContent[$contentKey] ?? null)) {
                 $replacedUploads[] = $oldPath;
             }
 
@@ -97,8 +106,8 @@ class LandingPageContentController extends Controller
         }
 
         $activeUploads = array_values(array_filter(array_map(
-            fn (mixed $url): ?string => $this->managedHeroPath($url),
-            Arr::only($content, ['hero_slide_1_url', 'hero_slide_2_url', 'hero_slide_3_url', 'hero_slide_4_url']),
+            fn (mixed $url): ?string => $this->managedLandingImagePath($url),
+            Arr::only($content, array_keys($imageUploads)),
         )));
         Storage::disk('public')->delete(array_diff($replacedUploads, $newUploads, $activeUploads));
 
@@ -170,17 +179,16 @@ class LandingPageContentController extends Controller
         foreach (array_keys(SystemSetting::LANDING_PAGE_DEFAULTS) as $key) {
             if (str_starts_with($key, 'hero_slide_')) {
                 $slide = (int) preg_replace('/\D+/', '', $key);
-                $rules[$key] = ['nullable', 'required_without:hero_slide_'.$slide.'_image', 'string', 'max:2048', function (string $attribute, mixed $value, \Closure $fail): void {
-                    $isLocalHero = is_string($value)
-                        && preg_match('#^/(?:images/landing/[A-Za-z0-9._-]+|storage/landing-page/hero/[A-Za-z0-9._-]+)\.(?:png|jpe?g|webp)$#i', $value) === 1;
-                    $isRemoteImage = filter_var($value, FILTER_VALIDATE_URL)
-                        && in_array(parse_url($value, PHP_URL_SCHEME), ['http', 'https'], true);
-
-                    if (! $isLocalHero && ! $isRemoteImage) {
-                        $fail('The slideshow image must be a valid HTTP(S) URL or a landing image path.');
-                    }
-                }];
+                $rules[$key] = $this->landingImageUrlRules('hero_slide_'.$slide.'_image');
                 $rules['hero_slide_'.$slide.'_image'] = ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'];
+
+                continue;
+            }
+
+            if (in_array($key, ['rotc_image_url', 'cwts_image_url', 'lts_image_url'], true)) {
+                $uploadKey = str_replace('_url', '', $key);
+                $rules[$key] = $this->landingImageUrlRules($uploadKey);
+                $rules[$uploadKey] = ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'];
 
                 continue;
             }
@@ -193,7 +201,21 @@ class LandingPageContentController extends Controller
         return $rules;
     }
 
-    private function managedHeroPath(mixed $url): ?string
+    private function landingImageUrlRules(string $uploadKey): array
+    {
+        return ['nullable', 'required_without:'.$uploadKey, 'string', 'max:2048', function (string $attribute, mixed $value, \Closure $fail): void {
+            $isLocalImage = is_string($value)
+                && preg_match('#^/(?:images/landing/[A-Za-z0-9._-]+\.(?:png|jpe?g|webp)|storage/landing-page/(?:hero|components)/[A-Za-z0-9._-]+\.(?:png|jpe?g|webp))$#i', $value) === 1;
+            $isRemoteImage = filter_var($value, FILTER_VALIDATE_URL)
+                && in_array(parse_url($value, PHP_URL_SCHEME), ['http', 'https'], true);
+
+            if (! $isLocalImage && ! $isRemoteImage) {
+                $fail('The image must be a valid HTTP(S) URL or a landing-page image path.');
+            }
+        }];
+    }
+
+    private function managedLandingImagePath(mixed $url): ?string
     {
         if (! is_string($url)) {
             return null;
@@ -201,7 +223,7 @@ class LandingPageContentController extends Controller
 
         $path = parse_url($url, PHP_URL_PATH);
 
-        return is_string($path) && preg_match('#^/storage/(landing-page/hero/[A-Za-z0-9._-]+\.(?:png|jpe?g|webp))$#i', $path, $matches) === 1
+        return is_string($path) && preg_match('#^/storage/(landing-page/(?:hero|components)/[A-Za-z0-9._-]+\.(?:png|jpe?g|webp))$#i', $path, $matches) === 1
             ? $matches[1]
             : null;
     }

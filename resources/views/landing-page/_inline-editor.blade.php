@@ -14,9 +14,10 @@
         ]],
         'components' => ['Program components', [
             ['components_eyebrow', 'Section label', 'text'], ['components_title', 'Section heading', 'text'],
-            ['components_intro', 'Section introduction', 'textarea'], ['rotc_title', 'ROTC heading', 'text'],
-            ['rotc_body', 'ROTC description', 'textarea'], ['cwts_title', 'CWTS heading', 'text'],
-            ['cwts_body', 'CWTS description', 'textarea'], ['lts_title', 'LTS heading', 'text'],
+            ['components_intro', 'Section introduction', 'textarea'], ['rotc_image_url', 'ROTC panel image', 'image'],
+            ['rotc_title', 'ROTC heading', 'text'], ['rotc_body', 'ROTC description', 'textarea'],
+            ['cwts_image_url', 'CWTS panel image', 'image'], ['cwts_title', 'CWTS heading', 'text'],
+            ['cwts_body', 'CWTS description', 'textarea'], ['lts_image_url', 'LTS panel image', 'image'], ['lts_title', 'LTS heading', 'text'],
             ['lts_body', 'LTS description', 'textarea'],
         ]],
         'activities' => ['Activities', [
@@ -76,11 +77,12 @@
                             <label>
                                 <span>{{ $label }}</span>
                                 @if($type === 'image')
+                                    @php($uploadName = str_starts_with($key, 'hero_slide_') ? str_replace('_url', '_image', $key) : str_replace('_image_url', '_image', $key))
                                     <img class="landing-editor-image-preview" src="{{ old($key, $landing[$key]) }}" alt="Current {{ strtolower($label) }}" data-landing-upload-preview="{{ $key }}">
                                     <input type="text" name="{{ $key }}" value="{{ old($key, $landing[$key]) }}" maxlength="2048" required data-landing-editor-field="{{ $key }}">
-                                    <input class="landing-image-upload" type="file" name="{{ str_replace('_url', '_image', $key) }}" accept="image/jpeg,image/png,image/webp" data-landing-image-upload="{{ $key }}">
+                                    <input class="landing-image-upload" type="file" name="{{ $uploadName }}" accept="image/jpeg,image/png,image/webp" data-landing-image-upload="{{ $key }}">
                                     <small class="landing-editor-upload-help">Upload JPG, PNG, or WebP up to 5 MB. A selected file replaces the URL above when published.</small>
-                                    @error(str_replace('_url', '_image', $key))<small>{{ $message }}</small>@enderror
+                                    @error($uploadName)<small>{{ $message }}</small>@enderror
                                 @elseif($type === 'textarea')
                                     <textarea name="{{ $key }}" rows="3" maxlength="2000" required data-landing-editor-field="{{ $key }}">{{ old($key, $landing[$key]) }}</textarea>
                                 @else

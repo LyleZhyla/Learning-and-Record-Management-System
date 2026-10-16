@@ -24,9 +24,12 @@ class LandingPageContentManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Landing page content &amp; media', false)
             ->assertSee('Add a photo or video')
-            ->assertSee('Upload destination')
+            ->assertSee('Activities section · Media upload')
             ->assertSee('Public Landing Page → Activities →')
             ->assertSee('Display under component')
+            ->assertSee('Upload new ROTC image')
+            ->assertSee('Upload new CWTS image')
+            ->assertSee('Upload new LTS image')
             ->assertSee('Media library');
 
         $this->get(route('landing', ['preview' => 1]))
@@ -59,6 +62,9 @@ class LandingPageContentManagementTest extends TestCase
             ->assertSee('data-landing-editor-field="hero_line_1"', false)
             ->assertSee('enctype="multipart/form-data"', false)
             ->assertSee('name="hero_slide_1_image"', false)
+            ->assertSee('name="rotc_image"', false)
+            ->assertSee('name="cwts_image"', false)
+            ->assertSee('name="lts_image"', false)
             ->assertSee('class="landing-image-upload"', false)
             ->assertSee('js/landing-editor.js');
     }
@@ -142,6 +148,36 @@ class LandingPageContentManagementTest extends TestCase
         ]);
     }
 
+    public function test_super_admin_can_upload_a_different_image_for_each_component_section(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $content = SystemSetting::LANDING_PAGE_DEFAULTS;
+        $content['editor_context'] = 'full';
+        $content['rotc_image'] = UploadedFile::fake()->image('rotc-training.jpg', 1200, 800);
+        $content['cwts_image'] = UploadedFile::fake()->image('cwts-outreach.png', 1200, 800);
+        $content['lts_image'] = UploadedFile::fake()->image('lts-reading.webp', 1200, 800);
+
+        $this->actingAs($admin)
+            ->put(route('admin.landing-page.update'), $content)
+            ->assertRedirect(route('admin.landing-page.edit'))
+            ->assertSessionHasNoErrors();
+
+        $saved = SystemSetting::landingPageContent();
+
+        foreach (['rotc', 'cwts', 'lts'] as $component) {
+            $path = $saved[$component.'_image_url'];
+            $this->assertStringStartsWith('/storage/landing-page/components/', $path);
+            Storage::disk('public')->assertExists(str_replace('/storage/', '', $path));
+        }
+
+        $this->get(route('landing'))
+            ->assertOk()
+            ->assertSee($saved['rotc_image_url'], false)
+            ->assertSee($saved['cwts_image_url'], false)
+            ->assertSee($saved['lts_image_url'], false);
+    }
+
     public function test_super_admin_can_manage_photo_and_video_media_from_the_landing_page_editor(): void
     {
         Storage::fake('public');
@@ -196,6 +232,7 @@ class LandingPageContentManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Component news &amp; media', false)
             ->assertSee('Choose destination')
+            ->assertSee('Activities section · Media upload')
             ->assertSee('Public Landing Page → Activities →')
             ->assertSee('Display under component');
 

@@ -11,6 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll(`[data-landing-preview="${key}"]`).forEach((target) => {
                 target.textContent = field.value;
             });
+            document.querySelectorAll(`[data-landing-preview-image="${key}"]`).forEach((target) => {
+                target.src = field.value;
+            });
 
             const slideMatch = key.match(/^hero_slide_(\d)_url$/);
             if (slideMatch && heroSlides[Number(slideMatch[1]) - 1]) {
@@ -30,6 +33,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const previewUrl = URL.createObjectURL(file);
             const editorPreview = form.querySelector(`[data-landing-upload-preview="${key}"]`);
             if (editorPreview) editorPreview.src = previewUrl;
+            document.querySelectorAll(`[data-landing-preview-image="${key}"]`).forEach((target) => {
+                target.src = previewUrl;
+            });
 
             const slideMatch = key.match(/^hero_slide_(\d)_url$/);
             if (slideMatch && heroSlides[Number(slideMatch[1]) - 1]) {
