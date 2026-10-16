@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\LandingPageMedia;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,7 +20,10 @@ class LandingPageContentManagementTest extends TestCase
 
         $this->actingAs($superAdmin)
             ->get(route('admin.landing-page.edit'))
-            ->assertRedirect(route('landing', ['preview' => 1, 'editor' => 1]));
+            ->assertOk()
+            ->assertSee('Landing page content &amp; media', false)
+            ->assertSee('Add a photo or video')
+            ->assertSee('Media library');
 
         $this->get(route('landing', ['preview' => 1]))
             ->assertOk()
@@ -132,5 +136,46 @@ class LandingPageContentManagementTest extends TestCase
             'key' => 'landing_page_content',
             'updated_by' => $admin->id,
         ]);
+    }
+
+    public function test_super_admin_can_manage_photo_and_video_media_from_the_landing_page_editor(): void
+    {
+        Storage::fake('public');
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+
+        $this->actingAs($admin)->post(route('admin.landing-page.media.store'), [
+            'media_type' => 'photo',
+            'media_component' => 'cwts',
+            'media_title' => 'Community clean-up day',
+            'media_description' => 'Students serving the university community.',
+            'media_file' => UploadedFile::fake()->image('cleanup.jpg', 1200, 800),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $this->actingAs($admin)->post(route('admin.landing-page.media.store'), [
+            'media_type' => 'video',
+            'media_component' => 'rotc',
+            'media_title' => 'ROTC field training',
+            'media_description' => 'Highlights from the latest field activity.',
+            'media_file' => UploadedFile::fake()->create('training.mp4', 1024, 'video/mp4'),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $photo = LandingPageMedia::where('type', 'photo')->firstOrFail();
+        $video = LandingPageMedia::where('type', 'video')->firstOrFail();
+        Storage::disk('public')->assertExists($photo->file_path);
+        Storage::disk('public')->assertExists($video->file_path);
+
+        $this->get(route('landing'))
+            ->assertOk()
+            ->assertSee('Community clean-up day')
+            ->assertSee('ROTC field training')
+            ->assertSee($photo->fileUrl(), false)
+            ->assertSee($video->fileUrl(), false);
+
+        $this->delete(route('admin.landing-page.media.destroy', $photo))
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseMissing('landing_page_media', ['id' => $photo->id]);
+        Storage::disk('public')->assertMissing($photo->file_path);
     }
 }

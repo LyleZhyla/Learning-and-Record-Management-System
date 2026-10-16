@@ -50,17 +50,21 @@
     .landing-image-upload:hover::file-selector-button { background: #174f9d; }
     .landing-image-upload:active::file-selector-button { transform: translateY(1px); }
     .landing-image-upload:focus-visible { border-color: #2468ca; outline: 3px solid rgba(36, 104, 202, .14); }
+    .landing-editor-heading-actions { display: flex; align-items: center; gap: 7px; }
+    .landing-editor-heading-actions a { min-width: 38px; height: 38px; display: grid; place-items: center; padding: 0 10px; color: #fff; border: 1px solid rgba(255,255,255,.18); border-radius: 999px; font: 800 11px Arial, sans-serif; text-decoration: none; }
+    .landing-editor-heading-actions a:last-child { padding: 0; font-size: 24px; }
 </style>
 
 <aside class="landing-editor-drawer" aria-label="Landing page editor" data-landing-editor-drawer>
     <header class="landing-editor-heading">
         <div><span>EDITOR MODE</span><strong>Edit the live landing page</strong></div>
-        <a href="{{ route('landing', ['preview' => 1]) }}" aria-label="Close editor mode">×</a>
+        <div class="landing-editor-heading-actions"><a href="{{ route('admin.landing-page.edit') }}">Media</a><a href="{{ route('landing', ['preview' => 1]) }}" aria-label="Close editor mode">×</a></div>
     </header>
 
     <form id="landing-inline-editor" method="POST" action="{{ route($landingEditorRoutePrefix.'.landing-page.update') }}" enctype="multipart/form-data" data-landing-editor-form>
         @csrf
         @method('PUT')
+        <input type="hidden" name="editor_context" value="inline">
 
         <div class="landing-editor-groups">
             @foreach($editorGroups as $sectionId => [$groupLabel, $fields])
