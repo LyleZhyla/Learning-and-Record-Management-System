@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Storage;
 
 class SystemSetting extends Model
 {
+    public const INACTIVITY_TIMEOUT_DEFAULT = 30;
+
     public const BRANDING_DEFAULTS = [
         'organization_name' => 'Tarlac Agricultural University',
         'organization_short_name' => 'TAU',
@@ -175,7 +177,7 @@ class SystemSetting extends Model
     {
         return max(1, min(1440, (int) static::query()
             ->where('key', 'inactivity_timeout_minutes')
-            ->value('value') ?: 30));
+            ->value('value') ?: self::INACTIVITY_TIMEOUT_DEFAULT));
     }
 
     public static function componentSelectionIsOpen(): bool
@@ -192,16 +194,26 @@ class SystemSetting extends Model
 
     public static function studentRegistrationAcademicYear(): string
     {
+        return static::query()->where('key', 'student_registration_academic_year')->value('value')
+            ?: self::defaultStudentRegistrationAcademicYear();
+    }
+
+    public static function defaultStudentRegistrationAcademicYear(): string
+    {
         $startYear = now()->month >= 6 ? now()->year : now()->year - 1;
 
-        return static::query()->where('key', 'student_registration_academic_year')->value('value')
-            ?: $startYear.'-'.($startYear + 1);
+        return $startYear.'-'.($startYear + 1);
     }
 
     public static function studentRegistrationSemester(): string
     {
         return static::query()->where('key', 'student_registration_semester')->value('value')
-            ?: (now()->month >= 6 ? 'first' : 'second');
+            ?: self::defaultStudentRegistrationSemester();
+    }
+
+    public static function defaultStudentRegistrationSemester(): string
+    {
+        return now()->month >= 6 ? 'first' : 'second';
     }
 
     public static function defaultPassingPercentage(): float

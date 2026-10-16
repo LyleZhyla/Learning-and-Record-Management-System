@@ -2,6 +2,10 @@
 @section('title', 'System & Branding')
 @section('page-title', 'System & Branding')
 
+@push('styles')
+    <link rel="stylesheet" href="{{ asset('css/system-settings-reset.css') }}?v={{ filemtime(public_path('css/system-settings-reset.css')) }}">
+@endpush
+
 @section('content')
 <div class="page-actions settings-page-heading">
     <div><span class="eyebrow">System configuration</span><h2>Manage one area at a time</h2><p>Branding, ID design, registration, and security now have separate controls and save actions.</p></div>
@@ -108,6 +112,23 @@
             <dl><div><dt>Maximum</dt><dd>24 hours</dd></div><div><dt>Minimum</dt><dd>1 minute</dd></div><div><dt>Last updated by</dt><dd>{{ $setting?->updater?->name ?? 'System default' }}</dd></div><div><dt>Last updated</dt><dd>{{ $setting?->updated_at?->format('M d, Y g:i A') ?? 'Initial setup' }}</dd></div></dl>
             <a class="secondary-outline-button" href="{{ route('admin.system-logs.index', ['action' => 'inactivity_logout']) }}">View automatic logouts</a>
         </aside>
+    </section>
+
+    <section class="card system-settings-reset-card">
+        <div class="system-settings-reset-icon" aria-hidden="true">↺</div>
+        <div class="system-settings-reset-copy">
+            <span class="eyebrow">Recovery option</span>
+            <h3>Reset to default settings</h3>
+            <p>Restore the original institutional branding, system colors, Student ID design, current registration cycle, and 30-minute security timeout.</p>
+            <ul>
+                <li>Registration will be opened for the current default academic period.</li>
+                <li>Accounts, registrations, sections, grades, and uploaded records will not be deleted.</li>
+            </ul>
+        </div>
+        <form method="POST" action="{{ route('admin.settings.reset-defaults') }}" onsubmit="return confirm('Reset all System & Branding settings? Registration will reopen for the current default academic period. Existing accounts and records will not be deleted.');">
+            @csrf
+            <button class="system-settings-reset-button" type="submit">Reset to defaults</button>
+        </form>
     </section>
 </div>
 <script src="{{ asset('js/system-settings.js') }}?v={{ filemtime(public_path('js/system-settings.js')) }}"></script>

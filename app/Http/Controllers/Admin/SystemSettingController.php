@@ -7,6 +7,7 @@ use App\Models\NstpSection;
 use App\Models\SystemSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SystemSettingController extends Controller
@@ -40,6 +41,30 @@ class SystemSettingController extends Controller
             'registration' => $this->updateRegistration($request),
             'security' => $this->updateSecurity($request),
         };
+    }
+
+    public function resetDefaults(Request $request): RedirectResponse
+    {
+        $defaults = [
+            'institution_branding' => json_encode(SystemSetting::BRANDING_DEFAULTS, JSON_UNESCAPED_SLASHES),
+            'system_colors' => json_encode(SystemSetting::SYSTEM_COLOR_DEFAULTS),
+            'student_id_design' => json_encode(SystemSetting::STUDENT_ID_DESIGN_DEFAULTS, JSON_UNESCAPED_SLASHES),
+            'student_registration_open' => '1',
+            'student_registration_academic_year' => SystemSetting::defaultStudentRegistrationAcademicYear(),
+            'student_registration_semester' => SystemSetting::defaultStudentRegistrationSemester(),
+            'inactivity_timeout_minutes' => (string) SystemSetting::INACTIVITY_TIMEOUT_DEFAULT,
+        ];
+
+        DB::transaction(function () use ($defaults, $request): void {
+            foreach ($defaults as $key => $value) {
+                SystemSetting::updateOrCreate(
+                    ['key' => $key],
+                    ['value' => $value, 'updated_by' => $request->user()->id],
+                );
+            }
+        });
+
+        return back()->with('status', 'System & Branding settings were reset to their defaults. Existing accounts and records were not changed.');
     }
 
     private function updateBranding(Request $request): RedirectResponse

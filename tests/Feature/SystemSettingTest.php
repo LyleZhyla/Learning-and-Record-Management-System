@@ -22,7 +22,11 @@ class SystemSettingTest extends TestCase
         $this->actingAs($student)->get('/admin/settings')->assertForbidden();
         $this->actingAs($nstpAdmin)->get('/admin/settings')->assertForbidden();
         $this->actingAs($nstpAdmin)->put('/admin/settings', ['settings_section' => 'security', 'inactivity_timeout_minutes' => 5])->assertForbidden();
+        $this->actingAs($nstpAdmin)->post('/admin/settings/reset-defaults')->assertForbidden();
         $this->actingAs($superAdmin)->get('/admin/settings')->assertOk()->assertSee('Automatic logout timeout');
+        $this->actingAs($superAdmin)->get('/admin/settings')
+            ->assertSee('Reset to default settings')
+            ->assertSee('css/system-settings-reset.css', false);
         $this->actingAs($superAdmin)->put('/admin/settings', [
             'settings_section' => 'security',
             'inactivity_timeout_minutes' => 15,
@@ -145,6 +149,38 @@ class SystemSettingTest extends TestCase
             'system_secondary_color' => '#10264B',
             'system_accent_color' => '#15996F',
         ])->assertSessionHasErrors('system_primary_color');
+    }
+
+    public function test_super_admin_can_reset_system_and_branding_settings_without_removing_records(): void
+    {
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+
+        foreach ([
+            'institution_branding' => json_encode(array_replace(SystemSetting::BRANDING_DEFAULTS, ['organization_name' => 'Changed University'])),
+            'system_colors' => json_encode(['primary_color' => '#111111', 'secondary_color' => '#222222', 'accent_color' => '#333333']),
+            'student_id_design' => json_encode(array_replace(SystemSetting::STUDENT_ID_DESIGN_DEFAULTS, ['title' => 'CHANGED ID'])),
+            'student_registration_open' => '0',
+            'student_registration_academic_year' => '2030-2031',
+            'student_registration_semester' => 'second',
+            'inactivity_timeout_minutes' => '5',
+        ] as $key => $value) {
+            SystemSetting::updateOrCreate(['key' => $key], ['value' => $value, 'updated_by' => $superAdmin->id]);
+        }
+
+        $this->actingAs($superAdmin)
+            ->post(route('admin.settings.reset-defaults'))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'System & Branding settings were reset to their defaults. Existing accounts and records were not changed.');
+
+        $this->assertSame(SystemSetting::BRANDING_DEFAULTS, SystemSetting::branding());
+        $this->assertSame(SystemSetting::SYSTEM_COLOR_DEFAULTS, SystemSetting::systemColors());
+        $this->assertSame(SystemSetting::STUDENT_ID_DESIGN_DEFAULTS, SystemSetting::studentIdDesign());
+        $this->assertTrue(SystemSetting::studentRegistrationIsOpen());
+        $this->assertSame(SystemSetting::defaultStudentRegistrationAcademicYear(), SystemSetting::studentRegistrationAcademicYear());
+        $this->assertSame(SystemSetting::defaultStudentRegistrationSemester(), SystemSetting::studentRegistrationSemester());
+        $this->assertSame(SystemSetting::INACTIVITY_TIMEOUT_DEFAULT, SystemSetting::inactivityTimeoutMinutes());
+        $this->assertDatabaseHas('users', ['id' => $student->id]);
     }
 
     public function test_nstp_admin_can_manage_the_public_registration_period(): void
