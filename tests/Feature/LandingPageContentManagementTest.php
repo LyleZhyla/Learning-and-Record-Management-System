@@ -51,6 +51,7 @@ class LandingPageContentManagementTest extends TestCase
             ->assertSee('data-landing-editor-field="hero_line_1"', false)
             ->assertSee('enctype="multipart/form-data"', false)
             ->assertSee('name="hero_slide_1_image"', false)
+            ->assertSee('class="landing-image-upload"', false)
             ->assertSee('js/landing-editor.js');
     }
 

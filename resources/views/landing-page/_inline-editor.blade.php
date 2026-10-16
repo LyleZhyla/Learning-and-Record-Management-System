@@ -45,6 +45,11 @@
 <style>
     .landing-editor-image-preview { width: 100%; height: 118px; border: 1px solid #dce4ef; border-radius: 10px; object-fit: cover; }
     .landing-editor-fields .landing-editor-upload-help { color: #6e7c90; line-height: 1.45; }
+    .landing-editor-fields .landing-image-upload { padding: 6px; color: #5e6d82; border: 1px dashed #9fb7d5; background: #f4f8fd; font-size: 11px; cursor: pointer; }
+    .landing-image-upload::file-selector-button { min-height: 36px; margin-right: 10px; border: 0; border-radius: 8px; background: #2468ca; padding: 0 13px; color: #fff; font: 800 11px/1 Arial, sans-serif; cursor: pointer; transition: background .2s, transform .2s; }
+    .landing-image-upload:hover::file-selector-button { background: #174f9d; }
+    .landing-image-upload:active::file-selector-button { transform: translateY(1px); }
+    .landing-image-upload:focus-visible { border-color: #2468ca; outline: 3px solid rgba(36, 104, 202, .14); }
 </style>
 
 <aside class="landing-editor-drawer" aria-label="Landing page editor" data-landing-editor-drawer>
@@ -69,7 +74,7 @@
                                 @if($type === 'image')
                                     <img class="landing-editor-image-preview" src="{{ old($key, $landing[$key]) }}" alt="Current {{ strtolower($label) }}" data-landing-upload-preview="{{ $key }}">
                                     <input type="text" name="{{ $key }}" value="{{ old($key, $landing[$key]) }}" maxlength="2048" required data-landing-editor-field="{{ $key }}">
-                                    <input type="file" name="{{ str_replace('_url', '_image', $key) }}" accept="image/jpeg,image/png,image/webp" data-landing-image-upload="{{ $key }}">
+                                    <input class="landing-image-upload" type="file" name="{{ str_replace('_url', '_image', $key) }}" accept="image/jpeg,image/png,image/webp" data-landing-image-upload="{{ $key }}">
                                     <small class="landing-editor-upload-help">Upload JPG, PNG, or WebP up to 5 MB. A selected file replaces the URL above when published.</small>
                                     @error(str_replace('_url', '_image', $key))<small>{{ $message }}</small>@enderror
                                 @elseif($type === 'textarea')
