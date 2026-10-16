@@ -14,7 +14,7 @@
 
 <section class="page-actions archive-page-heading">
     <div><span class="eyebrow">Data retention</span><h2>Records archive</h2><p>Review archived operational records, export retained data, and move completed active records into the archive.</p></div>
-    <div class="page-action-buttons"><a class="secondary-outline-button" href="{{ route('admin.workflows.index', ['module' => 'archives']) }}">Archiving rules</a><a class="primary-button compact" href="{{ route('admin.database-backup.index') }}#record-maintenance">Database maintenance →</a></div>
+    <a class="secondary-outline-button" href="{{ route('admin.workflows.index', ['module' => 'archives']) }}">Archiving rules</a>
 </section>
 
 <section class="system-log-metrics archive-overview-metrics" aria-label="Archive overview">
@@ -23,8 +23,6 @@
     <article><span class="metric-icon orange">◫</span><div><strong>{{ number_format($totalArchived) }}</strong><small>Archived records</small></div></article>
     <article><span class="metric-icon violet">⇩</span><div><strong>CSV</strong><small>Export format</small></div></article>
 </section>
-
-<section class="card password-boundary-note archive-safety-note"><span>ℹ</span><div><strong>Restore and delete controls moved</strong><p>Record restoration and permanent deletion are now handled only in Database Management, together with backups and recovery snapshots.</p></div><a class="secondary-outline-button" href="{{ route('admin.database-backup.index') }}#record-maintenance">Open Database Management</a></section>
 
 <section class="archive-group-grid" aria-label="Archivable record groups">
     @foreach($groups as $group)
@@ -43,7 +41,7 @@
 </section>
 
 <section class="card user-table-card archive-history-card">
-    <div class="sectioning-toolbar"><div><span class="eyebrow">Archive activity</span><h3>Recently archived records</h3><p class="muted-cell">Latest records moved out of active operational screens.</p></div><a class="secondary-outline-button" href="{{ route('admin.database-backup.index') }}#record-maintenance">Manage archived records</a></div>
+    <div class="sectioning-toolbar"><div><span class="eyebrow">Archive activity</span><h3>Recently archived records</h3><p class="muted-cell">Latest records moved out of active operational screens.</p></div></div>
     <div class="table-wrap"><table class="data-table"><thead><tr><th>Record type</th><th>Record</th><th>Details</th><th>Archived</th></tr></thead><tbody>
         @forelse($recentArchives as $record)
             <tr><td><span class="component-mini-badge">{{ $record['type'] }}</span></td><td><strong>{{ $record['title'] }}</strong></td><td class="muted-cell">{{ $record['detail'] }}</td><td>{{ $record['archived_at']?->format('M d, Y · h:i A') }}</td></tr>

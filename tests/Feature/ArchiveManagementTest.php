@@ -36,8 +36,10 @@ class ArchiveManagementTest extends TestCase
         $this->actingAs($superAdmin)->get('/admin/archives')
             ->assertOk()
             ->assertSee('Records archive')
-            ->assertSee('Restore and delete controls moved')
             ->assertSee('Recently archived records')
+            ->assertDontSee('Restore and delete controls moved')
+            ->assertDontSee('Database maintenance')
+            ->assertDontSee('Manage archived records')
             ->assertDontSee('Bulk deletion center')
             ->assertDontSee('Permanently delete archived')
             ->assertSee($notification->title);
