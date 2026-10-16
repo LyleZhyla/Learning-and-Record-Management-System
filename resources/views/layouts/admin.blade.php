@@ -60,8 +60,8 @@
                 <a class="nav-link {{ request()->routeIs('admin.ched-applications.*') ? 'active' : '' }}" href="{{ route('admin.ched-applications.index') }}"><span class="nav-icon">↗</span> CHED Applications</a>
                 <a class="nav-link {{ request()->routeIs('admin.serial-numbers.*') ? 'active' : '' }}" href="{{ route('admin.serial-numbers.index') }}"><span class="nav-icon">#</span> Serial Numbers</a>
                 <a class="nav-link {{ request()->routeIs('admin.archives.*') ? 'active' : '' }}" href="{{ route('admin.archives.index') }}"><span class="nav-icon">▱</span> Records Archive</a>
-                <p class="nav-label">Global Configuration</p>
-                <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.edit') }}"><span class="nav-icon">⚙</span> Branding &amp; Colors</a>
+                <p class="nav-label">System Settings</p>
+                <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" href="{{ route('admin.settings.edit') }}"><span class="nav-icon">⚙</span> Global Configuration</a>
                 <p class="nav-label">System Administration</p>
                 <a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}" data-admin-tour="backup"><span class="nav-icon">⇩</span> Database Management</a>
                 <a class="nav-link {{ request()->routeIs('admin.system-logs.*') ? 'active' : '' }}" href="{{ route('admin.system-logs.index') }}" data-admin-tour="logs"><span class="nav-icon">☷</span> System Logs</a>

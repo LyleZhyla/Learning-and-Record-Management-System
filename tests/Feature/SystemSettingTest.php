@@ -25,8 +25,9 @@ class SystemSettingTest extends TestCase
         $this->actingAs($nstpAdmin)->post('/admin/settings/reset-defaults')->assertForbidden();
         $this->actingAs($superAdmin)->get('/admin/settings')
             ->assertOk()
+            ->assertSee('System Settings')
             ->assertSee('Global Configuration')
-            ->assertSee('Branding &amp; Colors', false)
+            ->assertSee('Global branding configuration')
             ->assertDontSee('Student ID card design')
             ->assertDontSee('Automatic logout timeout')
             ->assertDontSee('Student registration cycle')

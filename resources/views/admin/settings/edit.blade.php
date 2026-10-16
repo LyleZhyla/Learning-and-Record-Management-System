@@ -1,6 +1,6 @@
 @extends('layouts.admin')
-@section('title', 'Branding & Colors')
-@section('page-title', 'Branding & Colors')
+@section('title', 'Global Configuration')
+@section('page-title', 'Global Configuration')
 
 @push('styles')
     <link rel="stylesheet" href="{{ asset('css/system-settings-reset.css') }}?v={{ filemtime(public_path('css/system-settings-reset.css')) }}">
@@ -8,7 +8,7 @@
 
 @section('content')
 <div class="page-actions settings-page-heading">
-    <div><span class="eyebrow">Brand identity</span><h2>Manage system branding</h2><p>Update the institution details and color palette used throughout the platform.</p></div>
+    <div><span class="eyebrow">System settings</span><h2>Global branding configuration</h2><p>Update the institution details and color palette used throughout the platform.</p></div>
 </div>
 
 <div class="settings-section-stack">
