@@ -5,6 +5,7 @@
 @section('content')
 <section class="page-actions archive-page-heading">
     <div><span class="eyebrow">Data retention</span><h2>Operational records archive</h2><p>Move completed records out of active screens without deleting them. Archived records may be restored or permanently deleted by the Super Admin.</p></div>
+    <a class="secondary-outline-button" href="{{ route('admin.workflows.index', ['module' => 'archives']) }}">Workflow settings</a>
 </section>
 
 <section class="archive-group-grid" aria-label="Archivable record groups">

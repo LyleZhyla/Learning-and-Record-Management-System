@@ -10,6 +10,7 @@
         <h2>{{ $isStaffChat ? 'Administrative staff chat' : ($routePrefix === 'facilitator' ? 'Team and student messaging' : 'Student–facilitator chat') }}</h2>
         <p>{{ $isStaffChat ? 'Choose and privately message Super Admins, NSTP Admins, Coordinators, and Facilitators.' : ($routePrefix === 'facilitator' ? 'Choose a staff member to message, continue student conversations, or use section-based group chats.' : 'Use private messages or section-based group chats with authorized participants.') }}</p>
     </div>
+    @if(auth()->user()->isSuperAdmin())<a class="secondary-outline-button" href="{{ route('admin.notification-rules.index', ['module' => 'messages']) }}">Notification settings</a>@endif
 </section>
 
 <section class="card chat-shell chat-shell-{{ $routePrefix }}">

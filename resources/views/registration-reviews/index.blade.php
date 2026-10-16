@@ -17,6 +17,12 @@
         </div>
     </section>
 
+    @if(auth()->user()->isSuperAdmin())
+    <section class="card module-settings-entry">
+        <div class="card-heading"><div><span class="eyebrow">Module configuration</span><h3>Registration review settings</h3><p>Manage the review choices and automatic workflow used by this module.</p></div><div class="page-action-buttons"><a class="secondary-outline-button" href="{{ route('admin.review-categories.index') }}">Review statuses</a><a class="secondary-outline-button" href="{{ route('admin.workflows.index', ['module' => 'registration']) }}">Workflow settings</a></div></div>
+    </section>
+    @endif
+
     <section class="card registration-period-control">
         <div class="registration-period-overview">
             <span class="registration-period-icon {{ $registrationOpen ? 'is-open' : 'is-closed' }}" aria-hidden="true">{{ $registrationOpen ? '●' : '—' }}</span>

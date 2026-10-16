@@ -6,7 +6,7 @@
 @section('content')
 <section class="page-actions">
     <div><span class="eyebrow">Configuration layer</span><h2>Document and form builder</h2><p>Create upload requirements and downloadable forms without changing application code.</p></div>
-    <div><a class="secondary-outline-button" href="{{ route($routePrefix.'.assessments.index') }}">Open assessments</a> <a class="primary-button compact" href="{{ route($routePrefix.'.document-forms.create') }}">Create document/form</a></div>
+    <div><a class="secondary-outline-button" href="{{ route('admin.workflows.index', ['module' => 'documents']) }}">Workflow settings</a> <a class="secondary-outline-button" href="{{ route($routePrefix.'.assessments.index') }}">Open assessments</a> <a class="primary-button compact" href="{{ route($routePrefix.'.document-forms.create') }}">Create document/form</a></div>
 </section>
 
 <section class="card user-table-card">

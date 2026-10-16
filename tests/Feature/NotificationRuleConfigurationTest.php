@@ -37,6 +37,16 @@ class NotificationRuleConfigurationTest extends TestCase
             ->assertSee('Notifications Configuration')
             ->assertSee('Portal channels')
             ->assertSee('Available placeholders');
+        $this->actingAs($superAdmin)->get(route('admin.notification-rules.index', ['module' => 'attendance']))
+            ->assertOk()
+            ->assertSee('Attendance Notifications')
+            ->assertSee('Late Attendance')
+            ->assertSee('Absent Attendance')
+            ->assertDontSee('New Learning Materials')
+            ->assertSee('Back to Attendance');
+        $this->actingAs($superAdmin)->get(route('admin.announcements.index'))
+            ->assertOk()
+            ->assertSee(route('admin.notification-rules.index', ['module' => 'announcements']), false);
         $this->actingAs($nstpAdmin)->get('/admin/notification-rules')->assertForbidden();
         $this->actingAs($nstpAdmin)->get('/nstp-admin/notification-rules')->assertNotFound();
         $this->actingAs($facilitator)->get('/admin/notification-rules')->assertForbidden();

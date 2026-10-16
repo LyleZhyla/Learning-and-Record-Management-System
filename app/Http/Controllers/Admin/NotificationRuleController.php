@@ -11,15 +11,27 @@ use Illuminate\View\View;
 
 class NotificationRuleController extends Controller
 {
+    private const MODULES = [
+        'announcements' => ['label' => 'Announcements', 'route' => 'admin.announcements.index', 'events' => ['announcement']],
+        'messages' => ['label' => 'Messages', 'route' => 'admin.messages.index', 'events' => ['message']],
+        'materials' => ['label' => 'Learning Materials', 'route' => 'admin.materials.index', 'events' => ['learning_material']],
+        'assessments' => ['label' => 'Assessments', 'route' => 'admin.assessments.index', 'events' => ['assessment']],
+        'attendance' => ['label' => 'Attendance', 'route' => 'admin.attendance.index', 'events' => ['late_attendance', 'absent_attendance']],
+    ];
+
     public function index(Request $request): View
     {
         $prefix = $request->user()->isSuperAdmin() ? 'admin' : 'nstp_admin';
+        $module = self::MODULES[$request->string('module')->toString()] ?? null;
 
         return view('admin.notification-rules.index', [
             'layout' => $prefix === 'admin' ? 'layouts.admin' : 'layouts.nstp-admin',
             'routePrefix' => $prefix,
-            'rules' => NotificationRule::with('updater')->orderBy('id')->get(),
+            'rules' => NotificationRule::with('updater')
+                ->when($module, fn ($query) => $query->whereIn('event_key', $module['events']))
+                ->orderBy('id')->get(),
             'channels' => NotificationRule::CHANNELS,
+            'module' => $module,
         ]);
     }
 

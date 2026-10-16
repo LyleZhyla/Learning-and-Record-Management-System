@@ -12,15 +12,28 @@ use Illuminate\View\View;
 
 class WorkflowController extends Controller
 {
+    private const MODULES = [
+        'registration' => ['label' => 'Registration Reviews', 'route' => 'admin.registrations.index', 'keys' => ['registration_review', 'account_creation']],
+        'components' => ['label' => 'NSTP Components', 'route' => 'admin.components.index', 'keys' => ['component_selection', 'rotc_approval']],
+        'documents' => ['label' => 'Documents & Forms', 'route' => 'admin.document-forms.index', 'keys' => ['document_verification']],
+        'grades' => ['label' => 'Grades', 'route' => 'admin.grades.index', 'keys' => ['grading']],
+        'sections' => ['label' => 'Sectioning', 'route' => 'admin.sections.index', 'keys' => ['sectioning']],
+        'archives' => ['label' => 'Records Archive', 'route' => 'admin.archives.index', 'keys' => ['archiving']],
+    ];
+
     public function index(Request $request): View
     {
         $prefix = $this->prefix($request);
-        $workflows = WorkflowDefinition::with('updater')->orderBy('id')->get();
+        $module = self::MODULES[$request->string('module')->toString()] ?? null;
+        $workflows = WorkflowDefinition::with('updater')
+            ->when($module, fn ($query) => $query->whereIn('key', $module['keys']))
+            ->orderBy('id')->get();
 
         return view('admin.workflows.index', [
             'layout' => $prefix === 'admin' ? 'layouts.admin' : 'layouts.nstp-admin',
             'routePrefix' => $prefix,
             'workflows' => $workflows,
+            'module' => $module,
         ]);
     }
 

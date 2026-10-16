@@ -16,9 +16,16 @@ class ReviewCategoryConfigurationTest extends TestCase
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
 
+        $this->actingAs($admin)->get(route('admin.registrations.index'))
+            ->assertOk()
+            ->assertSee('Registration review settings')
+            ->assertSee('Review statuses')
+            ->assertSee(route('admin.workflows.index', ['module' => 'registration']), false);
+
         $this->actingAs($admin)->get('/admin/review-categories')
             ->assertOk()
             ->assertSee('Manage the choices reviewers can use')
+            ->assertSee('Back to Registration Reviews')
             ->assertSee('Choose a review area')
             ->assertSee('Create review category')
             ->assertSee('Edit settings')

@@ -1,11 +1,11 @@
 @extends($layout)
 
-@section('title', 'Workflow Rules')
-@section('page-title', 'Workflow Rules Builder')
+@section('title', $module ? $module['label'].' Settings' : 'Workflow Rules')
+@section('page-title', $module ? $module['label'].' Settings' : 'Workflow Rules Builder')
 
 @section('content')
 <section class="workflow-builder-hero">
-    <div><span class="eyebrow">Configuration layer</span><h2>Build and control operational workflows</h2><p>Arrange steps, choose manual or automatic execution, and enable only the rules required by your institution.</p></div>
+    <div><span class="eyebrow">{{ $module ? 'Module configuration' : 'Configuration layer' }}</span><h2>{{ $module ? 'Configure '.$module['label'].' workflows' : 'Build and control operational workflows' }}</h2><p>Arrange steps, choose manual or automatic execution, and enable only the rules required by your institution.</p>@if($module)<a class="text-link" href="{{ route($module['route']) }}">← Back to {{ $module['label'] }}</a>@endif</div>
     <div><strong>{{ $workflows->count() }}</strong><span>configured workflows</span></div>
 </section>
 

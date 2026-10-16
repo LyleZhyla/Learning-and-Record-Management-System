@@ -43,6 +43,18 @@ class WorkflowConfigurationTest extends TestCase
             ->assertSee('Grading')
             ->assertSee('Archiving');
 
+        $this->actingAs($superAdmin)->get(route('admin.workflows.index', ['module' => 'registration']))
+            ->assertOk()
+            ->assertSee('Registration Reviews Settings')
+            ->assertSee('Registration Review')
+            ->assertSee('Account Creation')
+            ->assertDontSee('Document Verification')
+            ->assertSee('Back to Registration Reviews');
+
+        $this->actingAs($superAdmin)->get(route('admin.components.index'))
+            ->assertOk()
+            ->assertSee(route('admin.workflows.index', ['module' => 'components']), false);
+
         $this->actingAs($nstpAdmin)->get('/admin/workflows')->assertForbidden();
         $this->actingAs($nstpAdmin)->get('/nstp-admin/workflows')->assertNotFound();
         $this->actingAs($facilitator)->get('/admin/workflows')->assertForbidden();

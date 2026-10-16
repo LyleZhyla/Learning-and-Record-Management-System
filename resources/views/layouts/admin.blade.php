@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}?v={{ filemtime(public_path('css/app.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/account-create-button.css') }}?v={{ filemtime(public_path('css/account-create-button.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/registration-review.css') }}?v={{ filemtime(public_path('css/registration-review.css')) }}">
+    <link rel="stylesheet" href="{{ asset('css/module-configuration.css') }}?v={{ filemtime(public_path('css/module-configuration.css')) }}">
     @stack('styles')
     <x-theme-init />
 </head>

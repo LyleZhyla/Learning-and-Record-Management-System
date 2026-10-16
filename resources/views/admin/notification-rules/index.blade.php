@@ -1,11 +1,11 @@
 @extends($layout)
 
-@section('title', 'Notification Rules')
-@section('page-title', 'Notifications Configuration')
+@section('title', $module ? $module['label'].' Notifications' : 'Notification Rules')
+@section('page-title', $module ? $module['label'].' Notifications' : 'Notifications Configuration')
 
 @section('content')
 <section class="notification-config-hero">
-    <div><span class="eyebrow">Configuration layer</span><h2>Control when and where notifications appear</h2><p>Enable each event, select its portal channels, customize its message template, and choose immediate or delayed delivery.</p></div>
+    <div><span class="eyebrow">{{ $module ? 'Module configuration' : 'Configuration layer' }}</span><h2>{{ $module ? 'Configure '.$module['label'].' notifications' : 'Control when and where notifications appear' }}</h2><p>Enable each event, select its portal channels, customize its message template, and choose immediate or delayed delivery.</p>@if($module)<a class="text-link" href="{{ route($module['route']) }}">← Back to {{ $module['label'] }}</a>@endif</div>
     <div><strong>{{ $rules->where('is_enabled', true)->count() }}</strong><span>active of {{ $rules->count() }} rules</span></div>
 </section>
 

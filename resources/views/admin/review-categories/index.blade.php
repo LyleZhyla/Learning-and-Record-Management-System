@@ -14,6 +14,8 @@
     $defaultCount = $allCategories->where('is_default', true)->count();
 @endphp
 
+<div class="back-row"><a href="{{ route($routePrefix.'.registrations.index') }}">← Back to Registration Reviews</a></div>
+
 <section class="page-actions review-category-page-heading">
     <div>
         <span class="eyebrow">Review workflow setup</span>

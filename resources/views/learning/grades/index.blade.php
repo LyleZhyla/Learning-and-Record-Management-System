@@ -4,6 +4,7 @@
 @section('content')
 <div class="page-actions">
     <div><h2>NSTP grading and class record</h2><p>@if(auth()->user()->isFacilitator())Enter scores for the students assigned to your section. Grading categories and formulas are managed by administrators.@else Edit raw scores and configure categories. Weighted percentages and the 1.00–5.00 grade are computed automatically.@endif</p></div>
+    @if(auth()->user()->isSuperAdmin())<a class="secondary-outline-button" href="{{ route('admin.workflows.index', ['module' => 'grades']) }}">Workflow settings</a>@endif
 </div>
 
 <section class="card term-panel">
