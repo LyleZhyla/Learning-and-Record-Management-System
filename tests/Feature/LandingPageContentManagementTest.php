@@ -23,6 +23,8 @@ class LandingPageContentManagementTest extends TestCase
             ->get(route('admin.landing-page.edit'))
             ->assertOk()
             ->assertSee('Landing page content &amp; media', false)
+            ->assertSee('css/landing-page-editor.css')
+            ->assertSee('data-editor-section-link', false)
             ->assertSee('Add a photo or video')
             ->assertSee('04 · News and media · Upload')
             ->assertSee('Public Landing Page → News and Media →')

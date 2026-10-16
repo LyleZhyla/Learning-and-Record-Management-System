@@ -33,7 +33,8 @@
     .landing-editor-back-to-top[hidden]{display:none}
     @media(max-width:760px){.landing-section-nav{grid-template-columns:1fr}.landing-editor-back-to-top{right:16px;bottom:82px;width:44px;height:44px}}
 </style>
-<div class="page-actions">
+<link rel="stylesheet" href="{{ asset('css/landing-page-editor.css') }}?v={{ filemtime(public_path('css/landing-page-editor.css')) }}">
+<div class="page-actions landing-editor-page-hero">
     <div><span class="eyebrow">Public website</span><h2>{{ $mediaOnly ? 'Component news & media' : 'Landing page content & media' }}</h2><p>{{ $mediaOnly ? 'Publish photos or videos to the Activities section under the correct NSTP component.' : 'Each landing-page section now has its own clearly labeled media upload fields.' }}</p></div>
     <a class="secondary-outline-button" href="{{ route('landing', ['preview' => 1]) }}" target="_blank" rel="noopener">Preview landing page ↗</a>
 </div>
@@ -92,7 +93,7 @@
 
 <nav class="landing-section-nav" aria-label="Landing page editor sections">
     @foreach(['Hero', 'About the program', 'Program options', 'News and media', 'Stay informed', 'Online services', 'FAQs', 'Contact', 'Footer'] as $section)
-        <a href="#landing-editor-section-{{ $loop->iteration }}"><span>{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>{{ $section }}</a>
+        <a href="#landing-editor-section-{{ $loop->iteration }}" data-editor-section-link><span>{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>{{ $section }}</a>
     @endforeach
 </nav>
 
@@ -216,7 +217,7 @@
         </div>
     </section>
 
-    <section class="card">
+    <section class="card landing-editor-publish-bar">
         <div class="card-heading"><div><h3>Publish changes</h3><p>Updates become visible on the public landing page immediately after saving.</p></div></div>
         <div class="form-actions"><a class="secondary-outline-button" href="{{ route('landing', ['preview' => 1]) }}" target="_blank" rel="noopener">Preview current page</a><button class="primary-button" type="submit">Publish landing page</button></div>
         <p class="form-help">Last updated by {{ $setting?->updater?->name ?? 'System default' }}{{ $setting?->updated_at ? ' on '.$setting->updated_at->format('M d, Y g:i A') : '' }}.</p>
@@ -256,6 +257,34 @@
         });
         window.addEventListener('scroll', updateVisibility, { passive: true });
         updateVisibility();
+
+        const sectionLinks = [...document.querySelectorAll('[data-editor-section-link]')];
+        const sections = sectionLinks
+            .map((link) => document.querySelector(link.getAttribute('href')))
+            .filter(Boolean);
+
+        const setActiveSection = (sectionId) => {
+            sectionLinks.forEach((link) => {
+                link.classList.toggle('is-active', link.getAttribute('href') === `#${sectionId}`);
+            });
+        };
+
+        if (sectionLinks[0]) sectionLinks[0].classList.add('is-active');
+        sectionLinks.forEach((link) => link.addEventListener('click', (event) => {
+            const section = document.querySelector(link.getAttribute('href'));
+            if (!section) return;
+            event.preventDefault();
+            section.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+            setActiveSection(section.id);
+        }));
+
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                const visibleSection = entries.find((entry) => entry.isIntersecting);
+                if (visibleSection) setActiveSection(visibleSection.target.id);
+            }, { rootMargin: '-15% 0px -70% 0px' });
+            sections.forEach((section) => observer.observe(section));
+        }
     })();
 </script>
 @endsection
