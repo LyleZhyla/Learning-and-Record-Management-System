@@ -8,8 +8,8 @@
 </style>
 <style>
     .landing-section-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin-bottom:18px}
-    .landing-section-nav a{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:11px;background:var(--surface);padding:11px 13px;color:var(--navy);font-size:10px;font-weight:800;text-decoration:none}
-    .landing-section-nav a span{display:grid;width:25px;height:25px;place-items:center;border-radius:8px;background:#e6f0fc;color:#2468ca;font-size:9px}
+    .landing-section-nav a{display:flex;align-items:center;gap:11px;min-height:52px;border:1px solid var(--line);border-radius:11px;background:var(--surface);padding:12px 15px;color:var(--navy);font-size:14px;font-weight:800;line-height:1.35;text-decoration:none}
+    .landing-section-nav a span{display:grid;width:30px;height:30px;flex:none;place-items:center;border-radius:8px;background:#e6f0fc;color:#2468ca;font-size:11px;font-weight:900}
     .landing-section-nav a:hover{border-color:#8bb4e2;background:#f4f8fd}
     html[data-theme=dark] .landing-section-nav a{color:var(--ink)}
     .landing-editor-sections{display:flex;flex-direction:column}
