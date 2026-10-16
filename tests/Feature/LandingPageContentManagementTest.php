@@ -24,6 +24,9 @@ class LandingPageContentManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Landing page content &amp; media', false)
             ->assertSee('Add a photo or video')
+            ->assertSee('Upload destination')
+            ->assertSee('Public Landing Page → Activities →')
+            ->assertSee('Display under component')
             ->assertSee('Media library');
 
         $this->get(route('landing', ['preview' => 1]))
@@ -150,7 +153,9 @@ class LandingPageContentManagementTest extends TestCase
             'media_title' => 'Community clean-up day',
             'media_description' => 'Students serving the university community.',
             'media_file' => UploadedFile::fake()->image('cleanup.jpg', 1200, 800),
-        ])->assertRedirect()->assertSessionHasNoErrors();
+        ])->assertRedirect()
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', 'Photo uploaded to Public Landing Page → Activities → CWTS.');
 
         $this->actingAs($admin)->post(route('admin.landing-page.media.store'), [
             'media_type' => 'video',
@@ -190,12 +195,15 @@ class LandingPageContentManagementTest extends TestCase
         $this->actingAs($nstpAdmin)->get(route('nstp_admin.landing-media.index'))
             ->assertOk()
             ->assertSee('Component news &amp; media', false)
-            ->assertSee('Select component');
+            ->assertSee('Choose destination')
+            ->assertSee('Public Landing Page → Activities →')
+            ->assertSee('Display under component');
 
         $this->actingAs($coordinator)->get(route('coordinator.landing-media.index'))
             ->assertOk()
-            ->assertSee('value="CWTS" readonly', false)
-            ->assertDontSee('Select component');
+            ->assertSee('value="CWTS Activities" readonly', false)
+            ->assertSee('Public Landing Page → Activities →')
+            ->assertDontSee('Choose destination');
 
         $this->actingAs($coordinator)->post(route('coordinator.landing-media.store'), [
             'media_type' => 'photo',

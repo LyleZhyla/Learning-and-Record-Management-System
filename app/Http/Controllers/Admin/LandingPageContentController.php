@@ -143,7 +143,10 @@ class LandingPageContentController extends Controller
             throw $exception;
         }
 
-        return back()->with('status', ucfirst($type).' uploaded to the landing page media library.');
+        return back()->with(
+            'status',
+            ucfirst($type).' uploaded to Public Landing Page → Activities → '.strtoupper($component).'.',
+        );
     }
 
     public function destroyMedia(Request $request, LandingPageMedia $landingPageMedia): RedirectResponse
