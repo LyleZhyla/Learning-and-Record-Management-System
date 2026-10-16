@@ -126,6 +126,8 @@ class LandingPageContentController extends Controller
             'media_component' => ['required', 'in:rotc,cwts,lts'],
             'media_title' => ['required', 'string', 'max:180'],
             'media_description' => ['nullable', 'string', 'max:1000'],
+            'media_event_date' => ['nullable', 'date'],
+            'media_location' => ['nullable', 'string', 'max:180'],
             'media_file' => $request->input('media_type') === 'video'
                 ? ['required', 'file', 'mimes:mp4,webm,mov', 'max:102400']
                 : ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
@@ -144,6 +146,8 @@ class LandingPageContentController extends Controller
                 'component' => $component,
                 'title' => $validated['media_title'],
                 'description' => $validated['media_description'] ?? null,
+                'event_date' => $validated['media_event_date'] ?? null,
+                'location' => $validated['media_location'] ?? null,
                 'file_path' => $path,
                 'created_by' => $request->user()->id,
             ]);
@@ -154,7 +158,7 @@ class LandingPageContentController extends Controller
 
         return back()->with(
             'status',
-            ucfirst($type).' uploaded to Public Landing Page → Activities → '.strtoupper($component).'.',
+            ucfirst($type).' uploaded to Public Landing Page → News and Media → '.strtoupper($component).'.',
         );
     }
 

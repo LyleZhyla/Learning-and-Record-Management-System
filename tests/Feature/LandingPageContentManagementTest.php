@@ -24,13 +24,19 @@ class LandingPageContentManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Landing page content &amp; media', false)
             ->assertSee('Add a photo or video')
-            ->assertSee('Activities section · Media upload')
-            ->assertSee('Public Landing Page → Activities →')
+            ->assertSee('04 · News and media · Upload')
+            ->assertSee('Public Landing Page → News and Media →')
             ->assertSee('Display under component')
             ->assertSee('Upload new ROTC image')
             ->assertSee('Upload new CWTS image')
             ->assertSee('Upload new LTS image')
-            ->assertSee('Media library');
+            ->assertSee('05 · Stay informed')
+            ->assertSee('07 · FAQs')
+            ->assertSee('Question 10')
+            ->assertSee('09 · Footer')
+            ->assertSee('name="media_event_date"', false)
+            ->assertSee('name="media_location"', false)
+            ->assertSee('04 · News and media · Library');
 
         $this->get(route('landing', ['preview' => 1]))
             ->assertOk()
@@ -188,10 +194,12 @@ class LandingPageContentManagementTest extends TestCase
             'media_component' => 'cwts',
             'media_title' => 'Community clean-up day',
             'media_description' => 'Students serving the university community.',
+            'media_event_date' => '2026-10-15',
+            'media_location' => 'TAU Campus',
             'media_file' => UploadedFile::fake()->image('cleanup.jpg', 1200, 800),
         ])->assertRedirect()
             ->assertSessionHasNoErrors()
-            ->assertSessionHas('status', 'Photo uploaded to Public Landing Page → Activities → CWTS.');
+            ->assertSessionHas('status', 'Photo uploaded to Public Landing Page → News and Media → CWTS.');
 
         $this->actingAs($admin)->post(route('admin.landing-page.media.store'), [
             'media_type' => 'video',
@@ -203,6 +211,8 @@ class LandingPageContentManagementTest extends TestCase
 
         $photo = LandingPageMedia::where('type', 'photo')->firstOrFail();
         $video = LandingPageMedia::where('type', 'video')->firstOrFail();
+        $this->assertSame('2026-10-15', $photo->event_date->toDateString());
+        $this->assertSame('TAU Campus', $photo->location);
         Storage::disk('public')->assertExists($photo->file_path);
         Storage::disk('public')->assertExists($video->file_path);
 
@@ -210,6 +220,8 @@ class LandingPageContentManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Community clean-up day')
             ->assertSee('ROTC field training')
+            ->assertSee('Oct 15, 2026')
+            ->assertSee('TAU Campus')
             ->assertSee($photo->fileUrl(), false)
             ->assertSee($video->fileUrl(), false);
 
@@ -232,14 +244,14 @@ class LandingPageContentManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Component news &amp; media', false)
             ->assertSee('Choose destination')
-            ->assertSee('Activities section · Media upload')
-            ->assertSee('Public Landing Page → Activities →')
+            ->assertSee('04 · News and media · Upload')
+            ->assertSee('Public Landing Page → News and Media →')
             ->assertSee('Display under component');
 
         $this->actingAs($coordinator)->get(route('coordinator.landing-media.index'))
             ->assertOk()
             ->assertSee('value="CWTS Activities" readonly', false)
-            ->assertSee('Public Landing Page → Activities →')
+            ->assertSee('Public Landing Page → News and Media →')
             ->assertDontSee('Choose destination');
 
         $this->actingAs($coordinator)->post(route('coordinator.landing-media.store'), [

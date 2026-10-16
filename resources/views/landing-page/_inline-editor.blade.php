@@ -12,7 +12,7 @@
             ['about_lead', 'Lead statement', 'textarea'], ['about_body', 'Program description', 'textarea'],
             ['about_law_title', 'Legal reference', 'text'], ['about_law_body', 'Legal description', 'textarea'],
         ]],
-        'components' => ['Program components', [
+        'components' => ['Program options', [
             ['components_eyebrow', 'Section label', 'text'], ['components_title', 'Section heading', 'text'],
             ['components_intro', 'Section introduction', 'textarea'], ['rotc_image_url', 'ROTC panel image', 'image'],
             ['rotc_title', 'ROTC heading', 'text'], ['rotc_body', 'ROTC description', 'textarea'],
@@ -20,11 +20,16 @@
             ['cwts_body', 'CWTS description', 'textarea'], ['lts_image_url', 'LTS panel image', 'image'], ['lts_title', 'LTS heading', 'text'],
             ['lts_body', 'LTS description', 'textarea'],
         ]],
-        'activities' => ['Activities', [
+        'activities' => ['News and media', [
             ['activities_eyebrow', 'Section label', 'text'], ['activities_title', 'Section heading', 'text'],
-            ['activities_intro', 'Section introduction', 'textarea'],
+            ['activities_intro', 'Section introduction', 'textarea'], ['activities_credit', 'Media credit', 'textarea'],
         ]],
-        'services' => ['Services and SNAPIE', [
+        'announcements' => ['Stay informed', [
+            ['announcements_eyebrow', 'Section label', 'text'], ['announcements_title', 'Section heading', 'text'],
+            ['announcements_link_label', 'Portal link label', 'text'], ['announcements_empty_title', 'Empty-state heading', 'text'],
+            ['announcements_empty_body', 'Empty-state message', 'textarea'],
+        ]],
+        'services' => ['Online services', [
             ['services_eyebrow', 'Section label', 'text'], ['services_title', 'Section heading', 'text'],
             ['services_intro', 'Section introduction', 'textarea'], ['snapie_title', 'SNAPIE heading', 'text'],
             ['snapie_body', 'SNAPIE message', 'textarea'],
@@ -32,13 +37,19 @@
         'faqs' => ['Frequently asked questions', array_merge([
             ['faq_eyebrow', 'Section label', 'text'], ['faq_title', 'Section heading', 'text'],
             ['faq_intro', 'Section introduction', 'textarea'],
-        ], collect(range(1, 5))->flatMap(fn ($number) => [
+        ], collect(range(1, 10))->flatMap(fn ($number) => [
             ["faq_{$number}_question", "Question {$number}", 'text'],
             ["faq_{$number}_answer", "Answer {$number}", 'textarea'],
         ])->all())],
         'contact' => ['Contact section', [
             ['contact_eyebrow', 'Section label', 'text'], ['contact_title', 'Section heading', 'text'],
-            ['contact_body', 'Contact message', 'textarea'],
+            ['contact_body', 'Contact message', 'textarea'], ['contact_primary_label', 'Primary button label', 'text'],
+            ['contact_secondary_label', 'Website button label', 'text'],
+        ]],
+        'footer' => ['Footer', [
+            ['footer_description', 'Platform description', 'text'], ['footer_quick_links_title', 'Quick links heading', 'text'],
+            ['footer_services_title', 'Services heading', 'text'], ['footer_institution_title', 'Institution heading', 'text'],
+            ['footer_copyright', 'Copyright text', 'text'],
         ]],
     ];
 @endphp
@@ -72,7 +83,7 @@
                 <details class="landing-editor-group" @if($loop->first || collect($fields)->contains(fn ($field) => $errors->has($field[0]))) open @endif>
                     <summary><span>{{ str_pad((string) $loop->iteration, 2, '0', STR_PAD_LEFT) }}</span>{{ $groupLabel }}<i>⌄</i></summary>
                     <div class="landing-editor-fields">
-                        <a class="landing-editor-jump" href="#{{ $sectionId === 'hero' ? 'home' : ($sectionId === 'faqs' ? 'faqs' : $sectionId) }}">Show this section on page ↓</a>
+                        <a class="landing-editor-jump" href="#{{ $sectionId === 'hero' ? 'home' : ($sectionId === 'footer' ? 'contact' : $sectionId) }}">Show this section on page ↓</a>
                         @foreach($fields as [$key, $label, $type])
                             <label>
                                 <span>{{ $label }}</span>
