@@ -27,7 +27,11 @@
     .landing-editor-sections #landing-editor-section-8{order:80}
     .landing-editor-sections #landing-editor-section-9{order:90}
     .landing-editor-sections>.landing-editor-form>.card:last-child{order:100}
-    @media(max-width:760px){.landing-section-nav{grid-template-columns:1fr}}
+    .landing-editor-back-to-top{position:fixed;z-index:80;right:24px;bottom:92px;display:grid;width:48px;height:48px;place-items:center;border:0;border-radius:50%;background:linear-gradient(145deg,#2468ca,#123f78);color:#fff;box-shadow:0 12px 28px rgba(14,43,78,.28);font:800 21px/1 Arial,sans-serif;cursor:pointer;transition:transform .2s ease,box-shadow .2s ease}
+    .landing-editor-back-to-top:hover{transform:translateY(-3px);box-shadow:0 16px 32px rgba(14,43,78,.34)}
+    .landing-editor-back-to-top:focus-visible{outline:3px solid rgba(36,104,202,.3);outline-offset:3px}
+    .landing-editor-back-to-top[hidden]{display:none}
+    @media(max-width:760px){.landing-section-nav{grid-template-columns:1fr}.landing-editor-back-to-top{right:16px;bottom:82px;width:44px;height:44px}}
 </style>
 <div class="page-actions">
     <div><span class="eyebrow">Public website</span><h2>{{ $mediaOnly ? 'Component news & media' : 'Landing page content & media' }}</h2><p>{{ $mediaOnly ? 'Publish photos or videos to the Activities section under the correct NSTP component.' : 'Each landing-page section now has its own clearly labeled media upload fields.' }}</p></div>
@@ -220,6 +224,7 @@
 </form>
 </div>
 @endunless
+<button class="landing-editor-back-to-top" type="button" data-editor-back-to-top aria-label="Back to top of Landing Page Editor" title="Back to top" hidden><span aria-hidden="true">↑</span></button>
 <script>
     (() => {
         const componentSelect = document.querySelector('[data-media-component]');
@@ -234,6 +239,23 @@
 
         componentSelect.addEventListener('change', updateDestination);
         updateDestination();
+    })();
+</script>
+<script>
+    (() => {
+        const backToTop = document.querySelector('[data-editor-back-to-top]');
+        if (!backToTop) return;
+
+        const updateVisibility = () => {
+            backToTop.hidden = window.scrollY < 480;
+        };
+
+        backToTop.addEventListener('click', () => {
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+        });
+        window.addEventListener('scroll', updateVisibility, { passive: true });
+        updateVisibility();
     })();
 </script>
 @endsection

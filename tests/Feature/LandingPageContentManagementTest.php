@@ -36,6 +36,8 @@ class LandingPageContentManagementTest extends TestCase
             ->assertSee('09 · Footer')
             ->assertSee('name="media_event_date"', false)
             ->assertSee('name="media_location"', false)
+            ->assertSee('data-editor-back-to-top', false)
+            ->assertSee('aria-label="Back to top of Landing Page Editor"', false)
             ->assertSee('04 · News and media · Library');
 
         $this->get(route('landing', ['preview' => 1]))
