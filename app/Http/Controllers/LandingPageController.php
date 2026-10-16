@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
+use App\Models\LandingPageMedia;
 use App\Models\NstpComponent;
 use App\Models\SystemSetting;
 use Illuminate\Contracts\View\View;
@@ -23,6 +24,7 @@ class LandingPageController extends Controller
             'landing' => SystemSetting::landingPageContent(),
             'branding' => SystemSetting::branding(),
             'components' => $this->components(),
+            'landingMedia' => $this->landingMedia(),
             'landingEditorAuthorized' => $authorizedPreview,
             'landingEditorMode' => $authorizedPreview && $request->boolean('editor'),
             'landingEditorRoutePrefix' => $authorizedPreview ? $this->routePrefix($request) : null,
@@ -67,6 +69,15 @@ class LandingPageController extends Controller
     {
         try {
             return NstpComponent::query()->whereIn('code', ['CWTS', 'LTS', 'ROTC'])->get()->keyBy('code');
+        } catch (QueryException) {
+            return collect();
+        }
+    }
+
+    private function landingMedia(): Collection
+    {
+        try {
+            return LandingPageMedia::query()->latest()->get();
         } catch (QueryException) {
             return collect();
         }

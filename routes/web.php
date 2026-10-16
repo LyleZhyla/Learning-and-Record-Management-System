@@ -305,6 +305,9 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $engagementAnalyticsRoutes();
     $serialNumberRoutes();
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
+    Route::get('/landing-media', [LandingPageContentController::class, 'media'])->name('landing-media.index');
+    Route::post('/landing-media', [LandingPageContentController::class, 'storeMedia'])->name('landing-media.store');
+    Route::delete('/landing-media/{landingPageMedia}', [LandingPageContentController::class, 'destroyMedia'])->name('landing-media.destroy');
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/export', [DirectoryExportController::class, 'components'])->name('components.export');
     Route::patch('/components/selection-availability', [NstpAdminComponentController::class, 'updateSelectionAvailability'])->name('components.selection-availability');
@@ -380,6 +383,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
     Route::get('/landing-page', [LandingPageContentController::class, 'edit'])->name('landing-page.edit');
     Route::put('/landing-page', [LandingPageContentController::class, 'update'])->name('landing-page.update');
+    Route::post('/landing-page/media', [LandingPageContentController::class, 'storeMedia'])->name('landing-page.media.store');
+    Route::delete('/landing-page/media/{landingPageMedia}', [LandingPageContentController::class, 'destroyMedia'])->name('landing-page.media.destroy');
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
@@ -508,6 +513,9 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     Route::get('/messages/{contact?}', [PortalMessageController::class, 'index'])->name('messages.index');
     Route::post('/messages/{recipient}', [PortalMessageController::class, 'store'])->name('messages.store');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
+    Route::get('/landing-media', [LandingPageContentController::class, 'media'])->name('landing-media.index');
+    Route::post('/landing-media', [LandingPageContentController::class, 'storeMedia'])->name('landing-media.store');
+    Route::delete('/landing-media/{landingPageMedia}', [LandingPageContentController::class, 'destroyMedia'])->name('landing-media.destroy');
     Route::get('/components', [CoordinatorMonitoringController::class, 'components'])->name('components.index');
     Route::get('/components/export', [DirectoryExportController::class, 'components'])->name('components.export');
     Route::get('/accounts', [CoordinatorAccountController::class, 'index'])->name('accounts.index');

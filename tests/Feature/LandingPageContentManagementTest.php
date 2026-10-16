@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\LandingPageMedia;
+use App\Models\NstpComponent;
 use App\Models\SystemSetting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -177,5 +178,46 @@ class LandingPageContentManagementTest extends TestCase
 
         $this->assertDatabaseMissing('landing_page_media', ['id' => $photo->id]);
         Storage::disk('public')->assertMissing($photo->file_path);
+    }
+
+    public function test_nstp_admin_and_component_coordinator_can_manage_component_media(): void
+    {
+        Storage::fake('public');
+        $cwts = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
+        $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active', 'nstp_component_id' => $cwts->id]);
+
+        $this->actingAs($nstpAdmin)->get(route('nstp_admin.landing-media.index'))
+            ->assertOk()
+            ->assertSee('Component news &amp; media', false)
+            ->assertSee('Select component');
+
+        $this->actingAs($coordinator)->get(route('coordinator.landing-media.index'))
+            ->assertOk()
+            ->assertSee('value="CWTS" readonly', false)
+            ->assertDontSee('Select component');
+
+        $this->actingAs($coordinator)->post(route('coordinator.landing-media.store'), [
+            'media_type' => 'photo',
+            'media_component' => 'rotc',
+            'media_title' => 'CWTS outreach activity',
+            'media_file' => UploadedFile::fake()->image('outreach.webp', 1000, 700),
+        ])->assertRedirect()->assertSessionHasNoErrors();
+
+        $media = LandingPageMedia::firstOrFail();
+        $this->assertSame('cwts', $media->component);
+
+        $rotcMedia = LandingPageMedia::create([
+            'type' => 'photo',
+            'component' => 'rotc',
+            'title' => 'ROTC activity',
+            'file_path' => 'landing-page/media/photo/rotc.jpg',
+            'created_by' => $nstpAdmin->id,
+        ]);
+
+        $this->actingAs($coordinator)
+            ->delete(route('coordinator.landing-media.destroy', $rotcMedia))
+            ->assertForbidden();
+        $this->assertDatabaseHas('landing_page_media', ['id' => $rotcMedia->id]);
     }
 }

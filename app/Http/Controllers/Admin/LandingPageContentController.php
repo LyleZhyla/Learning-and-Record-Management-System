@@ -3,18 +3,55 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LandingPageMedia;
 use App\Models\SystemSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\View\View;
 use Throwable;
 
 class LandingPageContentController extends Controller
 {
-    public function edit(Request $request): RedirectResponse
+    public function edit(Request $request): View
     {
-        return redirect()->route('landing', ['preview' => 1, 'editor' => 1]);
+        return view('landing-page.edit', [
+            'layout' => 'layouts.admin',
+            'routePrefix' => 'admin',
+            'mediaOnly' => false,
+            'allowedComponent' => null,
+            'mediaStoreRoute' => 'admin.landing-page.media.store',
+            'mediaDestroyRoute' => 'admin.landing-page.media.destroy',
+            'landing' => SystemSetting::landingPageContent(),
+            'setting' => SystemSetting::with('updater')->find('landing_page_content'),
+            'landingMedia' => LandingPageMedia::with('creator')->latest()->get(),
+        ]);
+    }
+
+    public function media(Request $request): View
+    {
+        $user = $request->user();
+        abort_unless($user->isNstpAdmin() || $user->isCoordinator(), 403);
+
+        $prefix = $user->isCoordinator() ? 'coordinator' : 'nstp_admin';
+        $component = $user->isCoordinator() ? strtolower((string) $user->nstpComponent?->code) : null;
+        abort_if($user->isCoordinator() && ! in_array($component, ['rotc', 'cwts', 'lts'], true), 403, 'A component assignment is required to manage landing-page media.');
+
+        return view('landing-page.edit', [
+            'layout' => $prefix === 'coordinator' ? 'layouts.coordinator' : 'layouts.nstp-admin',
+            'routePrefix' => $prefix,
+            'mediaOnly' => true,
+            'allowedComponent' => $component,
+            'mediaStoreRoute' => $prefix.'.landing-media.store',
+            'mediaDestroyRoute' => $prefix.'.landing-media.destroy',
+            'landing' => SystemSetting::landingPageContent(),
+            'setting' => null,
+            'landingMedia' => LandingPageMedia::with('creator')
+                ->when($component, fn ($query) => $query->where('component', $component))
+                ->latest()
+                ->get(),
+        ]);
     }
 
     public function update(Request $request): RedirectResponse
@@ -65,8 +102,62 @@ class LandingPageContentController extends Controller
         )));
         Storage::disk('public')->delete(array_diff($replacedUploads, $newUploads, $activeUploads));
 
-        return redirect()->route('landing', ['preview' => 1, 'editor' => 1])
+        $redirect = $request->input('editor_context') === 'full'
+            ? redirect()->route('admin.landing-page.edit')
+            : redirect()->route('landing', ['preview' => 1, 'editor' => 1]);
+
+        return $redirect
             ->with('status', 'Landing page changes were published successfully.');
+    }
+
+    public function storeMedia(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'media_type' => ['required', 'in:photo,video'],
+            'media_component' => ['required', 'in:rotc,cwts,lts'],
+            'media_title' => ['required', 'string', 'max:180'],
+            'media_description' => ['nullable', 'string', 'max:1000'],
+            'media_file' => $request->input('media_type') === 'video'
+                ? ['required', 'file', 'mimes:mp4,webm,mov', 'max:102400']
+                : ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
+        ]);
+
+        $type = $validated['media_type'];
+        $component = $request->user()->isCoordinator()
+            ? strtolower((string) $request->user()->nstpComponent?->code)
+            : $validated['media_component'];
+        abort_if($request->user()->isCoordinator() && ! in_array($component, ['rotc', 'cwts', 'lts'], true), 403, 'A component assignment is required to upload landing-page media.');
+        $path = $request->file('media_file')->store('landing-page/media/'.$type, 'public');
+
+        try {
+            LandingPageMedia::create([
+                'type' => $type,
+                'component' => $component,
+                'title' => $validated['media_title'],
+                'description' => $validated['media_description'] ?? null,
+                'file_path' => $path,
+                'created_by' => $request->user()->id,
+            ]);
+        } catch (Throwable $exception) {
+            Storage::disk('public')->delete($path);
+            throw $exception;
+        }
+
+        return back()->with('status', ucfirst($type).' uploaded to the landing page media library.');
+    }
+
+    public function destroyMedia(Request $request, LandingPageMedia $landingPageMedia): RedirectResponse
+    {
+        if ($request->user()->isCoordinator()) {
+            $component = strtolower((string) $request->user()->nstpComponent?->code);
+            abort_unless($component && $landingPageMedia->component === $component, 403);
+        }
+
+        $path = $landingPageMedia->file_path;
+        $landingPageMedia->delete();
+        Storage::disk('public')->delete($path);
+
+        return back()->with('status', 'Landing page media was removed.');
     }
 
     private function rules(): array
