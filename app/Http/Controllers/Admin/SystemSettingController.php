@@ -14,18 +14,9 @@ class SystemSettingController extends Controller
 {
     public function edit(): View
     {
-        $setting = SystemSetting::with('updater')->find('inactivity_timeout_minutes');
-
         return view('admin.settings.edit', [
-            'timeoutMinutes' => SystemSetting::inactivityTimeoutMinutes(),
-            'setting' => $setting,
-            'registrationOpen' => SystemSetting::studentRegistrationIsOpen(),
-            'registrationAcademicYear' => SystemSetting::studentRegistrationAcademicYear(),
-            'registrationSemester' => SystemSetting::studentRegistrationSemester(),
-            'semesters' => NstpSection::SEMESTERS,
             'branding' => SystemSetting::branding(),
             'systemColors' => SystemSetting::systemColors(),
-            'studentIdDesign' => SystemSetting::studentIdDesign(),
         ]);
     }
 
@@ -48,11 +39,6 @@ class SystemSettingController extends Controller
         $defaults = [
             'institution_branding' => json_encode(SystemSetting::BRANDING_DEFAULTS, JSON_UNESCAPED_SLASHES),
             'system_colors' => json_encode(SystemSetting::SYSTEM_COLOR_DEFAULTS),
-            'student_id_design' => json_encode(SystemSetting::STUDENT_ID_DESIGN_DEFAULTS, JSON_UNESCAPED_SLASHES),
-            'student_registration_open' => '1',
-            'student_registration_academic_year' => SystemSetting::defaultStudentRegistrationAcademicYear(),
-            'student_registration_semester' => SystemSetting::defaultStudentRegistrationSemester(),
-            'inactivity_timeout_minutes' => (string) SystemSetting::INACTIVITY_TIMEOUT_DEFAULT,
         ];
 
         DB::transaction(function () use ($defaults, $request): void {
@@ -64,7 +50,7 @@ class SystemSettingController extends Controller
             }
         });
 
-        return back()->with('status', 'System & Branding settings were reset to their defaults. Existing accounts and records were not changed.');
+        return back()->with('status', 'Branding and system colors were reset to their defaults. Accounts and module data were not changed.');
     }
 
     private function updateBranding(Request $request): RedirectResponse

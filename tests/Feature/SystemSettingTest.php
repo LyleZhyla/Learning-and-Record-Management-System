@@ -23,9 +23,19 @@ class SystemSettingTest extends TestCase
         $this->actingAs($nstpAdmin)->get('/admin/settings')->assertForbidden();
         $this->actingAs($nstpAdmin)->put('/admin/settings', ['settings_section' => 'security', 'inactivity_timeout_minutes' => 5])->assertForbidden();
         $this->actingAs($nstpAdmin)->post('/admin/settings/reset-defaults')->assertForbidden();
-        $this->actingAs($superAdmin)->get('/admin/settings')->assertOk()->assertSee('Automatic logout timeout');
         $this->actingAs($superAdmin)->get('/admin/settings')
-            ->assertSee('Reset to default settings')
+            ->assertOk()
+            ->assertSee('Branding &amp; Colors', false)
+            ->assertDontSee('Student ID card design')
+            ->assertDontSee('Automatic logout timeout')
+            ->assertDontSee('Student registration cycle')
+            ->assertDontSee('Review Categories')
+            ->assertDontSee('Workflow Rules')
+            ->assertDontSee('Notification Rules')
+            ->assertDontSee('Policies &amp; Requirements', false)
+            ->assertDontSee('Landing Page Editor');
+        $this->actingAs($superAdmin)->get('/admin/settings')
+            ->assertSee('Reset branding to default settings')
             ->assertSee('css/system-settings-reset.css', false);
         $this->actingAs($superAdmin)->put('/admin/settings', [
             'settings_section' => 'security',
@@ -118,12 +128,12 @@ class SystemSettingTest extends TestCase
 
         $this->actingAs($superAdmin)->get('/admin/settings')
             ->assertOk()
-            ->assertSee('Student ID card design')
             ->assertSee('Protected brand assets')
+            ->assertDontSee('Student ID card design')
             ->assertDontSee('name="organization_logo"', false)
             ->assertDontSee('name="program_logo"', false)
             ->assertSee('Sample State University')
-            ->assertSee('UNIVERSITY ID');
+            ->assertDontSee('UNIVERSITY ID');
     }
 
     public function test_each_settings_section_validates_only_its_own_fields(): void
@@ -151,7 +161,7 @@ class SystemSettingTest extends TestCase
         ])->assertSessionHasErrors('system_primary_color');
     }
 
-    public function test_super_admin_can_reset_system_and_branding_settings_without_removing_records(): void
+    public function test_super_admin_can_reset_branding_without_changing_module_settings_or_records(): void
     {
         $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
@@ -171,15 +181,15 @@ class SystemSettingTest extends TestCase
         $this->actingAs($superAdmin)
             ->post(route('admin.settings.reset-defaults'))
             ->assertRedirect()
-            ->assertSessionHas('status', 'System & Branding settings were reset to their defaults. Existing accounts and records were not changed.');
+            ->assertSessionHas('status', 'Branding and system colors were reset to their defaults. Accounts and module data were not changed.');
 
         $this->assertSame(SystemSetting::BRANDING_DEFAULTS, SystemSetting::branding());
         $this->assertSame(SystemSetting::SYSTEM_COLOR_DEFAULTS, SystemSetting::systemColors());
-        $this->assertSame(SystemSetting::STUDENT_ID_DESIGN_DEFAULTS, SystemSetting::studentIdDesign());
-        $this->assertTrue(SystemSetting::studentRegistrationIsOpen());
-        $this->assertSame(SystemSetting::defaultStudentRegistrationAcademicYear(), SystemSetting::studentRegistrationAcademicYear());
-        $this->assertSame(SystemSetting::defaultStudentRegistrationSemester(), SystemSetting::studentRegistrationSemester());
-        $this->assertSame(SystemSetting::INACTIVITY_TIMEOUT_DEFAULT, SystemSetting::inactivityTimeoutMinutes());
+        $this->assertSame('CHANGED ID', SystemSetting::studentIdDesign()['title']);
+        $this->assertFalse(SystemSetting::studentRegistrationIsOpen());
+        $this->assertSame('2030-2031', SystemSetting::studentRegistrationAcademicYear());
+        $this->assertSame('second', SystemSetting::studentRegistrationSemester());
+        $this->assertSame(5, SystemSetting::inactivityTimeoutMinutes());
         $this->assertDatabaseHas('users', ['id' => $student->id]);
     }
 

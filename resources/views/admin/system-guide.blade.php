@@ -32,7 +32,7 @@
         <div class="system-workflow">
             <article class="system-workflow-step">
                 <span class="workflow-number">1</span>
-                <div class="workflow-content"><span class="workflow-category">Security first</span><h4>Secure your account and system settings</h4><p>Update your profile and password, then set the inactivity timeout used by every account.</p><div class="workflow-links"><a href="{{ route('admin.profile.edit') }}">Profile & Security →</a><a href="{{ route('admin.settings.edit') }}">System Settings →</a></div></div>
+                <div class="workflow-content"><span class="workflow-category">Security first</span><h4>Secure your administrator account</h4><p>Review your profile details and replace temporary or outdated passwords before managing records.</p><div class="workflow-links"><a href="{{ route('admin.profile.edit') }}">Profile & Security →</a></div></div>
             </article>
             <article class="system-workflow-step">
                 <span class="workflow-number">2</span>
