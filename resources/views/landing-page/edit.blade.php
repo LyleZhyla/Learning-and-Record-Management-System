@@ -11,7 +11,7 @@
     <a class="secondary-outline-button" href="{{ route('landing', ['preview' => 1]) }}" target="_blank" rel="noopener">Preview landing page ↗</a>
 </div>
 
-<form class="landing-editor-form" method="POST" action="{{ route($routePrefix.'.landing-page.update') }}">
+<form class="landing-editor-form" method="POST" action="{{ route($routePrefix.'.landing-page.update') }}" enctype="multipart/form-data">
     @csrf
     @method('PUT')
 
@@ -19,7 +19,7 @@
         <div class="card-heading"><div><span class="eyebrow">01 · Hero</span><h3>Opening message and slideshow</h3><p>Add four landscape images. The slideshow automatically pauses when a visitor interacts with its controls.</p></div></div>
         <div class="form-grid">
             @for($slide = 1; $slide <= 4; $slide++)
-                <label class="field-group"><span>Slideshow image {{ $slide }} URL or path</span><input name="hero_slide_{{ $slide }}_url" value="{{ old('hero_slide_'.$slide.'_url', $landing['hero_slide_'.$slide.'_url']) }}" required>@error('hero_slide_'.$slide.'_url')<small class="field-error">{{ $message }}</small>@enderror</label>
+                <div class="field-group"><span>Slideshow image {{ $slide }}</span><img src="{{ old('hero_slide_'.$slide.'_url', $landing['hero_slide_'.$slide.'_url']) }}" alt="Current slideshow image {{ $slide }}" style="width:100%;max-height:180px;object-fit:cover;border-radius:10px"><input name="hero_slide_{{ $slide }}_url" value="{{ old('hero_slide_'.$slide.'_url', $landing['hero_slide_'.$slide.'_url']) }}" required><input type="file" name="hero_slide_{{ $slide }}_image" accept="image/jpeg,image/png,image/webp"><small class="form-help">Upload JPG, PNG, or WebP up to 5 MB, or retain the existing URL/path.</small>@error('hero_slide_'.$slide.'_url')<small class="field-error">{{ $message }}</small>@enderror @error('hero_slide_'.$slide.'_image')<small class="field-error">{{ $message }}</small>@enderror</div>
             @endfor
             <label class="field-group"><span>Brand label</span><input name="hero_brand" value="{{ old('hero_brand', $landing['hero_brand']) }}" maxlength="180" required></label>
             <label class="field-group"><span>Headline line 1</span><input name="hero_line_1" value="{{ old('hero_line_1', $landing['hero_line_1']) }}" maxlength="180" required></label>

@@ -1,8 +1,8 @@
 @php
     $editorGroups = [
         'hero' => ['Hero section', [
-            ['hero_slide_1_url', 'Slideshow image 1 URL or path', 'text'], ['hero_slide_2_url', 'Slideshow image 2 URL or path', 'text'],
-            ['hero_slide_3_url', 'Slideshow image 3 URL or path', 'text'], ['hero_slide_4_url', 'Slideshow image 4 URL or path', 'text'],
+            ['hero_slide_1_url', 'Slideshow image 1', 'image'], ['hero_slide_2_url', 'Slideshow image 2', 'image'],
+            ['hero_slide_3_url', 'Slideshow image 3', 'image'], ['hero_slide_4_url', 'Slideshow image 4', 'image'],
             ['hero_brand', 'Brand label', 'text'], ['hero_line_1', 'Headline line 1', 'text'],
             ['hero_line_2', 'Headline line 2', 'text'], ['hero_line_3', 'Headline line 3', 'text'],
             ['hero_lead_1', 'Supporting line 1', 'textarea'], ['hero_lead_2', 'Supporting line 2', 'textarea'],
@@ -42,13 +42,18 @@
     ];
 @endphp
 
+<style>
+    .landing-editor-image-preview { width: 100%; height: 118px; border: 1px solid #dce4ef; border-radius: 10px; object-fit: cover; }
+    .landing-editor-fields .landing-editor-upload-help { color: #6e7c90; line-height: 1.45; }
+</style>
+
 <aside class="landing-editor-drawer" aria-label="Landing page editor" data-landing-editor-drawer>
     <header class="landing-editor-heading">
         <div><span>EDITOR MODE</span><strong>Edit the live landing page</strong></div>
         <a href="{{ route('landing', ['preview' => 1]) }}" aria-label="Close editor mode">×</a>
     </header>
 
-    <form id="landing-inline-editor" method="POST" action="{{ route($landingEditorRoutePrefix.'.landing-page.update') }}" data-landing-editor-form>
+    <form id="landing-inline-editor" method="POST" action="{{ route($landingEditorRoutePrefix.'.landing-page.update') }}" enctype="multipart/form-data" data-landing-editor-form>
         @csrf
         @method('PUT')
 
@@ -61,7 +66,13 @@
                         @foreach($fields as [$key, $label, $type])
                             <label>
                                 <span>{{ $label }}</span>
-                                @if($type === 'textarea')
+                                @if($type === 'image')
+                                    <img class="landing-editor-image-preview" src="{{ old($key, $landing[$key]) }}" alt="Current {{ strtolower($label) }}" data-landing-upload-preview="{{ $key }}">
+                                    <input type="text" name="{{ $key }}" value="{{ old($key, $landing[$key]) }}" maxlength="2048" required data-landing-editor-field="{{ $key }}">
+                                    <input type="file" name="{{ str_replace('_url', '_image', $key) }}" accept="image/jpeg,image/png,image/webp" data-landing-image-upload="{{ $key }}">
+                                    <small class="landing-editor-upload-help">Upload JPG, PNG, or WebP up to 5 MB. A selected file replaces the URL above when published.</small>
+                                    @error(str_replace('_url', '_image', $key))<small>{{ $message }}</small>@enderror
+                                @elseif($type === 'textarea')
                                     <textarea name="{{ $key }}" rows="3" maxlength="2000" required data-landing-editor-field="{{ $key }}">{{ old($key, $landing[$key]) }}</textarea>
                                 @else
                                     <input type="{{ $type }}" name="{{ $key }}" value="{{ old($key, $landing[$key]) }}" maxlength="{{ $type === 'url' ? 2048 : 180 }}" required data-landing-editor-field="{{ $key }}">

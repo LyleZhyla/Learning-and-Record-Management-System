@@ -21,6 +21,25 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    form.querySelectorAll('[data-landing-image-upload]').forEach((input) => {
+        input.addEventListener('change', () => {
+            const file = input.files?.[0];
+            if (!file) return;
+
+            const key = input.dataset.landingImageUpload;
+            const previewUrl = URL.createObjectURL(file);
+            const editorPreview = form.querySelector(`[data-landing-upload-preview="${key}"]`);
+            if (editorPreview) editorPreview.src = previewUrl;
+
+            const slideMatch = key.match(/^hero_slide_(\d)_url$/);
+            if (slideMatch && heroSlides[Number(slideMatch[1]) - 1]) {
+                heroSlides[Number(slideMatch[1]) - 1].src = previewUrl;
+            }
+
+            if (state) state.textContent = 'Unpublished image';
+        });
+    });
+
     form.addEventListener('submit', () => {
         const button = form.querySelector('button[type="submit"]');
         if (button) {
