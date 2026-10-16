@@ -18,6 +18,11 @@ class ReviewCategoryConfigurationTest extends TestCase
 
         $this->actingAs($admin)->get('/admin/review-categories')
             ->assertOk()
+            ->assertSee('Manage the choices reviewers can use')
+            ->assertSee('Choose a review area')
+            ->assertSee('Create review category')
+            ->assertSee('Edit settings')
+            ->assertSee('css/review-categories.css', false)
             ->assertSee('Registration status categories')
             ->assertSee('Registration document decision categories')
             ->assertDontSee('Configurable document decision');
