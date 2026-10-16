@@ -134,4 +134,17 @@
     </div>
 </section>
 @endforeach
+
+<section class="card review-category-reset-card">
+    <div class="review-category-reset-icon" aria-hidden="true">↺</div>
+    <div>
+        <span class="eyebrow">Recovery option</span>
+        <h3>Reset to default settings</h3>
+        <p>Restore all built-in category names, outcomes, colors, display order, active states, and automatic defaults. Custom categories and existing review records will not be deleted.</p>
+    </div>
+    <form method="POST" action="{{ route($routePrefix.'.review-categories.reset-defaults') }}" onsubmit="return confirm('Reset all built-in review categories to their default settings? Custom categories will be kept.');">
+        @csrf
+        <button class="review-category-reset-button" type="submit">Reset to defaults</button>
+    </form>
+</section>
 @endsection

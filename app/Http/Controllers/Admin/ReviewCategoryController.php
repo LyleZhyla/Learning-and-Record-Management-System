@@ -62,6 +62,38 @@ class ReviewCategoryController extends Controller
         return back()->with('status', 'The review category was updated.');
     }
 
+    public function resetDefaults(Request $request): RedirectResponse
+    {
+        DB::transaction(function () use ($request): void {
+            foreach (array_keys(ReviewCategory::SCOPES) as $scope) {
+                ReviewCategory::forScope($scope)->update(['is_default' => false]);
+
+                $sortOrder = 10;
+                foreach (ReviewCategory::FALLBACKS[$scope] as $slug => $definition) {
+                    [$name, $outcome, $color] = $definition;
+
+                    ReviewCategory::query()->updateOrCreate(
+                        ['scope' => $scope, 'slug' => $slug],
+                        [
+                            'name' => $name,
+                            'outcome' => $outcome,
+                            'color' => $color,
+                            'is_active' => true,
+                            'is_default' => true,
+                            'is_system' => true,
+                            'sort_order' => $sortOrder,
+                            'updated_by' => $request->user()->id,
+                        ],
+                    );
+
+                    $sortOrder += 10;
+                }
+            }
+        });
+
+        return back()->with('status', 'The built-in review categories were reset to their default settings. Custom categories were kept.');
+    }
+
     public function destroy(Request $request, ReviewCategory $reviewCategory): RedirectResponse
     {
         if ($reviewCategory->is_system || $reviewCategory->is_default || $this->isInUse($reviewCategory)) {

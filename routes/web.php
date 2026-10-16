@@ -154,6 +154,7 @@ $documentConfigurationRoutes = function (): void {
 $reviewCategoryRoutes = function (): void {
     Route::get('/review-categories', [ReviewCategoryController::class, 'index'])->name('review-categories.index');
     Route::post('/review-categories', [ReviewCategoryController::class, 'store'])->name('review-categories.store');
+    Route::post('/review-categories/reset-defaults', [ReviewCategoryController::class, 'resetDefaults'])->name('review-categories.reset-defaults');
     Route::put('/review-categories/{reviewCategory}', [ReviewCategoryController::class, 'update'])->name('review-categories.update');
     Route::delete('/review-categories/{reviewCategory}', [ReviewCategoryController::class, 'destroy'])->name('review-categories.destroy');
 };

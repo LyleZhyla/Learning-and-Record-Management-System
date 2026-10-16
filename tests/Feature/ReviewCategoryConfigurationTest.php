@@ -87,4 +87,45 @@ class ReviewCategoryConfigurationTest extends TestCase
             'is_default' => 0,
         ])->assertSessionHasErrors('outcome');
     }
+
+    public function test_admin_can_reset_built_in_categories_without_deleting_custom_categories(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $verified = ReviewCategory::forScope('registration')->where('slug', 'verified')->firstOrFail();
+        $verified->update([
+            'name' => 'Custom approved label',
+            'outcome' => 'approved',
+            'color' => '#111111',
+            'is_active' => false,
+            'is_default' => false,
+            'sort_order' => 99,
+        ]);
+        $custom = ReviewCategory::create([
+            'scope' => 'registration',
+            'name' => 'Manual approval',
+            'slug' => 'manual-approval',
+            'outcome' => 'approved',
+            'color' => '#222222',
+            'is_active' => true,
+            'is_default' => true,
+            'is_system' => false,
+            'sort_order' => 5,
+            'created_by' => $admin->id,
+            'updated_by' => $admin->id,
+        ]);
+
+        $this->actingAs($admin)
+            ->post(route('admin.review-categories.reset-defaults'))
+            ->assertRedirect()
+            ->assertSessionHas('status', 'The built-in review categories were reset to their default settings. Custom categories were kept.');
+
+        $verified->refresh();
+        $this->assertSame('Approved / account created', $verified->name);
+        $this->assertSame('#168865', $verified->color);
+        $this->assertSame(30, $verified->sort_order);
+        $this->assertTrue($verified->is_active);
+        $this->assertTrue($verified->is_default);
+        $this->assertDatabaseHas('review_categories', ['id' => $custom->id, 'name' => 'Manual approval']);
+        $this->assertFalse($custom->fresh()->is_default);
+    }
 }
