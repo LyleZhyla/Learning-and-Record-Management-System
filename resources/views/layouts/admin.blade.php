@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="{{ asset('css/registration-review.css') }}?v={{ filemtime(public_path('css/registration-review.css')) }}">
     <link rel="stylesheet" href="{{ asset('css/module-configuration.css') }}?v={{ filemtime(public_path('css/module-configuration.css')) }}">
     @stack('styles')
+    <link rel="stylesheet" href="{{ asset('css/super-admin-readability.css') }}?v={{ filemtime(public_path('css/super-admin-readability.css')) }}">
     <x-theme-init />
 </head>
 <body class="admin-body portal-super-admin" data-admin-tour-root>
@@ -124,5 +125,6 @@
     <script src="{{ asset('js/theme.js') }}"></script>
     <script src="{{ asset('js/table-sort.js') }}?v={{ filemtime(public_path('js/table-sort.js')) }}"></script>
     <script src="{{ asset('js/admin-tour.js') }}?v={{ filemtime(public_path('js/admin-tour.js')) }}"></script>
+    <script src="{{ asset('js/super-admin-readability.js') }}?v={{ filemtime(public_path('js/super-admin-readability.js')) }}"></script>
 </body>
 </html>

@@ -1,0 +1,30 @@
+/*
+ * Super Admin readability guardrail.
+ *
+ * The shared portal styles contain compact 7px-11px labels for dense screens.
+ * The companion script applies this class only when rendered Super Admin text
+ * is below the readable minimum, so larger typography keeps its intended size.
+ */
+.portal-super-admin {
+    --super-admin-minimum-font-size: 12px;
+}
+
+.portal-super-admin .super-admin-readable-text {
+    font-size: var(--super-admin-minimum-font-size) !important;
+    line-height: 1.45;
+}
+
+/* Keep the persistent shell readable before the companion script executes. */
+.portal-super-admin .nav-label,
+.portal-super-admin .role-card small,
+.portal-super-admin .topbar small,
+.portal-super-admin .app-footer {
+    font-size: var(--super-admin-minimum-font-size);
+    line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+    .portal-super-admin {
+        --super-admin-minimum-font-size: 13px;
+    }
+}
