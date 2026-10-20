@@ -7,6 +7,7 @@ use App\Models\AssessmentSubmission;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Models\RubricTemplate;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -171,6 +172,11 @@ class AiAssessmentScoringTest extends TestCase
         $this->assertSame('Concept mastery', $this->assessment->rubricCriteria()[0]['title']);
         $this->assertSame(100.0, (float) collect($this->assessment->rubricCriteria())->sum('percentage'));
         $this->assertStringContainsString('Maximum score: 60.00 points', $this->assessment->formattedRubric());
+        $this->assertDatabaseHas('rubric_templates', [
+            'facilitator_id' => $this->facilitator->id,
+            'assessment_type' => 'activity',
+            'source_title' => 'Community Reflection',
+        ]);
 
         $this->actingAs($this->facilitator)
             ->get('/facilitator/assessments/'.$this->assessment->id)
@@ -210,7 +216,7 @@ class AiAssessmentScoringTest extends TestCase
             ]],
         ])]);
 
-        $this->actingAs($this->facilitator)
+        $response = $this->actingAs($this->facilitator)
             ->postJson('/facilitator/assessments/rubric/ai-suggestion', [
                 'title' => $this->assessment->title,
                 'type' => $this->assessment->type,
@@ -221,7 +227,24 @@ class AiAssessmentScoringTest extends TestCase
             ->assertJsonCount(3, 'criteria')
             ->assertJsonPath('criteria.0.title', 'Understanding')
             ->assertJsonPath('criteria.2.percentage', 20)
-            ->assertJsonPath('criteria.2.score', 20);
+            ->assertJsonPath('criteria.2.score', 20)
+            ->assertJsonPath('template.assessment_type', 'activity');
+
+        $template = RubricTemplate::where('facilitator_id', $this->facilitator->id)->firstOrFail();
+        $this->assertSame('Understanding', $template->criteria[0]['title']);
+        $this->assertSame($template->id, $response->json('template.id'));
+
+        $this->actingAs($this->facilitator)
+            ->get('/facilitator/assessments/create')
+            ->assertOk()
+            ->assertSee('Reuse a saved rubric')
+            ->assertSee($template->name);
+
+        $otherFacilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $this->actingAs($otherFacilitator)
+            ->get('/facilitator/assessments/create')
+            ->assertOk()
+            ->assertDontSee($template->name);
 
         Http::assertSent(fn (Request $request): bool => $request->data()['text']['format']['name'] === 'rubric_suggestion'
             && str_contains(json_encode($request->data()), $this->assessment->instructions));

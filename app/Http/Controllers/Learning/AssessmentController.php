@@ -11,6 +11,7 @@ use App\Models\GradingSetting;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\OmrSheet;
+use App\Models\RubricTemplate;
 use App\Models\User;
 use App\Models\WorkflowDefinition;
 use App\Services\GradeService;
@@ -25,6 +26,7 @@ use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -64,6 +66,7 @@ class AssessmentController extends Controller
 
         return view('learning.assessments.create', $this->context($request) + [
             'sections' => $sections,
+            'rubricTemplates' => $this->rubricTemplatesFor($request->user()),
             'assessmentProfiles' => $sections->mapWithKeys(function (NstpSection $section): array {
                 $profile = ComponentAssessmentSetting::configuredFor($section->component);
 
@@ -105,7 +108,8 @@ class AssessmentController extends Controller
             'answers' => ['nullable', 'array'],
             'answers.*' => ['required', Rule::in(['A', 'B', 'C', 'D', 'E'])],
         ]);
-        $validated['rubric'] = $this->encodeRubric($validated['rubric_criteria'] ?? [], (float) $validated['max_score']);
+        $rubricCriteria = $validated['rubric_criteria'] ?? [];
+        $validated['rubric'] = $this->encodeRubric($rubricCriteria, (float) $validated['max_score']);
         unset($validated['rubric_criteria']);
         $section = NstpSection::findOrFail($validated['section_id']);
         $section->loadMissing('component.assessmentSetting');
@@ -157,6 +161,9 @@ class AssessmentController extends Controller
 
             return [$assessment, $sheet];
         });
+        if ($request->user()->isFacilitator() && $rubricCriteria !== []) {
+            $this->saveRubricTemplate($request->user(), $assessment->title, $assessment->type, $rubricCriteria, (float) $assessment->max_score);
+        }
         $this->studentNotifications->assessmentPublished($assessment);
 
         if ($sheet) {
@@ -193,7 +200,9 @@ class AssessmentController extends Controller
             ->with(['student', 'grader', 'aiApprover'])]);
         $submissionPreviews = $assessment->submissions->mapWithKeys(fn ($submission) => [$submission->id => $this->submissionPreviews->inspect($submission)]);
 
-        return view('learning.assessments.show', $this->context($request) + compact('assessment', 'students', 'submissionPreviews'));
+        return view('learning.assessments.show', $this->context($request) + compact('assessment', 'students', 'submissionPreviews') + [
+            'rubricTemplates' => $this->rubricTemplatesFor($request->user()),
+        ]);
     }
 
     public function previewSubmissionFile(Request $request, Assessment $assessment, AssessmentSubmission $submission): BinaryFileResponse
@@ -231,8 +240,9 @@ class AssessmentController extends Controller
             'rubric_criteria.*.score' => ['required', 'numeric', 'gt:0', 'max:'.$assessment->max_score],
         ]);
         $assessment->update(['rubric' => $this->encodeRubric($validated['rubric_criteria'], (float) $assessment->max_score)]);
+        $this->saveRubricTemplate($request->user(), $assessment->title, $assessment->type, $validated['rubric_criteria'], (float) $assessment->max_score);
 
-        return back()->with('status', 'AI scoring rubric saved. Existing AI suggestions should be regenerated.');
+        return back()->with('status', 'AI scoring rubric saved and added to your reusable rubric library. Existing AI suggestions should be regenerated.');
     }
 
     public function suggestRubric(Request $request): JsonResponse
@@ -246,7 +256,19 @@ class AssessmentController extends Controller
         ]);
 
         try {
-            return response()->json(['criteria' => $this->aiScoring->suggestRubric($request->user(), $validated)]);
+            $criteria = $this->aiScoring->suggestRubric($request->user(), $validated);
+            $template = $this->saveRubricTemplate(
+                $request->user(),
+                $validated['title'],
+                $validated['type'],
+                $criteria,
+                (float) $validated['max_score'],
+            );
+
+            return response()->json([
+                'criteria' => $criteria,
+                'template' => $this->rubricTemplatePayload($template),
+            ]);
         } catch (Throwable $exception) {
             if (! $exception instanceof RuntimeException) {
                 report($exception);
@@ -668,6 +690,63 @@ class AssessmentController extends Controller
     private function context(Request $request): array
     {
         return ['layout' => $this->access->layout($request->user()), 'routePrefix' => $this->access->routePrefix($request->user())];
+    }
+
+    private function rubricTemplatesFor(User $user): array
+    {
+        if (! $user->isFacilitator()) {
+            return [];
+        }
+
+        return RubricTemplate::query()
+            ->where('facilitator_id', $user->id)
+            ->latest('updated_at')
+            ->limit(50)
+            ->get()
+            ->map(fn (RubricTemplate $template): array => $this->rubricTemplatePayload($template))
+            ->all();
+    }
+
+    private function rubricTemplatePayload(RubricTemplate $template): array
+    {
+        return [
+            'id' => $template->id,
+            'name' => $template->name,
+            'assessment_type' => $template->assessment_type,
+            'source_title' => $template->source_title,
+            'maximum_score' => (float) $template->maximum_score,
+            'criteria' => $template->criteria,
+        ];
+    }
+
+    private function saveRubricTemplate(User $facilitator, string $title, string $type, array $criteria, float $maxScore): RubricTemplate
+    {
+        $normalizedCriteria = collect($criteria)->map(fn (array $criterion): array => [
+            'title' => trim((string) $criterion['title']),
+            'description' => trim((string) $criterion['description']),
+            'percentage' => round((float) $criterion['percentage'], 2),
+            'score' => round((float) $criterion['score'], 2),
+        ])->values()->all();
+        $fingerprintCriteria = collect($normalizedCriteria)->map(fn (array $criterion): array => [
+            'title' => Str::lower($criterion['title']),
+            'description' => Str::lower($criterion['description']),
+            'percentage' => $criterion['percentage'],
+        ])->all();
+        $fingerprint = hash('sha256', json_encode([
+            'assessment_type' => $type,
+            'criteria' => $fingerprintCriteria,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+
+        return RubricTemplate::updateOrCreate(
+            ['facilitator_id' => $facilitator->id, 'fingerprint' => $fingerprint],
+            [
+                'name' => Str::limit(trim($title).' · '.Str::headline($type).' rubric', 180, ''),
+                'assessment_type' => $type,
+                'source_title' => trim($title),
+                'criteria' => $normalizedCriteria,
+                'maximum_score' => $maxScore,
+            ],
+        );
     }
 
     private function removeEmptyRubricRows(Request $request): void
