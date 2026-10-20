@@ -12,10 +12,14 @@ class StudentProfile extends Model
     protected static function booted(): void
     {
         static::saved(function (StudentProfile $profile): void {
+            $user = $profile->user;
+
             if ($profile->wasChanged('last_name') || $profile->wasRecentlyCreated) {
-                $profile->user()->update([
-                    'last_name_sort_key' => strtolower(trim($profile->last_name)),
-                ]);
+                $user->update(['last_name_sort_key' => strtolower(trim($profile->last_name))]);
+            }
+
+            if ($user->must_complete_student_profile && $user->hasCompleteStudentProfile()) {
+                $user->update(['must_complete_student_profile' => false]);
             }
         });
     }

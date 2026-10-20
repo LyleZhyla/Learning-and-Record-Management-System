@@ -15,6 +15,7 @@ class StudentProfileTest extends TestCase
     public function test_student_sees_saved_details_before_opening_the_profile_editor(): void
     {
         $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $student->studentProfile()->create($this->completeProfileData());
 
         $this->actingAs($student)->get('/student/profile')
             ->assertOk()
@@ -85,7 +86,12 @@ class StudentProfileTest extends TestCase
 
     public function test_existing_registration_details_are_prefilled_and_linked(): void
     {
-        $student = User::factory()->create(['role' => 'student', 'status' => 'active', 'email' => 'juan@example.test']);
+        $student = User::factory()->create([
+            'role' => 'student',
+            'status' => 'active',
+            'email' => 'juan@example.test',
+            'must_complete_student_profile' => true,
+        ]);
         $registration = StudentRegistration::create([
             ...$this->registrationData(),
             'email' => $student->email,
@@ -95,13 +101,16 @@ class StudentProfileTest extends TestCase
             ->assertOk()
             ->assertSee('2026123456')
             ->assertSee('Juan')
-            ->assertSee('Edit profile')
-            ->assertDontSee('student-profile-form', false);
+            ->assertSee('Complete your profile to continue.')
+            ->assertSee('student-profile-form', false)
+            ->assertDontSee('Cancel editing');
 
         $this->actingAs($student)->put('/student/profile/details', $this->validPayload(['email' => $student->email]))
-            ->assertSessionHasNoErrors();
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/student/dashboard');
 
         $this->assertSame($registration->id, $student->fresh()->studentProfile->student_registration_id);
+        $this->assertFalse($student->fresh()->must_complete_student_profile);
     }
 
     public function test_profile_editor_script_keeps_a_tab_scoped_refresh_draft(): void
@@ -185,5 +194,12 @@ class StudentProfileTest extends TestCase
             'major' => 'Mathematics',
             'year_section' => '1A',
         ];
+    }
+
+    private function completeProfileData(): array
+    {
+        return collect($this->registrationData())
+            ->except(['reference_code', 'status', 'cor_path', 'formal_photo_path'])
+            ->all();
     }
 }

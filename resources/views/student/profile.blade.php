@@ -11,7 +11,7 @@
     $savedReligionOther = old('religion_other', $savedReligion === 'Others' ? $details?->religion : '');
     $savedYearSection = old('year_section_selection', $details && in_array($details->year_section, array_slice($yearSections, 0, -1), true) ? $details->year_section : ($details ? 'Others' : ''));
     $savedYearSectionOther = old('year_section_other', $savedYearSection === 'Others' ? $details?->year_section : '');
-    $isEditing = request()->boolean('edit') || old('_profile_editor') === '1';
+    $isEditing = ! $profileComplete || request()->boolean('edit') || old('_profile_editor') === '1';
     $displayName = collect([$details?->first_name, $details?->middle_name, $details?->last_name, $details?->extension_name])->filter()->implode(' ') ?: $user->name;
     $currentAddress = collect([$details?->barangay, $details?->city_municipality, $details?->province])->filter()->implode(', ');
     $birthPlace = collect([$details?->birth_city_municipality, $details?->birth_province])->filter()->implode(', ');
@@ -19,7 +19,11 @@
 @endphp
 
 @section('content')
-<div class="page-actions student-profile-heading"><div><h2>Your student information</h2><p>{{ $isEditing ? 'Update your details using the guided choices and validation used during registration.' : 'Review your saved personal, emergency contact, and academic details.' }}</p></div>@if($isEditing)<a class="secondary-outline-button" href="{{ route('student.profile.edit') }}" data-profile-draft-cancel>Cancel editing</a>@else<a class="primary-button compact" href="{{ route('student.profile.edit', ['edit' => 1]) }}">Edit profile</a>@endif</div>
+<div class="page-actions student-profile-heading"><div><h2>Your student information</h2><p>{{ $isEditing ? 'Update your details using the guided choices and validation used during registration.' : 'Review your saved personal, emergency contact, and academic details.' }}</p></div>@if($isEditing && $profileComplete)<a class="secondary-outline-button" href="{{ route('student.profile.edit') }}" data-profile-draft-cancel>Cancel editing</a>@elseif(! $isEditing)<a class="primary-button compact" href="{{ route('student.profile.edit', ['edit' => 1]) }}">Edit profile</a>@endif</div>
+
+@if (! $profileComplete)
+    <div class="alert warning" role="alert"><strong>Complete your profile to continue.</strong> All required personal, emergency contact, and academic fields must be saved before the rest of the student portal becomes available.</div>
+@endif
 
 @if (! $isEditing)
 <section class="card student-profile-overview">

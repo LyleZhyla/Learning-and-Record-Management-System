@@ -20,6 +20,7 @@ class ProfileController extends Controller
     public function edit(Request $request, QrCodeService $qrCode): View
     {
         $user = $request->user()->load('studentProfile');
+        $profileComplete = ! $user->mustCompleteStudentProfile();
         if (blank($user->student_qr_token)) {
             $user->save();
         }
@@ -45,6 +46,7 @@ class ProfileController extends Controller
         return view('student.profile', [
             'user' => $user,
             'details' => $details,
+            'profileComplete' => $profileComplete,
             'idCard' => [
                 'student' => $user,
                 'details' => $details,
@@ -62,6 +64,7 @@ class ProfileController extends Controller
     public function update(UpdateStudentProfileRequest $request, ProfilePhotoService $photos): RedirectResponse
     {
         $user = $request->user()->load('studentProfile');
+        $wasIncomplete = $user->mustCompleteStudentProfile();
         $validated = $request->validated();
         $registration = $user->studentProfile?->registration
             ?? StudentRegistration::where('email', $user->email)->latest()->first();
@@ -96,14 +99,18 @@ class ProfileController extends Controller
                 ['user_id' => $user->id],
                 [...$profileData, 'student_registration_id' => $registration?->id]
             );
+
+            $user->update(['must_complete_student_profile' => false]);
         });
 
         if ($request->hasFile('profile_photo')) {
             $photos->replace($user, $request->file('profile_photo'));
         }
 
-        return redirect()->route('student.profile.edit')->with([
-            'status' => 'Your student information was updated successfully.',
+        return redirect()->route($wasIncomplete ? 'student.dashboard' : 'student.profile.edit')->with([
+            'status' => $wasIncomplete
+                ? 'Your profile is complete. You now have access to the student portal.'
+                : 'Your student information was updated successfully.',
             'profile_saved' => true,
         ]);
     }

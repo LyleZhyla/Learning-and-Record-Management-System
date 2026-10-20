@@ -1,4 +1,5 @@
 @php($branding = \App\Models\SystemSetting::branding())
+@php($studentPortalUnlocked = ! auth()->user()->mustCompleteStudentProfile())
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,12 +19,13 @@
 <div class="app-shell">
     <aside class="sidebar" id="sidebar">
         <button class="sidebar-toggle" type="button" aria-controls="sidebar" aria-expanded="true" aria-label="Collapse sidebar">‹</button>
-        <a class="brand" href="{{ route('student.dashboard') }}">
+        <a class="brand" href="{{ $studentPortalUnlocked ? route('student.dashboard') : route('student.profile.edit', ['edit' => 1]) }}">
             <x-system-brand subtitle="Student Learning Portal" />
         </a>
         <div class="role-card"><x-user-avatar :user="auth()->user()" /><span><strong>{{ auth()->user()->name }}</strong><small>{{ auth()->user()->roleLabel() }}</small></span></div>
 
         <nav class="main-nav" aria-label="Student navigation">
+            @if($studentPortalUnlocked)
             <p class="nav-label">Overview</p>
             <a class="nav-link {{ request()->routeIs('student.dashboard') ? 'active' : '' }}" href="{{ route('student.dashboard') }}" data-student-tour="dashboard"><span class="nav-icon">⌂</span> Dashboard</a>
             <p class="nav-label">Enrollment</p>
@@ -49,10 +51,13 @@
             @permission('communication.announcements')<a class="nav-link {{ request()->routeIs('student.announcements.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'announcements') }}" data-student-tour="announcements"><span class="nav-icon">◫</span> Announcements @if($sidebarNotificationCounts['announcements'] > 0)<span class="nav-count" data-announcement-notification-count="{{ $sidebarNotificationCounts['announcements'] }}" aria-label="{{ $sidebarNotificationCounts['announcements'] }} unread announcements">{{ $sidebarNotificationCounts['announcements'] > 99 ? '99+' : $sidebarNotificationCounts['announcements'] }}</span>@endif</a>@endpermission
             @permission('communication.messages')<a class="nav-link {{ request()->routeIs('student.messages.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'messages') }}" data-student-tour="messages"><span class="nav-icon">◇</span> Messages @if($sidebarUnreadMessageCount > 0)<span class="nav-count" data-unread-message-count="{{ $sidebarUnreadMessageCount }}" aria-label="{{ $sidebarUnreadMessageCount }} unread messages">{{ $sidebarUnreadMessageCount > 99 ? '99+' : $sidebarUnreadMessageCount }}</span>@endif</a>@endpermission
             @permission('ai.use')<a class="nav-link {{ request()->routeIs('ai-assistant.*') ? 'active' : '' }}" href="{{ route('ai-assistant.index') }}" data-student-tour="ai"><span class="nav-icon">✦</span> AI Assistant</a>@endpermission
+            @endif
 
             <p class="nav-label">Account</p>
             @permission('student.profile')<a class="nav-link {{ request()->routeIs('student.profile.*') ? 'active' : '' }}" href="{{ route('student.profile.edit') }}" data-student-tour="profile"><span class="nav-icon">⚙</span> Profile &amp; Security</a>@endpermission
+            @if($studentPortalUnlocked)
             <a class="nav-link {{ request()->routeIs('student.system-guide') ? 'active' : '' }}" href="{{ route('student.system-guide') }}" data-student-tour="guide"><span class="nav-icon">?</span> System Guide</a>
+            @endif
         </nav>
 
         <form method="POST" action="{{ route('logout') }}" class="logout-form">
@@ -66,18 +71,19 @@
         <header class="topbar">
             <button class="menu-button" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Toggle navigation">☰</button>
             <div data-student-tour-page-title><small>{{ $branding['organization_short_name'] }} {{ $branding['program_short_name'] }} / Student</small><h1>@yield('page-title', 'Dashboard')</h1></div>
-            <x-notification-bell />
+            @if($studentPortalUnlocked)<x-notification-bell />@endif
             <x-theme-toggle />
-            <button class="admin-tour-topbar-button" type="button" data-start-student-tour><span aria-hidden="true">?</span> Guided Tour</button>
+            @if($studentPortalUnlocked)<button class="admin-tour-topbar-button" type="button" data-start-student-tour><span aria-hidden="true">?</span> Guided Tour</button>@endif
             <div class="topbar-status"><span></span> System online</div>
         </header>
         @if(session('status'))<div class="alert success">{{ session('status') }}</div>@endif
+        @if(session('warning'))<div class="alert warning">{{ session('warning') }}</div>@endif
         @if($errors->any())<div class="alert danger">{{ $errors->first() }}</div>@endif
         @yield('content')
         <footer class="app-footer">© LZPatalod 2026</footer>
     </main>
 </div>
-@permission('ai.use')<x-ai-chat-widget />@endpermission
+@if($studentPortalUnlocked)@permission('ai.use')<x-ai-chat-widget />@endpermission @endif
 <x-system-loader />
 <script src="{{ asset('js/sidebar.js') }}"></script>
 <script src="{{ asset('js/theme.js') }}"></script>

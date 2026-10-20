@@ -35,6 +35,34 @@ class User extends Authenticatable
 
     public const PERMANENTLY_DELETABLE_ROLES = ['student', 'facilitator', 'coordinator'];
 
+    public const REQUIRED_STUDENT_PROFILE_FIELDS = [
+        'last_name',
+        'first_name',
+        'province',
+        'province_code',
+        'city_municipality',
+        'city_municipality_code',
+        'barangay',
+        'barangay_code',
+        'date_of_birth',
+        'birth_province',
+        'birth_province_code',
+        'birth_city_municipality',
+        'birth_city_municipality_code',
+        'religion',
+        'sex',
+        'blood_type',
+        'contact_number',
+        'emergency_contact_name',
+        'emergency_relationship',
+        'emergency_contact_number',
+        'student_number',
+        'college',
+        'course',
+        'major',
+        'year_section',
+    ];
+
     /**
      * The attributes that are mass assignable.
      *
@@ -51,6 +79,7 @@ class User extends Authenticatable
         'profile_photo_path',
         'status',
         'must_change_password',
+        'must_complete_student_profile',
         'must_upload_student_documents',
         'last_login_at',
     ];
@@ -77,6 +106,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'must_change_password' => 'boolean',
+            'must_complete_student_profile' => 'boolean',
             'must_upload_student_documents' => 'boolean',
             'last_login_at' => 'datetime',
         ];
@@ -150,6 +180,34 @@ class User extends Authenticatable
     public function isStudent(): bool
     {
         return $this->role === 'student';
+    }
+
+    public function hasCompleteStudentProfile(): bool
+    {
+        if (! $this->isStudent() || blank($this->email)) {
+            return false;
+        }
+
+        $profile = $this->studentProfile;
+
+        if (! $profile) {
+            return false;
+        }
+
+        foreach (self::REQUIRED_STUDENT_PROFILE_FIELDS as $field) {
+            if (blank($profile->{$field})) {
+                return false;
+            }
+        }
+
+        return $profile->emergency_same_address || filled($profile->emergency_address);
+    }
+
+    public function mustCompleteStudentProfile(): bool
+    {
+        return $this->isStudent()
+            && $this->must_complete_student_profile
+            && ! $this->hasCompleteStudentProfile();
     }
 
     public function isActive(): bool
