@@ -188,4 +188,14 @@ class PublicServiceRequestTest extends TestCase
         ])->assertForbidden();
         $this->assertSame('submitted', $serviceRequest->fresh()->status);
     }
+
+    public function test_nstp_admin_service_request_pages_use_a_readable_type_scale(): void
+    {
+        $styles = file_get_contents(public_path('css/app.css'));
+
+        $this->assertStringContainsString('Readable type scale for the NSTP Admin service-request pages.', $styles);
+        $this->assertStringContainsString('.service-request-table td{font-size:14px!important', $styles);
+        $this->assertStringContainsString('.service-request-detail-list dd,.service-request-purpose p{font-size:13px', $styles);
+        $this->assertStringContainsString('.service-request-status{font-size:11px}', $styles);
+    }
 }
