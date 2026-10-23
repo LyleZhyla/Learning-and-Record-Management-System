@@ -65,7 +65,7 @@ class CoordinatorPortalTest extends TestCase
             ->assertSee('0 still awaiting a score');
     }
 
-    public function test_coordinator_dashboard_calendar_only_shows_activities_from_the_assigned_component(): void
+    public function test_coordinator_activity_calendar_only_shows_activities_from_the_assigned_component(): void
     {
         $calendarMonth = now()->addMonth()->startOfMonth();
         $assessment = Assessment::where('title', 'Activity 1')->firstOrFail();
@@ -95,7 +95,7 @@ class CoordinatorPortalTest extends TestCase
         ]);
 
         $this->actingAs($this->coordinator)
-            ->get('/coordinator/dashboard?month='.$calendarMonth->format('Y-m'))
+            ->get('/coordinator/activity-calendar?month='.$calendarMonth->format('Y-m'))
             ->assertOk()
             ->assertSee('Activity calendar')
             ->assertSee($calendarMonth->format('F Y'))
@@ -103,6 +103,11 @@ class CoordinatorPortalTest extends TestCase
             ->assertSee('across your assigned component')
             ->assertDontSee('Hidden ROTC Calendar Activity')
             ->assertDontSee('Hidden Calendar Section');
+
+        $this->actingAs($this->coordinator)->get('/coordinator/dashboard')
+            ->assertOk()
+            ->assertDontSee('Monthly agenda')
+            ->assertSee('href="'.route('coordinator.activity-calendar').'"', false);
     }
 
     public function test_coordinator_can_create_sections_only_for_the_assigned_component(): void

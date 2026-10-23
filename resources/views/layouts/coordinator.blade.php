@@ -14,6 +14,7 @@
         <nav class="main-nav" aria-label="Coordinator navigation">
             <p class="nav-label">Overview</p>
             <a class="nav-link {{ request()->routeIs('coordinator.dashboard') ? 'active' : '' }}" href="{{ route('coordinator.dashboard') }}" data-coordinator-tour="dashboard"><span class="nav-icon">⌂</span> Dashboard</a>
+            <a class="nav-link {{ request()->routeIs('coordinator.activity-calendar') ? 'active' : '' }}" href="{{ route('coordinator.activity-calendar') }}"><span class="nav-icon">◫</span> Activity Calendar</a>
             <p class="nav-label">Program Oversight</p>
             @permission('program.components')<a class="nav-link {{ request()->routeIs('coordinator.components.*') ? 'active' : '' }}" href="{{ route('coordinator.components.index') }}" data-coordinator-tour="components"><span class="nav-icon">◉</span> Components</a>
             <a class="nav-link {{ request()->routeIs('coordinator.accounts.*') ? 'active' : '' }}" href="{{ route('coordinator.accounts.index') }}" data-coordinator-tour="accounts"><span class="nav-icon">♙</span> Facilitators & Students</a>@endpermission

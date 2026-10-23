@@ -124,7 +124,7 @@ class FacilitatorDashboardTest extends TestCase
             ->assertDontSee('Hidden Attendance Activity');
     }
 
-    public function test_dashboard_calendar_combines_scoped_facilitator_activities_and_supports_month_navigation(): void
+    public function test_activity_calendar_page_combines_scoped_facilitator_activities_and_supports_month_navigation(): void
     {
         $this->travelTo('2026-10-22 09:00:00');
         $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
@@ -167,7 +167,7 @@ class FacilitatorDashboardTest extends TestCase
             'token' => str()->random(48), 'qr_payload' => 'november-field-briefing', 'qr_svg' => '', 'status' => 'scheduled',
         ]);
 
-        $this->actingAs($facilitator)->get('/facilitator/dashboard?month=2026-11')
+        $this->actingAs($facilitator)->get('/facilitator/activity-calendar?month=2026-11')
             ->assertOk()
             ->assertSee('Activity calendar')
             ->assertSee('November 2026')
@@ -179,5 +179,10 @@ class FacilitatorDashboardTest extends TestCase
             ->assertSee('month=2026-12', false)
             ->assertDontSee('Hidden Assessment Deadline')
             ->assertDontSee('Hidden Section');
+
+        $this->actingAs($facilitator)->get('/facilitator/dashboard')
+            ->assertOk()
+            ->assertDontSee('Monthly agenda')
+            ->assertSee('href="'.route('facilitator.activity-calendar').'"', false);
     }
 }

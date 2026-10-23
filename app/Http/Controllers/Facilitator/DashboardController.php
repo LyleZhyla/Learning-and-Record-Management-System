@@ -7,13 +7,12 @@ use App\Models\AssessmentSubmission;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\NstpEnrollment;
-use App\Services\ActivityCalendarService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, ActivityCalendarService $activityCalendars): View
+    public function __invoke(Request $request): View
     {
         $sections = $request->user()->facilitatedSections()
             ->with(['component', 'schedule'])
@@ -43,12 +42,6 @@ class DashboardController extends Controller
             'ungraded' => $pendingGradingCount,
         ];
 
-        $activityCalendar = $activityCalendars->forSections(
-            $sectionIds,
-            'facilitator',
-            $request->string('month')->toString(),
-        );
-
         return view('facilitator.dashboard', [
             'sections' => $sections,
             'stats' => $stats,
@@ -74,7 +67,6 @@ class DashboardController extends Controller
                 ->latest('starts_at')
                 ->limit(5)
                 ->get(),
-            'activityCalendar' => $activityCalendar,
         ]);
     }
 }

@@ -13,6 +13,7 @@
         <div class="role-card"><x-user-avatar :user="auth()->user()" /><span><strong>{{ auth()->user()->name }}</strong><small>{{ auth()->user()->roleLabel() }}</small></span></div>
         <nav class="main-nav" aria-label="Facilitator navigation">
             <p class="nav-label">Overview</p><a class="nav-link {{ request()->routeIs('facilitator.dashboard') ? 'active' : '' }}" href="{{ route('facilitator.dashboard') }}" data-facilitator-tour="dashboard"><span class="nav-icon">⌂</span> Dashboard</a>
+            <a class="nav-link {{ request()->routeIs('facilitator.activity-calendar') ? 'active' : '' }}" href="{{ route('facilitator.activity-calendar') }}"><span class="nav-icon">◫</span> Activity Calendar</a>
             <p class="nav-label">Class Management</p>
             @permission('learning.grades')<a class="nav-link {{ request()->routeIs('facilitator.students.*') ? 'active' : '' }}" href="{{ route('facilitator.students.index') }}" data-facilitator-tour="students"><span class="nav-icon">♙</span> My Students</a>@endpermission
             @permission('learning.attendance')<a class="nav-link {{ request()->routeIs('facilitator.attendance.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'attendance') }}" data-facilitator-tour="attendance"><span class="nav-icon">▣</span> Attendance @if($sidebarPortalNotificationCounts['attendance'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['attendance'] > 99 ? '99+' : $sidebarPortalNotificationCounts['attendance'] }}</span>@endif</a>@endpermission

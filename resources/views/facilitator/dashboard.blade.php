@@ -5,7 +5,6 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/facilitator-dashboard.css') }}?v={{ filemtime(public_path('css/facilitator-dashboard.css')) }}">
-<link rel="stylesheet" href="{{ asset('css/activity-calendar.css') }}?v={{ filemtime(public_path('css/activity-calendar.css')) }}">
 @endpush
 
 @section('content')
@@ -98,12 +97,6 @@
         </article>
     </div>
 </section>
-
-<x-activity-calendar
-    :calendar="$activityCalendar"
-    dashboard-route="facilitator.dashboard"
-    description="Assessment deadlines, project activities, and attendance sessions for your assigned sections."
-/>
 
 <section class="card facilitator-assigned-sections">
     <div class="card-heading"><div><h3>Assigned sections</h3><p>Your official schedule appears below each assigned section.</p></div></div>

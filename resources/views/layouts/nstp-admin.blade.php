@@ -33,6 +33,9 @@
                 <a class="nav-link {{ request()->routeIs('nstp_admin.dashboard') ? 'active' : '' }}" href="{{ route('nstp_admin.dashboard') }}" data-nstp-admin-tour="dashboard">
                     <span class="nav-icon">⌂</span> Dashboard
                 </a>
+                <a class="nav-link {{ request()->routeIs('nstp_admin.activity-calendar') ? 'active' : '' }}" href="{{ route('nstp_admin.activity-calendar') }}">
+                    <span class="nav-icon">◫</span> Activity Calendar
+                </a>
                 <p class="nav-label">People & Registration</p>
                 @php($managingStudentAccount = request()->routeIs('nstp_admin.students.*') || (request()->routeIs('nstp_admin.accounts.show') && request()->route('user')?->isStudent()))
                 @permission('accounts.staff')<a class="nav-link {{ request()->routeIs('nstp_admin.accounts.*') && !$managingStudentAccount ? 'active' : '' }}" href="{{ route('nstp_admin.accounts.index') }}" data-nstp-admin-tour="staff"><span class="nav-icon">♙</span> Staff Accounts</a>@endpermission

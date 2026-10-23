@@ -1,4 +1,4 @@
-@props(['calendar', 'dashboardRoute', 'description'])
+@props(['calendar', 'calendarRoute', 'description'])
 
 @php
     $month = $calendar['month'];
@@ -13,9 +13,9 @@
             <p>{{ $description }}</p>
         </div>
         <div class="activity-calendar-navigation" aria-label="Calendar navigation">
-            <a href="{{ route($dashboardRoute, ['month' => $month->subMonth()->format('Y-m')]) }}#activity-calendar-title" aria-label="Previous month">‹</a>
-            <a class="today" href="{{ route($dashboardRoute) }}#activity-calendar-title">Today</a>
-            <a href="{{ route($dashboardRoute, ['month' => $month->addMonth()->format('Y-m')]) }}#activity-calendar-title" aria-label="Next month">›</a>
+            <a href="{{ route($calendarRoute, ['month' => $month->subMonth()->format('Y-m')]) }}#activity-calendar-title" aria-label="Previous month">‹</a>
+            <a class="today" href="{{ route($calendarRoute) }}#activity-calendar-title">Today</a>
+            <a href="{{ route($calendarRoute, ['month' => $month->addMonth()->format('Y-m')]) }}#activity-calendar-title" aria-label="Next month">›</a>
         </div>
     </div>
 

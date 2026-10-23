@@ -129,7 +129,7 @@ class NstpAdminDashboardTest extends TestCase
             ->assertSee('100.0% of enrolled students have a section');
     }
 
-    public function test_nstp_admin_dashboard_calendar_shows_all_current_term_components_only(): void
+    public function test_nstp_admin_activity_calendar_shows_all_current_term_components_only(): void
     {
         $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
         $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
@@ -185,7 +185,7 @@ class NstpAdminDashboardTest extends TestCase
         ]);
 
         $this->actingAs($admin)
-            ->get('/nstp-admin/dashboard?month='.$calendarMonth->format('Y-m'))
+            ->get('/nstp-admin/activity-calendar?month='.$calendarMonth->format('Y-m'))
             ->assertOk()
             ->assertSee('Activity calendar')
             ->assertSee('Community Calendar Activity')
@@ -193,6 +193,11 @@ class NstpAdminDashboardTest extends TestCase
             ->assertSee('across all active NSTP sections this term')
             ->assertDontSee('Previous Term Hidden Activity')
             ->assertDontSee('Previous Term Section');
+
+        $this->actingAs($admin)->get('/nstp-admin/dashboard')
+            ->assertOk()
+            ->assertDontSee('Monthly agenda')
+            ->assertSee('href="'.route('nstp_admin.activity-calendar').'"', false);
     }
 
     public function test_nstp_admin_cannot_access_super_admin_routes(): void
