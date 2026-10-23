@@ -51,10 +51,9 @@
             label.setAttribute('aria-controls', groupId);
             label.title = `Toggle ${groupName}`;
 
-            const hasActivePage = Boolean(content.querySelector('.nav-link.active'));
             const expanded = Object.prototype.hasOwnProperty.call(savedGroups, groupName)
                 ? Boolean(savedGroups[groupName])
-                : hasActivePage;
+                : false;
 
             function setExpanded(nextExpanded, persist = true) {
                 content.hidden = !nextExpanded;
