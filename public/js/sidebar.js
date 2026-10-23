@@ -17,14 +17,6 @@
 
         const labels = [...navigation.querySelectorAll(':scope > .nav-label')];
         const portal = [...document.body.classList].find(className => className.startsWith('portal-')) || 'portal';
-        const groupStorageKey = `snapie.sidebar.groups.${portal}`;
-        let savedGroups = {};
-
-        try {
-            savedGroups = JSON.parse(localStorage.getItem(groupStorageKey)) || {};
-        } catch (error) {
-            savedGroups = {};
-        }
 
         labels.forEach((label, index) => {
             const groupName = label.textContent.trim();
@@ -51,25 +43,17 @@
             label.setAttribute('aria-controls', groupId);
             label.title = `Toggle ${groupName}`;
 
-            const expanded = Object.prototype.hasOwnProperty.call(savedGroups, groupName)
-                ? Boolean(savedGroups[groupName])
-                : false;
-
-            function setExpanded(nextExpanded, persist = true) {
+            function setExpanded(nextExpanded) {
                 content.hidden = !nextExpanded;
                 label.classList.toggle('collapsed', !nextExpanded);
                 label.setAttribute('aria-expanded', String(nextExpanded));
-                if (persist) {
-                    savedGroups[groupName] = nextExpanded;
-                    localStorage.setItem(groupStorageKey, JSON.stringify(savedGroups));
-                }
             }
 
             function toggleGroup() {
                 setExpanded(label.getAttribute('aria-expanded') !== 'true');
             }
 
-            setExpanded(expanded, false);
+            setExpanded(false);
             label.addEventListener('click', toggleGroup);
             label.addEventListener('keydown', event => {
                 if (event.key === 'Enter' || event.key === ' ') {
