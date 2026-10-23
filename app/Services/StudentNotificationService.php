@@ -7,12 +7,32 @@ use App\Models\AttendanceRecord;
 use App\Models\LearningMaterial;
 use App\Models\NotificationRule;
 use App\Models\NstpEnrollment;
+use App\Models\NstpServiceRequest;
 use App\Models\StudentNotification;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
 class StudentNotificationService
 {
+    public function serviceRequestSubmitted(NstpServiceRequest $serviceRequest): void
+    {
+        $rule = NotificationRule::configured(StudentNotification::SERVICE_REQUEST);
+        if (! $rule->is_enabled || empty($rule->channels)) {
+            return;
+        }
+
+        $recipients = User::query()
+            ->where('role', 'nstp_admin')
+            ->where('status', 'active')
+            ->pluck('id');
+
+        $this->upsertForUsers($recipients, StudentNotification::SERVICE_REQUEST, $serviceRequest->id, $rule, [
+            'request_reference' => $serviceRequest->reference_code,
+            'requester_name' => $serviceRequest->requesterDisplayName(),
+            'request_type' => $serviceRequest->requestTypeLabel(),
+        ]);
+    }
+
     public function learningMaterialPublished(LearningMaterial $material): void
     {
         $rule = NotificationRule::configured(StudentNotification::MATERIAL);

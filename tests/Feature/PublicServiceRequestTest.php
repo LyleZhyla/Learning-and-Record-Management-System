@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\NstpServiceRequest;
+use App\Models\StudentNotification;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -70,6 +71,51 @@ class PublicServiceRequestTest extends TestCase
             ->assertSessionHasErrors(['assistance_type', 'event_name', 'event_date', 'event_location']);
 
         $this->assertDatabaseCount('nstp_service_requests', 0);
+    }
+
+    public function test_new_request_notifies_every_active_nstp_admin_and_opens_the_application(): void
+    {
+        $firstAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $secondAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $inactiveAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'inactive']);
+        $coordinator = User::factory()->create(['role' => 'coordinator', 'status' => 'active']);
+
+        $this->post(route('service-requests.store'), [
+            'request_type' => 'certification',
+            'requester_name' => 'Juan Dela Cruz',
+            'email' => 'juan@example.test',
+            'contact_number' => '09171234567',
+            'purpose' => 'Scholarship requirement.',
+            'privacy_consent' => '1',
+        ])->assertRedirect();
+
+        $serviceRequest = NstpServiceRequest::sole();
+        foreach ([$firstAdmin, $secondAdmin] as $admin) {
+            $this->assertDatabaseHas('student_notifications', [
+                'user_id' => $admin->id,
+                'type' => StudentNotification::SERVICE_REQUEST,
+                'source_id' => $serviceRequest->id,
+                'read_at' => null,
+            ]);
+        }
+        foreach ([$inactiveAdmin, $coordinator] as $nonRecipient) {
+            $this->assertDatabaseMissing('student_notifications', [
+                'user_id' => $nonRecipient->id,
+                'type' => StudentNotification::SERVICE_REQUEST,
+                'source_id' => $serviceRequest->id,
+            ]);
+        }
+
+        $notification = StudentNotification::where('user_id', $firstAdmin->id)
+            ->where('type', StudentNotification::SERVICE_REQUEST)
+            ->sole();
+        $this->actingAs($firstAdmin)->get(route('nstp_admin.dashboard'))
+            ->assertOk()
+            ->assertSee('data-notification-count="1"', false)
+            ->assertSee('New service request: '.$serviceRequest->reference_code);
+        $this->get(route('notifications.events.open', $notification))
+            ->assertRedirect(route('nstp_admin.service-requests.show', $serviceRequest));
+        $this->assertNotNull($notification->fresh()->read_at);
     }
 
     public function test_serial_number_request_requires_the_year_nstp_02_was_completed(): void

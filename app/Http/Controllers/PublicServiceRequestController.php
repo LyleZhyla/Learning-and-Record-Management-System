@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\NstpServiceRequest;
+use App\Services\StudentNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
@@ -12,6 +14,8 @@ use Throwable;
 
 class PublicServiceRequestController extends Controller
 {
+    public function __construct(private StudentNotificationService $notifications) {}
+
     public function create(): View
     {
         return view('service-requests.create', [
@@ -59,15 +63,20 @@ class PublicServiceRequestController extends Controller
         unset($validated['attachment'], $validated['privacy_consent']);
 
         try {
-            $serviceRequest = NstpServiceRequest::create([
-                ...$validated,
-                'attachment_path' => $path,
-                'attachment_original_name' => $file?->getClientOriginalName(),
-                'attachment_mime_type' => $file?->getMimeType(),
-                'attachment_size_bytes' => $file?->getSize(),
-                'status' => 'submitted',
-                'privacy_accepted_at' => now(),
-            ]);
+            $serviceRequest = DB::transaction(function () use ($validated, $path, $file): NstpServiceRequest {
+                $serviceRequest = NstpServiceRequest::create([
+                    ...$validated,
+                    'attachment_path' => $path,
+                    'attachment_original_name' => $file?->getClientOriginalName(),
+                    'attachment_mime_type' => $file?->getMimeType(),
+                    'attachment_size_bytes' => $file?->getSize(),
+                    'status' => 'submitted',
+                    'privacy_accepted_at' => now(),
+                ]);
+                $this->notifications->serviceRequestSubmitted($serviceRequest);
+
+                return $serviceRequest;
+            });
         } catch (Throwable $exception) {
             if ($path) {
                 Storage::disk('local')->delete($path);

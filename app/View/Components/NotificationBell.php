@@ -43,6 +43,7 @@ class NotificationBell extends Component
             StudentNotification::ASSESSMENT,
             StudentNotification::LATE_ATTENDANCE,
             StudentNotification::ABSENT_ATTENDANCE,
+            StudentNotification::SERVICE_REQUEST,
         ])->filter(fn (string $type): bool => NotificationRule::configured($type)->usesChannel('bell'));
         $eventNotificationQuery = StudentNotification::where('user_id', $user->id)
             ->whereIn('type', $bellEventTypes)

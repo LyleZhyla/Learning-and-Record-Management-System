@@ -15,6 +15,8 @@ class StudentNotification extends Model
 
     public const ABSENT_ATTENDANCE = 'absent_attendance';
 
+    public const SERVICE_REQUEST = 'service_request';
+
     protected $fillable = ['user_id', 'type', 'source_id', 'title', 'body', 'available_at', 'read_at'];
 
     protected function casts(): array
@@ -44,6 +46,7 @@ class StudentNotification extends Model
             self::MATERIAL => route($prefix.'.materials.index'),
             self::ASSESSMENT => $this->assessmentDestination($user, $prefix),
             self::LATE_ATTENDANCE, self::ABSENT_ATTENDANCE => $this->attendanceDestination($user, $prefix),
+            self::SERVICE_REQUEST => route('nstp_admin.service-requests.show', NstpServiceRequest::findOrFail($this->source_id)),
             default => route($user->dashboardRouteName()),
         };
     }
@@ -53,6 +56,7 @@ class StudentNotification extends Model
         return match ($this->type) {
             self::MATERIAL => 'Learning Materials',
             self::ASSESSMENT => 'Assessments',
+            self::SERVICE_REQUEST => 'Service Requests',
             default => 'Attendance',
         };
     }

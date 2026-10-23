@@ -15,6 +15,13 @@ return [
         'body_template' => '{message_body}',
         'placeholders' => ['sender_name', 'message_body', 'group_name'],
     ],
+    'service_request' => [
+        'name' => 'New Service Requests',
+        'description' => 'Notifies active NSTP administrators when a public service request is submitted.',
+        'title_template' => 'New service request: {request_reference}',
+        'body_template' => '{requester_name} submitted a {request_type} request.',
+        'placeholders' => ['request_reference', 'requester_name', 'request_type'],
+    ],
     'learning_material' => [
         'name' => 'New Learning Materials',
         'description' => 'Notifies relevant students and staff when learning material is published.',
