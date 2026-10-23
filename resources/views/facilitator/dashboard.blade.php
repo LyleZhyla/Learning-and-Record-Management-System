@@ -3,9 +3,12 @@
 @section('title', 'Facilitator Dashboard')
 @section('page-title', 'Dashboard')
 
-@section('content')
+@push('styles')
 <link rel="stylesheet" href="{{ asset('css/facilitator-dashboard.css') }}?v={{ filemtime(public_path('css/facilitator-dashboard.css')) }}">
+<link rel="stylesheet" href="{{ asset('css/activity-calendar.css') }}?v={{ filemtime(public_path('css/activity-calendar.css')) }}">
+@endpush
 
+@section('content')
 <section class="welcome-banner facilitator-dashboard-hero">
     <div>
         <span class="eyebrow">Facilitator command center</span>
@@ -96,62 +99,11 @@
     </div>
 </section>
 
-<section class="card facilitator-activity-calendar" aria-labelledby="activity-calendar-title">
-    <div class="facilitator-calendar-heading">
-        <div>
-            <span class="eyebrow">Activity calendar</span>
-            <h3 id="activity-calendar-title">{{ $calendarMonth->format('F Y') }}</h3>
-            <p>Assessment deadlines, project activities, and attendance sessions for your assigned sections.</p>
-        </div>
-        <div class="facilitator-calendar-navigation" aria-label="Calendar navigation">
-            <a href="{{ route('facilitator.dashboard', ['month' => $calendarMonth->subMonth()->format('Y-m')]) }}#activity-calendar-title" aria-label="Previous month">‹</a>
-            <a class="today" href="{{ route('facilitator.dashboard') }}#activity-calendar-title">Today</a>
-            <a href="{{ route('facilitator.dashboard', ['month' => $calendarMonth->addMonth()->format('Y-m')]) }}#activity-calendar-title" aria-label="Next month">›</a>
-        </div>
-    </div>
-
-    <div class="facilitator-calendar-layout">
-        <div class="facilitator-calendar-shell">
-            <div class="facilitator-calendar-weekdays" aria-hidden="true">
-                @foreach(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as $weekday)<span>{{ $weekday }}</span>@endforeach
-            </div>
-            <div class="facilitator-calendar-grid" role="grid" aria-label="Activities for {{ $calendarMonth->format('F Y') }}">
-                @foreach($calendarDays as $day)
-                    @php($dayEvents = $calendarEventsByDate->get($day->toDateString(), collect()))
-                    <article class="facilitator-calendar-day {{ $day->month !== $calendarMonth->month ? 'outside-month' : '' }} {{ $day->isToday() ? 'is-today' : '' }}" role="gridcell" aria-label="{{ $day->format('F j, Y') }}{{ $dayEvents->isNotEmpty() ? ', '.$dayEvents->count().' scheduled items' : '' }}">
-                        <time datetime="{{ $day->toDateString() }}">{{ $day->day }}</time>
-                        <div class="facilitator-calendar-events">
-                            @foreach($dayEvents->take(3) as $event)
-                                <a class="facilitator-calendar-event {{ $event['type'] }}" href="{{ $event['url'] }}" title="{{ $event['category'] }}: {{ $event['title'] }}">
-                                    @if($event['time'])<span>{{ $event['time'] }}</span>@endif
-                                    <strong>{{ $event['title'] }}</strong>
-                                </a>
-                            @endforeach
-                            @if($dayEvents->count() > 3)<span class="facilitator-calendar-more">+{{ $dayEvents->count() - 3 }} more</span>@endif
-                        </div>
-                    </article>
-                @endforeach
-            </div>
-        </div>
-
-        <aside class="facilitator-calendar-agenda" aria-label="Monthly activity agenda">
-            <div class="facilitator-calendar-agenda-heading">
-                <div><span class="eyebrow">Monthly agenda</span><h4>{{ $calendarMonthEvents->count() }} scheduled {{ \Illuminate\Support\Str::plural('item', $calendarMonthEvents->count()) }}</h4></div>
-                <div class="facilitator-calendar-legend" aria-label="Activity types"><span class="assessment">Assessment</span><span class="project">Project</span><span class="attendance">Attendance</span></div>
-            </div>
-            <div class="facilitator-calendar-agenda-list">
-                @forelse($calendarMonthEvents as $event)
-                    <a href="{{ $event['url'] }}" class="facilitator-agenda-item {{ $event['type'] }}">
-                        <time datetime="{{ $event['date'] }}"><strong>{{ \Carbon\Carbon::parse($event['date'])->format('d') }}</strong><span>{{ \Carbon\Carbon::parse($event['date'])->format('M') }}</span></time>
-                        <div><span>{{ $event['category'] }}{{ $event['time'] ? ' · '.$event['time'] : '' }}</span><strong>{{ $event['title'] }}</strong><small>{{ $event['meta'] }}</small></div>
-                    </a>
-                @empty
-                    <div class="facilitator-calendar-empty"><span aria-hidden="true">○</span><strong>No scheduled activities</strong><p>Add due dates or project activities to place them on this calendar.</p></div>
-                @endforelse
-            </div>
-        </aside>
-    </div>
-</section>
+<x-activity-calendar
+    :calendar="$activityCalendar"
+    dashboard-route="facilitator.dashboard"
+    description="Assessment deadlines, project activities, and attendance sessions for your assigned sections."
+/>
 
 <section class="card facilitator-assigned-sections">
     <div class="card-heading"><div><h3>Assigned sections</h3><p>Your official schedule appears below each assigned section.</p></div></div>

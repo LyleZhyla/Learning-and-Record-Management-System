@@ -3,6 +3,10 @@
 @section('title', 'NSTP Admin Dashboard')
 @section('page-title', 'NSTP Admin Dashboard')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/activity-calendar.css') }}?v={{ filemtime(public_path('css/activity-calendar.css')) }}">
+@endpush
+
 @section('content')
     <section class="welcome-banner nstp-welcome">
         <div>
@@ -81,6 +85,12 @@
             @if($unsectionedStudentCount > 0)<a class="table-action" href="{{ route('nstp_admin.sectioning.index') }}">Assign students →</a>@else<span class="status-badge active"><i></i>All sectioned</span>@endif
         </article>
     </section>
+
+    <x-activity-calendar
+        :calendar="$activityCalendar"
+        dashboard-route="nstp_admin.dashboard"
+        description="Assessment deadlines, project activities, and attendance sessions across all active NSTP sections this term."
+    />
 
     <section class="component-overview" aria-label="NSTP components">
         <a class="component-card cwts" href="{{ route('nstp_admin.sections.index', ['component_id' => $components->firstWhere('code', 'CWTS')?->id]) }}"><x-component-logo component-code="CWTS" :logo-path="$components->firstWhere('code', 'CWTS')?->logo_path" class="component-symbol" /><div><span>{{ $components->firstWhere('code', 'CWTS')?->name ?? 'Civic Welfare Training Service' }}</span><h3>CWTS</h3><p>Configure capacity, sections, student enrollment, and facilitator assignments.</p></div><span class="component-state">Open sectioning →</span></a>

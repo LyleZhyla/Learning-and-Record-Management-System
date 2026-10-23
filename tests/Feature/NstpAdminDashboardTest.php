@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assessment;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\NstpComponent;
@@ -126,6 +127,72 @@ class NstpAdminDashboardTest extends TestCase
             ->assertSee('Attendance per component')
             ->assertSee('CWTS: 1 present, 0 late, 0 absent', false)
             ->assertSee('100.0% of enrolled students have a section');
+    }
+
+    public function test_nstp_admin_dashboard_calendar_shows_all_current_term_components_only(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $facilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $calendarMonth = now()->addMonth()->startOfMonth();
+        $year = now()->year;
+        $start = now()->month >= 6 ? $year : $year - 1;
+        $academicYear = $start.'-'.($start + 1);
+        $semester = now()->month >= 6 ? 'first' : 'second';
+
+        foreach (['CWTS' => 'Community Calendar Activity', 'LTS' => 'Literacy Calendar Activity'] as $code => $title) {
+            $component = NstpComponent::create(['code' => $code, 'name' => $code.' Program', 'is_active' => true]);
+            $section = NstpSection::create([
+                'component_id' => $component->id,
+                'facilitator_id' => $facilitator->id,
+                'code' => $code.'-CAL',
+                'name' => $code.' Calendar Section',
+                'academic_year' => $academicYear,
+                'semester' => $semester,
+                'capacity' => 40,
+                'status' => 'active',
+            ]);
+            Assessment::create([
+                'section_id' => $section->id,
+                'created_by' => $facilitator->id,
+                'title' => $title,
+                'type' => 'activity',
+                'max_score' => 100,
+                'weight' => 20,
+                'due_at' => $calendarMonth->copy()->addDays($code === 'CWTS' ? 4 : 8)->setTime(17, 0),
+                'status' => 'published',
+            ]);
+        }
+
+        $oldSection = NstpSection::create([
+            'component_id' => NstpComponent::where('code', 'CWTS')->value('id'),
+            'facilitator_id' => $facilitator->id,
+            'code' => 'CWTS-OLD',
+            'name' => 'Previous Term Section',
+            'academic_year' => '2024-2025',
+            'semester' => 'first',
+            'capacity' => 40,
+            'status' => 'active',
+        ]);
+        Assessment::create([
+            'section_id' => $oldSection->id,
+            'created_by' => $facilitator->id,
+            'title' => 'Previous Term Hidden Activity',
+            'type' => 'activity',
+            'max_score' => 100,
+            'weight' => 20,
+            'due_at' => $calendarMonth->copy()->addDays(10)->setTime(17, 0),
+            'status' => 'published',
+        ]);
+
+        $this->actingAs($admin)
+            ->get('/nstp-admin/dashboard?month='.$calendarMonth->format('Y-m'))
+            ->assertOk()
+            ->assertSee('Activity calendar')
+            ->assertSee('Community Calendar Activity')
+            ->assertSee('Literacy Calendar Activity')
+            ->assertSee('across all active NSTP sections this term')
+            ->assertDontSee('Previous Term Hidden Activity')
+            ->assertDontSee('Previous Term Section');
     }
 
     public function test_nstp_admin_cannot_access_super_admin_routes(): void

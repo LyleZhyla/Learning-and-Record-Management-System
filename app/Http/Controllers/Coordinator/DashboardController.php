@@ -9,12 +9,13 @@ use App\Models\AttendanceSession;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
+use App\Services\ActivityCalendarService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request): View
+    public function __invoke(Request $request, ActivityCalendarService $activityCalendars): View
     {
         $componentId = $request->user()->nstp_component_id ?? 0;
         $component = NstpComponent::withCount(['sections', 'enrollments'])->find($componentId);
@@ -40,6 +41,11 @@ class DashboardController extends Controller
         $submissionTotal = AssessmentSubmission::where($submissionScope)->count();
         $gradedCount = AssessmentSubmission::where($submissionScope)->whereNotNull('score')->count();
         $pendingGradingCount = max(0, $submissionTotal - $gradedCount);
+        $activityCalendar = $activityCalendars->forSections(
+            $sections->pluck('id'),
+            'coordinator',
+            $request->string('month')->toString(),
+        );
 
         return view('coordinator.dashboard', [
             'studentCount' => NstpEnrollment::where('component_id', $componentId)->where('status', 'enrolled')->distinct()->count('student_id'),
@@ -71,6 +77,7 @@ class DashboardController extends Controller
                 ->count(),
             'assignedComponent' => $component,
             'recentSessions' => AttendanceSession::with(['section.component', 'creator'])->withCount('records')->whereHas('section', fn ($section) => $section->where('component_id', $componentId))->latest('starts_at')->limit(5)->get(),
+            'activityCalendar' => $activityCalendar,
         ]);
     }
 }

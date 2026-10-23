@@ -65,6 +65,46 @@ class CoordinatorPortalTest extends TestCase
             ->assertSee('0 still awaiting a score');
     }
 
+    public function test_coordinator_dashboard_calendar_only_shows_activities_from_the_assigned_component(): void
+    {
+        $calendarMonth = now()->addMonth()->startOfMonth();
+        $assessment = Assessment::where('title', 'Activity 1')->firstOrFail();
+        $assessment->update(['due_at' => $calendarMonth->copy()->addDays(5)->setTime(17, 0)]);
+
+        $otherFacilitator = User::factory()->create(['role' => 'facilitator', 'status' => 'active']);
+        $otherComponent = NstpComponent::create(['code' => 'ROTC', 'name' => 'Reserve Officers Training Corps', 'default_section_capacity' => 40, 'is_active' => true]);
+        $otherSection = NstpSection::create([
+            'component_id' => $otherComponent->id,
+            'facilitator_id' => $otherFacilitator->id,
+            'code' => 'ROTC-CALENDAR',
+            'name' => 'Hidden Calendar Section',
+            'academic_year' => '2026-2027',
+            'semester' => 'first',
+            'capacity' => 40,
+            'status' => 'active',
+        ]);
+        Assessment::create([
+            'section_id' => $otherSection->id,
+            'created_by' => $otherFacilitator->id,
+            'title' => 'Hidden ROTC Calendar Activity',
+            'type' => 'activity',
+            'max_score' => 100,
+            'weight' => 20,
+            'due_at' => $calendarMonth->copy()->addDays(7)->setTime(17, 0),
+            'status' => 'published',
+        ]);
+
+        $this->actingAs($this->coordinator)
+            ->get('/coordinator/dashboard?month='.$calendarMonth->format('Y-m'))
+            ->assertOk()
+            ->assertSee('Activity calendar')
+            ->assertSee($calendarMonth->format('F Y'))
+            ->assertSee('Activity 1')
+            ->assertSee('across your assigned component')
+            ->assertDontSee('Hidden ROTC Calendar Activity')
+            ->assertDontSee('Hidden Calendar Section');
+    }
+
     public function test_coordinator_can_create_sections_only_for_the_assigned_component(): void
     {
         $assignedComponent = NstpComponent::findOrFail($this->coordinator->nstp_component_id);

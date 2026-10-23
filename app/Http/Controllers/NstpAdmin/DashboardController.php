@@ -8,11 +8,13 @@ use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
+use App\Services\ActivityCalendarService;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(Request $request, ActivityCalendarService $activityCalendars): View
     {
         [$academicYear, $semester] = $this->currentTerm();
         $components = NstpComponent::query()
@@ -73,6 +75,16 @@ class DashboardController extends Controller
         $unsectionedStudentCount = $currentEnrollments->whereNull('section_id')->unique('student_id')->count();
         $attendanceRecordCount = $attendanceRecords->count();
         $attendedRecordCount = $attendanceRecords->whereIn('status', ['present', 'late'])->count();
+        $currentSectionIds = NstpSection::query()
+            ->where('academic_year', $academicYear)
+            ->where('semester', $semester)
+            ->where('status', 'active')
+            ->pluck('id');
+        $activityCalendar = $activityCalendars->forSections(
+            $currentSectionIds,
+            'nstp_admin',
+            $request->string('month')->toString(),
+        );
 
         return view('nstp_admin.dashboard', [
             'components' => $components,
@@ -97,6 +109,7 @@ class DashboardController extends Controller
                 ->latest()
                 ->limit(5)
                 ->get(),
+            'activityCalendar' => $activityCalendar,
         ]);
     }
 

@@ -3,6 +3,10 @@
 @section('title', 'Coordinator Dashboard')
 @section('page-title', 'Coordinator Dashboard')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/activity-calendar.css') }}?v={{ filemtime(public_path('css/activity-calendar.css')) }}">
+@endpush
+
 @section('content')
 <section class="welcome-banner coordinator-dashboard-hero">
     <div>
@@ -88,6 +92,12 @@
         </div>
     </article>
 </section>
+
+<x-activity-calendar
+    :calendar="$activityCalendar"
+    dashboard-route="coordinator.dashboard"
+    description="Assessment deadlines, project activities, and attendance sessions across your assigned component."
+/>
 
 @if($assignedComponent)
 <a class="component-card coordinator-component-card {{ strtolower($assignedComponent->code) }}" href="{{ route('coordinator.components.index') }}">
