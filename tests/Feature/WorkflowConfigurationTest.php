@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
+use App\Models\StudentRegistration;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Models\WorkflowDefinition;
@@ -136,5 +137,28 @@ class WorkflowConfigurationTest extends TestCase
 
         $this->assertSame($lts->id, $enrollment->fresh()->component_id);
         $this->assertSame('L', $enrollment->fresh()->shirt_size);
+    }
+
+    public function test_new_custom_checkpoint_can_apply_only_to_future_registrations(): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $workflow = WorkflowDefinition::where('key', 'registration_review')->firstOrFail();
+
+        $this->actingAs($admin)->post(route('admin.workflows.steps.store', $workflow), [
+            'name' => 'Department endorsement',
+            'description' => 'Confirm the applicant has department approval.',
+            'assigned_role' => 'any_admin',
+            'required' => '1',
+            'apply_to_existing' => '0',
+        ])->assertSessionHasNoErrors();
+
+        $workflow->refresh();
+        $olderRegistration = new StudentRegistration;
+        $olderRegistration->created_at = now()->subDay();
+        $futureRegistration = new StudentRegistration;
+        $futureRegistration->created_at = now()->addDay();
+
+        $this->assertSame([], $workflow->customStepsFor($olderRegistration));
+        $this->assertSame('Department endorsement', $workflow->customStepsFor($futureRegistration)[0]['name']);
     }
 }

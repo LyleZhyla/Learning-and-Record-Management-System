@@ -9,6 +9,25 @@
         <div class="page-action-buttons">@if(auth()->user()->isSuperAdmin())<a class="secondary-outline-button" href="{{ route('admin.workflows.index', ['module' => 'components']) }}">Workflow settings</a>@endif<a class="secondary-outline-button" href="{{ route($routePrefix.'.components.export') }}">Download components</a><a class="secondary-outline-button" href="{{ route($routePrefix.'.sections.index') }}">Manage sectioning →</a></div>
     </section>
 
+    <section class="card component-availability-card">
+        <div class="card-heading"><div><span class="eyebrow">Institution offering</span><h3>Available NSTP components</h3><p>Enable only the components offered by this university. Inactive components disappear from new student selections and the public page, while historical records remain available.</p></div><span class="component-availability-count"><strong>{{ $activeComponentCount }}</strong><small>active</small></span></div>
+        @error('is_active')<div class="alert danger" role="alert">{{ $message }}</div>@enderror
+        <div class="component-availability-grid">
+            @foreach($components as $component)
+                <article class="component-availability-item {{ $component->is_active ? 'is-active' : 'is-inactive' }}">
+                    <div><span class="nstp-component-logo small-avatar"><img src="{{ $component->logoUrl() }}" alt=""></span><span><strong>{{ $component->code }}</strong><small>{{ $component->name }}</small></span></div>
+                    <form method="POST" action="{{ route($routePrefix.'.components.availability', $component) }}">
+                        @csrf @method('PATCH')
+                        <input type="hidden" name="is_active" value="{{ $component->is_active ? 0 : 1 }}">
+                        <button class="{{ $component->is_active ? 'danger-link' : 'success-button' }}" type="submit" @disabled($component->is_active && $activeComponentCount === 1)>{{ $component->is_active ? 'Disable' : 'Enable' }}</button>
+                    </form>
+                    <span class="status-badge {{ $component->is_active ? 'active' : 'inactive' }}"><i></i>{{ $component->is_active ? 'Offered' : 'Not offered' }}</span>
+                </article>
+            @endforeach
+        </div>
+        @if($activeComponentCount === 1)<p class="component-availability-note">At least one component must remain active.</p>@endif
+    </section>
+
     <section class="card component-selection-control {{ $componentSelectionOpen ? 'is-open' : 'is-closed' }}">
         <div class="component-selection-control-copy">
             <span class="component-selection-status-dot" aria-hidden="true"></span>

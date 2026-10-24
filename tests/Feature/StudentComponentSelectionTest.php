@@ -189,6 +189,29 @@ class StudentComponentSelectionTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_admin_can_match_component_availability_to_the_institution_offering(): void
+    {
+        $admin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $student = User::factory()->create(['role' => 'student', 'status' => 'active']);
+        $cwts = NstpComponent::create(['code' => 'CWTS', 'name' => 'Civic Welfare Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
+        $lts = NstpComponent::create(['code' => 'LTS', 'name' => 'Literacy Training Service', 'default_section_capacity' => 40, 'is_active' => true]);
+
+        $this->actingAs($admin)->patch(route('nstp_admin.components.availability', $lts), [
+            'is_active' => '0',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertFalse($lts->fresh()->is_active);
+        $this->actingAs($student)->get(route('student.component.edit'))
+            ->assertOk()->assertSee('Civic Welfare Training Service')->assertDontSee('Literacy Training Service');
+        $this->get(route('landing'))->assertOk()->assertDontSee('data-component-tab="lts"', false);
+
+        $this->actingAs($admin)->patch(route('nstp_admin.components.availability', $cwts), [
+            'is_active' => '0',
+        ])->assertSessionHasErrors('is_active');
+
+        $this->assertTrue($cwts->fresh()->is_active);
+    }
+
     /** @return array{string, string} */
     private function currentTerm(): array
     {

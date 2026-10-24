@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Jobs\SendAccountCredentials;
 use App\Models\StudentRegistration;
 use App\Models\User;
+use App\Models\WorkflowDefinition;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
@@ -111,6 +112,54 @@ class RegistrationDocumentReviewTest extends TestCase
 
         $this->assertDatabaseCount('users', 2);
         $this->assertDatabaseCount('student_profiles', 1);
+    }
+
+    public function test_required_institution_checkpoint_blocks_final_approval_until_completed(): void
+    {
+        Storage::fake('local');
+        Queue::fake();
+        $registration = $this->registration();
+        $superAdmin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $nstpAdmin = User::factory()->create(['role' => 'nstp_admin', 'status' => 'active']);
+        $workflow = WorkflowDefinition::where('key', 'registration_review')->firstOrFail();
+
+        $this->actingAs($superAdmin)->post(route('admin.workflows.steps.store', $workflow), [
+            'name' => 'Medical clearance',
+            'description' => 'Confirm that the university clinic cleared the applicant.',
+            'assigned_role' => 'nstp_admin',
+            'required' => '1',
+            'apply_to_existing' => '1',
+        ])->assertSessionHasNoErrors();
+
+        $step = collect($workflow->fresh()->resolvedSteps())->firstWhere('type', 'manual_checkpoint');
+        $this->assertNotNull($step);
+        $this->actingAs($superAdmin)->get(route('admin.workflows.index'))
+            ->assertOk()->assertSee('Medical clearance')->assertSee('Institution checkpoint');
+
+        $this->actingAs($nstpAdmin)->patch(route('nstp_admin.registrations.review', $registration), [
+            'cor_review_status' => 'verified',
+            'formal_photo_review_status' => 'verified',
+            'review_notes' => 'Both files are valid.',
+        ])->assertSessionHasNoErrors()->assertSessionMissing('temporary_password');
+
+        $this->assertSame('under_review', $registration->fresh()->status);
+        $this->assertDatabaseMissing('users', ['email' => $registration->email]);
+        $this->actingAs($nstpAdmin)->get(route('nstp_admin.registrations.show', $registration))
+            ->assertOk()->assertSee('Medical clearance')->assertSee('Additional approval checkpoints');
+
+        $this->actingAs($nstpAdmin)->patch(route('nstp_admin.registrations.workflow-steps.update', [$registration, $step['key']]), [
+            'status' => 'approved',
+            'notes' => 'Clinic clearance verified.',
+        ])->assertSessionHasNoErrors()->assertSessionHas('temporary_password');
+
+        $this->assertSame('verified', $registration->fresh()->status);
+        $this->assertDatabaseHas('workflow_step_completions', [
+            'subject_id' => $registration->id,
+            'step_key' => $step['key'],
+            'status' => 'approved',
+            'reviewed_by' => $nstpAdmin->id,
+        ]);
+        $this->assertDatabaseHas('users', ['email' => $registration->email, 'role' => 'student']);
     }
 
     public function test_missing_file_cannot_be_verified_and_correction_requires_notes(): void

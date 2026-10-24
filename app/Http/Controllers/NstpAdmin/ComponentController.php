@@ -96,6 +96,7 @@ class ComponentController extends Controller
             'routePrefix' => $this->routePrefix($request),
             'componentSelectionOpen' => SystemSetting::componentSelectionIsOpen(),
             'componentSelectionSetting' => SystemSetting::with('updater')->find('component_selection_open'),
+            'activeComponentCount' => $components->where('is_active', true)->count(),
         ]);
     }
 
@@ -112,6 +113,23 @@ class ComponentController extends Controller
         );
 
         return back()->with('status', 'Student NSTP selection is now '.($isOpen ? 'open' : 'closed').'.');
+    }
+
+    public function updateAvailability(Request $request, NstpComponent $component): RedirectResponse
+    {
+        $request->merge(['is_active' => $request->boolean('is_active')]);
+        $validated = $request->validate(['is_active' => ['required', 'boolean']]);
+
+        if (! $validated['is_active'] && $component->is_active
+            && ! NstpComponent::query()->where('is_active', true)->where('id', '!=', $component->id)->exists()) {
+            throw ValidationException::withMessages([
+                'is_active' => 'At least one NSTP component must remain active for student enrollment.',
+            ]);
+        }
+
+        $component->update(['is_active' => $validated['is_active']]);
+
+        return back()->with('status', $component->code.' is now '.($component->is_active ? 'available' : 'unavailable').' for new selections. Existing records were preserved.');
     }
 
     public function edit(Request $request, NstpComponent $component): View
@@ -146,6 +164,12 @@ class ComponentController extends Controller
         ]);
 
         unset($validated['logo'], $validated['remove_logo']);
+        if (! $validated['is_active'] && $component->is_active
+            && ! NstpComponent::query()->where('is_active', true)->where('id', '!=', $component->id)->exists()) {
+            throw ValidationException::withMessages([
+                'is_active' => 'At least one NSTP component must remain active for student enrollment.',
+            ]);
+        }
         if ($request->boolean('remove_logo')) {
             if (filled($component->logo_path)) {
                 Storage::disk('public')->delete($component->logo_path);

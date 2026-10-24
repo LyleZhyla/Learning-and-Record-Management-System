@@ -9,9 +9,11 @@ use App\Models\StudentRegistration;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Models\WorkflowDefinition;
+use App\Models\WorkflowStepCompletion;
 use App\Services\RegistrationDocumentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -91,6 +93,7 @@ class RegistrationReviewController extends Controller
     public function show(Request $request, StudentRegistration $registration): View
     {
         $registration->load(['reviewer', 'archiver']);
+        $workflowSteps = $this->registrationWorkflowSteps($registration);
 
         return view('registration-reviews.show', [
             ...$this->viewContext($request),
@@ -100,6 +103,7 @@ class RegistrationReviewController extends Controller
             'allowArchiveRestore' => WorkflowDefinition::ruleEnabled('archiving', 'allow_restore'),
             'requireArchiveBeforeDelete' => WorkflowDefinition::ruleEnabled('archiving', 'require_archive_before_delete'),
             'requireArchiveDeleteConfirmation' => WorkflowDefinition::ruleEnabled('archiving', 'require_delete_confirmation'),
+            'workflowSteps' => $workflowSteps,
         ]);
     }
 
@@ -140,7 +144,8 @@ class RegistrationReviewController extends Controller
             ->map(fn (string $decision): string => ReviewCategory::outcomeFor('registration_document', $decision));
         $statusOutcome = $documentOutcomes->contains('correction')
             ? 'correction'
-            : ($documentOutcomes->every(fn (string $outcome): bool => $outcome === 'approved') ? 'approved' : 'in_progress');
+            : ($documentOutcomes->every(fn (string $outcome): bool => $outcome === 'approved')
+                && $this->requiredCustomCheckpointsApproved($registration) ? 'approved' : 'in_progress');
         $status = WorkflowDefinition::runsAutomatically('registration_review', 'automatic_status_transition')
             ? ReviewCategory::defaultSlug('registration', $statusOutcome, match ($statusOutcome) {
                 'approved' => 'verified',
@@ -181,6 +186,72 @@ class RegistrationReviewController extends Controller
         return redirect()
             ->route($this->routePrefix($request).'.registrations.show', $registration)
             ->with($flash + ['status' => $message]);
+    }
+
+    public function updateWorkflowStep(Request $request, StudentRegistration $registration, string $step): RedirectResponse
+    {
+        abort_if($registration->archived_at, 409, 'Restore this registration before changing its workflow checkpoints.');
+        abort_if(
+            ReviewCategory::outcomeFor('registration', $registration->status) === 'approved',
+            409,
+            'This registration is already approved. Its completed workflow is locked for audit integrity.'
+        );
+
+        $workflow = WorkflowDefinition::query()->where('key', 'registration_review')->where('is_active', true)->firstOrFail();
+        $definition = collect($workflow->customStepsFor($registration))->firstWhere('key', $step);
+        abort_unless($definition, 404);
+        abort_unless($this->canReviewCheckpoint($request, $definition), 403);
+
+        $validated = $request->validate([
+            'status' => ['required', Rule::in(['pending', 'approved', 'rejected'])],
+            'notes' => [Rule::requiredIf($request->input('status') === 'rejected'), 'nullable', 'string', 'max:2000'],
+        ]);
+
+        $account = DB::transaction(function () use ($workflow, $registration, $step, $validated, $request): ?array {
+            WorkflowStepCompletion::query()->updateOrCreate([
+                'workflow_definition_id' => $workflow->id,
+                'subject_type' => $registration->getMorphClass(),
+                'subject_id' => $registration->id,
+                'step_key' => $step,
+            ], [
+                'status' => $validated['status'],
+                'notes' => $validated['notes'] ?? null,
+                'reviewed_by' => $request->user()->id,
+                'reviewed_at' => now(),
+            ]);
+
+            if (! $this->registrationDocumentsApproved($registration) || ! $this->requiredCustomCheckpointsApproved($registration)) {
+                return null;
+            }
+
+            if (WorkflowDefinition::runsAutomatically('registration_review', 'automatic_status_transition')) {
+                $registration->update([
+                    'status' => ReviewCategory::defaultSlug('registration', 'approved', 'verified'),
+                    'reviewed_by' => $request->user()->id,
+                    'reviewed_at' => now(),
+                ]);
+            }
+
+            return WorkflowDefinition::runsAutomatically('account_creation', 'provision_on_approval')
+                ? $this->provisionStudentAccount($registration) : null;
+        });
+
+        $flash = [];
+        if ($account && ! $account['existing']) {
+            $flash = [
+                'temporary_password' => $account['temporary_password'],
+                'temporary_password_email' => $account['student']->email,
+            ];
+        }
+
+        $message = $validated['status'] === 'approved'
+            ? $definition['name'].' was approved.'
+            : ($validated['status'] === 'rejected' ? $definition['name'].' was rejected.' : $definition['name'].' was returned to pending.');
+        if ($registration->fresh()->status === ReviewCategory::defaultSlug('registration', 'approved', 'verified')) {
+            $message .= ' All required checkpoints are complete and the registration is approved.';
+        }
+
+        return back()->with($flash + ['status' => $message]);
     }
 
     public function archive(Request $request, StudentRegistration $registration): RedirectResponse
@@ -359,5 +430,47 @@ class RegistrationReviewController extends Controller
         shuffle($characters);
 
         return implode('', $characters);
+    }
+
+    private function registrationWorkflowSteps(StudentRegistration $registration): Collection
+    {
+        $workflow = WorkflowDefinition::query()->where('key', 'registration_review')->where('is_active', true)->first();
+        if (! $workflow) {
+            return collect();
+        }
+
+        $completions = WorkflowStepCompletion::query()
+            ->with('reviewer')
+            ->where('workflow_definition_id', $workflow->id)
+            ->where('subject_type', $registration->getMorphClass())
+            ->where('subject_id', $registration->id)
+            ->get()->keyBy('step_key');
+
+        return collect($workflow->customStepsFor($registration))->map(fn (array $step): array => [
+            ...$step,
+            'completion' => $completions->get($step['key']),
+        ]);
+    }
+
+    private function requiredCustomCheckpointsApproved(StudentRegistration $registration): bool
+    {
+        $required = $this->registrationWorkflowSteps($registration)->where('required', true);
+
+        return $required->every(fn (array $step): bool => $step['completion']?->status === 'approved');
+    }
+
+    private function registrationDocumentsApproved(StudentRegistration $registration): bool
+    {
+        return collect([$registration->cor_review_status, $registration->formal_photo_review_status])
+            ->every(fn (?string $status): bool => filled($status)
+                && ReviewCategory::outcomeFor('registration_document', $status) === 'approved');
+    }
+
+    /** @param array<string, mixed> $step */
+    private function canReviewCheckpoint(Request $request, array $step): bool
+    {
+        return $request->user()->isSuperAdmin()
+            || ($step['assigned_role'] ?? 'any_admin') === 'any_admin'
+            || $request->user()->role === $step['assigned_role'];
     }
 }

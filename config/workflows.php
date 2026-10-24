@@ -4,6 +4,7 @@ return [
     'registration_review' => [
         'name' => 'Registration Review',
         'description' => 'Controls validation, correction handling, and automatic registration status transitions.',
+        'allow_custom_checkpoints' => true,
         'steps' => [
             'validate_files' => ['name' => 'Validate submitted files', 'description' => 'Block approval when the COR or formal photo is missing or invalid.', 'enabled' => true, 'mode' => 'manual'],
             'require_correction_notes' => ['name' => 'Require correction notes', 'description' => 'Require an explanation when any registration document needs correction.', 'enabled' => true, 'mode' => 'manual'],

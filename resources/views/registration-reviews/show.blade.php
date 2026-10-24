@@ -112,6 +112,39 @@
                     <div class="full"><dt>Emergency contact</dt><dd>{{ $registration->emergency_contact_name }} ({{ $registration->emergency_relationship }}) · {{ $registration->emergency_contact_number }}</dd></div>
                 </dl>
             </section>
+
+            @if($workflowSteps->isNotEmpty())
+                <section class="card registration-section-card registration-checkpoints">
+                    <div class="registration-section-heading"><div><span class="eyebrow">Institution process</span><h3>Additional approval checkpoints</h3></div><p>Required checkpoints must be approved before the registration can be finalized and the student account created.</p></div>
+                    <div class="registration-checkpoint-list">
+                        @foreach($workflowSteps as $step)
+                            @php($completion = $step['completion'])
+                            @php($stepStatus = $completion?->status ?? 'pending')
+                            @php($canReview = auth()->user()->isSuperAdmin() || $step['assigned_role'] === 'any_admin' || auth()->user()->role === $step['assigned_role'])
+                            <article class="registration-checkpoint is-{{ $stepStatus }}">
+                                <div class="registration-checkpoint-heading">
+                                    <span class="registration-checkpoint-state">{{ $stepStatus === 'approved' ? '✓' : ($stepStatus === 'rejected' ? '!' : $loop->iteration) }}</span>
+                                    <div><strong>{{ $step['name'] }}</strong><p>{{ $step['description'] ?: 'Confirm this institutional requirement before final approval.' }}</p><small>{{ $step['required'] ? 'Required' : 'Optional' }} · {{ str($step['assigned_role'])->replace('_', ' ')->headline() }}</small></div>
+                                    <span class="status-badge {{ $stepStatus === 'approved' ? 'active' : ($stepStatus === 'rejected' ? 'inactive' : 'pending') }}"><i></i>{{ str($stepStatus)->headline() }}</span>
+                                </div>
+                                @if($completion?->reviewed_at)
+                                    <p class="registration-checkpoint-audit">Last updated {{ $completion->reviewed_at->format('M d, Y · g:i A') }} by {{ $completion->reviewer?->name ?? 'Former administrator' }}</p>
+                                @endif
+                                @if(!$registration->archived_at && $canReview && \App\Models\ReviewCategory::outcomeFor('registration', $registration->status) !== 'approved')
+                                    <form method="POST" action="{{ route($routePrefix.'.registrations.workflow-steps.update', [$registration, $step['key']]) }}">
+                                        @csrf @method('PATCH')
+                                        <label class="field-group"><span>Decision</span><select name="status" required><option value="pending" @selected($stepStatus === 'pending')>Pending</option><option value="approved" @selected($stepStatus === 'approved')>Approved</option><option value="rejected" @selected($stepStatus === 'rejected')>Rejected</option></select></label>
+                                        <label class="field-group"><span>Checkpoint notes</span><textarea name="notes" rows="2" maxlength="2000" placeholder="Required when rejecting a checkpoint">{{ old('notes', $completion?->notes) }}</textarea></label>
+                                        <button class="secondary-outline-button" type="submit">Save checkpoint</button>
+                                    </form>
+                                @elseif(!$canReview)
+                                    <p class="muted-cell">Only the assigned reviewer role can update this checkpoint.</p>
+                                @endif
+                            </article>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
         </main>
 
         <aside class="card registration-decision-card">

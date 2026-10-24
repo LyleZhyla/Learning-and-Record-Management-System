@@ -68,7 +68,7 @@ class LandingPageController extends Controller
     private function components(): Collection
     {
         try {
-            return NstpComponent::query()->whereIn('code', ['CWTS', 'LTS', 'ROTC'])->get()->keyBy('code');
+            return NstpComponent::query()->whereIn('code', ['CWTS', 'LTS', 'ROTC'])->where('is_active', true)->get()->keyBy('code');
         } catch (QueryException) {
             return collect();
         }
@@ -77,7 +77,12 @@ class LandingPageController extends Controller
     private function landingMedia(): Collection
     {
         try {
-            return LandingPageMedia::query()->latest()->get();
+            $activeComponents = NstpComponent::query()->where('is_active', true)
+                ->pluck('code')->map(fn (string $code): string => strtolower($code));
+
+            return LandingPageMedia::query()
+                ->when($activeComponents->isNotEmpty(), fn ($query) => $query->whereIn('component', $activeComponents))
+                ->latest()->get();
         } catch (QueryException) {
             return collect();
         }

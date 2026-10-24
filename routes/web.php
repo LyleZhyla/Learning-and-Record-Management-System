@@ -53,8 +53,8 @@ use App\Http\Controllers\Portal\AiAssistantController as PortalAiAssistantContro
 use App\Http\Controllers\Portal\AnnouncementController as PortalAnnouncementController;
 use App\Http\Controllers\Portal\MessageController as PortalMessageController;
 use App\Http\Controllers\Portal\ProfileController as PortalProfileController;
-use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\PortalActivityCalendarController;
+use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\ProjectTaskController;
 use App\Http\Controllers\PublicServiceRequestController;
 use App\Http\Controllers\RegistrationReviewController;
@@ -163,6 +163,8 @@ $reviewCategoryRoutes = function (): void {
 $workflowRoutes = function (): void {
     Route::get('/workflows', [WorkflowController::class, 'index'])->name('workflows.index');
     Route::put('/workflows/{workflow}', [WorkflowController::class, 'update'])->name('workflows.update');
+    Route::post('/workflows/{workflow}/steps', [WorkflowController::class, 'storeStep'])->name('workflows.steps.store');
+    Route::delete('/workflows/{workflow}/steps/{step}', [WorkflowController::class, 'destroyStep'])->name('workflows.steps.destroy');
 };
 
 $notificationRuleRoutes = function (): void {
@@ -278,6 +280,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/registrations/{registration}/documents/{document}', [RegistrationReviewController::class, 'preview'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.show');
     Route::get('/registrations/{registration}/documents/{document}/download', [RegistrationReviewController::class, 'download'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.download');
     Route::patch('/registrations/{registration}/review', [RegistrationReviewController::class, 'update'])->name('registrations.review');
+    Route::patch('/registrations/{registration}/workflow-steps/{step}', [RegistrationReviewController::class, 'updateWorkflowStep'])->name('registrations.workflow-steps.update');
     Route::patch('/registrations/{registration}/archive', [RegistrationReviewController::class, 'archive'])->name('registrations.archive');
     Route::patch('/registrations/{registration}/restore', [RegistrationReviewController::class, 'restore'])->name('registrations.restore');
     Route::delete('/registrations/{registration}', [RegistrationReviewController::class, 'destroy'])->name('registrations.destroy');
@@ -313,6 +316,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/export', [DirectoryExportController::class, 'components'])->name('components.export');
     Route::patch('/components/selection-availability', [NstpAdminComponentController::class, 'updateSelectionAvailability'])->name('components.selection-availability');
+    Route::patch('/components/{component}/availability', [NstpAdminComponentController::class, 'updateAvailability'])->name('components.availability');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
     Route::put('/components/{component}/assessment-profile', [NstpAdminComponentController::class, 'updateAssessmentProfile'])->name('components.assessment-profile.update');
@@ -411,6 +415,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/registrations/{registration}/documents/{document}', [RegistrationReviewController::class, 'preview'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.show');
     Route::get('/registrations/{registration}/documents/{document}/download', [RegistrationReviewController::class, 'download'])->whereIn('document', ['cor', 'formal_photo'])->name('registrations.documents.download');
     Route::patch('/registrations/{registration}/review', [RegistrationReviewController::class, 'update'])->name('registrations.review');
+    Route::patch('/registrations/{registration}/workflow-steps/{step}', [RegistrationReviewController::class, 'updateWorkflowStep'])->name('registrations.workflow-steps.update');
     Route::patch('/registrations/{registration}/archive', [RegistrationReviewController::class, 'archive'])->name('registrations.archive');
     Route::patch('/registrations/{registration}/restore', [RegistrationReviewController::class, 'restore'])->name('registrations.restore');
     Route::delete('/registrations/{registration}', [RegistrationReviewController::class, 'destroy'])->name('registrations.destroy');
@@ -463,6 +468,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::get('/components', [NstpAdminComponentController::class, 'index'])->name('components.index');
     Route::get('/components/export', [DirectoryExportController::class, 'components'])->name('components.export');
     Route::patch('/components/selection-availability', [NstpAdminComponentController::class, 'updateSelectionAvailability'])->name('components.selection-availability');
+    Route::patch('/components/{component}/availability', [NstpAdminComponentController::class, 'updateAvailability'])->name('components.availability');
     Route::get('/components/{component}/edit', [NstpAdminComponentController::class, 'edit'])->name('components.edit');
     Route::put('/components/{component}', [NstpAdminComponentController::class, 'update'])->name('components.update');
     Route::put('/components/{component}/assessment-profile', [NstpAdminComponentController::class, 'updateAssessmentProfile'])->name('components.assessment-profile.update');
