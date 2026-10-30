@@ -25,7 +25,7 @@
         </div>
     </header>
     <main id="main-content">@yield('content')</main>
-    <footer class="request-footer"><div class="page-shell"><span>© LZPatalod 2026</span><a href="{{ route('landing') }}">{{ $branding['platform_name'] }} home</a></div></footer>
+    <footer class="request-footer"><div class="page-shell"><span>© LZPatalod 2026</span><span><a href="{{ route('privacy.portal') }}">Privacy center</a> · <a href="{{ route('landing') }}">{{ $branding['platform_name'] }} home</a></span></div></footer>
     @stack('scripts')
 </body>
 </html>

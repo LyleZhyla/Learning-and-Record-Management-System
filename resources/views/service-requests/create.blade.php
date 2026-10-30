@@ -67,7 +67,7 @@
             <div class="request-section-heading"><span data-final-step>03</span><div><p>Request details</p><h2 id="details-heading">Help us understand the request.</h2></div></div>
             <label class="request-field"><span>Purpose and important details *</span><textarea name="purpose" rows="6" maxlength="3000" required placeholder="Explain where the document will be used or describe the support and coordination needed.">{{ old('purpose') }}</textarea><small><span data-purpose-count>0</span> / 3,000 characters</small></label>
             <label class="attachment-zone"><input type="file" name="attachment" accept=".pdf,.jpg,.jpeg,.png" data-attachment><span class="attachment-icon">⇧</span><span><strong data-attachment-label>Attach a supporting file (optional)</strong><small>PDF, JPG, JPEG, or PNG · Maximum 5 MB</small></span></label>
-            <label class="privacy-check"><input type="checkbox" name="privacy_consent" value="1" @checked(old('privacy_consent')) required><span>I confirm that the information is accurate and consent to its use by the TAU NSTP Office for processing this request. *</span></label>
+            <label class="privacy-check"><input type="checkbox" name="privacy_consent" value="1" @checked(old('privacy_consent')) required><span>I confirm that the information is accurate and acknowledge <a href="{{ route('privacy.portal') }}" target="_blank">Privacy Notice version {{ $privacyNotice->version }}</a> for processing this request. *</span></label>
         </section>
 
         <div class="request-submit-row"><div><strong>Review before sending</strong><span>Your request cannot be edited after submission.</span></div><button class="request-submit" type="submit">Submit request <span aria-hidden="true">→</span></button></div>

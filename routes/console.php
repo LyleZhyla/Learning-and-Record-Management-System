@@ -1,10 +1,15 @@
 <?php
 
+use App\Models\Institution;
+use App\Models\RetentionPolicy;
+use App\Models\User;
+use App\Services\InstitutionContext;
+use App\Services\RetentionPolicyService;
+use Database\Seeders\SampleAccountsSeeder;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Database\Seeders\SampleAccountsSeeder;
-use App\Models\User;
+use Illuminate\Support\Facades\Schedule;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -21,3 +26,17 @@ Artisan::command('demo:remove-accounts', function () {
 
     $this->info($userIds->count().' temporary sample account(s) removed.');
 })->purpose('Remove only the temporary Smart NSTP sample accounts');
+
+Artisan::command('privacy:enforce-retention', function (InstitutionContext $context, RetentionPolicyService $service) {
+    $affected = 0;
+    Institution::query()->where('is_active', true)->each(function (Institution $institution) use ($context, $service, &$affected): void {
+        $context->runFor($institution->id, function () use ($service, &$affected): void {
+            RetentionPolicy::query()->where('is_active', true)->each(function (RetentionPolicy $policy) use ($service, &$affected): void {
+                $affected += $service->enforce($policy);
+            });
+        });
+    });
+    $this->info("Retention enforcement complete. {$affected} record(s) affected.");
+})->purpose('Enforce institution-specific privacy retention policies');
+
+Schedule::command('privacy:enforce-retention')->dailyAt('02:30')->withoutOverlapping();

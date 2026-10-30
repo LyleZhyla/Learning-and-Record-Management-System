@@ -8,6 +8,7 @@ use App\Models\NstpSection;
 use App\Models\ReviewCategory;
 use App\Models\StudentRegistration;
 use App\Models\SystemSetting;
+use App\Services\PrivacyConsentService;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +20,8 @@ use Throwable;
 
 class StudentRegistrationController extends Controller
 {
+    public function __construct(private PrivacyConsentService $consents) {}
+
     public function create(): View
     {
         $registrationSemester = SystemSetting::studentRegistrationSemester();
@@ -35,6 +38,7 @@ class StudentRegistrationController extends Controller
                 'cities' => route('locations.cities', ['provinceCode' => '__CODE__'], false),
                 'barangays' => route('locations.barangays', ['cityCode' => '__CODE__'], false),
             ],
+            'privacyNotice' => $this->consents->activeNotice(),
         ]);
     }
 
@@ -108,6 +112,8 @@ class StudentRegistrationController extends Controller
 
             throw $exception;
         }
+
+        $this->consents->record($registration->email, 'student_registration', $registration, null, $request->ip());
 
         return redirect()->route('register')->with([
             'status' => 'Your student registration was submitted successfully.',

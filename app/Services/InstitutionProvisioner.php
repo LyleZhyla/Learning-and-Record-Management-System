@@ -78,6 +78,34 @@ class InstitutionProvisioner
             'updated_at' => now(),
         ]);
 
+        DB::table('privacy_notices')->insert([
+            'institution_id' => $institution->id,
+            'version' => '1.0',
+            'title' => 'NSTP Data Privacy Notice',
+            'content' => 'Personal information is collected only for NSTP registration, instruction, assessment, compliance reporting, student support, and authorized institutional operations. Access is limited to authorized personnel, retained under the institution policy, and protected by audit and security controls.',
+            'effective_at' => now(),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        foreach ([
+            ['audit_logs', 730, 'archive'],
+            ['student_notifications', 365, 'delete'],
+            ['ai_chat_messages', 180, 'delete'],
+            ['sensitive_field_access_logs', 730, 'delete'],
+            ['privacy_consents', 1825, 'anonymize'],
+        ] as [$recordType, $days, $disposition]) {
+            DB::table('retention_policies')->insert([
+                'institution_id' => $institution->id,
+                'record_type' => $recordType,
+                'retention_days' => $days,
+                'disposition' => $disposition,
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
         $components = DB::table('nstp_components')->where('institution_id', $institution->id)->get();
         foreach ($components as $component) {
             $definition = config('component_assessment_profiles.profiles.'.$component->code)

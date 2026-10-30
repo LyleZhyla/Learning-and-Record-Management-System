@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\NstpServiceRequest;
+use App\Services\PrivacyConsentService;
 use App\Services\StudentNotificationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,13 +15,17 @@ use Throwable;
 
 class PublicServiceRequestController extends Controller
 {
-    public function __construct(private StudentNotificationService $notifications) {}
+    public function __construct(
+        private StudentNotificationService $notifications,
+        private PrivacyConsentService $consents,
+    ) {}
 
     public function create(): View
     {
         return view('service-requests.create', [
             'requestTypes' => NstpServiceRequest::REQUEST_TYPES,
             'assistanceTypes' => NstpServiceRequest::ASSISTANCE_TYPES,
+            'privacyNotice' => $this->consents->activeNotice(),
         ]);
     }
 
@@ -83,6 +88,8 @@ class PublicServiceRequestController extends Controller
             }
             throw $exception;
         }
+
+        $this->consents->record($serviceRequest->email, 'public_service_request', $serviceRequest, $request->user(), $request->ip());
 
         return redirect()->route('service-requests.show', $serviceRequest)
             ->with('status', 'Your request was submitted successfully. Save your reference number.');

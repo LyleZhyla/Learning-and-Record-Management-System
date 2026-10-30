@@ -148,7 +148,7 @@
                         <div class="section-title"><span>05</span><div><h3>Part IV — Formal Picture</h3><p>Upload a clear, recent formal picture taken against a plain white background.</p></div></div>
                         <div class="photo-upload-layout">
                             <label class="formal-photo-preview" for="formal-photo"><input id="formal-photo" name="formal_photo" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required><img id="photo-preview" alt="Formal photo preview" hidden><span id="photo-placeholder">👤</span></label>
-                            <div class="photo-guidelines"><h4>Photo guidelines</h4><ul><li>Plain white background</li><li>Formal or school-appropriate attire</li><li>Face the camera directly</li><li>No filters, hats, or sunglasses</li><li>JPG or PNG, maximum 3 MB</li></ul><label class="consent-check"><input name="privacy_consent" type="checkbox" value="1" required> I certify that all information and uploaded documents are complete, true, and correct.</label></div>
+                            <div class="photo-guidelines"><h4>Photo guidelines</h4><ul><li>Plain white background</li><li>Formal or school-appropriate attire</li><li>Face the camera directly</li><li>No filters, hats, or sunglasses</li><li>JPG or PNG, maximum 3 MB</li></ul><label class="consent-check"><input name="privacy_consent" type="checkbox" value="1" required> I certify that the information is correct and acknowledge <a href="{{ route('privacy.portal') }}" target="_blank">Privacy Notice version {{ $privacyNotice->version }}</a>.</label></div>
                         </div>
                     </section>
 

@@ -66,6 +66,7 @@
                 <a class="nav-link {{ request()->routeIs('admin.settings.security') ? 'active' : '' }}" href="{{ route('admin.settings.security') }}"><span class="nav-icon">⚿</span> Account Protection</a>
                 <a class="nav-link {{ request()->routeIs('admin.landing-page.*') ? 'active' : '' }}" href="{{ route('admin.landing-page.edit') }}"><span class="nav-icon">▤</span> Landing Page Editor</a>
                 <p class="nav-label">System Administration</p>
+                <a class="nav-link {{ request()->routeIs('admin.privacy-compliance.*') ? 'active' : '' }}" href="{{ route('admin.privacy-compliance.index') }}"><span class="nav-icon">⚖</span> Privacy &amp; Compliance</a>
                 @if(auth()->user()->isSystemAdmin())<a class="nav-link {{ request()->routeIs('admin.institutions.*') ? 'active' : '' }}" href="{{ route('admin.institutions.index') }}"><span class="nav-icon">▦</span> Institutions &amp; Campuses</a>@endif
                 @if(auth()->user()->isSystemAdmin())<a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}" data-admin-tour="backup"><span class="nav-icon">⇩</span> Database Management</a>@endif
                 <a class="nav-link {{ request()->routeIs('admin.system-logs.*') ? 'active' : '' }}" href="{{ route('admin.system-logs.index') }}" data-admin-tour="logs"><span class="nav-icon">☷</span> System Logs</a>

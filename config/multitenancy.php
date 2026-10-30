@@ -9,6 +9,7 @@ use App\Models\AssessmentSubmission;
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
 use App\Models\AuditLog;
+use App\Models\BackupRestorationDrill;
 use App\Models\ChatGroup;
 use App\Models\ChatGroupMessage;
 use App\Models\ChatMessage;
@@ -18,6 +19,7 @@ use App\Models\CommunityProject;
 use App\Models\CommunityProjectActivity;
 use App\Models\CommunityProjectDocument;
 use App\Models\ComponentAssessmentSetting;
+use App\Models\DataPrivacyRequest;
 use App\Models\DocumentForm;
 use App\Models\DocumentSubmission;
 use App\Models\EvaluationResponse;
@@ -38,12 +40,17 @@ use App\Models\NstpServiceRequest;
 use App\Models\NstpStudentSerialNumber;
 use App\Models\OmrScanResult;
 use App\Models\OmrSheet;
+use App\Models\PrivacyConsent;
+use App\Models\PrivacyIncident;
+use App\Models\PrivacyNotice;
 use App\Models\ProjectTask;
+use App\Models\RetentionPolicy;
 use App\Models\ReviewCategory;
 use App\Models\Role;
 use App\Models\RubricTemplate;
 use App\Models\ScheduleSetting;
 use App\Models\SectionSchedule;
+use App\Models\SensitiveFieldAccessLog;
 use App\Models\StudentNotification;
 use App\Models\StudentProfile;
 use App\Models\StudentRegistration;
@@ -105,5 +112,12 @@ return [
         OmrSheet::class,
         OmrScanResult::class,
         AuditLog::class,
+        PrivacyNotice::class,
+        PrivacyConsent::class,
+        RetentionPolicy::class,
+        DataPrivacyRequest::class,
+        SensitiveFieldAccessLog::class,
+        PrivacyIncident::class,
+        BackupRestorationDrill::class,
     ],
 ];

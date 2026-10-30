@@ -137,6 +137,27 @@ class DatabaseBackupService
         Storage::disk('local')->delete($path);
     }
 
+    /** @return array{checksum: string, tables: int, findings: string} */
+    public function validateRestorationDrill(string $name): array
+    {
+        $details = $this->details($name);
+        $sql = Storage::disk('local')->get($details['path']);
+        if (! str_contains(substr($sql, 0, 4096), '-- SNAPIE database backup')) {
+            throw new RuntimeException('The selected archive is not a SNAPIE database backup.');
+        }
+
+        $createTables = preg_match_all('/CREATE TABLE\s+/i', $sql);
+        if ($createTables < 1 || ! str_contains($sql, 'COMMIT;')) {
+            throw new RuntimeException('The archive is incomplete and cannot pass a restoration drill.');
+        }
+
+        return [
+            'checksum' => hash('sha256', $sql),
+            'tables' => $createTables,
+            'findings' => "Archive structure, transaction boundary, and {$createTables} table definitions verified without replacing the live database.",
+        ];
+    }
+
     /** @return array{name: string, path: string, size: int, created_at: CarbonInterface} */
     public function restore(string $name): array
     {

@@ -9,6 +9,7 @@ use App\Http\Middleware\EnsureUserIsNstpAdmin;
 use App\Http\Middleware\EnsureUserIsStudent;
 use App\Http\Middleware\EnsureUserIsSuperAdmin;
 use App\Http\Middleware\EnsureUserIsSystemAdmin;
+use App\Http\Middleware\LogSensitiveDataAccess;
 use App\Http\Middleware\RequireCompleteStudentProfile;
 use App\Http\Middleware\RequireImportedStudentDocuments;
 use App\Http\Middleware\ResolveInstitutionContext;
@@ -26,6 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
             ResolveInstitutionContext::class,
+            LogSensitiveDataAccess::class,
             AuditUserActivity::class,
             EnforceInactivityTimeout::class,
             RequireCompleteStudentProfile::class,

@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\InstitutionController;
 use App\Http\Controllers\Admin\LandingPageContentController;
 use App\Http\Controllers\Admin\NotificationRuleController;
 use App\Http\Controllers\Admin\PolicyRequirementController;
+use App\Http\Controllers\Admin\PrivacyComplianceController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewCategoryController;
@@ -56,6 +57,7 @@ use App\Http\Controllers\Portal\AnnouncementController as PortalAnnouncementCont
 use App\Http\Controllers\Portal\MessageController as PortalMessageController;
 use App\Http\Controllers\Portal\ProfileController as PortalProfileController;
 use App\Http\Controllers\PortalActivityCalendarController;
+use App\Http\Controllers\PrivacyPortalController;
 use App\Http\Controllers\ProfilePhotoController;
 use App\Http\Controllers\ProjectTaskController;
 use App\Http\Controllers\PublicServiceRequestController;
@@ -335,6 +337,10 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $rotcApprovalRoutes();
 });
 
+Route::get('/privacy', [PrivacyPortalController::class, 'show'])->name('privacy.portal');
+Route::post('/privacy/requests', [PrivacyPortalController::class, 'storeRequest'])->middleware('throttle:5,1')->name('privacy.requests.store');
+Route::post('/privacy/incidents', [PrivacyPortalController::class, 'storeIncident'])->middleware('throttle:5,1')->name('privacy.incidents.store');
+
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthenticatedSessionController::class, 'create'])->name('login');
     Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login.store');
@@ -395,6 +401,14 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
         Route::put('/institutions/{institution}/campuses/{campus}', [CampusController::class, 'update'])->name('institutions.campuses.update');
     });
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/privacy-compliance', [PrivacyComplianceController::class, 'index'])->name('privacy-compliance.index');
+    Route::post('/privacy-compliance/notices', [PrivacyComplianceController::class, 'storeNotice'])->name('privacy-compliance.notices.store');
+    Route::put('/privacy-compliance/retention/{retentionPolicy}', [PrivacyComplianceController::class, 'updatePolicy'])->name('privacy-compliance.retention.update');
+    Route::post('/privacy-compliance/retention/{retentionPolicy}/enforce', [PrivacyComplianceController::class, 'enforcePolicy'])->name('privacy-compliance.retention.enforce');
+    Route::put('/privacy-compliance/requests/{privacyRequest}', [PrivacyComplianceController::class, 'updateRequest'])->name('privacy-compliance.requests.update');
+    Route::get('/privacy-compliance/requests/{privacyRequest}/export', [PrivacyComplianceController::class, 'exportRequest'])->name('privacy-compliance.requests.export');
+    Route::put('/privacy-compliance/incidents/{privacyIncident}', [PrivacyComplianceController::class, 'updateIncident'])->name('privacy-compliance.incidents.update');
+    Route::post('/privacy-compliance/restoration-drills', [PrivacyComplianceController::class, 'runDrill'])->name('privacy-compliance.drills.store');
     Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
