@@ -10,6 +10,7 @@ use App\Models\NstpSerialNumberRelease;
 use App\Models\NstpStudentSerialNumber;
 use App\Models\SystemSetting;
 use App\Services\GradeService;
+use App\Services\InstitutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -106,7 +107,7 @@ class SerialNumberController extends Controller
 
         $validated = $request->validate([
             'component_id' => $isProgramAdministrator
-                ? ['required', 'integer', Rule::exists('nstp_components', 'id')->where('is_active', true)]
+                ? ['required', 'integer', Rule::exists('nstp_components', 'id')->where('institution_id', app(InstitutionContext::class)->id())->where('is_active', true)]
                 : ['nullable'],
             'academic_year' => ['required', 'regex:/^\d{4}-\d{4}$/', function (string $attribute, mixed $value, \Closure $fail): void {
                 [$start, $end] = array_map('intval', explode('-', (string) $value));

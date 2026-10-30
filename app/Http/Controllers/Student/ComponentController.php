@@ -8,6 +8,7 @@ use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\SystemSetting;
 use App\Models\WorkflowDefinition;
+use App\Services\InstitutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -90,7 +91,7 @@ class ComponentController extends Controller
             'nstp_component_id' => [
                 'required',
                 'integer',
-                Rule::exists('nstp_components', 'id')->where('is_active', true),
+                Rule::exists('nstp_components', 'id')->where('institution_id', app(InstitutionContext::class)->id())->where('is_active', true),
             ],
             'shirt_size' => ['required', Rule::in(array_keys(NstpEnrollment::SHIRT_SIZES))],
             'rotc_category' => [

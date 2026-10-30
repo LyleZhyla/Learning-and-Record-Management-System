@@ -24,7 +24,7 @@ class LandingPageContentController extends Controller
             'mediaStoreRoute' => 'admin.landing-page.media.store',
             'mediaDestroyRoute' => 'admin.landing-page.media.destroy',
             'landing' => SystemSetting::landingPageContent(),
-            'setting' => SystemSetting::with('updater')->find('landing_page_content'),
+            'setting' => SystemSetting::with('updater')->where('key', 'landing_page_content')->first(),
             'landingMedia' => LandingPageMedia::with('creator')->latest()->get(),
         ]);
     }

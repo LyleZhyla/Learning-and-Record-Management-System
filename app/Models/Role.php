@@ -9,7 +9,7 @@ class Role extends Model
 {
     public const CUSTOMIZABLE_BASE_ROLES = ['nstp_admin', 'coordinator', 'facilitator', 'student'];
 
-    protected $fillable = ['name', 'slug', 'base_role', 'description', 'permissions', 'is_active'];
+    protected $fillable = ['institution_id', 'name', 'slug', 'base_role', 'description', 'permissions', 'is_active'];
 
     protected function casts(): array
     {

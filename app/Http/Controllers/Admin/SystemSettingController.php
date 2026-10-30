@@ -24,7 +24,7 @@ class SystemSettingController extends Controller
     {
         return view('admin.settings.security', [
             'timeoutMinutes' => SystemSetting::inactivityTimeoutMinutes(),
-            'securitySetting' => SystemSetting::with('updater')->find('inactivity_timeout_minutes'),
+            'securitySetting' => SystemSetting::with('updater')->where('key', 'inactivity_timeout_minutes')->first(),
         ]);
     }
 

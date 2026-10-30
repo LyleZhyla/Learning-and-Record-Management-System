@@ -4,12 +4,12 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Schema;
@@ -74,6 +74,9 @@ class User extends Authenticatable
         'password',
         'role',
         'role_id',
+        'institution_id',
+        'campus_id',
+        'is_system_admin',
         'nstp_component_id',
         'student_qr_token',
         'profile_photo_path',
@@ -109,12 +112,17 @@ class User extends Authenticatable
             'must_complete_student_profile' => 'boolean',
             'must_upload_student_documents' => 'boolean',
             'last_login_at' => 'datetime',
+            'is_system_admin' => 'boolean',
         ];
     }
 
     protected static function booted(): void
     {
         static::saving(function (User $user): void {
+            if (! $user->exists && $user->role === 'super_admin' && ! array_key_exists('is_system_admin', $user->getAttributes())) {
+                $user->is_system_admin = true;
+            }
+
             if ($user->isDirty('name') || blank($user->last_name_sort_key)) {
                 $user->last_name_sort_key = static::lastNameSortKey($user->name);
             }
@@ -160,6 +168,21 @@ class User extends Authenticatable
     public function isSuperAdmin(): bool
     {
         return $this->role === 'super_admin';
+    }
+
+    public function isSystemAdmin(): bool
+    {
+        return $this->isSuperAdmin() && $this->is_system_admin;
+    }
+
+    public function institution(): BelongsTo
+    {
+        return $this->belongsTo(Institution::class);
+    }
+
+    public function campus(): BelongsTo
+    {
+        return $this->belongsTo(Campus::class);
     }
 
     public function isNstpAdmin(): bool

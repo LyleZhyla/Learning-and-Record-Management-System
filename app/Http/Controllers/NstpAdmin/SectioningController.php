@@ -7,6 +7,7 @@ use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\WorkflowDefinition;
+use App\Services\InstitutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -180,7 +181,7 @@ class SectioningController extends Controller
     private function termRules(): array
     {
         return [
-            'component_id' => ['required', 'integer', Rule::exists('nstp_components', 'id')->where('is_active', true)],
+            'component_id' => ['required', 'integer', Rule::exists('nstp_components', 'id')->where('institution_id', app(InstitutionContext::class)->id())->where('is_active', true)],
             'academic_year' => ['required', 'regex:/^\d{4}-\d{4}$/', function (string $attribute, mixed $value, \Closure $fail): void {
                 [$start, $end] = array_map('intval', explode('-', $value));
                 if ($end !== $start + 1) {

@@ -7,6 +7,7 @@ use App\Models\NstpComponent;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\AccountCredentialMailer;
+use App\Services\InstitutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +21,7 @@ class UserController extends Controller
 {
     private const STAFF_ROLES = ['super_admin', 'nstp_admin', 'coordinator', 'facilitator'];
 
-    private const CREATABLE_STAFF_ROLES = ['nstp_admin', 'coordinator', 'facilitator'];
+    private const CREATABLE_STAFF_ROLES = ['super_admin', 'nstp_admin', 'coordinator', 'facilitator'];
 
     public function index(Request $request): View
     {
@@ -62,11 +63,12 @@ class UserController extends Controller
     {
         $initialRole = $request->query('role', 'facilitator');
         abort_unless($initialRole === 'student' || in_array($initialRole, self::CREATABLE_STAFF_ROLES, true), 404);
+        abort_if($initialRole === 'super_admin' && ! $request->user()->isSystemAdmin(), 403);
 
         return view('admin.users.create', [
             'components' => NstpComponent::where('is_active', true)->orderBy('code')->get(),
             'initialRole' => $initialRole,
-            'accessRoles' => $this->assignableRoles($initialRole === 'student' ? ['student'] : self::CREATABLE_STAFF_ROLES),
+            'accessRoles' => $this->assignableRoles($initialRole === 'student' ? ['student'] : ($initialRole === 'super_admin' ? ['super_admin'] : array_diff(self::CREATABLE_STAFF_ROLES, ['super_admin']))),
         ]);
     }
 
@@ -91,6 +93,7 @@ class UserController extends Controller
                 'password' => $temporaryPassword,
                 'role' => $validated['role'],
                 'role_id' => $validated['role_id'],
+                'is_system_admin' => false,
                 'status' => $validated['status'],
                 'nstp_component_id' => in_array($validated['role'], ['coordinator', 'facilitator'], true) ? ($validated['nstp_component_id'] ?? null) : null,
                 'must_change_password' => true,
@@ -271,9 +274,9 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:100'],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user?->id)],
             'role' => ['required', Rule::in(array_keys(User::ROLE_LABELS))],
-            'access_role_id' => ['nullable', 'integer', Rule::exists('roles', 'id')->where('is_active', true)],
+            'access_role_id' => ['nullable', 'integer', Rule::exists('roles', 'id')->where('institution_id', app(InstitutionContext::class)->id())->where('is_active', true)],
             'status' => [Rule::requiredIf(! $isFacilitator), 'nullable', Rule::in(array_keys(User::STATUS_LABELS))],
-            'nstp_component_id' => ['nullable', 'required_if:role,coordinator,facilitator', 'integer', Rule::exists('nstp_components', 'id')->where('is_active', true)],
+            'nstp_component_id' => ['nullable', 'required_if:role,coordinator,facilitator', 'integer', Rule::exists('nstp_components', 'id')->where('institution_id', app(InstitutionContext::class)->id())->where('is_active', true)],
             'contact_number' => [Rule::requiredIf($isFacilitator), 'nullable', 'regex:/^09[0-9]{9}$/'],
         ];
     }

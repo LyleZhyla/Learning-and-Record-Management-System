@@ -7,6 +7,7 @@ use App\Models\NstpComponent;
 use App\Models\NstpSection;
 use App\Models\User;
 use App\Services\AutomaticScheduleService;
+use App\Services\InstitutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -153,6 +154,7 @@ class SectionController extends Controller
     private function sectionRules(Request $request, ?NstpSection $section = null): array
     {
         $uniqueName = Rule::unique('nstp_sections', 'name')
+            ->where('institution_id', app(InstitutionContext::class)->id())
             ->where(fn ($query) => $query
                 ->where('component_id', $request->input('component_id'))
                 ->where('academic_year', $request->input('academic_year'))
@@ -165,12 +167,12 @@ class SectionController extends Controller
                 'integer',
                 $request->user()->isCoordinator()
                     ? Rule::in([(int) $request->user()->nstp_component_id])
-                    : Rule::exists('nstp_components', 'id'),
+                    : Rule::exists('nstp_components', 'id')->where('institution_id', app(InstitutionContext::class)->id()),
             ],
             'facilitator_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('users', 'id')->where(fn ($query) => $query->where('role', 'facilitator')->where('status', 'active')),
+                Rule::exists('users', 'id')->where('institution_id', app(InstitutionContext::class)->id())->where(fn ($query) => $query->where('role', 'facilitator')->where('status', 'active')),
             ],
             'name' => ['required', 'string', 'max:100', $uniqueName],
             'academic_year' => ['required', 'regex:/^\d{4}-\d{4}$/', function (string $attribute, mixed $value, \Closure $fail): void {

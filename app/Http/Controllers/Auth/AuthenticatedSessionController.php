@@ -40,7 +40,7 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        $user = User::where('email', $credentials['email'])->first();
+        $user = User::withoutGlobalScope('institution')->where('email', $credentials['email'])->first();
         $passwordMatches = $user && Hash::check($credentials['password'], $user->password);
 
         if ($user && ! $passwordMatches && $user->must_change_password) {
@@ -78,6 +78,9 @@ class AuthenticatedSessionController extends Controller
         RateLimiter::clear($key);
         Auth::login($user, $request->boolean('remember'));
         $request->session()->regenerate();
+        if ($user->institution_id) {
+            $request->session()->put('active_institution_id', $user->institution_id);
+        }
         $user->forceFill(['last_login_at' => now()])->save();
 
         if ($user->isStudent() && $user->must_upload_student_documents && SystemSetting::requiredDocumentsAreEnforced()) {

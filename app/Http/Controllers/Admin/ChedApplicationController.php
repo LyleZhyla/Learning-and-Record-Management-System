@@ -7,8 +7,9 @@ use App\Models\ChedApplication;
 use App\Models\NstpSection;
 use App\Models\SystemSetting;
 use App\Services\ChedSemestralReportService;
-use Illuminate\Http\Request;
+use App\Services\InstitutionNumberService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +17,7 @@ use Illuminate\View\View;
 
 class ChedApplicationController extends Controller
 {
-    public function __construct(private ChedSemestralReportService $reports) {}
+    public function __construct(private ChedSemestralReportService $reports, private InstitutionNumberService $numbers) {}
 
     public function index(Request $request): View
     {
@@ -80,7 +81,8 @@ class ChedApplicationController extends Controller
                 'created_by' => $request->user()->id,
                 'updated_by' => $request->user()->id,
             ]);
-            $application->update(['reference_number' => sprintf('CHED-%s-%05d', substr($application->academic_year, 0, 4), $application->id)]);
+            $year = substr($application->academic_year, 0, 4);
+            $application->update(['reference_number' => $this->numbers->next('ched_application:'.$year, 'CHED-'.$year)]);
             $application->histories()->create([
                 'to_status' => 'emailed',
                 'notes' => $validated['notes'],

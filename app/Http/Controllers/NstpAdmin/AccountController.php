@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\User;
+use App\Services\InstitutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -95,7 +96,7 @@ class AccountController extends Controller
             'nstp_component_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('nstp_components', 'id')->where('is_active', true),
+                Rule::exists('nstp_components', 'id')->where('institution_id', app(InstitutionContext::class)->id())->where('is_active', true),
             ],
         ]);
 
@@ -133,13 +134,13 @@ class AccountController extends Controller
             'nstp_component_id' => [
                 'required',
                 'integer',
-                Rule::exists('nstp_components', 'id')->where('is_active', true),
+                Rule::exists('nstp_components', 'id')->where('institution_id', app(InstitutionContext::class)->id())->where('is_active', true),
             ],
             'student_ids' => ['required', 'array', 'min:1'],
             'student_ids.*' => [
                 'integer',
                 'distinct',
-                Rule::exists('users', 'id')->where(fn ($query) => $query
+                Rule::exists('users', 'id')->where('institution_id', app(InstitutionContext::class)->id())->where(fn ($query) => $query
                     ->where('role', 'student')
                     ->where('status', 'active')),
             ],

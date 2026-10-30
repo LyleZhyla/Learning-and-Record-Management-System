@@ -95,7 +95,7 @@ class ComponentController extends Controller
             'comparisonMaximums' => $comparisonMaximums,
             'routePrefix' => $this->routePrefix($request),
             'componentSelectionOpen' => SystemSetting::componentSelectionIsOpen(),
-            'componentSelectionSetting' => SystemSetting::with('updater')->find('component_selection_open'),
+            'componentSelectionSetting' => SystemSetting::with('updater')->where('key', 'component_selection_open')->first(),
             'activeComponentCount' => $components->where('is_active', true)->count(),
         ]);
     }

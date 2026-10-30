@@ -66,7 +66,8 @@
                 <a class="nav-link {{ request()->routeIs('admin.settings.security') ? 'active' : '' }}" href="{{ route('admin.settings.security') }}"><span class="nav-icon">⚿</span> Account Protection</a>
                 <a class="nav-link {{ request()->routeIs('admin.landing-page.*') ? 'active' : '' }}" href="{{ route('admin.landing-page.edit') }}"><span class="nav-icon">▤</span> Landing Page Editor</a>
                 <p class="nav-label">System Administration</p>
-                <a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}" data-admin-tour="backup"><span class="nav-icon">⇩</span> Database Management</a>
+                @if(auth()->user()->isSystemAdmin())<a class="nav-link {{ request()->routeIs('admin.institutions.*') ? 'active' : '' }}" href="{{ route('admin.institutions.index') }}"><span class="nav-icon">▦</span> Institutions &amp; Campuses</a>@endif
+                @if(auth()->user()->isSystemAdmin())<a class="nav-link {{ request()->routeIs('admin.database-backup.*') ? 'active' : '' }}" href="{{ route('admin.database-backup.index') }}" data-admin-tour="backup"><span class="nav-icon">⇩</span> Database Management</a>@endif
                 <a class="nav-link {{ request()->routeIs('admin.system-logs.*') ? 'active' : '' }}" href="{{ route('admin.system-logs.index') }}" data-admin-tour="logs"><span class="nav-icon">☷</span> System Logs</a>
                 <p class="nav-label">Communication</p>
                 <a class="nav-link {{ request()->routeIs('admin.announcements.*') ? 'active' : '' }}" href="{{ route('notifications.categories.open', 'announcements') }}"><span class="nav-icon">◫</span> Announcements @if($sidebarPortalNotificationCounts['announcements'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['announcements'] > 99 ? '99+' : $sidebarPortalNotificationCounts['announcements'] }}</span>@endif</a>
@@ -94,6 +95,14 @@
                     <small>{{ $branding['organization_short_name'] }} {{ $branding['program_short_name'] }} / Super Admin</small>
                     <h1>@yield('page-title', 'Dashboard')</h1>
                 </div>
+                @if(auth()->user()->isSystemAdmin() && $switchableInstitutions->isNotEmpty())
+                    <form method="POST" action="{{ route('admin.institutions.switch', $activeInstitution) }}" class="institution-switcher" data-institution-switcher>
+                        @csrf
+                        <label><span>Institution</span><select aria-label="Active institution" onchange="this.form.action=this.options[this.selectedIndex].dataset.action;this.form.submit()">
+                            @foreach($switchableInstitutions as $institution)<option value="{{ $institution->id }}" data-action="{{ route('admin.institutions.switch', $institution) }}" @selected($activeInstitution?->id === $institution->id)>{{ $institution->short_name }}</option>@endforeach
+                        </select></label>
+                    </form>
+                @endif
                 <x-notification-bell />
                 <x-theme-toggle />
                 <button class="admin-tour-topbar-button" type="button" data-start-admin-tour><span aria-hidden="true">?</span> Guided Tour</button>

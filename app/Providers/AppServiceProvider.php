@@ -3,13 +3,19 @@
 namespace App\Providers;
 
 use App\Models\Assessment;
+use App\Models\Campus;
 use App\Models\ChatGroupMessage;
+use App\Models\Institution;
 use App\Models\NotificationRule;
+use App\Models\Scopes\InstitutionScope;
 use App\Models\StudentNotification;
+use App\Models\User;
+use App\Services\InstitutionContext;
 use App\Services\NotificationService;
 use App\Services\PortalAccessService;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -20,7 +26,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(InstitutionContext::class);
     }
 
     /**
@@ -28,6 +34,33 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $context = $this->app->make(InstitutionContext::class);
+        foreach (config('multitenancy.models', []) as $modelClass) {
+            $modelClass::addGlobalScope('institution', new InstitutionScope($context));
+            $modelClass::creating(function ($model) use ($context): void {
+                if (! Schema::hasColumn($model->getTable(), 'institution_id')) {
+                    return;
+                }
+                if ($model instanceof User && $model->getAttribute('is_system_admin')) {
+                    return;
+                }
+                $institutionId = $model->getAttribute('institution_id') ?: $context->id();
+                if (! $institutionId && Schema::hasTable('institutions')) {
+                    $institutionId = Institution::query()->where('is_active', true)->orderBy('id')->value('id');
+                }
+                if ($institutionId && ! $model->getAttribute('institution_id')) {
+                    $model->setAttribute('institution_id', $institutionId);
+                }
+                if ($institutionId && Schema::hasColumn($model->getTable(), 'campus_id') && ! $model->getAttribute('campus_id')) {
+                    $campusId = Campus::query()->where('institution_id', $institutionId)
+                        ->where('is_active', true)->orderByDesc('is_main')->orderBy('id')->value('id');
+                    if ($campusId) {
+                        $model->setAttribute('campus_id', $campusId);
+                    }
+                }
+            });
+        }
+
         Paginator::defaultView('pagination.compact');
         Blade::if('permission', fn (string $permission): bool => auth()->user()?->hasPermission($permission) === true);
 
@@ -83,6 +116,11 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer(['layouts.admin', 'layouts.nstp-admin', 'layouts.coordinator', 'layouts.facilitator', 'layouts.student'], function ($view): void {
             $user = auth()->user();
+            $institutionContext = app(InstitutionContext::class);
+            $view->with('activeInstitution', $institutionContext->institution());
+            $view->with('switchableInstitutions', $user?->isSystemAdmin()
+                ? Institution::query()->where('is_active', true)->orderBy('name')->get()
+                : collect());
             $messageRule = NotificationRule::configured('message');
             $messageAvailableBefore = $messageRule->schedule_mode === 'delayed'
                 ? now()->subMinutes(max(1, $messageRule->delay_minutes))

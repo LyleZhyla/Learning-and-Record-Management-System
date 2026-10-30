@@ -117,13 +117,7 @@ class SystemSetting extends Model
         'footer_copyright' => '© LZPatalod 2026',
     ];
 
-    protected $primaryKey = 'key';
-
-    public $incrementing = false;
-
-    protected $keyType = 'string';
-
-    protected $fillable = ['key', 'value', 'updated_by'];
+    protected $fillable = ['institution_id', 'key', 'value', 'updated_by'];
 
     public function updater(): BelongsTo
     {

@@ -7,6 +7,7 @@ use App\Models\FacilitatorHonorarium;
 use App\Models\NstpComponent;
 use App\Models\NstpSection;
 use App\Models\User;
+use App\Services\InstitutionNumberService;
 use App\Services\PortalAccessService;
 use Carbon\Carbon;
 use Dompdf\Dompdf;
@@ -25,7 +26,7 @@ use Throwable;
 
 class FacilitatorHonorariumController extends Controller
 {
-    public function __construct(private PortalAccessService $access) {}
+    public function __construct(private PortalAccessService $access, private InstitutionNumberService $numbers) {}
 
     public function index(Request $request): View
     {
@@ -244,7 +245,7 @@ class FacilitatorHonorariumController extends Controller
                 'requested_by' => $request->user()->id,
                 'requested_at' => now(),
             ]);
-            $record->update(['reference_number' => sprintf('HON-%s-%05d', now()->format('Y'), $record->id)]);
+            $record->update(['reference_number' => $this->numbers->next('honorarium:'.now()->year, 'HON-'.now()->year)]);
 
             return $record;
         });

@@ -29,7 +29,7 @@ class LandingPageController extends Controller
             'landingEditorMode' => $authorizedPreview && $request->boolean('editor'),
             'landingEditorRoutePrefix' => $authorizedPreview ? $this->routePrefix($request) : null,
             'landingSetting' => $authorizedPreview
-                ? SystemSetting::with('updater')->find('landing_page_content')
+                ? SystemSetting::with('updater')->where('key', 'landing_page_content')->first()
                 : null,
         ]);
     }

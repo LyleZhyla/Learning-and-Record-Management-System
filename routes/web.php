@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\Admin\ArchiveController;
+use App\Http\Controllers\Admin\CampusController;
 use App\Http\Controllers\Admin\ChedApplicationController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\DatabaseBackupController;
 use App\Http\Controllers\Admin\DirectoryExportController;
 use App\Http\Controllers\Admin\DocumentFormController;
+use App\Http\Controllers\Admin\InstitutionController;
 use App\Http\Controllers\Admin\LandingPageContentController;
 use App\Http\Controllers\Admin\NotificationRuleController;
 use App\Http\Controllers\Admin\PolicyRequirementController;
@@ -382,6 +384,16 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
 });
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
+    Route::middleware('system_admin')->group(function (): void {
+        Route::get('/institutions', [InstitutionController::class, 'index'])->name('institutions.index');
+        Route::get('/institutions/create', [InstitutionController::class, 'create'])->name('institutions.create');
+        Route::post('/institutions', [InstitutionController::class, 'store'])->name('institutions.store');
+        Route::get('/institutions/{institution}/edit', [InstitutionController::class, 'edit'])->name('institutions.edit');
+        Route::put('/institutions/{institution}', [InstitutionController::class, 'update'])->name('institutions.update');
+        Route::post('/institutions/{institution}/switch', [InstitutionController::class, 'switch'])->name('institutions.switch');
+        Route::post('/institutions/{institution}/campuses', [CampusController::class, 'store'])->name('institutions.campuses.store');
+        Route::put('/institutions/{institution}/campuses/{campus}', [CampusController::class, 'update'])->name('institutions.campuses.update');
+    });
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'admin.system-guide')->name('system-guide');
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -445,13 +457,15 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $workflowRoutes();
     $notificationRuleRoutes();
     $policyRequirementRoutes();
-    Route::get('/database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup.index');
-    Route::post('/database-backup/download', [DatabaseBackupController::class, 'download'])->middleware('throttle:2,1')->name('database-backup.download');
-    Route::post('/database-backup/archive', [DatabaseBackupController::class, 'archive'])->middleware('throttle:2,1')->name('database-backup.archive');
-    Route::post('/database-backup/upload', [DatabaseBackupController::class, 'upload'])->middleware('throttle:2,1')->name('database-backup.upload');
-    Route::get('/database-backup/archives/{archive}/download', [DatabaseBackupController::class, 'downloadArchive'])->name('database-backup.archives.download');
-    Route::post('/database-backup/archives/{archive}/restore', [DatabaseBackupController::class, 'restore'])->middleware('throttle:2,1')->name('database-backup.archives.restore');
-    Route::delete('/database-backup/archives/{archive}', [DatabaseBackupController::class, 'destroy'])->name('database-backup.archives.destroy');
+    Route::middleware('system_admin')->group(function (): void {
+        Route::get('/database-backup', [DatabaseBackupController::class, 'index'])->name('database-backup.index');
+        Route::post('/database-backup/download', [DatabaseBackupController::class, 'download'])->middleware('throttle:2,1')->name('database-backup.download');
+        Route::post('/database-backup/archive', [DatabaseBackupController::class, 'archive'])->middleware('throttle:2,1')->name('database-backup.archive');
+        Route::post('/database-backup/upload', [DatabaseBackupController::class, 'upload'])->middleware('throttle:2,1')->name('database-backup.upload');
+        Route::get('/database-backup/archives/{archive}/download', [DatabaseBackupController::class, 'downloadArchive'])->name('database-backup.archives.download');
+        Route::post('/database-backup/archives/{archive}/restore', [DatabaseBackupController::class, 'restore'])->middleware('throttle:2,1')->name('database-backup.archives.restore');
+        Route::delete('/database-backup/archives/{archive}', [DatabaseBackupController::class, 'destroy'])->name('database-backup.archives.destroy');
+    });
     Route::get('/system-logs', [SystemLogController::class, 'index'])->name('system-logs.index');
     Route::get('/system-logs/export', [SystemLogController::class, 'export'])->name('system-logs.export');
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');

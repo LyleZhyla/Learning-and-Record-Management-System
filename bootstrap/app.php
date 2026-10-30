@@ -3,16 +3,19 @@
 use App\Http\Middleware\AuditUserActivity;
 use App\Http\Middleware\EnforceInactivityTimeout;
 use App\Http\Middleware\EnforceRolePermissions;
-use App\Http\Middleware\RequireCompleteStudentProfile;
 use App\Http\Middleware\EnsureUserIsCoordinator;
 use App\Http\Middleware\EnsureUserIsFacilitator;
 use App\Http\Middleware\EnsureUserIsNstpAdmin;
 use App\Http\Middleware\EnsureUserIsStudent;
 use App\Http\Middleware\EnsureUserIsSuperAdmin;
+use App\Http\Middleware\EnsureUserIsSystemAdmin;
+use App\Http\Middleware\RequireCompleteStudentProfile;
 use App\Http\Middleware\RequireImportedStudentDocuments;
+use App\Http\Middleware\ResolveInstitutionContext;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->web(append: [
+            ResolveInstitutionContext::class,
             AuditUserActivity::class,
             EnforceInactivityTimeout::class,
             RequireCompleteStudentProfile::class,
@@ -35,7 +39,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'coordinator' => EnsureUserIsCoordinator::class,
             'facilitator' => EnsureUserIsFacilitator::class,
             'student' => EnsureUserIsStudent::class,
+            'system_admin' => EnsureUserIsSystemAdmin::class,
         ]);
+        $middleware->prependToPriorityList(SubstituteBindings::class, ResolveInstitutionContext::class);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

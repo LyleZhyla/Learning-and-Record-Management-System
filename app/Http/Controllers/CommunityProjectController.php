@@ -7,6 +7,7 @@ use App\Models\CommunityProjectActivity;
 use App\Models\CommunityProjectDocument;
 use App\Models\NstpComponent;
 use App\Models\NstpSection;
+use App\Services\InstitutionNumberService;
 use App\Services\PortalAccessService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +21,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CommunityProjectController extends Controller
 {
-    public function __construct(private PortalAccessService $access) {}
+    public function __construct(private PortalAccessService $access, private InstitutionNumberService $numbers) {}
 
     public function index(Request $request): View
     {
@@ -73,7 +74,7 @@ class CommunityProjectController extends Controller
                 'approval_status' => 'pending',
                 'implementation_status' => 'proposed',
             ]);
-            $project->update(['reference_number' => sprintf('CP-%s-%05d', now()->format('Y'), $project->id)]);
+            $project->update(['reference_number' => $this->numbers->next('community_project:'.now()->year, 'CP-'.now()->year)]);
 
             return $project;
         });

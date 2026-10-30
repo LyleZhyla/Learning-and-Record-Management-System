@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Generator;
 use Illuminate\Database\Connection;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
@@ -32,7 +34,7 @@ class DatabaseBackupService
         return 'snapie-database-'.now()->format('Y-m-d_His_u').'.sql';
     }
 
-    /** @return array{name: string, path: string, size: int, created_at: \Carbon\CarbonInterface} */
+    /** @return array{name: string, path: string, size: int, created_at: CarbonInterface} */
     public function archive(): array
     {
         $name = $this->filename();
@@ -62,7 +64,7 @@ class DatabaseBackupService
         return $this->details($name);
     }
 
-    /** @return array{name: string, path: string, size: int, created_at: \Carbon\CarbonInterface} */
+    /** @return array{name: string, path: string, size: int, created_at: CarbonInterface} */
     public function import(UploadedFile $file): array
     {
         $header = substr($file->getContent(), 0, 4096);
@@ -102,7 +104,7 @@ class DatabaseBackupService
         return $this->details($name);
     }
 
-    public function archives(): \Illuminate\Support\Collection
+    public function archives(): Collection
     {
         $disk = Storage::disk('local');
 
@@ -113,7 +115,7 @@ class DatabaseBackupService
             ->values();
     }
 
-    /** @return array{name: string, path: string, size: int, created_at: \Carbon\CarbonInterface} */
+    /** @return array{name: string, path: string, size: int, created_at: CarbonInterface} */
     public function details(string $name): array
     {
         $path = $this->path($name);
@@ -135,7 +137,7 @@ class DatabaseBackupService
         Storage::disk('local')->delete($path);
     }
 
-    /** @return array{name: string, path: string, size: int, created_at: \Carbon\CarbonInterface} */
+    /** @return array{name: string, path: string, size: int, created_at: CarbonInterface} */
     public function restore(string $name): array
     {
         $path = $this->path($name);
@@ -152,6 +154,7 @@ class DatabaseBackupService
 
         if ($driver === 'sqlite') {
             $connection->statement('PRAGMA foreign_keys=OFF');
+            $connection->statement('PRAGMA defer_foreign_keys=ON');
         } else {
             $connection->statement('SET FOREIGN_KEY_CHECKS=0');
         }
@@ -171,6 +174,7 @@ class DatabaseBackupService
             }
         } finally {
             if ($driver === 'sqlite') {
+                $connection->statement('PRAGMA defer_foreign_keys=OFF');
                 $connection->statement('PRAGMA foreign_keys=ON');
             } else {
                 $connection->statement('SET FOREIGN_KEY_CHECKS=1');

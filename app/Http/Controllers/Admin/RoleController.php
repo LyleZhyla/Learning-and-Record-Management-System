@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Role;
+use App\Models\User;
+use App\Services\InstitutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -73,7 +75,8 @@ class RoleController extends Controller
         $allowed = collect($definitions)->filter(fn (array $definition): bool => in_array($baseRole, $definition['bases'], true))->keys()->all();
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100', Rule::unique('roles', 'name')->ignore($role?->id)],
+            'name' => ['required', 'string', 'max:100', Rule::unique('roles', 'name')
+                ->where('institution_id', app(InstitutionContext::class)->id())->ignore($role?->id)],
             'base_role' => [$role ? 'nullable' : 'required', Rule::in(Role::CUSTOMIZABLE_BASE_ROLES)],
             'description' => ['nullable', 'string', 'max:500'],
             'permissions' => ['nullable', 'array'],
@@ -92,7 +95,7 @@ class RoleController extends Controller
     {
         return [
             'role' => $role,
-            'baseRoles' => collect(Role::CUSTOMIZABLE_BASE_ROLES)->mapWithKeys(fn (string $base): array => [$base => \App\Models\User::ROLE_LABELS[$base]])->all(),
+            'baseRoles' => collect(Role::CUSTOMIZABLE_BASE_ROLES)->mapWithKeys(fn (string $base): array => [$base => User::ROLE_LABELS[$base]])->all(),
             'permissionGroups' => collect(config('role_permissions.definitions', []))->groupBy('group'),
         ];
     }

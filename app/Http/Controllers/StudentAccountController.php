@@ -7,6 +7,7 @@ use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
+use App\Services\InstitutionContext;
 use App\Services\QrCodeService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -97,7 +98,7 @@ class StudentAccountController extends Controller
                 'required',
                 'integer',
                 'distinct',
-                Rule::exists('users', 'id')->where(fn ($query) => $query
+                Rule::exists('users', 'id')->where('institution_id', app(InstitutionContext::class)->id())->where(fn ($query) => $query
                     ->where('role', 'student')
                     ->where('status', 'active')),
             ],

@@ -14,6 +14,8 @@ use Illuminate\Support\Collection;
 
 class StudentNotificationService
 {
+    public function __construct(private InstitutionContext $institutionContext) {}
+
     public function serviceRequestSubmitted(NstpServiceRequest $serviceRequest): void
     {
         $rule = NotificationRule::configured(StudentNotification::SERVICE_REQUEST);
@@ -30,7 +32,7 @@ class StudentNotificationService
             'request_reference' => $serviceRequest->reference_code,
             'requester_name' => $serviceRequest->requesterDisplayName(),
             'request_type' => $serviceRequest->requestTypeLabel(),
-        ]);
+        ], $serviceRequest->institution_id);
     }
 
     public function learningMaterialPublished(LearningMaterial $material): void
@@ -52,7 +54,7 @@ class StudentNotificationService
             'material_title' => $material->title,
             'component_code' => $material->component?->code,
             'section_code' => $material->section?->code,
-        ]);
+        ], $material->institution_id);
     }
 
     public function assessmentPublished(Assessment $assessment): void
@@ -73,7 +75,7 @@ class StudentNotificationService
             'assessment_title' => $assessment->title,
             'component_code' => $assessment->section->component?->code,
             'section_code' => $assessment->section->name,
-        ]);
+        ], $assessment->institution_id);
     }
 
     public function attendanceRecorded(AttendanceRecord $record): void
@@ -107,7 +109,7 @@ class StudentNotificationService
             'status' => strtoupper($record->status),
             'section_code' => $record->attendanceSession->section->name,
         ];
-        $this->upsertForUsers(collect([$record->student_id]), $type, $record->id, $rule, $values);
+        $this->upsertForUsers(collect([$record->student_id]), $type, $record->id, $rule, $values, $record->institution_id);
 
         $section = $record->attendanceSession->section;
         $staffIds = $this->staffIds($section->component_id, $section->id, true)
@@ -120,6 +122,7 @@ class StudentNotificationService
             $record->id,
             $rule,
             $values,
+            $record->institution_id,
         );
     }
 
@@ -158,10 +161,11 @@ class StudentNotificationService
     }
 
     /** @param array<string, scalar|null> $values */
-    private function upsertForUsers(Collection $userIds, string $type, int $sourceId, NotificationRule $rule, array $values): void
+    private function upsertForUsers(Collection $userIds, string $type, int $sourceId, NotificationRule $rule, array $values, ?int $institutionId = null): void
     {
         $now = now();
         $rows = $userIds->map(fn (int $userId) => [
+            'institution_id' => $institutionId ?: $this->institutionContext->id(),
             'user_id' => $userId,
             'type' => $type,
             'source_id' => $sourceId,
