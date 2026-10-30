@@ -125,7 +125,7 @@ class StudentEventNotificationTest extends TestCase
         $this->assertDatabaseHas('student_notifications', [
             'user_id' => $this->student->id,
             'type' => StudentNotification::ABSENT_ATTENDANCE,
-            'title' => 'Absent attendance recorded',
+            'title' => 'Absent attendance update',
         ]);
     }
 

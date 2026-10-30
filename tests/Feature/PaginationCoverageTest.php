@@ -53,12 +53,12 @@ class PaginationCoverageTest extends TestCase
             ->assertOk()
             ->assertViewHas('preview', fn ($preview) => $preview->total() === 21 && $preview->count() === 20)
             ->assertViewHas('report', fn (array $report) => $report['rows']->count() === 21)
-            ->assertSee('Student 01')
-            ->assertDontSee('Student 21');
+            ->assertSee('01, Student')
+            ->assertDontSee('21, Student');
         $this->actingAs($admin)->get('/admin/reports?type=students&page=2')
             ->assertOk()
-            ->assertSee('Student 21')
-            ->assertDontSee('Student 01');
+            ->assertSee('21, Student')
+            ->assertDontSee('01, Student');
     }
 
     public function test_attendance_and_assessment_rosters_paginate_students(): void
@@ -100,8 +100,8 @@ class PaginationCoverageTest extends TestCase
             ->assertOk()
             ->assertViewHas('preview', fn ($preview) => $preview->total() === 21 && $preview->count() === 1)
             ->assertSee('CWTS-01')
-            ->assertSee('Student 21')
-            ->assertDontSee('Student 01');
+            ->assertSee('21, Student')
+            ->assertDontSee('01, Student');
     }
 
     public function test_gradebook_and_performance_paginate_without_changing_section_totals(): void

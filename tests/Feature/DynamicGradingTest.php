@@ -226,7 +226,7 @@ class DynamicGradingTest extends TestCase
 
         $this->actingAs($facilitator)->get('/facilitator/assessments/'.$assessment->id)
             ->assertOk()
-            ->assertSee('Automatic grading-sheet encoding')
+            ->assertSee('Your review determines the official score')
             ->assertSee('/facilitator/assessments/'.$assessment->id.'/students/'.$student->id.'/score', false);
 
         $this->actingAs($facilitator)->put('/facilitator/assessments/'.$assessment->id.'/students/'.$student->id.'/score', [

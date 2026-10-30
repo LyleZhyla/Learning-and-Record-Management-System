@@ -35,6 +35,12 @@
         <span class="learning-history-count">{{ $recommendationHistory->total() }} saved</span>
     </div>
 
+    @include('pagination.top-page-size', [
+        'paginator' => $recommendationHistory,
+        'title' => 'Saved learning paths per page',
+        'description' => 'Choose how many generated recommendations to show.',
+    ])
+
     <div class="learning-history-list">
         @foreach($recommendationHistory as $historyItem)
             @php

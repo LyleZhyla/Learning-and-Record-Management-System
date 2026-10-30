@@ -18,6 +18,7 @@ class FileUploadUiTest extends TestCase
             'data-assessment-file',
             'data-attachment',
             'data-student-import-file',
+            'landing-image-upload',
             'id="cor"',
             'id="formal-photo"',
         ];

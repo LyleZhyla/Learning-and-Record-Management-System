@@ -28,7 +28,7 @@ class LearningRecommendationController extends Controller
             ->where('student_id', $request->user()->id);
         $recommendationHistory = (clone $studentRecommendations)
             ->latest()
-            ->paginate(6, ['*'], 'history_page')
+            ->paginate($this->perPage(10), ['*'], 'history_page')
             ->withQueryString();
         $latestRecommendation = $page['enrollment']
             ? (clone $studentRecommendations)

@@ -179,7 +179,7 @@ class OmrScannerTest extends TestCase
         ]);
 
         $assessment = Assessment::where('title', 'Exam Without Sheet')->firstOrFail();
-        $response->assertRedirect('/coordinator/answer-sheet-scanner');
+        $response->assertRedirect('/coordinator/assessments/'.$assessment->id);
         $this->assertDatabaseMissing('omr_sheets', ['assessment_id' => $assessment->id]);
     }
 

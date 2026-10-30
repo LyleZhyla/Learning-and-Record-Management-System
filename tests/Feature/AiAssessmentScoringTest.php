@@ -407,7 +407,7 @@ class AiAssessmentScoringTest extends TestCase
         $this->assertNull($this->submission->score);
     }
 
-    public function test_coordinator_can_only_view_ai_scoring_within_their_component(): void
+    public function test_coordinator_can_create_assessments_but_only_view_ai_scoring_within_their_component(): void
     {
         $this->submission->update([
             'score' => 84,
@@ -437,9 +437,9 @@ class AiAssessmentScoringTest extends TestCase
 
         $this->actingAs($coordinator)->get('/coordinator/assessments')
             ->assertOk()
-            ->assertSee('View assessments')
+            ->assertSee('Assessments and submissions')
             ->assertSee($this->assessment->title)
-            ->assertDontSee('Create assessment');
+            ->assertSee('Create assessment');
 
         $this->actingAs($coordinator)->get('/coordinator/assessments/'.$this->assessment->id)
             ->assertOk()
