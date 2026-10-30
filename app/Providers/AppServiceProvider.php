@@ -72,6 +72,7 @@ class AppServiceProvider extends ServiceProvider
                 'materials' => 0,
                 'assessments' => 0,
                 'attendance' => 0,
+                'early_warning' => 0,
             ];
 
             if ($user?->isStudent()) {
@@ -90,6 +91,7 @@ class AppServiceProvider extends ServiceProvider
                     StudentNotification::ASSESSMENT,
                     StudentNotification::LATE_ATTENDANCE,
                     StudentNotification::ABSENT_ATTENDANCE,
+                    StudentNotification::EARLY_WARNING,
                 ])->filter(fn (string $type): bool => NotificationRule::configured($type)->usesChannel('sidebar'));
                 $eventCounts = StudentNotification::query()
                     ->where('user_id', $user->id)
@@ -107,6 +109,7 @@ class AppServiceProvider extends ServiceProvider
                     'assessments' => (int) ($eventCounts[StudentNotification::ASSESSMENT] ?? 0),
                     'attendance' => (int) ($eventCounts[StudentNotification::LATE_ATTENDANCE] ?? 0)
                         + (int) ($eventCounts[StudentNotification::ABSENT_ATTENDANCE] ?? 0),
+                    'early_warning' => (int) ($eventCounts[StudentNotification::EARLY_WARNING] ?? 0),
                 ];
             }
 
@@ -135,7 +138,7 @@ class AppServiceProvider extends ServiceProvider
 
         View::composer(['layouts.admin', 'layouts.nstp-admin', 'layouts.coordinator', 'layouts.facilitator'], function ($view): void {
             $user = auth()->user();
-            $counts = ['announcements' => 0, 'materials' => 0, 'assessments' => 0, 'attendance' => 0];
+            $counts = ['announcements' => 0, 'materials' => 0, 'assessments' => 0, 'attendance' => 0, 'early_warning' => 0];
 
             if ($user) {
                 $sidebarEventTypes = collect([
@@ -143,6 +146,7 @@ class AppServiceProvider extends ServiceProvider
                     StudentNotification::ASSESSMENT,
                     StudentNotification::LATE_ATTENDANCE,
                     StudentNotification::ABSENT_ATTENDANCE,
+                    StudentNotification::EARLY_WARNING,
                 ])->filter(fn (string $type): bool => NotificationRule::configured($type)->usesChannel('sidebar'));
                 $eventCounts = StudentNotification::query()
                     ->where('user_id', $user->id)
@@ -160,6 +164,7 @@ class AppServiceProvider extends ServiceProvider
                     'assessments' => (int) ($eventCounts[StudentNotification::ASSESSMENT] ?? 0),
                     'attendance' => (int) ($eventCounts[StudentNotification::LATE_ATTENDANCE] ?? 0)
                         + (int) ($eventCounts[StudentNotification::ABSENT_ATTENDANCE] ?? 0),
+                    'early_warning' => (int) ($eventCounts[StudentNotification::EARLY_WARNING] ?? 0),
                 ];
             }
 

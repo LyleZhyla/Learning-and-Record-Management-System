@@ -46,6 +46,7 @@
             <p class="nav-label">Progress & Records</p>
             @permission('learning.grades')<a class="nav-link {{ request()->routeIs('student.grades.*') ? 'active' : '' }}" href="{{ route('student.grades.index') }}" data-student-tour="grades"><span class="nav-icon">◎</span> Grades</a>@endpermission
             <a class="nav-link {{ request()->routeIs('student.engagement-analytics.*') ? 'active' : '' }}" href="{{ route('student.engagement-analytics.index') }}"><span class="nav-icon">◌</span> My Engagement</a>
+            <a class="nav-link {{ request()->routeIs('student.early-warning.*') ? 'active' : '' }}" href="{{ route('student.early-warning.index') }}"><span class="nav-icon">⚠</span> My Support Plan @if($sidebarNotificationCounts['early_warning'])<span class="nav-count">{{ $sidebarNotificationCounts['early_warning'] > 99 ? '99+' : $sidebarNotificationCounts['early_warning'] }}</span>@endif</a>
             @permission('reports.view')<a class="nav-link {{ request()->routeIs('student.reports.*') ? 'active' : '' }}" href="{{ route('student.reports.index') }}" data-student-tour="reports"><span class="nav-icon">▤</span> My Reports</a>@endpermission
 
             <p class="nav-label">Communication</p>

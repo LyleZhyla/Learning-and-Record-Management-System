@@ -50,4 +50,11 @@ return [
         'body_template' => '{student_name} was marked ABSENT for {session_title}.',
         'placeholders' => ['student_name', 'session_title', 'status', 'section_code'],
     ],
+    'early_warning' => [
+        'name' => 'Early-warning interventions',
+        'description' => 'Alerts the student, assigned facilitator, and component coordinator when an intervention opens or escalates.',
+        'title_template' => 'Early-warning intervention for {student_name}',
+        'body_template' => '{student_name} requires follow-up in {section_code}.',
+        'placeholders' => ['student_name', 'section_code', 'risk_score', 'severity'],
+    ],
 ];

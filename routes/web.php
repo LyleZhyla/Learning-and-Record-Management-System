@@ -32,6 +32,7 @@ use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboard
 use App\Http\Controllers\Coordinator\MonitoringController as CoordinatorMonitoringController;
 use App\Http\Controllers\Coordinator\RotcApprovalController as CoordinatorRotcApprovalController;
 use App\Http\Controllers\Coordinator\SerialNumberController as CoordinatorSerialNumberController;
+use App\Http\Controllers\EarlyWarningController;
 use App\Http\Controllers\EngagementAnalyticsController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\Facilitator\DashboardController as FacilitatorDashboardController;
@@ -265,6 +266,13 @@ $engagementAnalyticsRoutes = function (): void {
     Route::get('/engagement-analytics', EngagementAnalyticsController::class)->name('engagement-analytics.index');
 };
 
+$earlyWarningRoutes = function (): void {
+    Route::get('/early-warning', [EarlyWarningController::class, 'index'])->name('early-warning.index');
+    Route::get('/early-warning/{intervention}', [EarlyWarningController::class, 'show'])->name('early-warning.show');
+    Route::put('/early-warning/{intervention}', [EarlyWarningController::class, 'update'])->name('early-warning.update');
+    Route::put('/early-warning/thresholds/{component}', [EarlyWarningController::class, 'updateThreshold'])->name('early-warning.thresholds.update');
+};
+
 $serialNumberRoutes = function (): void {
     Route::get('/serial-numbers', [CoordinatorSerialNumberController::class, 'index'])->name('serial-numbers.index');
     Route::post('/serial-numbers', [CoordinatorSerialNumberController::class, 'store'])->name('serial-numbers.store');
@@ -274,7 +282,7 @@ $serialNumberRoutes = function (): void {
     Route::put('/serial-numbers/{serialNumberRelease}/students/{enrollment}', [CoordinatorSerialNumberController::class, 'storeSerial'])->name('serial-numbers.students.store');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumDocumentPreparationRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumDocumentPreparationRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes, $earlyWarningRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::get('/activity-calendar', PortalActivityCalendarController::class)->name('activity-calendar');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
@@ -326,6 +334,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $honorariumRequestRoutes();
     $honorariumDocumentPreparationRoutes();
     $engagementAnalyticsRoutes();
+    $earlyWarningRoutes();
     $serialNumberRoutes();
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/landing-media', [LandingPageContentController::class, 'media'])->name('landing-media.index');
@@ -403,7 +412,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes, $earlyWarningRoutes) {
     Route::middleware('system_admin')->group(function (): void {
         Route::get('/institutions', [InstitutionController::class, 'index'])->name('institutions.index');
         Route::get('/institutions/create', [InstitutionController::class, 'create'])->name('institutions.create');
@@ -479,6 +488,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $evaluationRoutes();
     $facilitatorRequirementRoutes();
     $engagementAnalyticsRoutes();
+    $earlyWarningRoutes();
     $serialNumberRoutes();
     $documentConfigurationRoutes();
     $reviewCategoryRoutes();
@@ -527,7 +537,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $rotcApprovalRoutes();
 });
 
-Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $engagementAnalyticsRoutes) {
+Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilitator'])->group(function () use ($learningManagementRoutes, $omrScannerRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $engagementAnalyticsRoutes, $earlyWarningRoutes) {
     Route::get('/dashboard', FacilitatorDashboardController::class)->name('dashboard');
     Route::get('/activity-calendar', PortalActivityCalendarController::class)->name('activity-calendar');
     Route::view('/system-guide', 'facilitator.system-guide')->name('system-guide');
@@ -554,11 +564,12 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     $honorariumViewerRoutes();
     Route::post('/honoraria/monthly-reports', [FacilitatorHonorariumController::class, 'storeAccomplishmentReport'])->name('honoraria.monthly-reports.store');
     $engagementAnalyticsRoutes();
+    $earlyWarningRoutes();
     $learningManagementRoutes();
     $omrScannerRoutes();
 });
 
-Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $rotcApprovalRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes) {
+Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $rotcApprovalRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes, $earlyWarningRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     Route::get('/activity-calendar', PortalActivityCalendarController::class)->name('activity-calendar');
     Route::view('/system-guide', 'coordinator.system-guide')->name('system-guide');
@@ -602,6 +613,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     $honorariumViewerRoutes();
     $honorariumRequestRoutes();
     $engagementAnalyticsRoutes();
+    $earlyWarningRoutes();
     Route::get('/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
     Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store');
     Route::get('/assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');
@@ -618,7 +630,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     $omrScannerRoutes();
 });
 
-Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () use ($communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $engagementAnalyticsRoutes) {
+Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->group(function () use ($communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $engagementAnalyticsRoutes, $earlyWarningRoutes) {
     Route::get('/dashboard', StudentDashboardController::class)->name('dashboard');
     Route::view('/system-guide', 'student.system-guide')->name('system-guide');
     Route::get('/announcements', [PortalAnnouncementController::class, 'index'])->name('announcements.index');
@@ -649,6 +661,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     $projectTaskRoutes();
     $evaluationRoutes();
     $engagementAnalyticsRoutes();
+    $earlyWarningRoutes();
     Route::get('/assessments', [StudentLearningController::class, 'assessments'])->name('assessments.index');
     Route::get('/assessments/{assessment}', [StudentLearningController::class, 'show'])->name('assessments.show');
     Route::post('/assessments/{assessment}/submit', [StudentLearningController::class, 'submit'])->name('assessments.submit');

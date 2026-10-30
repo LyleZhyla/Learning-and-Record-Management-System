@@ -4,11 +4,12 @@ namespace App\Services;
 
 use App\Models\AttendanceRecord;
 use App\Models\AttendanceSession;
+use App\Models\NstpSection;
 use App\Models\User;
 
 class ProgressMonitoringService
 {
-    public function __construct(private GradeService $grades) {}
+    public function __construct(private GradeService $grades, private EarlyWarningService $earlyWarning) {}
 
     public function summary(User $student, int $sectionId): array
     {
@@ -25,17 +26,19 @@ class ProgressMonitoringService
         $absent = $records->where('status', 'absent')->count();
         $attendanceRate = $sessionIds->isEmpty() ? null : round(($attended / $sessionIds->count()) * 100, 2);
 
-        $status = $this->overallStatus($grade, $attendanceRate);
+        $section = NstpSection::with('component')->findOrFail($sectionId);
+        $threshold = $this->earlyWarning->thresholdFor($section->component_id);
+        $status = $this->overallStatus($grade, $attendanceRate, $threshold->minimum_attendance_percentage, $threshold->minimum_grade_percentage, $threshold->maximum_missing_requirements);
         $attentionItems = collect([
             $grade['missing_count'] > 0 ? $grade['missing_count'].' overdue requirement(s) without a submission' : null,
             $grade['awaiting_grading_count'] > 0 ? $grade['awaiting_grading_count'].' submitted requirement(s) awaiting grading' : null,
-            $attendanceRate !== null && $attendanceRate < 75 ? 'Attendance is below the 75% monitoring threshold' : null,
-            $grade['current_percentage'] !== null && $grade['current_percentage'] < (float) $grade['settings']->passing_percentage
-                ? 'Current graded-item standing is below the passing percentage'
+            $attendanceRate !== null && $attendanceRate < $threshold->minimum_attendance_percentage ? 'Attendance is below the '.$threshold->minimum_attendance_percentage.'% monitoring threshold' : null,
+            $grade['current_percentage'] !== null && $grade['current_percentage'] < $threshold->minimum_grade_percentage
+                ? 'Current graded-item standing is below the '.$threshold->minimum_grade_percentage.'% monitoring threshold'
                 : null,
         ])->filter()->values();
 
-        return $grade + [
+        $summary = $grade + [
             'attendance_sessions' => $sessionIds->count(),
             'attended_sessions' => $attended,
             'absent_sessions' => $absent,
@@ -43,20 +46,25 @@ class ProgressMonitoringService
             'overall_status' => $status['key'],
             'overall_label' => $status['label'],
             'attention_items' => $attentionItems,
+            'risk_threshold' => $threshold,
         ];
+
+        $this->earlyWarning->synchronize($student, $section, $summary);
+
+        return $summary;
     }
 
     /** @param array<string, mixed> $grade */
-    private function overallStatus(array $grade, ?float $attendanceRate): array
+    private function overallStatus(array $grade, ?float $attendanceRate, float $attendanceThreshold, float $gradeThreshold, int $missingThreshold): array
     {
         if ($grade['total_count'] === 0 && $attendanceRate === null) {
             return ['key' => 'not_started', 'label' => 'Not started'];
         }
 
-        $attendanceRisk = $attendanceRate !== null && $attendanceRate < 75;
+        $attendanceRisk = $attendanceRate !== null && $attendanceRate < $attendanceThreshold;
         $gradeRisk = $grade['current_percentage'] !== null
-            && $grade['current_percentage'] < (float) $grade['settings']->passing_percentage;
-        $hasMissing = $grade['missing_count'] > 0;
+            && $grade['current_percentage'] < $gradeThreshold;
+        $hasMissing = $grade['missing_count'] > $missingThreshold;
 
         if ($grade['graded_count'] === $grade['total_count'] && $grade['total_count'] > 0) {
             if (($grade['percentage'] ?? 0) >= (float) $grade['settings']->passing_percentage && ! $attendanceRisk) {

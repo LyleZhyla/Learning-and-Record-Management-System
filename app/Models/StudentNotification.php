@@ -17,6 +17,8 @@ class StudentNotification extends Model
 
     public const SERVICE_REQUEST = 'service_request';
 
+    public const EARLY_WARNING = 'early_warning';
+
     protected $fillable = ['user_id', 'type', 'source_id', 'title', 'body', 'available_at', 'read_at'];
 
     protected function casts(): array
@@ -47,6 +49,7 @@ class StudentNotification extends Model
             self::ASSESSMENT => $this->assessmentDestination($user, $prefix),
             self::LATE_ATTENDANCE, self::ABSENT_ATTENDANCE => $this->attendanceDestination($user, $prefix),
             self::SERVICE_REQUEST => route('nstp_admin.service-requests.show', NstpServiceRequest::findOrFail($this->source_id)),
+            self::EARLY_WARNING => route($prefix.'.early-warning.show', $this->source_id),
             default => route($user->dashboardRouteName()),
         };
     }
@@ -57,6 +60,7 @@ class StudentNotification extends Model
             self::MATERIAL => 'Learning Materials',
             self::ASSESSMENT => 'Assessments',
             self::SERVICE_REQUEST => 'Service Requests',
+            self::EARLY_WARNING => 'Early Warning',
             default => 'Attendance',
         };
     }

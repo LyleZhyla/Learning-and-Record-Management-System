@@ -1,9 +1,11 @@
 <?php
 
 use App\Models\Institution;
+use App\Models\NstpEnrollment;
 use App\Models\RetentionPolicy;
 use App\Models\User;
 use App\Services\InstitutionContext;
+use App\Services\ProgressMonitoringService;
 use App\Services\RetentionPolicyService;
 use Database\Seeders\SampleAccountsSeeder;
 use Illuminate\Foundation\Inspiring;
@@ -40,3 +42,19 @@ Artisan::command('privacy:enforce-retention', function (InstitutionContext $cont
 })->purpose('Enforce institution-specific privacy retention policies');
 
 Schedule::command('privacy:enforce-retention')->dailyAt('02:30')->withoutOverlapping();
+
+Artisan::command('risk:scan', function (InstitutionContext $context, ProgressMonitoringService $progress) {
+    $scanned = 0;
+    Institution::query()->where('is_active', true)->each(function (Institution $institution) use ($context, $progress, &$scanned): void {
+        $context->runFor($institution->id, function () use ($progress, &$scanned): void {
+            NstpEnrollment::query()->with('student')->where('status', 'enrolled')->whereNotNull('section_id')
+                ->each(function (NstpEnrollment $enrollment) use ($progress, &$scanned): void {
+                    $progress->summary($enrollment->student, $enrollment->section_id);
+                    $scanned++;
+                });
+        });
+    });
+    $this->info("Early-warning scan complete. {$scanned} enrollment(s) evaluated.");
+})->purpose('Evaluate student risk thresholds and synchronize intervention cases');
+
+Schedule::command('risk:scan')->hourly()->withoutOverlapping();

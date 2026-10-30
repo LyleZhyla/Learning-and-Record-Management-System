@@ -1,0 +1,23 @@
+@extends('layouts.'.(auth()->user()->isSuperAdmin() ? 'admin' : str_replace('_','-',auth()->user()->role)))
+@section('title', 'Early Warning')
+@section('page-title', 'Early-warning interventions')
+@section('content')
+@php($routePrefix = str(request()->route()->getName())->before('.early-warning'))
+<div class="page-actions"><div><span class="eyebrow">Student support workflow</span><h2>Risk alerts and interventions</h2><p>Turn attendance, standing, and missing-requirement signals into assigned, traceable follow-up cases.</p></div></div>
+<section class="progress-overview-grid"><article class="card"><small>Open follow-ups</small><strong>{{ $metrics['open'] }}</strong></article><article class="card"><small>Escalated</small><strong>{{ $metrics['escalated'] }}</strong></article><article class="card"><small>Resolved</small><strong>{{ $metrics['resolved'] }}</strong></article></section>
+@if(!auth()->user()->isStudent() && !auth()->user()->isFacilitator())
+<section class="card"><div class="section-heading"><div><span class="eyebrow">Component configuration</span><h3>Risk thresholds</h3><p>Each component can use different attendance, grade, missing-work, follow-up, and escalation rules.</p></div></div>
+@foreach($components as $component) @php($threshold=$thresholds->get($component->id) ?? app(App\Services\EarlyWarningService::class)->thresholdFor($component->id))
+<form method="POST" action="{{ route($routePrefix.'.early-warning.thresholds.update', $component) }}" class="form-grid">@csrf @method('PUT')
+<label class="field-group"><span>{{ $component->code }} attendance minimum (%)</span><input type="number" min="0" max="100" step="0.01" name="minimum_attendance_percentage" value="{{ $threshold->minimum_attendance_percentage }}" required></label>
+<label class="field-group"><span>Grade minimum (%)</span><input type="number" min="0" max="100" step="0.01" name="minimum_grade_percentage" value="{{ $threshold->minimum_grade_percentage }}" required></label>
+<label class="field-group"><span>Allowed missing requirements</span><input type="number" min="0" name="maximum_missing_requirements" value="{{ $threshold->maximum_missing_requirements }}" required></label>
+<label class="field-group"><span>Follow-up after days</span><input type="number" min="1" name="follow_up_days" value="{{ $threshold->follow_up_days }}" required></label>
+<label class="field-group"><span>Escalate after days</span><input type="number" min="1" name="escalation_days" value="{{ $threshold->escalation_days }}" required></label>
+<label class="field-group"><span>Required improvement points</span><input type="number" min="1" name="minimum_improvement_points" value="{{ $threshold->minimum_improvement_points }}" required></label>
+<button class="primary-button" type="submit">Save {{ $component->code }} thresholds</button></form><hr>
+@endforeach</section>
+@endif
+<section class="card term-panel"><form method="GET" class="term-form"><label class="field-group"><span>Search student</span><input name="search" value="{{ $filters['search'] ?? '' }}"></label><label class="field-group"><span>Status</span><select name="status"><option value="">All</option>@foreach(App\Models\StudentIntervention::STATUSES as $key=>$label)<option value="{{ $key }}" @selected(($filters['status']??'')===$key)>{{ $label }}</option>@endforeach</select></label><button class="filter-button">Apply filters</button></form></section>
+<section class="card user-table-card">@include('pagination.top-page-size',['paginator'=>$interventions,'title'=>'Cases per page'])<div class="table-wrap"><table class="data-table"><thead><tr><th>Student</th><th>Component / section</th><th>Risk</th><th>Assigned adviser</th><th>Follow-up</th><th>Status</th><th></th></tr></thead><tbody>@forelse($interventions as $case)<tr><td><strong>{{ $case->student->name }}</strong><br><small>{{ $case->student->email }}</small></td><td>{{ $case->section->component->code }} · {{ $case->section->name }}</td><td><strong>{{ $case->riskSnapshot?->risk_score ?? '—' }}/100</strong><br><small>{{ str($case->severity)->headline() }}</small></td><td>{{ $case->assignee?->name ?? 'Unassigned' }}</td><td>{{ $case->follow_up_date?->format('M j, Y') ?? 'Not set' }}</td><td><span class="status-badge {{ $case->status==='resolved'?'active':'pending' }}">{{ App\Models\StudentIntervention::STATUSES[$case->status] }}</span></td><td><a class="text-link" href="{{ route($routePrefix.'.early-warning.show',$case) }}">Open →</a></td></tr>@empty<tr><td colspan="7"><div class="empty-state"><strong>No intervention cases</strong><span>Cases appear automatically when a student crosses a configured threshold.</span></div></td></tr>@endforelse</tbody></table></div>{{ $interventions->links() }}</section>
+@endsection

@@ -32,6 +32,7 @@ use App\Models\FacilitatorRequirement;
 use App\Models\FacilitatorRequirementSubmission;
 use App\Models\GradingCategory;
 use App\Models\GradingSetting;
+use App\Models\InterventionActivity;
 use App\Models\LandingPageMedia;
 use App\Models\LearningMaterial;
 use App\Models\NotificationRule;
@@ -51,14 +52,17 @@ use App\Models\ProjectImpactIndicator;
 use App\Models\ProjectTask;
 use App\Models\RetentionPolicy;
 use App\Models\ReviewCategory;
+use App\Models\RiskThreshold;
 use App\Models\Role;
 use App\Models\RubricTemplate;
 use App\Models\ScheduleSetting;
 use App\Models\SectionSchedule;
 use App\Models\SensitiveFieldAccessLog;
+use App\Models\StudentIntervention;
 use App\Models\StudentNotification;
 use App\Models\StudentProfile;
 use App\Models\StudentRegistration;
+use App\Models\StudentRiskSnapshot;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Models\WorkflowDefinition;
@@ -114,6 +118,10 @@ return [
         RubricTemplate::class,
         AiLearningRecommendation::class,
         StudentNotification::class,
+        RiskThreshold::class,
+        StudentRiskSnapshot::class,
+        StudentIntervention::class,
+        InterventionActivity::class,
         ChatMessage::class,
         ChatGroup::class,
         ChatGroupMessage::class,

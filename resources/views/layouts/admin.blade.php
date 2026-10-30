@@ -55,6 +55,7 @@
                 <a class="nav-link {{ request()->routeIs('admin.grades.*') ? 'active' : '' }}" href="{{ route('admin.grades.index') }}"><span class="nav-icon">◎</span> Grades</a>
                 <p class="nav-label">Operations & Compliance</p>
                 <a class="nav-link {{ request()->routeIs('admin.community-projects.*') ? 'active' : '' }}" href="{{ route('admin.community-projects.index') }}"><span class="nav-icon">⌂</span> Community Projects</a>
+                <a class="nav-link {{ request()->routeIs('admin.early-warning.*') ? 'active' : '' }}" href="{{ route('admin.early-warning.index') }}"><span class="nav-icon">⚠</span> Early Warning @if($sidebarPortalNotificationCounts['early_warning'])<span class="nav-count">{{ $sidebarPortalNotificationCounts['early_warning'] > 99 ? '99+' : $sidebarPortalNotificationCounts['early_warning'] }}</span>@endif</a>
                 <a class="nav-link {{ request()->routeIs('admin.community-registry.*') ? 'active' : '' }}" href="{{ route('admin.community-registry.index') }}"><span class="nav-icon">◇</span> Partners &amp; Needs</a>
                 <a class="nav-link {{ request()->routeIs('admin.rotc-approvals.*') ? 'active' : '' }}" href="{{ route('admin.rotc-approvals.index') }}"><span class="nav-icon">✓</span> ROTC Approvals</a>
                 <a class="nav-link {{ request()->routeIs('admin.document-forms.*') ? 'active' : '' }}" href="{{ route('admin.document-forms.index') }}"><span class="nav-icon">▧</span> Documents &amp; Forms</a>

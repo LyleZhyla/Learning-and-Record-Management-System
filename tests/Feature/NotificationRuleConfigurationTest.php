@@ -31,6 +31,7 @@ class NotificationRuleConfigurationTest extends TestCase
             'late_attendance',
             'absent_attendance',
             'service_request',
+            'early_warning',
         ], NotificationRule::pluck('event_key')->all());
 
         $this->actingAs($superAdmin)->get(route('admin.notification-rules.index'))
