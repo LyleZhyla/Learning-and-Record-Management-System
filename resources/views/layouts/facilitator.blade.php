@@ -27,6 +27,7 @@
             @permission('learning.grades')<a class="nav-link {{ request()->routeIs('facilitator.grades.*') ? 'active' : '' }}" href="{{ route('facilitator.grades.index') }}" data-facilitator-tour="grades"><span class="nav-icon">◎</span> Grades</a>@endpermission
             <p class="nav-label">Projects & Feedback</p>
             <a class="nav-link {{ request()->routeIs('facilitator.community-projects.*') ? 'active' : '' }}" href="{{ route('facilitator.community-projects.index') }}"><span class="nav-icon">⌂</span> Community Projects</a>
+            <a class="nav-link {{ request()->routeIs('facilitator.community-registry.*') ? 'active' : '' }}" href="{{ route('facilitator.community-registry.index') }}"><span class="nav-icon">◇</span> Partners &amp; Needs</a>
             <a class="nav-link {{ request()->routeIs('facilitator.project-tasks.*') ? 'active' : '' }}" href="{{ route('facilitator.project-tasks.index') }}"><span class="nav-icon">✓</span> Implementation Tasks</a>
             <a class="nav-link {{ request()->routeIs('facilitator.evaluations.*') ? 'active' : '' }}" href="{{ route('facilitator.evaluations.index') }}"><span class="nav-icon">☆</span> Evaluations</a>
             <a class="nav-link {{ request()->routeIs('facilitator.engagement-analytics.*') ? 'active' : '' }}" href="{{ route('facilitator.engagement-analytics.index') }}"><span class="nav-icon">◌</span> Engagement Analytics</a>

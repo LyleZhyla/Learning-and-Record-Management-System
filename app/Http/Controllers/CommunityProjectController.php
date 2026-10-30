@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\CommunityNeedPriority;
 use App\Models\CommunityProject;
 use App\Models\CommunityProjectActivity;
 use App\Models\CommunityProjectDocument;
 use App\Models\NstpComponent;
 use App\Models\NstpSection;
+use App\Models\ProjectImpactIndicator;
+use App\Services\CommunityProjectMatchingService;
 use App\Services\InstitutionNumberService;
 use App\Services\PortalAccessService;
 use Illuminate\Database\Eloquent\Builder;
@@ -21,7 +24,11 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class CommunityProjectController extends Controller
 {
-    public function __construct(private PortalAccessService $access, private InstitutionNumberService $numbers) {}
+    public function __construct(
+        private PortalAccessService $access,
+        private InstitutionNumberService $numbers,
+        private CommunityProjectMatchingService $matching,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -56,6 +63,7 @@ class CommunityProjectController extends Controller
             'project' => new CommunityProject,
             'components' => $this->availableComponents($request),
             'sections' => $this->availableSections($request),
+            'needPriorities' => $this->availableNeedPriorities(),
             'enrollment' => $enrollment,
         ]);
     }
@@ -65,9 +73,11 @@ class CommunityProjectController extends Controller
         $validated = $this->projectData($request);
         [$componentId, $sectionId] = $this->resolveScope($request, $validated);
 
-        $project = DB::transaction(function () use ($request, $validated, $componentId, $sectionId): CommunityProject {
+        $matching = $this->matchingData($validated);
+        $project = DB::transaction(function () use ($request, $validated, $componentId, $sectionId, $matching): CommunityProject {
             $project = CommunityProject::create([
                 ...$validated,
+                ...$matching,
                 'component_id' => $componentId,
                 'section_id' => $sectionId,
                 'proposed_by' => $request->user()->id,
@@ -75,6 +85,7 @@ class CommunityProjectController extends Controller
                 'implementation_status' => 'proposed',
             ]);
             $project->update(['reference_number' => $this->numbers->next('community_project:'.now()->year, 'CP-'.now()->year)]);
+            $project->needPriority?->update(['status' => 'matched']);
 
             return $project;
         });
@@ -87,7 +98,8 @@ class CommunityProjectController extends Controller
     {
         $this->ensureVisible($request, $communityProject);
         $communityProject->load([
-            'component', 'section.facilitator', 'proposer', 'approver', 'activities.creator',
+            'component', 'section.facilitator', 'proposer', 'approver', 'partner', 'needPriority.assessment',
+            'impactIndicators', 'activities.creator',
             'documents.activity', 'documents.uploader',
         ]);
 
@@ -108,6 +120,7 @@ class CommunityProjectController extends Controller
             'project' => $communityProject,
             'components' => $this->availableComponents($request),
             'sections' => $this->availableSections($request),
+            'needPriorities' => $this->availableNeedPriorities(),
             'enrollment' => $request->user()->isStudent() ? $this->access->currentEnrollment($request->user()) : null,
         ]);
     }
@@ -117,12 +130,13 @@ class CommunityProjectController extends Controller
         abort_unless($this->canEdit($request, $communityProject), 403);
         $validated = $this->projectData($request);
         [$componentId, $sectionId] = $this->resolveScope($request, $validated);
-        $updates = [...$validated, 'component_id' => $componentId, 'section_id' => $sectionId];
+        $updates = [...$validated, ...$this->matchingData($validated), 'component_id' => $componentId, 'section_id' => $sectionId];
         if ($request->user()->isStudent() && $communityProject->approval_status === 'needs_revision') {
             $updates['approval_status'] = 'pending';
             $updates['approval_notes'] = null;
         }
         $communityProject->update($updates);
+        $communityProject->needPriority?->update(['status' => 'matched']);
 
         return redirect()->route($this->routePrefix($request).'.community-projects.show', $communityProject)
             ->with('status', 'Community project details updated.');
@@ -257,6 +271,23 @@ class CommunityProjectController extends Controller
         return back()->with('status', 'Project documentation removed.');
     }
 
+    public function storeImpactIndicator(Request $request, CommunityProject $communityProject): RedirectResponse
+    {
+        abort_unless($this->canManageImplementation($request, $communityProject), 403);
+        $communityProject->impactIndicators()->create($this->impactData($request) + ['recorded_by' => $request->user()->id]);
+
+        return back()->with('status', 'Baseline impact indicator added.');
+    }
+
+    public function updateImpactIndicator(Request $request, CommunityProject $communityProject, ProjectImpactIndicator $indicator): RedirectResponse
+    {
+        abort_unless($indicator->community_project_id === $communityProject->id, 404);
+        abort_unless($this->canManageImplementation($request, $communityProject), 403);
+        $indicator->update($this->impactData($request));
+
+        return back()->with('status', 'Post-project impact measurement updated.');
+    }
+
     private function projectData(Request $request): array
     {
         return $request->validate([
@@ -265,6 +296,9 @@ class CommunityProjectController extends Controller
             'section_id' => [Rule::requiredIf($request->user()->isFacilitator()), 'nullable', 'integer', 'exists:nstp_sections,id'],
             'description' => ['required', 'string', 'max:5000'],
             'objectives' => ['required', 'string', 'max:5000'],
+            'community_need_priority_id' => ['nullable', 'integer'],
+            'available_skills' => ['nullable', 'array', 'max:20'],
+            'available_skills.*' => ['string', 'max:100'],
             'beneficiaries' => ['required', 'string', 'max:2000'],
             'beneficiary_count' => ['nullable', 'integer', 'min:1', 'max:1000000'],
             'location' => ['required', 'string', 'max:255'],
@@ -272,6 +306,61 @@ class CommunityProjectController extends Controller
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
         ]);
+    }
+
+    private function impactData(Request $request): array
+    {
+        $indicator = $request->route('indicator');
+        $project = $request->route('communityProject');
+
+        return $request->validate([
+            'indicator_name' => [
+                'required', 'string', 'max:180',
+                Rule::unique('project_impact_indicators', 'indicator_name')
+                    ->where('community_project_id', $project?->id)
+                    ->ignore($indicator?->id),
+            ],
+            'unit' => ['required', 'string', 'max:60'],
+            'baseline_value' => ['required', 'numeric', 'min:-999999999999', 'max:999999999999'],
+            'target_value' => ['nullable', 'numeric', 'min:-999999999999', 'max:999999999999'],
+            'post_project_value' => ['nullable', 'numeric', 'min:-999999999999', 'max:999999999999'],
+            'baseline_measured_on' => ['nullable', 'date'],
+            'post_measured_on' => ['nullable', 'date', 'after_or_equal:baseline_measured_on'],
+            'notes' => ['nullable', 'string', 'max:3000'],
+        ]);
+    }
+
+    private function matchingData(array $validated): array
+    {
+        if (blank($validated['community_need_priority_id'] ?? null)) {
+            return [
+                'community_partner_id' => null,
+                'community_need_priority_id' => null,
+                'need_match_score' => null,
+                'need_match_snapshot' => null,
+            ];
+        }
+        $need = CommunityNeedPriority::query()->with('assessment.partner')->findOrFail($validated['community_need_priority_id']);
+        abort_unless(
+            $need->assessment?->status === 'verified'
+            && $need->assessment?->partner?->verification_status === 'verified'
+            && $need->assessment?->partner?->is_active,
+            422,
+            'Select a need from a verified assessment and partner.',
+        );
+        $result = $this->matching->score(
+            $need,
+            $validated['location'],
+            (float) $validated['budget'],
+            $validated['available_skills'] ?? [],
+        );
+
+        return [
+            'community_partner_id' => $need->assessment->community_partner_id,
+            'community_need_priority_id' => $need->id,
+            'need_match_score' => $result['score'],
+            'need_match_snapshot' => $result['snapshot'],
+        ];
     }
 
     private function activityData(Request $request): array
@@ -399,6 +488,15 @@ class CommunityProjectController extends Controller
         }
 
         return $query->get();
+    }
+
+    private function availableNeedPriorities()
+    {
+        return CommunityNeedPriority::query()
+            ->whereIn('status', ['open', 'matched'])
+            ->whereHas('assessment', fn (Builder $assessment) => $assessment->where('status', 'verified')
+                ->whereHas('partner', fn (Builder $partner) => $partner->where('verification_status', 'verified')->where('is_active', true)))
+            ->with('assessment.partner')->orderByDesc('priority_level')->orderBy('problem_title')->get();
     }
 
     private function viewContext(Request $request): array

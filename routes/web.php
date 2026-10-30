@@ -26,6 +26,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PhilippineLocationController;
 use App\Http\Controllers\Auth\StudentRegistrationController;
 use App\Http\Controllers\CommunityProjectController;
+use App\Http\Controllers\CommunityRegistryController;
 use App\Http\Controllers\Coordinator\AccountController as CoordinatorAccountController;
 use App\Http\Controllers\Coordinator\DashboardController as CoordinatorDashboardController;
 use App\Http\Controllers\Coordinator\MonitoringController as CoordinatorMonitoringController;
@@ -190,6 +191,17 @@ $chedApplicationRoutes = function (): void {
 };
 
 $communityProjectRoutes = function (): void {
+    Route::get('/community-registry', [CommunityRegistryController::class, 'index'])->name('community-registry.index');
+    Route::post('/community-registry/partners', [CommunityRegistryController::class, 'storePartner'])->name('community-registry.partners.store');
+    Route::get('/community-registry/partners/{communityPartner}', [CommunityRegistryController::class, 'show'])->name('community-registry.partners.show');
+    Route::put('/community-registry/partners/{communityPartner}', [CommunityRegistryController::class, 'updatePartner'])->name('community-registry.partners.update');
+    Route::put('/community-registry/partners/{communityPartner}/verification', [CommunityRegistryController::class, 'verifyPartner'])->name('community-registry.partners.verification');
+    Route::post('/community-registry/partners/{communityPartner}/documents', [CommunityRegistryController::class, 'storeDocument'])->name('community-registry.documents.store');
+    Route::get('/community-registry/partners/{communityPartner}/documents/{document}', [CommunityRegistryController::class, 'downloadDocument'])->name('community-registry.documents.download');
+    Route::post('/community-registry/partners/{communityPartner}/assessments', [CommunityRegistryController::class, 'storeAssessment'])->name('community-registry.assessments.store');
+    Route::put('/community-registry/partners/{communityPartner}/assessments/{assessment}', [CommunityRegistryController::class, 'verifyAssessment'])->name('community-registry.assessments.verify');
+    Route::post('/community-registry/partners/{communityPartner}/assessments/{assessment}/priorities', [CommunityRegistryController::class, 'storePriority'])->name('community-registry.priorities.store');
+    Route::put('/community-registry/priorities/{priority}', [CommunityRegistryController::class, 'updatePriority'])->name('community-registry.priorities.update');
     Route::get('/community-projects', [CommunityProjectController::class, 'index'])->name('community-projects.index');
     Route::get('/community-projects/create', [CommunityProjectController::class, 'create'])->name('community-projects.create');
     Route::post('/community-projects', [CommunityProjectController::class, 'store'])->name('community-projects.store');
@@ -203,6 +215,8 @@ $communityProjectRoutes = function (): void {
     Route::post('/community-projects/{communityProject}/documents', [CommunityProjectController::class, 'storeDocument'])->name('community-projects.documents.store');
     Route::get('/community-projects/{communityProject}/documents/{document}', [CommunityProjectController::class, 'downloadDocument'])->name('community-projects.documents.download');
     Route::delete('/community-projects/{communityProject}/documents/{document}', [CommunityProjectController::class, 'destroyDocument'])->name('community-projects.documents.destroy');
+    Route::post('/community-projects/{communityProject}/impact-indicators', [CommunityProjectController::class, 'storeImpactIndicator'])->name('community-projects.impact-indicators.store');
+    Route::put('/community-projects/{communityProject}/impact-indicators/{indicator}', [CommunityProjectController::class, 'updateImpactIndicator'])->name('community-projects.impact-indicators.update');
 };
 
 $projectTaskRoutes = function (): void {

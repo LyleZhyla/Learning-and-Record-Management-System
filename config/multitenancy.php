@@ -15,6 +15,9 @@ use App\Models\ChatGroupMessage;
 use App\Models\ChatMessage;
 use App\Models\ChedApplication;
 use App\Models\ChedApplicationStatusHistory;
+use App\Models\CommunityNeedPriority;
+use App\Models\CommunityNeedsAssessment;
+use App\Models\CommunityPartner;
 use App\Models\CommunityProject;
 use App\Models\CommunityProjectActivity;
 use App\Models\CommunityProjectDocument;
@@ -40,9 +43,11 @@ use App\Models\NstpServiceRequest;
 use App\Models\NstpStudentSerialNumber;
 use App\Models\OmrScanResult;
 use App\Models\OmrSheet;
+use App\Models\PartnershipDocument;
 use App\Models\PrivacyConsent;
 use App\Models\PrivacyIncident;
 use App\Models\PrivacyNotice;
+use App\Models\ProjectImpactIndicator;
 use App\Models\ProjectTask;
 use App\Models\RetentionPolicy;
 use App\Models\ReviewCategory;
@@ -86,6 +91,11 @@ return [
         CommunityProject::class,
         CommunityProjectActivity::class,
         CommunityProjectDocument::class,
+        CommunityPartner::class,
+        PartnershipDocument::class,
+        CommunityNeedsAssessment::class,
+        CommunityNeedPriority::class,
+        ProjectImpactIndicator::class,
         ProjectTask::class,
         EvaluationResponse::class,
         FacilitatorRequirement::class,

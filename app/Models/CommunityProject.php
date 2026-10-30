@@ -27,8 +27,9 @@ class CommunityProject extends Model
 
     protected $fillable = [
         'reference_number', 'title', 'component_id', 'section_id', 'proposed_by',
-        'description', 'objectives', 'beneficiaries', 'beneficiary_count', 'location',
-        'budget', 'start_date', 'end_date', 'approval_status', 'approval_notes',
+        'community_partner_id', 'community_need_priority_id', 'description', 'objectives',
+        'available_skills', 'beneficiaries', 'beneficiary_count', 'location',
+        'budget', 'need_match_score', 'need_match_snapshot', 'start_date', 'end_date', 'approval_status', 'approval_notes',
         'approved_by', 'approved_at', 'implementation_status', 'implementation_notes',
         'feedback_token', 'feedback_is_open',
     ];
@@ -37,6 +38,8 @@ class CommunityProject extends Model
     {
         return [
             'budget' => 'decimal:2',
+            'available_skills' => 'array',
+            'need_match_snapshot' => 'array',
             'start_date' => 'date',
             'end_date' => 'date',
             'approved_at' => 'datetime',
@@ -66,6 +69,16 @@ class CommunityProject extends Model
         return $this->belongsTo(User::class, 'proposed_by');
     }
 
+    public function partner(): BelongsTo
+    {
+        return $this->belongsTo(CommunityPartner::class, 'community_partner_id');
+    }
+
+    public function needPriority(): BelongsTo
+    {
+        return $this->belongsTo(CommunityNeedPriority::class, 'community_need_priority_id');
+    }
+
     public function approver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'approved_by');
@@ -89,6 +102,11 @@ class CommunityProject extends Model
     public function evaluations(): HasMany
     {
         return $this->hasMany(EvaluationResponse::class, 'community_project_id')->latest('submitted_at');
+    }
+
+    public function impactIndicators(): HasMany
+    {
+        return $this->hasMany(ProjectImpactIndicator::class)->orderBy('indicator_name');
     }
 
     public function approvalLabel(): string

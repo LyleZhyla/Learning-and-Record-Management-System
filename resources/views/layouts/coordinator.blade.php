@@ -36,6 +36,7 @@
             <a class="nav-link {{ request()->routeIs('coordinator.facilitator-requirements.*') ? 'active' : '' }}" href="{{ route('coordinator.facilitator-requirements.index') }}"><span class="nav-icon">▧</span> Facilitator Compliance</a>
             <a class="nav-link {{ request()->routeIs('coordinator.honoraria.*') ? 'active' : '' }}" href="{{ route('coordinator.honoraria.index') }}"><span class="nav-icon">₱</span> Honorarium Requests</a>
             <a class="nav-link {{ request()->routeIs('coordinator.community-projects.*') ? 'active' : '' }}" href="{{ route('coordinator.community-projects.index') }}"><span class="nav-icon">⌂</span> Community Projects</a>
+            <a class="nav-link {{ request()->routeIs('coordinator.community-registry.*') ? 'active' : '' }}" href="{{ route('coordinator.community-registry.index') }}"><span class="nav-icon">◇</span> Partners &amp; Needs</a>
             <a class="nav-link {{ request()->routeIs('coordinator.project-tasks.*') ? 'active' : '' }}" href="{{ route('coordinator.project-tasks.index') }}"><span class="nav-icon">✓</span> Implementation Tasks</a>
             <a class="nav-link {{ request()->routeIs('coordinator.evaluations.*') ? 'active' : '' }}" href="{{ route('coordinator.evaluations.index') }}"><span class="nav-icon">☆</span> Evaluations</a>
             <p class="nav-label">Reports & Records</p>
