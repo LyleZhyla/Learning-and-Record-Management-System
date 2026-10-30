@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicTerm;
 use App\Models\Assessment;
 use App\Models\AssessmentSubmission;
 use App\Models\NstpComponent;
@@ -10,6 +11,7 @@ use App\Models\NstpSection;
 use App\Models\NstpSerialNumberRelease;
 use App\Models\NstpStudentSerialNumber;
 use App\Models\User;
+use App\Services\AcademicTermLifecycleService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -25,6 +27,7 @@ class SerialNumberVerificationTest extends TestCase
         [$coordinator, $facilitator, $section, $graduate] = $this->programData();
         $enrollment = $this->enroll($graduate, $section);
         $this->grade($graduate, $section, $facilitator, 90);
+        $this->finalizeTerm($coordinator, $section);
 
         $this->actingAs($coordinator)->post('/coordinator/serial-numbers', [
             'academic_year' => '2026-2027',
@@ -84,6 +87,7 @@ class SerialNumberVerificationTest extends TestCase
         [$coordinator, $facilitator, $section, $graduate] = $this->programData();
         $enrollment = $this->enroll($graduate, $section);
         $this->grade($graduate, $section, $facilitator, 90);
+        $this->finalizeTerm($coordinator, $section);
 
         foreach (['super_admin' => 'admin', 'nstp_admin' => 'nstp-admin'] as $role => $prefix) {
             $manager = User::factory()->create(['role' => $role, 'status' => 'active']);
@@ -128,6 +132,7 @@ class SerialNumberVerificationTest extends TestCase
         [$coordinator, $facilitator, $section, $student] = $this->programData();
         $enrollment = $this->enroll($student, $section);
         $this->grade($student, $section, $facilitator, 50);
+        $this->finalizeTerm($coordinator, $section);
         $release = $this->release($coordinator, $section);
 
         $this->actingAs($coordinator)->put('/coordinator/serial-numbers/'.$release->id.'/students/'.$enrollment->id, [
@@ -146,6 +151,7 @@ class SerialNumberVerificationTest extends TestCase
         [$coordinator, $facilitator, $section, $graduate] = $this->programData();
         $enrollment = $this->enroll($graduate, $section);
         $this->grade($graduate, $section, $facilitator, 90);
+        $this->finalizeTerm($coordinator, $section);
         $release = $this->release($coordinator, $section);
 
         $this->actingAs($coordinator)->get('/coordinator/serial-numbers?academic_year=2026-2027')
@@ -222,5 +228,17 @@ class SerialNumberVerificationTest extends TestCase
             'source_file_original_name' => 'source.pdf', 'source_file_mime_type' => 'application/pdf',
             'uploaded_by' => $coordinator->id,
         ]);
+    }
+
+    private function finalizeTerm(User $coordinator, NstpSection $section): void
+    {
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $term = AcademicTerm::where('academic_year', $section->academic_year)->where('semester', $section->semester)->firstOrFail();
+        $term->update(['status' => 'open', 'grade_submission_deadline' => now()->addDay()]);
+        $service = app(AcademicTermLifecycleService::class);
+        $service->transition($term, 'active', $admin);
+        $service->transition($term->fresh(), 'grading', $admin);
+        $service->approveSection($term->fresh(), $section, $coordinator, null);
+        $service->transition($term->fresh(), 'finalized', $admin);
     }
 }

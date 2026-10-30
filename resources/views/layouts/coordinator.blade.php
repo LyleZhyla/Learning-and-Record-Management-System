@@ -20,6 +20,7 @@
             <a class="nav-link {{ request()->routeIs('coordinator.accounts.*') ? 'active' : '' }}" href="{{ route('coordinator.accounts.index') }}" data-coordinator-tour="accounts"><span class="nav-icon">♙</span> Facilitators & Students</a>@endpermission
             @permission('program.sections')<a class="nav-link {{ request()->routeIs('coordinator.sections.*') ? 'active' : '' }}" href="{{ route('coordinator.sections.index') }}" data-coordinator-tour="sections"><span class="nav-icon">▦</span> Sections</a>@endpermission
             @permission('program.schedules')<a class="nav-link {{ request()->routeIs('coordinator.schedules.*') ? 'active' : '' }}" href="{{ route('coordinator.schedules.index') }}" data-coordinator-tour="scheduling"><span class="nav-icon">◷</span> Scheduling</a>@endpermission
+            <a class="nav-link {{ request()->routeIs('coordinator.academic-terms.*') ? 'active' : '' }}" href="{{ route('coordinator.academic-terms.index') }}"><span class="nav-icon">▣</span> Grade Approval</a>
             @permission('rotc.approvals')
                 @if(auth()->user()->nstpComponent?->code === 'ROTC')<a class="nav-link {{ request()->routeIs('coordinator.rotc-approvals.*') ? 'active' : '' }}" href="{{ route('coordinator.rotc-approvals.index') }}"><span class="nav-icon">✓</span> ROTC Approvals</a>@endif
             @endpermission

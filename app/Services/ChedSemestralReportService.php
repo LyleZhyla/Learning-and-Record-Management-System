@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\AcademicTerm;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use Illuminate\Support\Collection;
@@ -41,6 +42,14 @@ class ChedSemestralReportService
 
     public function report(array $filters): array
     {
+        if (($snapshotRows = $this->snapshotRows($filters)) !== null) {
+            return [
+                'title' => 'CHED Semestral Report - CWTS and LTS Passers',
+                'headers' => self::HEADERS,
+                'rows' => $snapshotRows->values()->map(fn (array $row, int $index): array => $this->snapshotChedRow($row, $index + 1)),
+                'generated_at' => now(),
+            ];
+        }
         $rows = $this->passers($filters)->values()->map(fn (NstpEnrollment $enrollment, int $index): array => $this->reportRow($enrollment, $index + 1));
 
         return [
@@ -59,6 +68,15 @@ class ChedSemestralReportService
         }
 
         $spreadsheet = $this->loadTemplate($template);
+        if (($snapshotRows = $this->snapshotRows($filters)) !== null) {
+            $detailRows = $snapshotRows->values()->map(fn (array $row, int $index): array => array_values($this->snapshotChedRow($row, $index + 1)))->all();
+            $this->writeSnapshotSummary($spreadsheet, $snapshotRows, $filters);
+            $this->writeDetailSheet($spreadsheet->getSheetByName('NSTP Enrollment List'), $detailRows);
+            $this->writeDetailSheet($spreadsheet->getSheetByName('NSTP Graduates'), $detailRows);
+            $spreadsheet->setActiveSheetIndexByName('Summary');
+
+            return $spreadsheet;
+        }
         $passers = $this->passers($filters)->values();
         $detailRows = $passers->map(fn (NstpEnrollment $enrollment, int $index): array => $this->spreadsheetRow($enrollment, $index + 1))->all();
 
@@ -73,6 +91,59 @@ class ChedSemestralReportService
         $spreadsheet->setActiveSheetIndexByName('Summary');
 
         return $spreadsheet;
+    }
+
+    private function snapshotRows(array $filters): ?Collection
+    {
+        if (blank($filters['academic_year'] ?? null) || blank($filters['semester'] ?? null)) {
+            return null;
+        }
+        $term = AcademicTerm::with(['snapshots' => fn ($query) => $query->orderByDesc('version')])
+            ->where('academic_year', $filters['academic_year'])->where('semester', $filters['semester'])
+            ->whereIn('status', ['finalized', 'archived'])->first();
+        $snapshot = $term?->snapshots->first();
+        if (! $snapshot) {
+            return null;
+        }
+
+        return collect($snapshot->payload['rows'] ?? [])->where('clearance_status', 'cleared')
+            ->filter(fn (array $row): bool => in_array($row['component'] ?? '', ['CWTS', 'LTS'], true))
+            ->when($filters['component_id'] ?? null, fn (Collection $rows, $value) => $rows->where('component_id', (int) $value))
+            ->when($filters['section_id'] ?? null, fn (Collection $rows, $value) => $rows->where('section_id', (int) $value))
+            ->values();
+    }
+
+    private function snapshotChedRow(array $row, int $sequence): array
+    {
+        $student = $row['student'];
+
+        return [
+            'sequence' => $sequence, 'year' => $row['academic_year'], 'component' => $row['component'], 'region' => (string) config('ched.region'), 'serial_number' => '',
+            'last_name' => $student['last_name'] ?: $student['name'], 'first_name' => $student['first_name'] ?? '', 'extension_name' => $student['extension_name'] ?? '', 'middle_name' => $student['middle_name'] ?? '',
+            'birthdate' => filled($student['date_of_birth'] ?? null) ? date('m/d/Y', strtotime($student['date_of_birth'])) : '',
+            'sex' => $this->sexCode($student['sex'] ?? null), 'street_barangay' => $student['barangay'] ?? '', 'city_municipality' => $student['city_municipality'] ?? '', 'province' => $student['province'] ?? '',
+            'hei_name' => (string) config('ched.hei_name'), 'hei_type' => (string) config('ched.hei_type'), 'course' => $student['course'] ?? '', 'year_level' => $this->yearLevel($student['year_section'] ?? null), 'email' => $student['email'], 'contact_number' => $student['contact_number'] ?? '',
+        ];
+    }
+
+    private function writeSnapshotSummary(Spreadsheet $spreadsheet, Collection $rows, array $filters): void
+    {
+        $sheet = $spreadsheet->getSheetByName('Summary');
+        if (! $sheet) {
+            throw new RuntimeException('The CHED template is missing the Summary worksheet.');
+        }
+        $semester = NstpSection::SEMESTERS[$filters['semester']] ?? str($filters['semester'])->headline();
+        $sheet->setCellValue('A2', 'Summary of NSTP enrollment and graduates AY '.$filters['academic_year'].' ('.$semester.')');
+        [$maleColumn, $femaleColumn] = $this->heiSummaryColumns();
+        foreach (['CWTS' => [6, 12], 'LTS' => [7, 13]] as $component => [$enrollmentRow, $graduateRow]) {
+            $componentRows = $rows->where('component', $component);
+            $male = $componentRows->filter(fn (array $row) => $this->sexCode($row['student']['sex'] ?? null) === 'M')->count();
+            $female = $componentRows->filter(fn (array $row) => $this->sexCode($row['student']['sex'] ?? null) === 'F')->count();
+            foreach ([$enrollmentRow, $graduateRow] as $row) {
+                $sheet->setCellValue($maleColumn.$row, $male);
+                $sheet->setCellValue($femaleColumn.$row, $female);
+            }
+        }
     }
 
     /** @return Collection<int, NstpEnrollment> */

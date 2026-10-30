@@ -8,6 +8,7 @@ use App\Models\AttendanceSession;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
 use App\Models\User;
+use App\Services\AcademicTermLifecycleService;
 use App\Services\PortalAccessService;
 use App\Services\StudentNotificationService;
 use Illuminate\Http\JsonResponse;
@@ -22,7 +23,7 @@ use Illuminate\View\View;
 
 class AttendanceController extends Controller
 {
-    public function __construct(private PortalAccessService $access, private StudentNotificationService $studentNotifications) {}
+    public function __construct(private PortalAccessService $access, private StudentNotificationService $studentNotifications, private AcademicTermLifecycleService $terms) {}
 
     public function index(Request $request): View
     {
@@ -63,6 +64,7 @@ class AttendanceController extends Controller
         ]);
         $section = NstpSection::findOrFail($validated['section_id']);
         $this->access->ensureCanManageSection($request->user(), $section);
+        $this->terms->assertRecordsWritable($section);
 
         if (($validated['late_after'] ?? null) && Carbon::parse($validated['late_after'])->gt(Carbon::parse($validated['ends_at']))) {
             throw ValidationException::withMessages(['late_after' => 'The late threshold must be before the session end time.']);
@@ -121,6 +123,7 @@ class AttendanceController extends Controller
     {
         $attendance->loadMissing('section');
         $this->access->ensureCanScanSection($request->user(), $attendance->section);
+        $this->terms->assertRecordsWritable($attendance->section);
         $validated = $request->validate(['qr_code' => ['required', 'string', 'max:200']]);
 
         if ($attendance->status !== 'open') {
@@ -201,6 +204,7 @@ class AttendanceController extends Controller
     {
         $attendance->loadMissing('section');
         $this->access->ensureCanScanSection($request->user(), $attendance->section);
+        $this->terms->assertRecordsWritable($attendance->section);
         $validated = $request->validate(['scan_mode' => ['required', Rule::in(['time_in', 'time_out'])]]);
 
         if ($attendance->status !== 'open') {
@@ -220,6 +224,7 @@ class AttendanceController extends Controller
     public function mark(Request $request, AttendanceSession $attendance): RedirectResponse
     {
         $this->access->ensureCanManageSection($request->user(), $attendance->section);
+        $this->terms->assertRecordsWritable($attendance->section);
         $validated = $request->validate([
             'student_id' => ['required', 'integer', Rule::exists('nstp_enrollments', 'student_id')->where('section_id', $attendance->section_id)],
             'status' => ['required', Rule::in(['present', 'late', 'absent'])],
@@ -245,6 +250,7 @@ class AttendanceController extends Controller
     public function close(Request $request, AttendanceSession $attendance): RedirectResponse
     {
         $this->access->ensureCanManageSection($request->user(), $attendance->section);
+        $this->terms->assertRecordsWritable($attendance->section);
 
         DB::transaction(function () use ($attendance, $request): void {
             $studentIds = NstpEnrollment::where('section_id', $attendance->section_id)->pluck('student_id');

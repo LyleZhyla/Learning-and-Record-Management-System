@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AcademicTermController;
 use App\Http\Controllers\Admin\ArchiveController;
 use App\Http\Controllers\Admin\CampusController;
 use App\Http\Controllers\Admin\ChedApplicationController;
@@ -273,6 +274,14 @@ $earlyWarningRoutes = function (): void {
     Route::put('/early-warning/thresholds/{component}', [EarlyWarningController::class, 'updateThreshold'])->name('early-warning.thresholds.update');
 };
 
+$academicTermRoutes = function (): void {
+    Route::get('/academic-terms', [AcademicTermController::class, 'index'])->name('academic-terms.index');
+    Route::put('/academic-terms/{academicTerm}', [AcademicTermController::class, 'update'])->name('academic-terms.update');
+    Route::put('/academic-terms/{academicTerm}/transition', [AcademicTermController::class, 'transition'])->name('academic-terms.transition');
+    Route::post('/academic-terms/{academicTerm}/sections/{section}/approve', [AcademicTermController::class, 'approve'])->name('academic-terms.approve');
+    Route::post('/academic-terms/{academicTerm}/reopen', [AcademicTermController::class, 'reopen'])->name('academic-terms.reopen');
+};
+
 $serialNumberRoutes = function (): void {
     Route::get('/serial-numbers', [CoordinatorSerialNumberController::class, 'index'])->name('serial-numbers.index');
     Route::post('/serial-numbers', [CoordinatorSerialNumberController::class, 'store'])->name('serial-numbers.store');
@@ -282,7 +291,7 @@ $serialNumberRoutes = function (): void {
     Route::put('/serial-numbers/{serialNumberRelease}/students/{enrollment}', [CoordinatorSerialNumberController::class, 'storeSerial'])->name('serial-numbers.students.store');
 };
 
-Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumDocumentPreparationRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes, $earlyWarningRoutes) {
+Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $honorariumDocumentPreparationRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes, $earlyWarningRoutes, $academicTermRoutes) {
     Route::get('/dashboard', NstpAdminDashboardController::class)->name('dashboard');
     Route::get('/activity-calendar', PortalActivityCalendarController::class)->name('activity-calendar');
     Route::view('/system-guide', 'nstp_admin.system-guide')->name('system-guide');
@@ -335,6 +344,7 @@ Route::prefix('nstp-admin')->name('nstp_admin.')->middleware(['auth', 'nstp_admi
     $honorariumDocumentPreparationRoutes();
     $engagementAnalyticsRoutes();
     $earlyWarningRoutes();
+    $academicTermRoutes();
     $serialNumberRoutes();
     Route::resource('announcements', NstpAdminAnnouncementController::class)->except('show');
     Route::get('/landing-media', [LandingPageContentController::class, 'media'])->name('landing-media.index');
@@ -412,7 +422,7 @@ Route::prefix('student')->name('student.')->middleware(['auth', 'student'])->gro
     Route::post('/required-documents', [StudentRequiredDocumentController::class, 'store'])->name('required-documents.store');
 });
 
-Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes, $earlyWarningRoutes) {
+Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->group(function () use ($learningManagementRoutes, $scheduleRoutes, $rotcApprovalRoutes, $documentConfigurationRoutes, $reviewCategoryRoutes, $workflowRoutes, $notificationRuleRoutes, $policyRequirementRoutes, $chedApplicationRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes, $earlyWarningRoutes, $academicTermRoutes) {
     Route::middleware('system_admin')->group(function (): void {
         Route::get('/institutions', [InstitutionController::class, 'index'])->name('institutions.index');
         Route::get('/institutions/create', [InstitutionController::class, 'create'])->name('institutions.create');
@@ -489,6 +499,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     $facilitatorRequirementRoutes();
     $engagementAnalyticsRoutes();
     $earlyWarningRoutes();
+    $academicTermRoutes();
     $serialNumberRoutes();
     $documentConfigurationRoutes();
     $reviewCategoryRoutes();
@@ -569,7 +580,7 @@ Route::prefix('facilitator')->name('facilitator.')->middleware(['auth', 'facilit
     $omrScannerRoutes();
 });
 
-Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $rotcApprovalRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes, $earlyWarningRoutes) {
+Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordinator'])->group(function () use ($omrScannerRoutes, $scheduleRoutes, $rotcApprovalRoutes, $communityProjectRoutes, $projectTaskRoutes, $evaluationRoutes, $facilitatorRequirementRoutes, $honorariumViewerRoutes, $honorariumRequestRoutes, $engagementAnalyticsRoutes, $serialNumberRoutes, $earlyWarningRoutes, $academicTermRoutes) {
     Route::get('/dashboard', CoordinatorDashboardController::class)->name('dashboard');
     Route::get('/activity-calendar', PortalActivityCalendarController::class)->name('activity-calendar');
     Route::view('/system-guide', 'coordinator.system-guide')->name('system-guide');
@@ -614,6 +625,7 @@ Route::prefix('coordinator')->name('coordinator.')->middleware(['auth', 'coordin
     $honorariumRequestRoutes();
     $engagementAnalyticsRoutes();
     $earlyWarningRoutes();
+    $academicTermRoutes();
     Route::get('/assessments/create', [AssessmentController::class, 'create'])->name('assessments.create');
     Route::post('/assessments', [AssessmentController::class, 'store'])->name('assessments.store');
     Route::get('/assessments/{assessment}', [AssessmentController::class, 'show'])->name('assessments.show');

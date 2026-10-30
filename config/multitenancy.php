@@ -1,5 +1,8 @@
 <?php
 
+use App\Models\AcademicTerm;
+use App\Models\AcademicTermSnapshot;
+use App\Models\AcademicTermTransition;
 use App\Models\AiChatConversation;
 use App\Models\AiChatMessage;
 use App\Models\AiLearningRecommendation;
@@ -21,6 +24,7 @@ use App\Models\CommunityPartner;
 use App\Models\CommunityProject;
 use App\Models\CommunityProjectActivity;
 use App\Models\CommunityProjectDocument;
+use App\Models\CompletionClearance;
 use App\Models\ComponentAssessmentSetting;
 use App\Models\DataPrivacyRequest;
 use App\Models\DocumentForm;
@@ -64,6 +68,7 @@ use App\Models\StudentProfile;
 use App\Models\StudentRegistration;
 use App\Models\StudentRiskSnapshot;
 use App\Models\SystemSetting;
+use App\Models\TermGradeApproval;
 use App\Models\User;
 use App\Models\WorkflowDefinition;
 use App\Models\WorkflowStepCompletion;
@@ -73,6 +78,11 @@ return [
         User::class,
         Role::class,
         SystemSetting::class,
+        AcademicTerm::class,
+        AcademicTermSnapshot::class,
+        AcademicTermTransition::class,
+        TermGradeApproval::class,
+        CompletionClearance::class,
         NstpComponent::class,
         NstpSection::class,
         NstpEnrollment::class,

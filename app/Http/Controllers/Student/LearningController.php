@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Assessment;
 use App\Models\AssessmentSubmission;
 use App\Models\LearningMaterial;
+use App\Services\AcademicTermLifecycleService;
 use App\Services\PortalAccessService;
 use App\Services\ProgressMonitoringService;
 use Illuminate\Http\RedirectResponse;
@@ -15,7 +16,7 @@ use Illuminate\View\View;
 
 class LearningController extends Controller
 {
-    public function __construct(private PortalAccessService $access, private ProgressMonitoringService $progress) {}
+    public function __construct(private PortalAccessService $access, private ProgressMonitoringService $progress, private AcademicTermLifecycleService $terms) {}
 
     public function materials(Request $request): View
     {
@@ -104,6 +105,7 @@ class LearningController extends Controller
     {
         $enrollment = $this->access->currentEnrollment($request->user());
         abort_unless($enrollment && $assessment->section_id === $enrollment->section_id && $assessment->status === 'published', 403);
+        $this->terms->assertRecordsWritable($assessment->section);
         $existingSubmission = AssessmentSubmission::where('assessment_id', $assessment->id)
             ->where('student_id', $request->user()->id)
             ->first();

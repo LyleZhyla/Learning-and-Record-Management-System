@@ -14,6 +14,7 @@ use App\Models\OmrSheet;
 use App\Models\RubricTemplate;
 use App\Models\User;
 use App\Models\WorkflowDefinition;
+use App\Services\AcademicTermLifecycleService;
 use App\Services\GradeService;
 use App\Services\OpenAiAssessmentScoringService;
 use App\Services\PortalAccessService;
@@ -42,6 +43,7 @@ class AssessmentController extends Controller
         private StudentNotificationService $studentNotifications,
         private OpenAiAssessmentScoringService $aiScoring,
         private SubmissionPreviewService $submissionPreviews,
+        private AcademicTermLifecycleService $terms,
     ) {}
 
     public function index(Request $request): View
@@ -114,6 +116,7 @@ class AssessmentController extends Controller
         $section = NstpSection::findOrFail($validated['section_id']);
         $section->loadMissing('component.assessmentSetting');
         $this->access->ensureCanAccessGradebookSection($request->user(), $section);
+        $this->terms->assertRecordsWritable($section);
         $this->ensureGradingStructure($section);
         $profile = ComponentAssessmentSetting::configuredFor($section->component);
         if (! $profile->allows($validated['type'])) {
@@ -229,6 +232,7 @@ class AssessmentController extends Controller
 
     public function updateRubric(Request $request, Assessment $assessment): RedirectResponse
     {
+        $this->terms->assertRecordsWritable($assessment->section);
         abort_unless($request->user()->isFacilitator(), 403);
         $this->access->ensureCanManageSection($request->user(), $assessment->section);
         $this->removeEmptyRubricRows($request);
@@ -284,6 +288,7 @@ class AssessmentController extends Controller
 
     public function generateAiScore(Request $request, Assessment $assessment, AssessmentSubmission $submission): RedirectResponse
     {
+        $this->terms->assertGradeSubmissionOpen($assessment->section);
         abort_unless($request->user()->isFacilitator(), 403);
         $this->access->ensureCanManageSection($request->user(), $assessment->section);
         abort_unless($submission->assessment_id === $assessment->id, 404);
@@ -334,6 +339,7 @@ class AssessmentController extends Controller
 
     public function approveAiScore(Request $request, Assessment $assessment, AssessmentSubmission $submission): RedirectResponse
     {
+        $this->terms->assertGradeSubmissionOpen($assessment->section);
         abort_unless($request->user()->isFacilitator(), 403);
         $this->access->ensureCanManageSection($request->user(), $assessment->section);
         abort_unless($submission->assessment_id === $assessment->id, 404);
@@ -364,6 +370,7 @@ class AssessmentController extends Controller
 
     public function grade(Request $request, Assessment $assessment, AssessmentSubmission $submission): RedirectResponse
     {
+        $this->terms->assertGradeSubmissionOpen($assessment->section);
         $this->access->ensureCanManageSection($request->user(), $assessment->section);
         abort_unless($submission->assessment_id === $assessment->id, 404);
         $validated = $request->validate(['score' => ['required', 'numeric', 'min:0', 'max:'.$assessment->max_score], 'feedback' => ['nullable', 'string', 'max:3000']]);
@@ -380,6 +387,7 @@ class AssessmentController extends Controller
 
     public function scoreStudent(Request $request, Assessment $assessment, User $student): RedirectResponse
     {
+        $this->terms->assertGradeSubmissionOpen($assessment->section);
         $assessment->loadMissing(['section', 'gradingCategory']);
         $this->access->ensureCanManageSection($request->user(), $assessment->section);
         abort_unless(
@@ -496,6 +504,7 @@ class AssessmentController extends Controller
 
     public function updateGradeStructure(Request $request, NstpSection $section): RedirectResponse
     {
+        $this->terms->assertRecordsWritable($section);
         $this->access->ensureCanAccessGradebookSection($request->user(), $section);
         $this->access->ensureCanConfigureGrades($request->user());
         $this->ensureGradingStructure($section);
@@ -556,6 +565,7 @@ class AssessmentController extends Controller
 
     public function destroyGradeCategory(Request $request, GradingCategory $category): RedirectResponse
     {
+        $this->terms->assertRecordsWritable($category->section);
         $this->access->ensureCanAccessGradebookSection($request->user(), $category->section);
         $this->access->ensureCanConfigureGrades($request->user());
         if ($category->assessments()->exists()) {
@@ -571,6 +581,7 @@ class AssessmentController extends Controller
 
     public function storeGradeItem(Request $request, NstpSection $section): RedirectResponse
     {
+        $this->terms->assertRecordsWritable($section);
         $this->access->ensureCanAccessGradebookSection($request->user(), $section);
         $this->access->ensureCanConfigureGrades($request->user());
         $validated = $request->validate([
@@ -596,6 +607,7 @@ class AssessmentController extends Controller
 
     public function updateGradeItem(Request $request, Assessment $assessment): RedirectResponse
     {
+        $this->terms->assertRecordsWritable($assessment->section);
         $this->access->ensureCanAccessGradebookSection($request->user(), $assessment->section);
         $this->access->ensureCanConfigureGrades($request->user());
         $validated = $request->validate([
@@ -611,6 +623,7 @@ class AssessmentController extends Controller
 
     public function destroyGradeItem(Request $request, Assessment $assessment): RedirectResponse
     {
+        $this->terms->assertRecordsWritable($assessment->section);
         $this->access->ensureCanAccessGradebookSection($request->user(), $assessment->section);
         $this->access->ensureCanConfigureGrades($request->user());
         $assessment->delete();
@@ -620,6 +633,7 @@ class AssessmentController extends Controller
 
     public function updateGradeScore(Request $request, NstpSection $section): JsonResponse
     {
+        $this->terms->assertGradeSubmissionOpen($section);
         $this->access->ensureCanAccessGradebookSection($request->user(), $section);
         $validated = $request->validate([
             'assessment_id' => ['required', 'integer', 'exists:assessments,id'],

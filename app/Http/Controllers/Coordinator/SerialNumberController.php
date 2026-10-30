@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Coordinator;
 
 use App\Http\Controllers\Controller;
+use App\Models\AcademicTerm;
+use App\Models\CompletionClearance;
 use App\Models\NstpComponent;
 use App\Models\NstpEnrollment;
 use App\Models\NstpSection;
@@ -120,6 +122,11 @@ class SerialNumberController extends Controller
             'source_file' => ['required', 'file', 'mimes:pdf,xlsx,xls,csv,jpg,jpeg,png', 'max:10240'],
             'notes' => ['nullable', 'string', 'max:3000'],
         ]);
+
+        $term = AcademicTerm::where('academic_year', $validated['academic_year'])->where('semester', $validated['semester'])->first();
+        abort_unless($term?->status === 'finalized', 422, 'Finalize the academic term before starting serial-number processing.');
+        abort_unless(CompletionClearance::where('academic_term_id', $term->id)->where('status', 'cleared')
+            ->whereHas('enrollment', fn ($query) => $query->where('component_id', $componentId))->exists(), 422, 'No completion-cleared students are available for this component and term.');
 
         $file = $request->file('source_file');
         $path = $file->store('nstp-serial-number-releases', 'local');
@@ -301,11 +308,12 @@ class SerialNumberController extends Controller
             return false;
         }
 
-        $summary = $this->grades->summary($enrollment->student, $enrollment->section_id);
+        $term = AcademicTerm::where('academic_year', $enrollment->academic_year)->where('semester', $enrollment->semester)->first();
+        if (! $term || $term->status !== 'finalized') {
+            return false;
+        }
 
-        return $summary['total_count'] > 0
-            && $summary['graded_count'] === $summary['total_count']
-            && $summary['percentage'] !== null
-            && $summary['percentage'] >= (float) $summary['settings']->passing_percentage;
+        return CompletionClearance::where('academic_term_id', $term->id)
+            ->where('enrollment_id', $enrollment->id)->where('status', 'cleared')->exists();
     }
 }
