@@ -32,7 +32,7 @@
             <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-menu" data-menu-toggle><span></span><span></span><span></span><span class="sr-only">Open menu</span></button>
             <div class="nav-menu" id="site-menu" data-menu>
                 <a href="#home">Home</a><a href="#about">About</a><a href="#components">Components</a><a href="#activities">Activities</a><a href="#announcements">Announcements</a><a href="#services">Services</a><a href="#faqs">FAQs</a><a href="#contact">Contact</a>
-                <a class="nav-portal" href="{{ route('login') }}">Student Portal <span aria-hidden="true">→</span></a>
+                <a class="nav-portal" href="{{ route('login') }}">Login <span aria-hidden="true">→</span></a>
             </div>
         </nav>
     </header>
