@@ -105,7 +105,10 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->foreignId('recorded_by')->nullable()->constrained('users')->nullOnDelete();
             $table->timestamps();
-            $table->unique(['community_project_id', 'indicator_name']);
+            $table->unique(
+                ['community_project_id', 'indicator_name'],
+                'project_impact_project_indicator_unique'
+            );
         });
     }
 
