@@ -85,6 +85,30 @@ class StudentImportTest extends TestCase
         Mail::assertSent(AccountCreatedMail::class, 1);
     }
 
+    public function test_authorized_user_can_import_a_student_with_unknown_blood_type(): void
+    {
+        Mail::fake();
+        $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
+        $file = $this->excelFile([
+            StudentImportService::HEADERS,
+            $this->validStudentRow([
+                'blood_type' => 'Unknown',
+                'email' => 'unknown.blood.type@import.test',
+                'student_number' => '2026000089',
+            ]),
+        ]);
+
+        $this->actingAs($admin)->post('/admin/students/import', [
+            'file' => $file,
+            'credential_delivery' => 'view',
+        ])->assertOk();
+
+        $this->assertDatabaseHas('student_profiles', [
+            'student_number' => '2026000089',
+            'blood_type' => 'Unknown',
+        ]);
+    }
+
     public function test_sql_import_rejects_arbitrary_statements_without_executing_them(): void
     {
         $admin = User::factory()->create(['role' => 'super_admin', 'status' => 'active']);
