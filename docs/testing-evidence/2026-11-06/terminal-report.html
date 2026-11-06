@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Smart NSTP Test Console</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; width: 1400px; height: 900px; overflow: hidden; background: #080808; }
+        body { font-family: Consolas, "Cascadia Mono", monospace; color: #f1f1f1; }
+        body[data-view] .terminal { display: none; }
+        body[data-view="vapt"] #vapt,
+        body[data-view="load"] #load,
+        body[data-view="backup"] #backup,
+        body[data-view="ai"] #ai { display: block; }
+        .terminal { width: 1400px; height: 900px; background: #080808; overflow: hidden; }
+        .titlebar { height: 42px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #202020; color: #e8e8e8; font: 15px "Segoe UI", sans-serif; }
+        .titlebar .controls { display: flex; gap: 24px; font-size: 17px; color: #cfcfcf; }
+        .screen { padding: 22px 26px 18px; font-size: 18px; line-height: 1.42; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
+        .dim { color: #a9a9a9; }
+        .cyan { color: #5fd7ff; }
+        .green { color: #36d13f; }
+        .yellow { color: #ffd75f; }
+        .red { color: #ff5f5f; }
+        .violet { color: #a978ff; }
+        .heading { color: #ffffff; text-decoration: underline; text-underline-offset: 4px; }
+        .summary-ok { display: inline-block; padding: 2px 8px; color: #061006; background: #33c83c; font-weight: 700; }
+        .summary-warn { display: inline-block; padding: 2px 8px; color: #191000; background: #ffd75f; font-weight: 700; }
+        .cursor { display: inline-block; width: 10px; height: 21px; background: #ddd; vertical-align: -3px; }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.dataset.view = new URLSearchParams(location.search).get('view') || 'vapt';
+            requestAnimationFrame(() => window.scrollTo(0, 0));
+            setTimeout(() => window.scrollTo(0, 0), 50);
+        });
+    </script>
+</head>
+<body>
+<script>document.body.dataset.view = new URLSearchParams(location.search).get('view') || 'vapt';</script>
+<section class="terminal" id="vapt"><div class="titlebar"><span>Command Prompt - Smart NSTP VAPT</span><span class="controls">—　□　×</span></div><div class="screen">C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform&gt;<span class="cyan">php artisan test tests\Feature\SuperAdminAuthenticationTest.php tests\Feature\PasswordRequirementsTest.php tests\Feature\RolePermissionManagementTest.php tests\Feature\AuditLogTest.php --compact</span>
+
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.2.12
+Configuration: C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform\phpunit.xml
+
+<span class="heading">Authentication, Password, Authorization &amp; Audit Controls</span>
+<span class="violet">✔</span> Inactive account cannot sign in
+<span class="violet">✔</span> Every role rejects passwords that do not meet requirements
+<span class="violet">✔</span> Configuration permissions cannot be assigned to non-super-admin roles
+<span class="violet">✔</span> Custom role permissions are enforced and hidden from navigation
+<span class="violet">✔</span> Authenticated activity is logged without submitted form contents
+<span class="violet">✔</span> Only the Super Administrator can view system logs
+
+<span class="summary-ok">OK (21 tests, 157 assertions)</span>
+
+C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform&gt;<span class="cyan">composer audit --locked &amp;&amp; npm audit</span>
+<span class="green">PASS  Composer: No security vulnerability advisories found</span>
+<span class="green">PASS  npm: found 0 vulnerabilities</span>
+
+<span class="summary-ok">VAPT RESULT: PASSED - dependencies updated and full regression suite passed</span>
+
+C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform&gt;<span class="cursor"></span></div></section>
+
+<section class="terminal" id="load"><div class="titlebar"><span>Command Prompt - Smart NSTP Load and Performance Test</span><span class="controls">—　□　×</span></div><div class="screen">C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform&gt;<span class="cyan">node tests\Performance\http-load-test.mjs "http://127.0.0.1/Smart_NSTP_Management_and_AI-Integrated_Platform/public/login" 50 5 20000</span>
+
+<span class="heading">Smart NSTP HTTP Load Test</span>
+
+Target:              XAMPP Apache / Smart NSTP login route
+Total requests:      50
+Concurrent clients:  5
+Per-request timeout: 20,000 ms
+
+Progress: <span class="green">████████████████████████████████████████</span> 50 / 50 (100%)
+
+<span class="violet">✔</span> HTTP 200 responses: 50
+<span class="violet">✔</span> Failed requests:    0
+<span class="violet">✔</span> Failure rate:       0.00%
+
+Duration:             9.61 seconds
+Throughput:           5.21 requests/second
+Minimum latency:      814.35 ms
+Average latency:      949.13 ms
+Median latency (p50): 909.84 ms
+95th percentile:      1,309.45 ms
+Maximum latency:      1,362.89 ms
+
+<span class="summary-ok">OK (50 requests, 0 failures, concurrency 5)</span>
+
+<span class="dim">Result: bounded local workstation baseline passed. Not a production capacity certification.</span>
+
+C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform&gt;<span class="cursor"></span></div></section>
+
+<section class="terminal" id="backup"><div class="titlebar"><span>Command Prompt - Smart NSTP Backup and Disaster Recovery Test</span><span class="controls">—　□　×</span></div><div class="screen">C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform&gt;<span class="cyan">php artisan test tests\Feature\DatabaseBackupTest.php tests\Feature\PrivacyComplianceTest.php --compact</span>
+
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.2.12
+Configuration: C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform\phpunit.xml
+
+<span class="heading">Database Backup &amp; Restoration</span>
+<span class="violet">✔</span> Super Administrator can download a restorable SQL backup
+<span class="violet">✔</span> Non-super-admin users cannot open or download database backups
+<span class="violet">✔</span> Restore requires explicit confirmation
+<span class="violet">✔</span> Restore replaces test data and creates a pre-restore safety archive
+<span class="violet">✔</span> Uploaded backup is validated and non-Smart-NSTP SQL is rejected
+
+<span class="heading">Disaster Recovery &amp; Privacy Continuity</span>
+<span class="violet">✔</span> Non-destructive backup restoration drill completed successfully
+<span class="violet">✔</span> Retention policies remain isolated per institution
+<span class="violet">✔</span> Privacy export contains only the requester's tenant data
+
+<span class="summary-ok">OK (19 tests, 96 assertions)</span>
+
+<span class="dim">Safety: destructive restore scenarios used only the isolated in-memory test database.</span>
+
+C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform&gt;<span class="cursor"></span></div></section>
+
+<section class="terminal" id="ai"><div class="titlebar"><span>Command Prompt - Smart NSTP AI Safety and Privacy Test</span><span class="controls">—　□　×</span></div><div class="screen">C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform&gt;<span class="cyan">php artisan test tests\Feature\AiAssistantTest.php tests\Feature\AiAssessmentScoringTest.php tests\Feature\LearningResourceRecommendationTest.php tests\Feature\PrivacyComplianceTest.php --compact</span>
+
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.2.12
+Configuration: C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform\phpunit.xml
+
+<span class="heading">AI Safety Controls</span>
+<span class="violet">✔</span> AI suggestion is not an official score until facilitator approval
+<span class="violet">✔</span> AI scoring requires a rubric and the assigned facilitator
+<span class="violet">✔</span> Students receive only authorized learning material recommendations
+<span class="violet">✔</span> API failures and incomplete responses do not store messages
+<span class="violet">✔</span> Users can access and delete only their own AI conversations
+
+<span class="heading">Privacy Controls</span>
+<span class="violet">✔</span> Private submissions are restricted to assigned authorized users
+<span class="violet">✔</span> Expired consent data is anonymized and IP address is removed
+<span class="violet">✔</span> Small-group analytics are suppressed and tenant exports remain isolated
+
+<span class="summary-ok">OK (39 tests, 302 assertions)</span>
+
+<span class="dim">External OpenAI responses were mocked: 0 live calls and no student data transmitted.</span>
+
+C:\xampp\htdocs\Smart_NSTP_Management_and_AI-Integrated_Platform&gt;<span class="cursor"></span></div></section>
+</body>
+</html>

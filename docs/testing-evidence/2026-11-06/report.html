@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Smart NSTP Testing Evidence</title>
+    <style>
+        :root { color-scheme: light; font-family: Inter, "Segoe UI", Arial, sans-serif; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #e9eef5; color: #132238; }
+        body[data-view] .evidence { display: none; }
+        body[data-view="vapt"] #vapt,
+        body[data-view="load"] #load,
+        body[data-view="backup"] #backup,
+        body[data-view="ai"] #ai { display: flex; }
+        .evidence { width: 1600px; height: 1000px; padding: 72px 84px; background: #f7f9fc; display: flex; flex-direction: column; overflow: hidden; }
+        .topline { display: flex; align-items: center; justify-content: space-between; margin-bottom: 36px; }
+        .brand { display: flex; align-items: center; gap: 18px; }
+        .mark { width: 58px; height: 58px; border-radius: 18px; display: grid; place-items: center; background: linear-gradient(135deg, #173f73, #1c78a5); color: white; font-weight: 800; font-size: 18px; box-shadow: 0 12px 28px #163a6b30; }
+        .brand strong { display: block; font-size: 25px; letter-spacing: -.4px; }
+        .brand span, .date { color: #5c6d82; font-size: 16px; }
+        .title-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; margin-bottom: 34px; }
+        h1 { margin: 0; font-size: 52px; line-height: 1.06; letter-spacing: -2px; max-width: 1000px; }
+        .status { padding: 13px 20px; border-radius: 999px; font-size: 18px; font-weight: 750; white-space: nowrap; }
+        .pass { color: #0b6547; background: #dff7ec; border: 1px solid #a5dfc8; }
+        .warn { color: #8a3d05; background: #fff0dc; border: 1px solid #f0c68f; }
+        .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
+        .metric { background: white; border: 1px solid #dfe6ef; border-radius: 20px; padding: 24px; box-shadow: 0 8px 24px #18385b0a; min-height: 143px; }
+        .metric .label { color: #68798e; font-size: 16px; margin-bottom: 13px; }
+        .metric .value { font-size: 36px; font-weight: 800; letter-spacing: -1px; }
+        .metric .sub { color: #66788d; font-size: 14px; margin-top: 7px; }
+        .content { display: grid; grid-template-columns: 1.12fr .88fr; gap: 24px; flex: 1; min-height: 0; }
+        .panel { background: white; border: 1px solid #dfe6ef; border-radius: 22px; padding: 26px 30px; box-shadow: 0 8px 24px #18385b0a; }
+        .panel h2 { margin: 0 0 17px; font-size: 22px; }
+        ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; }
+        li { position: relative; padding-left: 28px; font-size: 17px; line-height: 1.35; }
+        li::before { content: "✓"; position: absolute; left: 0; top: 0; color: #16835d; font-weight: 900; }
+        .findings li::before { content: "!"; width: 19px; height: 19px; border-radius: 50%; background: #e67319; color: white; font-size: 12px; display: grid; place-items: center; top: 2px; }
+        .note { margin-top: 17px; padding: 14px 16px; border-radius: 14px; background: #eef4fb; color: #496079; font-size: 14px; line-height: 1.4; }
+        .footer { display: flex; justify-content: space-between; align-items: center; margin-top: 24px; color: #63758a; font-size: 14px; }
+        .scope { font-weight: 650; color: #34506e; }
+        .bar { height: 10px; border-radius: 10px; background: #e7edf4; overflow: hidden; margin-top: 16px; }
+        .bar > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #177357, #26a77b); }
+    </style>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.dataset.view = new URLSearchParams(location.search).get('view') || 'vapt';
+            requestAnimationFrame(() => window.scrollTo(0, 0));
+        });
+    </script>
+</head>
+<body>
+    <section class="evidence" id="vapt">
+        <div class="topline"><div class="brand"><div class="mark">NSTP</div><div><strong>Smart NSTP Platform</strong><span>Automated Verification Evidence</span></div></div><div class="date">November 6, 2026 · Asia/Manila</div></div>
+        <div class="title-row"><h1>Vulnerability Assessment &amp; Security Control Testing</h1><div class="status pass">PASSED AFTER REMEDIATION</div></div>
+        <div class="grid">
+            <div class="metric"><div class="label">Security-control tests</div><div class="value">21 / 21</div><div class="sub">157 assertions passed</div></div>
+            <div class="metric"><div class="label">Composer advisories</div><div class="value">0</div><div class="sub">After compatible upgrades</div></div>
+            <div class="metric"><div class="label">npm vulnerabilities</div><div class="value">0</div><div class="sub">After dependency rebuild</div></div>
+            <div class="metric"><div class="label">Test failures</div><div class="value">0</div><div class="sub">Application security suite</div></div>
+        </div>
+        <div class="content">
+            <div class="panel"><h2>Verified application controls</h2><ul><li>Inactive accounts are blocked from authentication.</li><li>Password requirements are enforced for every account role.</li><li>Role permissions are enforced and unauthorized navigation is hidden.</li><li>System logs are restricted to the Super Administrator.</li><li>Audit records exclude submitted form contents and sensitive values.</li></ul></div>
+            <div class="panel"><h2>Dependency remediation</h2><ul><li>Composer audit reports no known security advisories.</li><li>npm audit reports zero known vulnerabilities.</li><li>Production frontend assets build successfully.</li><li>Full regression suite: 476 tests and 4,189 assertions passed.</li></ul><div class="note">Scope: automated security controls plus software-composition analysis. This is not a full external/manual penetration test.</div></div>
+        </div>
+        <div class="footer"><span class="scope">Result source: PHPUnit · Composer audit · npm audit</span><span>Local controlled test environment</span></div>
+    </section>
+
+    <section class="evidence" id="load">
+        <div class="topline"><div class="brand"><div class="mark">NSTP</div><div><strong>Smart NSTP Platform</strong><span>Automated Verification Evidence</span></div></div><div class="date">November 6, 2026 · Asia/Manila</div></div>
+        <div class="title-row"><h1>Load &amp; Performance Testing</h1><div class="status pass">BOUNDED RUN PASSED</div></div>
+        <div class="grid">
+            <div class="metric"><div class="label">HTTP requests</div><div class="value">50 / 50</div><div class="sub">All returned HTTP 200</div></div>
+            <div class="metric"><div class="label">Concurrency</div><div class="value">5</div><div class="sub">Parallel virtual clients</div></div>
+            <div class="metric"><div class="label">Throughput</div><div class="value">5.21</div><div class="sub">Requests per second</div></div>
+            <div class="metric"><div class="label">Failed requests</div><div class="value">0</div><div class="sub">0% failure rate</div></div>
+        </div>
+        <div class="content">
+            <div class="panel"><h2>Measured latency</h2><ul><li>Minimum: 814.35 ms</li><li>Average: 949.13 ms</li><li>Median (p50): 909.84 ms</li><li>95th percentile: 1,309.45 ms</li><li>Maximum: 1,362.89 ms</li></ul><div class="bar"><span style="width:100%"></span></div></div>
+            <div class="panel"><h2>Run configuration</h2><ul><li>Target: XAMPP Apache login route on localhost.</li><li>50 total requests with concurrency 5.</li><li>20-second timeout for each request.</li><li>Measured end-to-end response body completion.</li></ul><div class="note">This workstation baseline shows stability under a small concurrent burst. It is not a production capacity certification or stress-to-failure test.</div></div>
+        </div>
+        <div class="footer"><span class="scope">Result source: tests/Performance/http-load-test.mjs</span><span>XAMPP Apache local environment</span></div>
+    </section>
+
+    <section class="evidence" id="backup">
+        <div class="topline"><div class="brand"><div class="mark">NSTP</div><div><strong>Smart NSTP Platform</strong><span>Automated Verification Evidence</span></div></div><div class="date">November 6, 2026 · Asia/Manila</div></div>
+        <div class="title-row"><h1>Backup &amp; Disaster Recovery Testing</h1><div class="status pass">PASSED</div></div>
+        <div class="grid">
+            <div class="metric"><div class="label">Automated tests</div><div class="value">19 / 19</div><div class="sub">All scenarios passed</div></div>
+            <div class="metric"><div class="label">Assertions</div><div class="value">96</div><div class="sub">Verified outcomes</div></div>
+            <div class="metric"><div class="label">Restore failures</div><div class="value">0</div><div class="sub">Test database only</div></div>
+            <div class="metric"><div class="label">Live database changes</div><div class="value">0</div><div class="sub">Non-destructive drill</div></div>
+        </div>
+        <div class="content">
+            <div class="panel"><h2>Verified recovery controls</h2><ul><li>Restorable SQL backup can be generated without exposing database credentials.</li><li>Restore requires the exact explicit confirmation phrase.</li><li>A pre-restore safety archive is created before replacement.</li><li>Uploaded backups are validated and non-Smart-NSTP SQL is rejected.</li><li>Archive download and restore are restricted to authorized system admins.</li></ul></div>
+            <div class="panel"><h2>Disaster-recovery evidence</h2><ul><li>Backup restoration replaced test data correctly.</li><li>Non-destructive restoration drill completed successfully.</li><li>Retention policies stayed isolated by institution.</li><li>Privacy export remained limited to the requester's tenant data.</li></ul><div class="note">All destructive restore behavior ran only against the isolated in-memory test database. The production/live database was not replaced.</div></div>
+        </div>
+        <div class="footer"><span class="scope">Result source: DatabaseBackupTest · PrivacyComplianceTest</span><span>PHPUnit isolated test database</span></div>
+    </section>
+
+    <section class="evidence" id="ai">
+        <div class="topline"><div class="brand"><div class="mark">NSTP</div><div><strong>Smart NSTP Platform</strong><span>Automated Verification Evidence</span></div></div><div class="date">November 6, 2026 · Asia/Manila</div></div>
+        <div class="title-row"><h1>AI Safety &amp; Privacy Testing</h1><div class="status pass">PASSED</div></div>
+        <div class="grid">
+            <div class="metric"><div class="label">Automated tests</div><div class="value">39 / 39</div><div class="sub">All safety scenarios passed</div></div>
+            <div class="metric"><div class="label">Assertions</div><div class="value">302</div><div class="sub">Verified outcomes</div></div>
+            <div class="metric"><div class="label">Live AI calls</div><div class="value">0</div><div class="sub">OpenAI responses mocked</div></div>
+            <div class="metric"><div class="label">Test failures</div><div class="value">0</div><div class="sub">Safety and privacy suite</div></div>
+        </div>
+        <div class="content">
+            <div class="panel"><h2>Verified AI safeguards</h2><ul><li>AI scoring remains a suggestion until facilitator review and approval.</li><li>AI scoring is restricted to the assigned facilitator and requires a rubric.</li><li>Students receive recommendations only from authorized learning materials.</li><li>API configuration failures and incomplete responses do not store messages.</li><li>Users can access and delete only their own AI conversations.</li></ul></div>
+            <div class="panel"><h2>Verified privacy protections</h2><ul><li>Private submissions remain accessible only to assigned authorized users.</li><li>Consent history retains the exact notice version.</li><li>Expired consent data is anonymized and IP addresses are removed.</li><li>Anonymized analytics suppress unsafe small groups.</li><li>Tenant-scoped exports and retention actions remain isolated.</li></ul><div class="note">All external AI responses were mocked. No student data was transmitted to OpenAI and no API credits were consumed.</div></div>
+        </div>
+        <div class="footer"><span class="scope">Result source: AI Assistant · AI Scoring · Recommendation · Privacy suites</span><span>PHPUnit with mocked OpenAI API</span></div>
+    </section>
+</body>
+</html>
