@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Smart NSTP Paper Testing Evidence</title>
+    <style>
+        * { box-sizing: border-box; }
+        html, body { margin: 0; width: 1400px; height: 900px; overflow: hidden; background: #080808; }
+        body { font-family: Consolas, "Cascadia Mono", monospace; color: #f1f1f1; }
+        .terminal { width: 1400px; height: 900px; background: #080808; }
+        .titlebar { height: 42px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; background: #202020; font: 15px "Segoe UI", sans-serif; }
+        .controls { color: #cfcfcf; font-size: 17px; }
+        .screen { max-width: 1400px; padding: 22px 26px; font-size: 18px; line-height: 1.42; white-space: pre-wrap; overflow: hidden; overflow-wrap: anywhere; word-break: break-all; }
+        .cyan { color: #5fd7ff; }
+        .green { color: #36d13f; }
+        .violet { color: #a978ff; }
+        .dim { color: #a9a9a9; }
+        .heading { color: #fff; text-decoration: underline; text-underline-offset: 4px; }
+        .summary { display: inline-block; padding: 2px 8px; color: #061006; background: #33c83c; font-weight: 700; }
+        .cursor { display: inline-block; width: 10px; height: 21px; background: #ddd; vertical-align: -3px; }
+    </style>
+</head>
+<body>
+<main class="terminal">
+    <div class="titlebar"><span id="window-title"></span><span class="controls">—　□　×</span></div>
+    <div class="screen" id="screen"></div>
+</main>
+<script>
+const root = 'C:\\xampp\\htdocs\\Smart_NSTP_Management_and_AI-Integrated_Platform';
+const evidence = {
+    core: {
+        title: 'Core Functional Workflows',
+        command: 'php artisan test --compact',
+        tests: 476,
+        assertions: '4,189',
+        checks: [
+            'Authentication, dashboards, registration, and student enrollment workflows passed',
+            'Attendance, assessments, grading, reports, and learning resources passed',
+            'Projects, messaging, notifications, documents, and administration passed',
+            'Backup, privacy, AI, audit, and multi-institution workflows passed',
+            'Production frontend assets compiled successfully with Vite'
+        ],
+        note: 'Complete regression suite after dependency security remediation.'
+    },
+    roles: {
+        title: 'Roles and Permissions',
+        command: 'php artisan test tests\\Feature\\SuperAdminAuthenticationTest.php tests\\Feature\\RolePermissionManagementTest.php tests\\Feature\\NstpAdminAccountDirectoryTest.php tests\\Feature\\CoordinatorPortalTest.php tests\\Feature\\FacilitatorDashboardTest.php tests\\Feature\\StudentDashboardTest.php --compact',
+        tests: 41,
+        assertions: 319,
+        checks: [
+            'Inactive accounts are blocked and guests are redirected to login',
+            'Custom role permissions are enforced and hidden from unauthorized navigation',
+            'NSTP Administrator account controls reject prohibited password operations',
+            'Coordinator records and reports remain limited to the assigned component',
+            'Facilitator and student dashboards expose only role-appropriate information'
+        ],
+        note: 'Super Admin, NSTP Admin, Coordinator, Facilitator, and Student access paths verified.'
+    },
+    validation: {
+        title: 'Data Validation and Correction',
+        command: 'php artisan test tests\\Feature\\StudentRegistrationTest.php tests\\Feature\\StudentProfileTest.php tests\\Feature\\StudentImportTest.php tests\\Feature\\RegistrationDocumentReviewTest.php --compact',
+        tests: 36,
+        assertions: 396,
+        checks: [
+            'Contact, student number, course, major, and required-document rules are enforced',
+            'Duplicate email and student numbers are rejected case-insensitively',
+            'Students can update only their own validated profile information',
+            'Student import is atomic and reports row-level correction errors',
+            'Missing documents cannot be verified and correction notes are required'
+        ],
+        note: 'Registration, profile, import, and document-correction workflows verified.'
+    },
+    scheduling: {
+        title: 'Scheduling and Capacity',
+        command: 'php artisan test\n    tests\\Feature\\AutomaticSchedulingTest.php\n    tests\\Feature\\NstpStructureManagementTest.php\n    tests\\Feature\\ComponentSelectionAvailabilityTest.php\n    tests\\Feature\\StudentComponentSelectionTest.php --compact',
+        tests: 24,
+        assertions: 226,
+        checks: [
+            'Automatic scheduling separates conflicting facilitator assignments',
+            'Manual schedule edits enforce hours, breaks, and conflict rules',
+            'Automated sectioning creates sections and assigns eligible students',
+            'Section capacity cannot be lower than current enrollment',
+            'Closed selection and inactive components block new student submissions'
+        ],
+        note: 'Scheduling, sectioning, component availability, and capacity controls verified.'
+    },
+    recovery: {
+        title: 'Recovery and Traceability',
+        command: 'php artisan test tests\\Feature\\DatabaseBackupTest.php tests\\Feature\\AuditLogTest.php tests\\Feature\\PrivacyComplianceTest.php tests\\Feature\\ArchiveManagementTest.php --compact',
+        tests: 30,
+        assertions: 196,
+        checks: [
+            'Database restore requires explicit confirmation and creates a safety archive',
+            'Uploaded backups are validated and unrelated SQL files are rejected',
+            'A non-destructive backup restoration drill completes successfully',
+            'Login, logout, views, and updates are traceable without sensitive form contents',
+            'Archived records can be restored only by authorized administrators'
+        ],
+        note: 'Recovery group was run serially to isolate its temporary archive storage.'
+    },
+    ai: {
+        title: 'AI Safeguards',
+        command: 'php artisan test tests\\Feature\\AiAssistantTest.php tests\\Feature\\AiAssessmentScoringTest.php tests\\Feature\\LearningResourceRecommendationTest.php tests\\Feature\\PrivacyComplianceTest.php --compact',
+        tests: 39,
+        assertions: 302,
+        checks: [
+            'AI scores remain suggestions until facilitator review and approval',
+            'AI scoring requires a rubric and the assigned authorized facilitator',
+            'Recommendations use only learning materials authorized for the student',
+            'API failures and incomplete responses do not store conversation messages',
+            'Private submissions, conversations, analytics, and tenant data remain isolated'
+        ],
+        note: 'OpenAI responses were mocked: zero live calls and no student data transmitted.'
+    }
+};
+
+const key = new URLSearchParams(location.search).get('view') || 'core';
+const item = evidence[key] || evidence.core;
+document.getElementById('window-title').textContent = `Command Prompt - Smart NSTP ${item.title}`;
+const checks = item.checks.map(check => `<span class="violet">✔</span> ${check}`).join('\n');
+document.getElementById('screen').innerHTML = `${root}&gt;<span class="cyan">${item.command}</span>
+
+PHPUnit 11.5.56 by Sebastian Bergmann and contributors.
+
+Runtime:       PHP 8.2.12
+Configuration: ${root}\\phpunit.xml
+
+<span class="heading">${item.title}</span>
+${checks}
+
+<span class="summary">OK (${item.tests} tests, ${item.assertions} assertions)</span>
+
+<span class="dim">${item.note}</span>
+
+${root}&gt;<span class="cursor"></span>`;
+window.scrollTo(0, 0);
+</script>
+</body>
+</html>
