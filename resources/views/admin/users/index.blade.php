@@ -12,6 +12,7 @@
         </div>
         <div class="page-action-buttons">
             <a class="secondary-outline-button" href="{{ route('admin.users.export', request()->only(['search','role','status'])) }}">Download directory</a>
+            <a class="secondary-outline-button" href="{{ route('admin.users.import.create') }}">Import staff</a>
             @if(auth()->user()->isSystemAdmin())<a class="secondary-outline-button" href="{{ route('admin.users.create', ['role' => 'super_admin']) }}">Create institution admin</a>@endif
             <a class="primary-button compact create-account-button" href="{{ route('admin.users.create') }}">Create staff account</a>
         </div>

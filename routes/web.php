@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\ReviewCategoryController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\StaffImportController;
 use App\Http\Controllers\Admin\SystemLogController;
 use App\Http\Controllers\Admin\SystemSettingController;
 use App\Http\Controllers\Admin\UserController;
@@ -460,6 +461,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'super_admin'])->gro
     Route::put('/roles/{role}', [RoleController::class, 'update'])->name('roles.update');
     Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('roles.destroy');
     Route::get('/users/export', [DirectoryExportController::class, 'staff'])->name('users.export');
+    Route::get('/users/import', [StaffImportController::class, 'create'])->name('users.import.create');
+    Route::post('/users/import', [StaffImportController::class, 'store'])->name('users.import.store');
+    Route::get('/users/import/template', [StaffImportController::class, 'template'])->name('users.import.template');
     Route::get('/students', [StudentAccountController::class, 'index'])->name('students.index');
     Route::get('/students/import', [StudentImportController::class, 'create'])->name('students.import.create');
     Route::post('/students/import', [StudentImportController::class, 'store'])->name('students.import.store');
