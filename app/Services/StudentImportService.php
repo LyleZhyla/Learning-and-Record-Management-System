@@ -85,14 +85,10 @@ class StudentImportService
         ];
     }
 
-    public function __construct(private readonly AccountCredentialMailer $credentialMailer) {}
-
     /**
      * @return array{
      *     students: int,
-     *     credentials: array<int, array{name: string, email: string, temporary_password: string, qr_payload: string}>,
-     *     emails_queued: int,
-     *     emails_failed: int
+     *     credentials: array<int, array{name: string, email: string, temporary_password: string, qr_payload: string}>
      * }
      */
     public function import(UploadedFile $file): array
@@ -253,24 +249,7 @@ class StudentImportService
             return ['students' => count($prepared), 'credentials' => $credentials];
         });
 
-        $users = User::query()
-            ->whereIn('email', array_column($result['credentials'], 'email'))
-            ->get()
-            ->keyBy('email');
-        $emailsQueued = 0;
-
-        foreach ($result['credentials'] as $credential) {
-            $student = $users->get($credential['email']);
-
-            if ($student && $this->credentialMailer->send($student, $credential['temporary_password'])) {
-                $emailsQueued++;
-            }
-        }
-
-        return $result + [
-            'emails_queued' => $emailsQueued,
-            'emails_failed' => count($result['credentials']) - $emailsQueued,
-        ];
+        return $result;
     }
 
     /** @return array<int, array<int, mixed>> */

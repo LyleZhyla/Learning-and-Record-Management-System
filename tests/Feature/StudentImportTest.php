@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Mail\AccountCreatedMail;
 use App\Models\StudentProfile;
 use App\Models\User;
 use App\Services\StudentImportService;
@@ -82,7 +81,7 @@ class StudentImportTest extends TestCase
             'student_number' => '2026000088',
             'last_name' => "Dela O'Brien",
         ]);
-        Mail::assertSent(AccountCreatedMail::class, 1);
+        Mail::assertNothingSent();
     }
 
     public function test_authorized_user_can_import_a_student_with_unknown_blood_type(): void
@@ -145,9 +144,7 @@ class StudentImportTest extends TestCase
             $response->assertOk()
                 ->assertDownload()
                 ->assertHeader('content-type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-                ->assertHeader('x-imported-students', '1')
-                ->assertHeader('x-credential-emails-queued', '1')
-                ->assertHeader('x-credential-emails-failed', '0');
+                ->assertHeader('x-imported-students', '1');
 
             $credentials = $this->credentialsFromResponse($response->streamedContent());
             $this->assertSame($email, $credentials['email']);
@@ -192,13 +189,9 @@ class StudentImportTest extends TestCase
             $this->actingAs($user)->get($directory.'/'.$student->id.'/qr/download')
                 ->assertOk()->assertHeader('content-disposition', 'attachment; filename="'.str($student->name)->slug().'-attendance-qr.svg"');
 
-            Mail::assertSent(AccountCreatedMail::class, fn (AccountCreatedMail $mail): bool => $mail->hasTo($student->email)
-                && $mail->recipientName === $student->name
-                && $mail->roleLabel === 'Student'
-            );
         }
 
-        Mail::assertSent(AccountCreatedMail::class, 2);
+        Mail::assertNothingSent();
     }
 
     public function test_authorized_user_can_view_generated_credentials_instead_of_downloading_them(): void

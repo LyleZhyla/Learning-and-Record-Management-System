@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\NstpComponent;
 use App\Models\Role;
 use App\Models\User;
-use App\Services\AccountCredentialMailer;
 use App\Services\InstitutionContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -72,7 +71,7 @@ class UserController extends Controller
         ]);
     }
 
-    public function store(Request $request, AccountCredentialMailer $credentialMailer): RedirectResponse
+    public function store(Request $request): RedirectResponse
     {
         $this->synchronizeRequestedBaseRole($request);
         $validated = $request->validate($this->accountRules());
@@ -106,19 +105,14 @@ class UserController extends Controller
             return $user;
         });
 
-        $emailSent = $credentialMailer->send($user, $temporaryPassword);
-
         $status = "The {$user->roleLabel()} account for {$user->name} was created successfully.";
-        $status .= $emailSent
-            ? ' The temporary login credentials were queued for email delivery.'
-            : ' The credentials email could not be queued; copy the temporary credentials shown below.';
+        $status .= ' No email was sent automatically. Copy the temporary credentials below and share them securely when ready.';
 
         return redirect()->route('admin.users.edit', $user)
             ->with([
                 'status' => $status,
                 'temporary_password' => $temporaryPassword,
                 'temporary_password_email' => $user->email,
-                'credentials_email_sent' => $emailSent,
             ]);
     }
 

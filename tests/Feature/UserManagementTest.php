@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Mail\AccountCreatedMail;
 use App\Models\Assessment;
 use App\Models\NstpComponent;
 use App\Models\NstpSection;
@@ -103,15 +102,9 @@ class UserManagementTest extends TestCase
                 ]);
             }
 
-            Mail::assertSent(AccountCreatedMail::class, fn (AccountCreatedMail $mail): bool => $mail->hasTo($createdUser->email)
-                && $mail->recipientName === $createdUser->name
-                && $mail->accountEmail === $createdUser->email
-                && $mail->temporaryPassword === $temporaryPassword
-                && $mail->roleLabel === $createdUser->roleLabel()
-            );
         }
 
-        Mail::assertSent(AccountCreatedMail::class, count(User::ROLE_LABELS));
+        Mail::assertNothingSent();
     }
 
     public function test_super_admin_cannot_deactivate_own_account(): void
